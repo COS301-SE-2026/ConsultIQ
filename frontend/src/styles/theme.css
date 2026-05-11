@@ -1,0 +1,63 @@
+:root{
+    /* primary colors */
+    --color-primary: #1B2F5E;
+    --color-secondary: #3A6EA5;
+    --color-accent: #C9A84C;
+
+    /*Neutral and surface colors*/
+    --color-surface: #F4F6FA;
+    --color-border: #E2E8F0;
+    --color-dark-grey: #4A5568;
+
+    /*text colours*/
+    --color-text-primary: #1F2937;
+    --color-text-secondary: #6B7280;
+
+    /* base colours */
+    --color-white: #FFFFFF;
+
+    /*Typography*/
+    --font-primary: Calibri, Arial, sans-serif;
+    --font-monospace: "Courier New", monospace;
+
+    /* type scaling */
+    --text-h1: 32px;
+    --text-h2: 22px;
+    --text-h3: 18px;
+    --text-body: 12px;
+    --text-caption: 10px;
+    --text-button: 11px;
+    --text-code: 10px;
+
+    /* border radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+
+    /* shadowws */
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+    /*spacing*/
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    /*Status Colors*/
+
+    --color-success: #16A34A;
+    --color-warning: #F59E0B;
+    --color-danger: #B91C1C;
+    --color-info: #0EA5E9;
+
+    /* Button States */
+
+    --button-primary-hover: #253F7A;
+    --button-secondary-hover: #D4E3F5;
+    --button-danger-hover: #991B1B;
+
+    --button-disabled-bg: #E2E8F0;
+    --button-disabled-text: #9CA3AF;    
+
+}

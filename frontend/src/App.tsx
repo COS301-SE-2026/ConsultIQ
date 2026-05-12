@@ -1,12 +1,12 @@
+import AppRoutes from "./routes/app-routes";
 
 function App() {
   return (
-    <div>
-      <h1>ConsultIQ</h1>
-        <p>Consultant Intelligence & Project Matching Platform</p>
-
-    </div>
+    <>
+      <AppRoutes />
+    </>
   );
 }
 
-export default App
+
+export default App;

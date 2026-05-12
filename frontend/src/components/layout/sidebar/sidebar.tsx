@@ -52,7 +52,7 @@ function Sidebar({ items }: SidebarProps) {
           padding: "32px 16px",
         }}
       >
-        {items.map((item, index) => {
+        {items.map((item, _index) => {
         const Icon = item.icon;
 
         return (

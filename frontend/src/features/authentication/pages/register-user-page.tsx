@@ -15,6 +15,14 @@ function RegisterUserPage() {
         allowedRoles = ["CONSULTANT"];
     }
 
+    // Extract sidebar items selection
+    const sidebarItems =
+        currentUserRole === "ADMIN"
+            ? adminSidebarItems
+            : currentUserRole === "CONSULTANT_MANAGER"
+            ? consultantManagerSidebarItems
+            : consultantSidebarItems;
+
     return (
         <div
             style={{
@@ -23,15 +31,7 @@ function RegisterUserPage() {
                 backgroundColor: "var(--color-surface)",
             }}
         >
-            <Sidebar
-                items={
-                    currentUserRole === "ADMIN"
-                        ? adminSidebarItems
-                        : currentUserRole === "CONSULTANT_MANAGER"
-                        ? consultantManagerSidebarItems
-                        : consultantSidebarItems
-                }
-            />
+            <Sidebar items={sidebarItems} />
 
             <div
                 style={{

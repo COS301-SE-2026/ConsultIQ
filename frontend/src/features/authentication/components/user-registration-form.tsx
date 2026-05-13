@@ -19,9 +19,8 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
         if (!fullName.trim()) newErrors.fullName = "Full name is required.";
         if (!email.trim()) {
             newErrors.email = "Email is required.";
-        } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-            newErrors.email = "Enter a valid email address.";
-        }
+        } else if (!email.trim()) {
+            newErrors.email = "Email is required.";}
         if (!role) newErrors.role = "Role is required.";
         return newErrors;
     }
@@ -107,7 +106,7 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
                     Email Address
                 </label>
                 <input
-                    type="text"
+                    type="email"
                     id="email"
                     placeholder="Enter email address"
                     value={email}

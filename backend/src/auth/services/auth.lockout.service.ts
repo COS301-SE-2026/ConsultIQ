@@ -135,6 +135,11 @@ export class LockoutService {
             },
         });
     }
-
+    /** Remaining lockout seconds for timed lockouts (response headers). */
+    remainingLockoutSeconds(user: User): number | null {
+        if (!user.lockedUntil) return null;
+        const ms = user.lockedUntil.getTime() - Date.now();
+        return ms > 0 ? Math.ceil(ms / 1000) : null;
+    }
 
 }

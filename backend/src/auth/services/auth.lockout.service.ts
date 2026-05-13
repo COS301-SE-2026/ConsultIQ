@@ -107,6 +107,34 @@ export class LockoutService {
         });
     }
 
+    /**
+ * Admin action — unlock an account and reset the counter.
+ */
+    async unlockAccount(userId: string): Promise<User> {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                isLocked: false,
+                lockedUntil: null,
+                failedAttempts: 0,
+                status: UserStatus.ACTIVE,
+            },
+        });
+    }
+
+    /**
+ * Admin action — locks an account.
+ */
+    async lockAccount(userId: string): Promise<void> {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                isLocked: true,
+                lockedUntil: null,
+                status: UserStatus.LOCKED,
+            },
+        });
+    }
 
 
 }

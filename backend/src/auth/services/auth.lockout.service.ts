@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, User, UserStatus } from '@prisma/client';
 
@@ -35,7 +35,7 @@ export class LockoutService {
         const shouldLock = newCount >= MAX_FAILED_ATTEMPTS;
 
         // Build the lockout timestamp 
-        let lockedUntil: Date | undefined = undefined;
+        let lockedUntil: Date | null = null;
 
         if (shouldLock && LOCKOUT_DURATION_MINUTES) {
             const millisecondsToAdd = LOCKOUT_DURATION_MINUTES * 60 * 1000;
@@ -69,6 +69,44 @@ export class LockoutService {
 
         return updated;
     }
+
+
+    /**
+ * TASK-13b — Reset failed-attempt counter on successful login.
+ * Also clears any timed lockout that may have naturally expired.
+ */
+
+    // Currently reset failed attempts only when the user tries to login after the lockout duration has expired.
+    async resetFailedAttempts(user: User): Promise<void> {
+
+        // If account is locked without a timeout
+        if (user.isLocked) {
+            throw new ForbiddenException(
+                'Your account is currently locked. Contanct an Administrator.',
+            );
+        }
+
+        const isTimedOutLockoutExpired = user.lockedUntil && user.lockedUntil > new Date();
+        // Still locked due to active timeout
+        if (isTimedOutLockoutExpired) {
+            throw new ForbiddenException(
+                'Your account is temporarily locked. Please try again later.',
+
+            );
+        }
+
+        //Expired timeout - Able to Login
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                failedAttempts: 0,
+                lockedUntil: null,
+                isLocked: false,
+                status: UserStatus.ACTIVE,
+            },
+        });
+    }
+
 
 
 }

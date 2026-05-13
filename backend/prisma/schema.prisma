@@ -36,17 +36,13 @@ model Role {
 
 model Permission {
   id          Int              @id @default(autoincrement()) @map("permissionID")
-  roleID      Int
   title       String
-  roles       RolePermission[]
 }
 
 model RolePermission {
   permissionID Int
   roleID       Int
   role         Role       @relation(fields: [roleID], references: [id])
-  permission   Permission @relation(fields: [permissionID], references: [id])
-
   @@id([permissionID, roleID])
   @@map("role_permission")
 }

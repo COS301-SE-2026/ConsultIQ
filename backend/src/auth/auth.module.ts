@@ -4,12 +4,12 @@ import { AuthService } from './services/auth.service';
 import { CredentialService } from './services/auth.credential.service';
 import { LockoutService } from './services/auth.lockout.service';
 import { AuditLogService } from './services/auth.audit-log.service';
-//import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
     imports: [
-        //PrismaModule,
+        PrismaModule,
         // Rate-limit the /auth/login route at the HTTP layer as a first defence.
         ThrottlerModule.forRoot([
             {

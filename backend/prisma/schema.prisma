@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          Int          @id @default(autoincrement()) @map("userID")
+  roleID      Int
+  name        String
+  surname     String
+  idNumber    String       @map("IDNumber")
+  email       String       @unique
+  phoneNumber String       @map("PhoneNumber")
+  tokens      String?
+  role        Role         @relation(fields: [roleID], references: [id])
+  consultant  Consultant?
+  managers    ProjectManager[]
+}
+
+model Role {
+  id          Int              @id @default(autoincrement()) @map("roleID")
+  title       String
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement()) @map("permissionID")
+  roleID      Int
+  title       String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  permissionID Int
+  roleID       Int
+  role         Role       @relation(fields: [roleID], references: [id])
+  permission   Permission @relation(fields: [permissionID], references: [id])
+
+  @@id([permissionID, roleID])
+  @@map("role_permission")
+}
+
+model Consultant {
+  id           Int                @id @default(autoincrement()) @map("consultantID")
+  userID       Int                @unique @map("UserID")
+  availability Boolean
+  location     String
+  user         User               @relation(fields: [userID], references: [id])
+  certificates Certificate[]
+  skills       ConsultantSkills[]
+  placements   ProjectPlacement[]
+}
+
+model Certificate {
+  id           Int        @id @default(autoincrement()) @map("certificateID")
+  consultantID Int
+  uploadedAt   DateTime   @default(now()) @map("uploaded_at")
+  title        String
+  consultant   Consultant @relation(fields: [consultantID], references: [id])
+}
+
+model Skills {
+  id               Int                @id @default(autoincrement()) @map("skillID")
+  name             String
+  consultants      ConsultantSkills[]
+  projects         ProjectSkills[]
+}
+
+model ConsultantSkills {
+  id             Int        @id @default(autoincrement()) @map("consultantSkillsID")
+  consultantID   Int
+  skillID        Int
+  competencyLevel String    @map("competencyLevel")
+  experience      String
+  consultant     Consultant @relation(fields: [consultantID], references: [id])
+  skill          Skills     @relation(fields: [skillID], references: [id])
+}
+
+model Project {
+  id       Int              @id @default(autoincrement()) @map("projectID")
+  project  String
+  teamSize Int
+  location String
+  duration String
+  budget   Float
+  notes    String?
+  skills   ProjectSkills[]
+  managers ProjectManager[]
+  placements ProjectPlacement[]
+}
+
+model ProjectSkills {
+  id        Int     @id @default(autoincrement()) @map("skillsProjectID")
+  skillID   Int
+  projectID Int
+  skill     Skills  @relation(fields: [skillID], references: [id])
+  project   Project @relation(fields: [projectID], references: [id])
+}
+
+model ProjectManager {
+  id        Int     @id @default(autoincrement()) @map("projectManagerID")
+  userID    Int
+  projectID Int
+  user      User    @relation(fields: [userID], references: [id])
+  project   Project @relation(fields: [projectID], references: [id])
+}
+
+model ProjectPlacement {
+  id               Int        @id @default(autoincrement()) @map("projectPlacementId")
+  projectID        Int
+  consultantID     Int
+  project          Project    @relation(fields: [projectID], references: [id])
+  consultant       Consultant @relation(fields: [consultantID], references: [id])
+}

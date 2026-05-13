@@ -18,8 +18,6 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
         const newErrors: { fullName?: string; email?: string; role?: string } = {};
         if (!fullName.trim()) newErrors.fullName = "Full name is required.";
         if (!email.trim()) {
-            newErrors.email = "Email is required.";
-        } else if (!email.trim()) {
             newErrors.email = "Email is required.";}
         if (!role) newErrors.role = "Role is required.";
         return newErrors;

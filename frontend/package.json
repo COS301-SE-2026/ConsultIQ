@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "postinstall": "prisma generate",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

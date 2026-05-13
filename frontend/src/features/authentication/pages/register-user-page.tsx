@@ -15,13 +15,15 @@ function RegisterUserPage() {
         allowedRoles = ["CONSULTANT"];
     }
 
-    // Extract sidebar items selection
-    const sidebarItems =
-        currentUserRole === "ADMIN"
-            ? adminSidebarItems
-            : currentUserRole === "CONSULTANT_MANAGER"
-            ? consultantManagerSidebarItems
-            : consultantSidebarItems;
+    // Extract sidebar items selection 
+    let sidebarItems;
+    if (currentUserRole === "ADMIN") {
+        sidebarItems = adminSidebarItems;
+    } else if (currentUserRole === "CONSULTANT_MANAGER") {
+        sidebarItems = consultantManagerSidebarItems;
+    } else {
+        sidebarItems = consultantSidebarItems;
+    }
 
     return (
         <div

@@ -20,7 +20,7 @@ model User {
   idNumber    String       @map("IDNumber")
   email       String       @unique
   phoneNumber String       @map("PhoneNumber")
-  hashedPassword String?
+  hashedPassword String
   tokens      String?
   role        Role         @relation(fields: [roleID], references: [id])
   consultant  Consultant?

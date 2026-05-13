@@ -8,10 +8,12 @@ function RegisterUserPage() {
     /* for now, mock user, will be replaced with actual user data from auth context */
     const currentUserRole: UserRole = "ADMIN";
     
-    const allowedRoles: UserRole[] = 
-        currentUserRole === "ADMIN"
-        ? ["CONSULTANT_MANAGER", "PROJECT_MANAGER", ]
-        : ["CONSULTANT"];
+    let allowedRoles: UserRole[] = [];
+    if (currentUserRole === "ADMIN") {
+        allowedRoles = [ "CONSULTANT_MANAGER", "CONSULTANT"];
+    } else if (currentUserRole === "CONSULTANT_MANAGER") {
+        allowedRoles = ["CONSULTANT"];
+    }
 
     return (
         <div

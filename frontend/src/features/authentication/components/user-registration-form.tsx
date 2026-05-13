@@ -1,7 +1,7 @@
 import type { UserRole } from "../../../types/global.types";
 
 interface UserRegistrationFormProps {
-    allowedRoles: UserRole[];
+    readonly allowedRoles: UserRole[];
 }
 
 import { useState } from "react";

@@ -5,7 +5,7 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 
 interface SidebarProps {
-  items: SidebarItem[];
+  readonly items: SidebarItem[];
 }
 
 function Sidebar({ items }: SidebarProps) {
@@ -52,11 +52,11 @@ function Sidebar({ items }: SidebarProps) {
           padding: "32px 16px",
         }}
       >
-        {items.map((item, _index) => {
+        {items.map((item) => {
         const Icon = item.icon;
 
         return (
-            <div
+            <button
             key={item.path}
             onClick={() => setActivePath(item.path)}
             style={{
@@ -76,6 +76,7 @@ function Sidebar({ items }: SidebarProps) {
                 display: "flex",
                 alignItems: "center",
                 gap: "14px",
+                width: "100%",
 
                 backgroundColor:
                 activePath === item.path
@@ -88,7 +89,7 @@ function Sidebar({ items }: SidebarProps) {
             <Icon size={22} />
 
             {item.label}
-            </div>
+            </button>
         );
         })}
       </nav>

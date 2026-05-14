@@ -22,11 +22,19 @@ model User {
   phoneNumber String       @map("PhoneNumber")
   hashedPassword String
   tokens      String?
+  tokenExpiry    DateTime?
+  status         UserStatus   @default(Available)
+  acceptedTsAndCs Boolean     @default(false)
   role        Role         @relation(fields: [roleID], references: [id])
   consultant  Consultant?
   managers    ProjectManager[]
 }
 
+enum UserStatus {
+  Available
+  Unavailable
+  onLeave
+}
 model Role {
   id          Int              @id @default(autoincrement()) @map("roleID")
   title       String
@@ -82,24 +90,34 @@ model ConsultantSkills {
   consultant     Consultant @relation(fields: [consultantID], references: [id])
   skill          Skills     @relation(fields: [skillID], references: [id])
 }
-
 model Project {
-  id       Int              @id @default(autoincrement()) @map("projectID")
-  project  String
-  teamSize Int
-  location String
-  duration String
-  budget   Float
-  notes    String?
-  skills   ProjectSkills[]
-  managers ProjectManager[]
-  placements ProjectPlacement[]
+  id                          String           @id @default(uuid()) @map("projectID")
+  projectName                 String
+  clientName                  String
+  city                        String
+  province                    String
+  startDate                   DateTime
+  endDate                     DateTime
+  teamSize                    Int
+  requiredAllocationPercentage Float
+  clientBillingBudget         Float
+  status                      ProjectStatus    @default(Open)
+  notes                       String?
+  skills                      ProjectSkills[]
+  managers                    ProjectManager[]
+  placements                  ProjectPlacement[]
+}
+
+enum ProjectStatus {
+  Open
+  InProgress
+  Closed
 }
 
 model ProjectSkills {
   id        Int     @id @default(autoincrement()) @map("skillsProjectID")
   skillID   Int
-  projectID Int
+  projectID String
   skill     Skills  @relation(fields: [skillID], references: [id])
   project   Project @relation(fields: [projectID], references: [id])
 }
@@ -107,14 +125,14 @@ model ProjectSkills {
 model ProjectManager {
   id        Int     @id @default(autoincrement()) @map("projectManagerID")
   userID    Int
-  projectID Int
+  projectID String
   user      User    @relation(fields: [userID], references: [id])
   project   Project @relation(fields: [projectID], references: [id])
 }
 
 model ProjectPlacement {
   id               Int        @id @default(autoincrement()) @map("projectPlacementId")
-  projectID        Int
+  projectID        String
   consultantID     Int
   project          Project    @relation(fields: [projectID], references: [id])
   consultant       Consultant @relation(fields: [consultantID], references: [id])

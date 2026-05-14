@@ -8,7 +8,7 @@ export const ValidationForm: React.FC = () => {
 
       <NavyBackground />
 
-      {/* Card positioned using Figma outer spacing: 64px from top, 135px from right */}
+     
       <div className="absolute" style={{ top: '64px', right: '0px' }}>
         <RegisterCard />
       </div>

@@ -8,7 +8,7 @@ export const RegisterCard: React.FC = () => {
   return (
     <div className="relative" style={{ overflow: 'visible' }}>
 
-      {/* Gold ambient glow — behind the card, extends well beyond card edges */}
+      {/* Gold ambient glow */}
       <div
         className="absolute pointer-events-none bg-[#C9A84C]/25 blur-[80px] rounded-full"
         style={{ inset: '-80px' }}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavyBackground } from '../components/Navybackground';
-import { RegisterCard } from '../components/validationcard';
+import { ValidationCard } from '../components/validationcard';
 
 export const ValidationForm: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ export const ValidationForm: React.FC = () => {
 
      
       <div className="absolute" style={{ top: '64px', right: '0px' }}>
-        <RegisterCard />
+        <ValidationCard />
       </div>
 
     </div>

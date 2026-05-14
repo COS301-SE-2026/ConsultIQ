@@ -1,9 +1,47 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 
-export const RegisterCard: React.FC = () => {
+export const ValidationCard: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const validateForm = () => {
+    let valid = true;
+
+    // Email validation
+    if (!email) {
+      toast.error('Email is required');
+      valid= false;
+    } else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(email)) {
+      toast.error('Invalid email format');
+      valid = false;
+    }
+
+    // Password validation
+    if (!password) {
+      toast.error('Password is required');
+      valid = false;
+    } else if (!/^(?=.*[A-Z])(?=.*\d)(?=.*\W).{8,}$/.test(password)) {
+      toast.error('Password must be 8 characters long containing at least one uppercase letter, one digit, and one special character');
+      valid = false;
+    }
+
+    // Confirm password validation
+    if (confirmPassword !== password) {
+      toast.error('Passwords do not match');
+      valid = false
+    }
+
+    return valid;
+  };
+
+  const handleSubmit = () => {
+    if (validateForm()) {
+      toast.success('Form submitted successfully!');
+      // API call
+    }
+  };
 
   return (
     <div className="relative" style={{ overflow: 'visible' }}>
@@ -64,6 +102,7 @@ export const RegisterCard: React.FC = () => {
         {/* Register Button */}
         <button
           type="button"
+          onClick={handleSubmit}
           className="w-full h-12 bg-[#C9A84C] hover:bg-[#b8963e] active:scale-[0.98] rounded-md text-white text-base font-bold font-['Calibri'] leading-6 transition-colors"
         >
           Register

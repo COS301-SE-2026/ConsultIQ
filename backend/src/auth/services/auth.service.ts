@@ -55,11 +55,13 @@ export class AuthService {
     const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(dto.email)}`;
 
     // Send the activation email
-    await this.email.sendActivationEmail(
+    this.email.sendActivationEmail(
       user.email,
       user.fullName,
       activationLink,
-    );
+    ).catch(err => {
+      console.error('Failed to send activation email:', err);
+    });
 
     return {
       message: 'Account created successfully. An activation email has been sent.',

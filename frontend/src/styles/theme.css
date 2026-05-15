@@ -22,11 +22,12 @@
 
     /* type scaling */
     --text-h1: 32px;
-    --text-h2: 22px;
+    --text-h2: 24px;
     --text-h3: 18px;
+    --text-h4: 16px;
     --text-body: 12px;
     --text-caption: 10px;
-    --text-button: 11px;
+    --text-button: 18px;
     --text-code: 10px;
 
     /* border radius */

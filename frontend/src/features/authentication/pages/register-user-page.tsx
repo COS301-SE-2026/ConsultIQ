@@ -10,7 +10,7 @@ function RegisterUserPage() {
     
     let allowedRoles: UserRole[] = [];
     if (currentUserRole === "ADMIN") {
-        allowedRoles = [ "CONSULTANT_MANAGER", "CONSULTANT"];
+        allowedRoles = [ "CONSULTANT_MANAGER", "PROJECT_MANAGER"];
     } else if (currentUserRole === "CONSULTANT_MANAGER") {
         allowedRoles = ["CONSULTANT"];
     }
@@ -27,53 +27,20 @@ function RegisterUserPage() {
 
     return (
         <div
-            style={{
-                display: "flex",
-                minHeight: "100vh",
-                backgroundColor: "var(--color-surface)",
-            }}
-        >
+            className=" flex min-h-screen" style={{ backgroundColor:"var(--color-surface)",}}>
             <Sidebar items={sidebarItems} />
 
             <div
-                style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    backgroundColor: "var(--color-surface)",
-                       
-                }}
+                className="flex-1 flex flex-col" style={{backgroundColor:"var(--color-surface)",}}
             >
                 {/*Header */}
                 <header
-                    style={{
-                        height: "90px",
-                        backgroundColor: "white",
-                        borderBottom:"1px solid var(--color-border)",
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "0 40px",
-                    }}
+                    className="h-[90px] bg-white border-b flex items-center px-10" style={{borderColor: "var(--color-border)",}}
                 >
                 <div
-                    style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "18px",
-                    }}
-                >   
+                    className="flex items-center gap-5">   
                     <button
-                        style={{
-                            width: "42px",
-                            height: "42px",
-                            borderRadius: "10px",
-                            border: "none",
-                            backgroundColor: "var(--color-surface)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                        }}
+                        className="w-[42px] h-[42px] rounded-xl flex items-center justify-center transition hover:opacity-80" bg-white
                         >
                         <ArrowLeft
                         size={20}
@@ -81,25 +48,14 @@ function RegisterUserPage() {
                          />
                         </button>
                  <div>
-                    <h1 style={{ 
-                        fontSize: "32px", 
-                        color: "var(--color-primary)",
-                        marginBottom: "4px",
-                    }}>
+                    <h1 className="text-3x font-bold mb-1" style={{color: "var(--color-primary)",}}>
                         Register User
                     </h1>
 
                 </div>
             </div>  
             </header>
-                <main
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flex: 1,
-                    }}
-                >
+                <main className="flex-1 flex items-center justify-center p-10">
                 <UserRegistrationForm allowedRoles={allowedRoles} />
             </main>
         </div>

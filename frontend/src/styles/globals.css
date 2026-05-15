@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* Global Reset */
 
@@ -50,7 +48,7 @@ span,
 input,
 textarea,
 select {
-  font-size: var(--text-body);
+  font-size: var(--text-h3);
   color: var(--color-text-primary);
 }
 

@@ -3,6 +3,8 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/services/email.service';
@@ -11,6 +13,12 @@ import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ActivateAccountDto } from '../dto/activate-account.dto';
 import * as bcrypt from 'bcrypt';
+
+class TooManyRequestsException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
 
 @Injectable()
 export class AuthService {
@@ -125,5 +133,74 @@ export class AuthService {
     return {
       message: 'Account activated successfully. You can now log in.',
     };
+  }
+
+  async resendVerification(email: string): Promise<{ message: string }> {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      // Always return success to prevent email enumeration
+      // An attacker should not know whether an email exists in the system
+      if (!user || user.status !== 'PENDING') {
+        return {
+          message: 'If your account is pending verification, a new link has been sent.',
+        };
+      }
+
+      // Per-email rate limiting — maximum 3 resends per hour
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      // Check if the resend window has expired and reset if so
+      const windowExpired =
+        !user.resendWindowStart || user.resendWindowStart < oneHourAgo;
+
+      if (windowExpired) {
+        // Reset the counter — start a fresh window
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            resendCount: 0,
+            resendWindowStart: now,
+          },
+        });
+      } else if (user.resendCount >= 3) {
+        // Window is still active and limit reached
+        throw new TooManyRequestsException(
+          'You have requested too many verification emails. Please wait an hour before trying again.',
+        );
+      }
+
+      // Generate a fresh token
+      const { rawToken, hashedToken } = this.token.generateActivationToken();
+      const expiry = this.token.getTokenExpiry();
+
+      // Update the user with the new token and increment resend count
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          activationToken: hashedToken,
+          activationTokenExpiry: expiry,
+          resendCount: windowExpired ? 1 : user.resendCount + 1,
+          resendWindowStart: windowExpired ? now : user.resendWindowStart,
+        },
+      });
+
+      // Build the activation link and send the email
+      const appUrl = this.config.get<string>('APP_URL');
+      const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(email)}`;
+
+      this.email.sendActivationEmail(
+        user.email,
+        user.fullName,
+        activationLink,
+      ).catch(err => {
+        console.error('Failed to send verification email:', err);
+      });
+
+   return {
+     message: 'If your account is pending verification, a new link has been sent.',
+   };
   }
 }

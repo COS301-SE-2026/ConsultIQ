@@ -1,11 +1,11 @@
 import consultIqLogo from "../../../assets/logos/ConsultIQ Logo Dark.png";
 
-//import SetPasswordForm from "../components/set-password-form";
+import SetPasswordForm from "../components/set-password-form";
 
 function SetPasswordPage() {
   return (
     <div
-      className=" relative min-h-screen  overflow-hidden bg-[#F4F6FA] ">
+      className=" relative min-h-screen bg-[#F4F6FA] ">
     
     {/* Navy Polygon */}
     <div
@@ -24,12 +24,28 @@ function SetPasswordPage() {
 
       {/* Gold Glow */}
       <div
-        className="absolute w-[525px] h-[585px]  right-[160px] top-[52px] bg-[#C9A84C]/40 blur-[80px] rounded-full "/>
+        className="
+          absolute
+          left-[53%]
+          top-1/2
+          -translate-x-[10%]
+          -translate-y-1/2
+          w-[565px]
+          h-[575px]
+          rounded-full
+          blur-[90px]
+          pointer-events-none
+        "
+        style={{
+          backgroundColor:
+            "rgba(201, 168, 76, 0.38)",
+        }}
+      />
 
       {/* Form Container */}
       <div
-        className="absolute right-[140px] top-[64px] z-10 ">
-        {/* <SetPasswordForm /> */}
+        className="absolute left-[50%] top-1/2 -translate-y-1/2 z-10 ">
+        <SetPasswordForm />
       </div>
     </div>
   );

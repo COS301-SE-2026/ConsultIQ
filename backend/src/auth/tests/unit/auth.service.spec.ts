@@ -172,14 +172,20 @@ describe('AuthService Testing Suite', () => {
                 lockedUser,
             );
         });
-        it('Check lockout status using the newly updated user record after a failure', async () => {
+        it('should evaluate lockout status using the newly updated user record after a failure', async () => {
 
             const lockedUser = { ...BASE_USER, failedLoginAttempts: 5, lockedAt: new Date() };
-            mockCredentialService.validateCredentials.mockResolvedValue({ outcome: 'INVALID_CREDENTIALS', user: BASE_USER });
+
+            mockCredentialService.validateCredentials.mockResolvedValue({
+                outcome: 'FAILED_PASSWORD',
+                user: BASE_USER
+            });
+
+
             mockLockoutService.recordFailedAttempt.mockResolvedValue(lockedUser);
+            mockCredentialService.isCurrentlyLocked.mockReturnValue(true);
 
-
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(UnauthorizedException);
+            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(ForbiddenException);
             expect(mockCredentialService.isCurrentlyLocked).toHaveBeenCalledWith(lockedUser);
         });
     });
@@ -310,4 +316,6 @@ describe('AuthService Testing Suite', () => {
             );
         });
     });
+
+
 });

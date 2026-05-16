@@ -63,7 +63,7 @@ export class CredentialService {
       user.passwordHash,
     );
 
-    if (!passwordMatches) {
+    if (passwordMatches === false) {
       return { outcome: 'FAILED_PASSWORD', user };
     }
 

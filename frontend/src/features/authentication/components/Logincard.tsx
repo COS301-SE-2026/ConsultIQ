@@ -23,7 +23,7 @@ export const LoginCard: React.FC = () => {
 
       const handleSubmit = () => {
 
-        if(validateForm()){
+        if(!validateForm()){
             return;
         }
 
@@ -52,8 +52,9 @@ export const LoginCard: React.FC = () => {
 
         {/* Email */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Email</label>
+          <label htmlFor= "email" className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Email</label>
           <input
+            id= "email"
             type="email"
             placeholder="email@example.com"
             value={email}
@@ -64,8 +65,9 @@ export const LoginCard: React.FC = () => {
 
         {/* Password */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Password</label>
+          <label htmlFor="password" className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Password</label>
           <input
+            id="password"
             type="password"
             placeholder="Enter password"
             value={password}

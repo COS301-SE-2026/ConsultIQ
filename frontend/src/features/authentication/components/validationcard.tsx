@@ -9,11 +9,13 @@ export const ValidationCard: React.FC = () => {
   const validateForm = () => {
     let valid = true;
 
+     const trimmedEmail = email.trim();
+
     // Email validation
-    if (!email) {
+    if (!trimmedEmail && email.length === 0) {
       toast.error('Email is required');
-      valid= false;
-    } else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(email)) {
+      valid = false;
+    } else if (!trimmedEmail || !/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(trimmedEmail)) {
       toast.error('Invalid email format');
       valid = false;
     }
@@ -65,8 +67,9 @@ export const ValidationCard: React.FC = () => {
 
         {/* Email */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Email</label>
+          <label htmlFor="email" className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Email</label>
           <input
+            id= "email"
             type="email"
             placeholder="email@example.com"
             value={email}
@@ -77,8 +80,9 @@ export const ValidationCard: React.FC = () => {
 
         {/* Password */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Password</label>
+          <label htmlFor="password" className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Password</label>
           <input
+            id="password"
             type="password"
             placeholder="Enter password"
             value={password}
@@ -89,8 +93,9 @@ export const ValidationCard: React.FC = () => {
 
         {/* Confirm Password */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Confirm password</label>
+          <label htmlFor="confirmPassword" className="text-[#6B7280] text-sm font-bold font-['Calibri'] leading-5">Confirm password</label>
           <input
+            id="confirmPassword"
             type="password"
             placeholder="Confirm password"
             value={confirmPassword}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavyBackground } from '../components/Navybackground';
-import { LoginCard } from '../components/Logincard';
+import { LoginCard } from '../components/LoginCard';
 
 export const LoginForm: React.FC = () => {
   return (

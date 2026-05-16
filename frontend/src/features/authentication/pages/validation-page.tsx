@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavyBackground } from '../components/Navybackground';
-import { ValidationCard } from '../components/validationcard';
+import { ValidationCard } from '../components/ValidationCard';
 
 export const ValidationForm: React.FC = () => {
   return (

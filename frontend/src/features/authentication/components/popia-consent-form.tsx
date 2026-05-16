@@ -23,10 +23,14 @@ function PopiaConsentForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className=" w-full max-w-[980px] h-[700px] bg-white rounded-2xl border px-20 py-14 flex flex-col mx-auto my-12"  style={{ borderColor:"var(--color-border)", }} >
+      className=" w-full max-w-[980px] min-h-[720px] bg-white rounded-2xl border px-20 py-14 flex flex-col mx-auto my-12"  style={{ borderColor:"var(--color-border)", }} >
       <div className="flex flex-col gap-6">
+        <div
+        className="flex justify-center mb-8">
+        <div className="w-[115px]" />
+       </div>
       {/* Header */}
-      <div className="text-center mb-0">
+      <div className="text-center mb-2">
         <h1
           className=" text-4xl font-bold mb-4 " style={{ color: "var(--color-primary)", }} >
           Welcome to ConsultIQ
@@ -39,7 +43,7 @@ function PopiaConsentForm() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="w-full max-h-[420px] overflow-y-auto px-6 flex flex-col items-center gap-10">
+      <div className="w-full max-h-[420px] overflow-y-auto px-6 flex flex-col items-center gap-6">
         {/* User Rights Section */}
         <div className="w-full max-w-[760px]">
           <h2
@@ -103,47 +107,53 @@ function PopiaConsentForm() {
         </div>
       </div>
 
-      <div className="w-full max-w-[760px] mx-auto mt-0">
-      {/* Checkbox */}
-      <div
-        className="flex items-start gap-4">
+<div className="w-full max-h-[420px] mt-0 px-6 flex flex-col items-center gap-6">
+    
+    {/* Checkbox + Label */}
+    <div className="flex items-start justify-center gap-4 max-w-[760px]">
         <input
-          type="checkbox"
-          id="consent"
-          checked={accepted}
-          onChange={(e) =>
-            setAccepted(e.target.checked)}
-          className="w-5 h-5 mt-1 accent-[var(--color-primary)] "/>
+            type="checkbox"
+            id="consent"
+            checked={accepted}
+            onChange={(e) => setAccepted(e.target.checked)}
+            className="w-5 h-5 mt-1 accent-[var(--color-primary)] shrink-0"
+        />
 
         <label
-          htmlFor="consent"
-          className="text-base leading-"
-          style={{color:"var(--color-text-primary)",}}>
-          I acknowledge that I have read and understood the POPIA consent policy and consent
-          to the processing of my personal information in accordance with applicable regulations.
+            htmlFor="consent"
+            className="text-base leading-7 flex-1"
+            style={{ color: "var(--color-text-primary)" }}
+        >
+            I acknowledge that I have read and understood the POPIA consent policy
+            and consent to the processing of my personal information in accordance
+            with applicable regulations.
         </label>
-      </div>
+    </div>
 
-      {/* Buttons */}
-      <div
-        className="flex justify-center gap-6 mt-2 ">
+    {/* Buttons */}
+    <div className="flex justify-center gap-6 mt-6">
         <button
-          type="submit" disabled={!accepted} className=" min-w-[220px] h-[56px] rounded-lg
-            text-white font-bold text-lg transition hover:brightness-110 disabled:opacity-50
-            disabled:cursor-not-allowed"
-          style={{ backgroundColor: "var(--color-primary)", }}>
-          Accept & Continue
+            type="submit"
+            disabled={!accepted}
+            className="min-w-[220px] h-[56px] rounded-lg text-white font-bold text-lg transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: "var(--color-primary)" }}
+        >
+            Accept & Continue
         </button>
 
         <button
-          type="button"
-          onClick={handleDecline}
-          className="min-w-[220px] h-[56px] rounded-lg border font-bold text-lg transition bg-gray-50 hover:bg-gray-100"
-          style={{borderColor: "var(--color-border)", color:"var(--color-text-primary)",}}>
-          Decline
+            type="button"
+            onClick={handleDecline}
+            className="min-w-[220px] h-[56px] rounded-lg border font-bold text-lg transition bg-gray-50 hover:bg-gray-100"
+            style={{
+                borderColor: "var(--color-border)",
+                color: "var(--color-text-primary)",
+            }}
+        >
+            Decline
         </button>
-        </div>
-      </div>
+    </div>
+</div>
       </div>
     </form>
   );

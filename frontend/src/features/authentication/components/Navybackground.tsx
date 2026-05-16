@@ -1,5 +1,5 @@
 import React from 'react';
-import dark_theme_logo from '../../../assets/logos/dark_theme_logo.png';
+
 
 export const NavyBackground: React.FC = () => {
   return (

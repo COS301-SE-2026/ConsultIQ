@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { AuditOutcome, Role } from '@prisma/client';
-import { Request } from 'express';
+import { ForbiddenException } from '@nestjs/common';
+import { AuditOutcome, Role, User } from '@prisma/client';
 
 import { AuthService } from '../../services/auth.service';
 import { CredentialService } from '../../services/auth.credential.service';
@@ -13,15 +12,7 @@ import { LoginDto } from '../../dto/login.dto';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeRequest(overrides: Partial<Request> = {}): Request {
-    return {
-        headers: { 'user-agent': 'jest-agent' },
-        socket: { remoteAddress: '127.0.0.1' },
-        ...overrides,
-    } as unknown as Request;
-}
-
-const BASE_USER = {
+const BASE_USER: Pick<User, 'id' | 'email' | 'role' | 'failedLoginAttempts' | 'lockedAt'> = {
     id: 'user-1',
     email: 'test@example.com',
     role: Role.CONSULTANT,
@@ -31,21 +22,38 @@ const BASE_USER = {
 
 const LOGIN_DTO: LoginDto = { email: 'test@example.com', password: 'secret' };
 
+const TEST_IP = '203.0.113.5';
+const TEST_UA = 'jest-agent';
+
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-const mockCredentialService = {
+interface MockCredentialService {
+    validateCredentials: jest.MockedFunction<() => Promise<unknown>>;
+    isCurrentlyLocked: jest.MockedFunction<() => boolean>;
+}
+
+interface MockLockoutService {
+    recordFailedAttempt: jest.MockedFunction<() => Promise<unknown>>;
+    resetFailedAttempts: jest.MockedFunction<() => Promise<void>>;
+}
+
+interface MockAuditLogService {
+    log: jest.MockedFunction<() => Promise<void>>;
+}
+
+const mockCredentialService: MockCredentialService = {
     validateCredentials: jest.fn(),
     isCurrentlyLocked: jest.fn(),
 };
 
-const mockLockoutService = {
+const mockLockoutService: MockLockoutService = {
     recordFailedAttempt: jest.fn(),
     resetFailedAttempts: jest.fn(),
 };
 
-const mockAuditLogService = {
+const mockAuditLogService: MockAuditLogService = {
     log: jest.fn(),
 };
 
@@ -73,12 +81,11 @@ describe('AuthService Testing Suite', () => {
 
 
     // -------------------------------------------------------------------------
-    // IP extraction
+    // IP and user-agent forwarding to audit log
     // -------------------------------------------------------------------------
 
-    describe('IP extraction', () => {
+    describe('IP and user-agent forwarding to audit log', () => {
         beforeEach(() => {
-
             mockCredentialService.validateCredentials.mockResolvedValue({
                 outcome: 'SUCCESS',
                 user: BASE_USER,
@@ -87,41 +94,19 @@ describe('AuthService Testing Suite', () => {
             mockAuditLogService.log.mockResolvedValue(undefined);
         });
 
-        it('Test if first IP address is used from x-forwarded-for', async () => {
-            const req = makeRequest({
-                headers: {
-                    'user-agent': 'jest-agent',
-                    'x-forwarded-for': '203.0.113.5, 10.0.0.1',
-                },
-            });
-
-            await service.login(LOGIN_DTO, req);
+        it('forwards the resolved IP address to the audit log unchanged', async () => {
+            await service.login(LOGIN_DTO, '203.0.113.5', TEST_UA);
 
             expect(mockAuditLogService.log).toHaveBeenCalledWith(
                 expect.objectContaining({ ipAddress: '203.0.113.5' }),
             );
         });
 
-        it('Test to fall back to socket.remoteAddress when x-forwarded-for is absent', async () => {
-            const req = makeRequest(); // remoteAddress = '127.0.0.1'
-
-            await service.login(LOGIN_DTO, req);
+        it('forwards the user-agent string to the audit log unchanged', async () => {
+            await service.login(LOGIN_DTO, TEST_IP, 'Mozilla/5.0 (custom)');
 
             expect(mockAuditLogService.log).toHaveBeenCalledWith(
-                expect.objectContaining({ ipAddress: '127.0.0.1' }),
-            );
-        });
-
-        it('Test returns "unknown" when socket and header are both missing', async () => {
-            const req = {
-                headers: { 'user-agent': 'jest-agent' },
-                socket: {},
-            } as unknown as Request;
-
-            await service.login(LOGIN_DTO, req);
-
-            expect(mockAuditLogService.log).toHaveBeenCalledWith(
-                expect.objectContaining({ ipAddress: 'unknown' }),
+                expect.objectContaining({ userAgent: 'Mozilla/5.0 (custom)' }),
             );
         });
     });
@@ -150,13 +135,13 @@ describe('AuthService Testing Suite', () => {
         });
 
         it('throws ForbiddenException (not Unauthorized)', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow(
                 ForbiddenException,
             );
         });
 
         it('logs locked account attempt to login (ACCOUNT_LOCKED)', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow();
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow();
 
             expect(mockAuditLogService.log).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -166,29 +151,30 @@ describe('AuthService Testing Suite', () => {
             );
         });
 
-        it('Passes in a locked user, and safely reject request', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow();
+        it('passes the locked user record to isCurrentlyLocked', async () => {
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow();
+
             expect(mockCredentialService.isCurrentlyLocked).toHaveBeenCalledWith(
                 lockedUser,
             );
         });
-        it('should evaluate lockout status using the newly updated user record after a failure', async () => {
 
-            const lockedUser = { ...BASE_USER, failedLoginAttempts: 5, lockedAt: new Date() };
+        it('evaluates lockout status using the updated user record returned by recordFailedAttempt', async () => {
+            const freshLockedUser = { ...BASE_USER, failedLoginAttempts: 5, lockedAt: new Date() };
 
             mockCredentialService.validateCredentials.mockResolvedValue({
                 outcome: 'FAILED_PASSWORD',
-                user: BASE_USER
+                user: BASE_USER,
             });
-
-
-            mockLockoutService.recordFailedAttempt.mockResolvedValue(lockedUser);
+            mockLockoutService.recordFailedAttempt.mockResolvedValue(freshLockedUser);
             mockCredentialService.isCurrentlyLocked.mockReturnValue(true);
 
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(ForbiddenException);
-            expect(mockCredentialService.isCurrentlyLocked).toHaveBeenCalledWith(lockedUser);
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow(ForbiddenException);
+
+            expect(mockCredentialService.isCurrentlyLocked).toHaveBeenCalledWith(freshLockedUser);
         });
     });
+
 
     // -------------------------------------------------------------------------
     // SUCCESS
@@ -210,7 +196,7 @@ describe('AuthService Testing Suite', () => {
                 successResult(Role.CONSULTANT),
             );
 
-            const result = await service.login(LOGIN_DTO, makeRequest());
+            const result = await service.login(LOGIN_DTO, TEST_IP, TEST_UA);
 
             expect(result).toEqual({
                 userId: BASE_USER.id,
@@ -225,11 +211,9 @@ describe('AuthService Testing Suite', () => {
                 successResult(Role.CONSULTANT),
             );
 
-            await service.login(LOGIN_DTO, makeRequest());
+            await service.login(LOGIN_DTO, TEST_IP, TEST_UA);
 
-            expect(mockLockoutService.resetFailedAttempts).toHaveBeenCalledWith(
-                BASE_USER,
-            );
+            expect(mockLockoutService.resetFailedAttempts).toHaveBeenCalledWith(BASE_USER);
         });
 
         it('logs SUCCESS with userId', async () => {
@@ -237,7 +221,7 @@ describe('AuthService Testing Suite', () => {
                 successResult(Role.CONSULTANT),
             );
 
-            await service.login(LOGIN_DTO, makeRequest());
+            await service.login(LOGIN_DTO, TEST_IP, TEST_UA);
 
             expect(mockAuditLogService.log).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -252,7 +236,7 @@ describe('AuthService Testing Suite', () => {
                 successResult(Role.CONSULTANT),
             );
 
-            await service.login(LOGIN_DTO, makeRequest());
+            await service.login(LOGIN_DTO, TEST_IP, TEST_UA);
 
             expect(mockLockoutService.recordFailedAttempt).not.toHaveBeenCalled();
         });
@@ -272,7 +256,7 @@ describe('AuthService Testing Suite', () => {
                     successResult(role),
                 );
 
-                const result = await service.login(LOGIN_DTO, makeRequest());
+                const result = await service.login(LOGIN_DTO, TEST_IP, TEST_UA);
 
                 expect(result.dashboardRoute).toBe(expectedRoute);
             },
@@ -294,19 +278,19 @@ describe('AuthService Testing Suite', () => {
         });
 
         it('throws ForbiddenException', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow(
                 ForbiddenException,
             );
         });
 
         it('includes a helpful message about email verification', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow(
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow(
                 /email verification/i,
             );
         });
 
         it('logs ACCOUNT_PENDING with userId', async () => {
-            await expect(service.login(LOGIN_DTO, makeRequest())).rejects.toThrow();
+            await expect(service.login(LOGIN_DTO, TEST_IP, TEST_UA)).rejects.toThrow();
 
             expect(mockAuditLogService.log).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -316,6 +300,4 @@ describe('AuthService Testing Suite', () => {
             );
         });
     });
-
-
 });

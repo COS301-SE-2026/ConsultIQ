@@ -26,11 +26,9 @@ function makeUser(overrides: Partial<User> = {}): User {
     } as User;
 }
 
-/** Returns a Date that is `minutes` from now. */
 const inMinutes = (minutes: number) =>
     new Date(Date.now() + minutes * 60 * 1000);
 
-/** Returns a Date that is `minutes` in the past. */
 const minutesAgo = (minutes: number) =>
     new Date(Date.now() - minutes * 60 * 1000);
 
@@ -38,11 +36,19 @@ const minutesAgo = (minutes: number) =>
 // Mock
 // ---------------------------------------------------------------------------
 
-const mockPrismaUser = {
+interface PrismaUserDelegate {
+    update: jest.MockedFunction<(args: Prisma.UserUpdateArgs) => Promise<User>>;
+}
+
+interface MockPrismaService {
+    user: PrismaUserDelegate;
+}
+
+const mockPrismaUser: PrismaUserDelegate = {
     update: jest.fn(),
 };
 
-const mockPrisma = {
+const mockPrisma: MockPrismaService = {
     user: mockPrismaUser,
 };
 
@@ -87,13 +93,12 @@ describe('LockoutService', () => {
             });
 
             it('does not set status or lockedUntil before the threshold', async () => {
-                const user = makeUser({ failedAttempts: 3 }); // newCount = 4, threshold = 5
+                const user = makeUser({ failedAttempts: 3 });
                 mockPrismaUser.update.mockResolvedValue(makeUser({ failedAttempts: 4 }));
 
                 await service.recordFailedAttempt(user);
 
-                const data: Prisma.UserUpdateInput =
-                    mockPrismaUser.update.mock.calls[0][0].data;
+                const data = mockPrismaUser.update.mock.calls[0]?.[0]?.data as Prisma.UserUpdateInput;
 
                 expect(data.status).toBeUndefined();
                 expect(data.lockedUntil).toBeUndefined();
@@ -110,8 +115,7 @@ describe('LockoutService', () => {
 
                     await service.recordFailedAttempt(user);
 
-                    const data: Prisma.UserUpdateInput =
-                        mockPrismaUser.update.mock.calls[0][0].data;
+                    const data = mockPrismaUser.update.mock.calls[0]?.[0]?.data as Prisma.UserUpdateInput;
                     expect(data.status).toBeUndefined();
                 },
             );
@@ -126,8 +130,7 @@ describe('LockoutService', () => {
 
                 await service.recordFailedAttempt(user);
 
-                const data: Prisma.UserUpdateInput =
-                    mockPrismaUser.update.mock.calls[0][0].data;
+                const data = mockPrismaUser.update.mock.calls[0]?.[0]?.data as Prisma.UserUpdateInput;
                 expect(data.status).toBe(UserStatus.LOCKED);
             });
 
@@ -139,8 +142,7 @@ describe('LockoutService', () => {
                 await service.recordFailedAttempt(user);
 
                 const after = Date.now();
-                const data: Prisma.UserUpdateInput =
-                    mockPrismaUser.update.mock.calls[0][0].data;
+                const data = mockPrismaUser.update.mock.calls[0]?.[0]?.data as Prisma.UserUpdateInput;
 
                 const lockedUntil = data.lockedUntil as Date;
                 expect(lockedUntil).toBeInstanceOf(Date);
@@ -173,8 +175,7 @@ describe('LockoutService', () => {
 
                 await service.recordFailedAttempt(user);
 
-                const data: Prisma.UserUpdateInput =
-                    mockPrismaUser.update.mock.calls[0][0].data;
+                const data = mockPrismaUser.update.mock.calls[0]?.[0]?.data as Prisma.UserUpdateInput;
                 expect(data.status).toBe(UserStatus.LOCKED);
                 expect(data.failedAttempts).toBe(MAX_FAILED_ATTEMPTS + 1);
             });
@@ -227,7 +228,7 @@ describe('LockoutService', () => {
         describe('timed lockout — expired', () => {
             it('resets the account when lockedUntil is in the past', async () => {
                 const user = makeUser({ lockedUntil: minutesAgo(1) });
-                mockPrismaUser.update.mockResolvedValue(undefined);
+                mockPrismaUser.update.mockResolvedValue(undefined as unknown as User);
 
                 await service.resetFailedAttempts(user);
 
@@ -245,8 +246,8 @@ describe('LockoutService', () => {
 
         describe('clean account (no lockout)', () => {
             it('resets counters without throwing', async () => {
-                const user = makeUser(); // isLocked=false, lockedUntil=null
-                mockPrismaUser.update.mockResolvedValue(undefined);
+                const user = makeUser();
+                mockPrismaUser.update.mockResolvedValue(undefined as unknown as User);
 
                 await expect(service.resetFailedAttempts(user)).resolves.toBeUndefined();
 
@@ -290,7 +291,6 @@ describe('LockoutService', () => {
         });
 
         it('rounds up partial seconds (Math.ceil)', () => {
-            // lockedUntil is 1.5 seconds from now → should return 2
             const user = makeUser({
                 lockedUntil: new Date(Date.now() + 1500),
             });
@@ -298,6 +298,4 @@ describe('LockoutService', () => {
             expect(seconds).toBe(2);
         });
     });
-
-
 });

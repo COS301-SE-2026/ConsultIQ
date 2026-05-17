@@ -46,10 +46,11 @@ export default function SkillsCard() {
       <div className="flex flex-col gap-6 flex-1">
         {/* Skill Name */}
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="skillName" className="text-base font-semibold">
             Skill Name
           </label>
           <input type="text"
+            id="skillName"
             placeholder=""
             value={skillName}
             onChange={(e) => setSkillName(e.target.value)}
@@ -58,10 +59,11 @@ export default function SkillsCard() {
 
         {/* Competency */}
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="competency" className="text-base font-semibold">
             Competency
           </label>
           <select
+            id="competency"
             value={competency}
             onChange={(e) => setCompetency(e.target.value)}
             className=" h-14 rounded border px-4 outline-none ">
@@ -73,10 +75,11 @@ export default function SkillsCard() {
 
         {/* Years */}
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="years" className="text-base font-semibold">
             Years of Experience
           </label>
           <input
+            id="years"
             type="number"
             placeholder="Years of experience"
             value={years}
@@ -104,7 +107,7 @@ export default function SkillsCard() {
             />
         </button>
 
-        <label className="text-base font-semibold">
+        <label htmlFor="mandatory" className="text-base font-semibold">
             Is mandatory
         </label>
         </div>

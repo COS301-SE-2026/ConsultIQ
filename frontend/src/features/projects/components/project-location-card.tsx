@@ -17,55 +17,66 @@ return (
 
       <div className="flex flex-col gap-6 flex-1">
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="address1"
+          className="text-base font-semibold">
             Address line 1
           </label>
       
           <input
+            id="address1"
             type="text"
             className="h-14 rounded border px-4 outline-none"
           />
         </div>
 
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="address2"
+           className="text-base font-semibold">
             Address line 2
           </label>
 
           <input
+            id="address2"
             type="text"
             className="h-14 rounded border px-4 outline-none"
           />
         </div>
 
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="suburb"
+           className="text-base font-semibold">
             Suburb
           </label>
 
           <input
+            id="suburb"
             type="text"
             className="h-14 rounded border px-4 outline-none"
           />
         </div>
 
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="city"
+           className="text-base font-semibold">
             City
           </label>
 
           <input
+            id="city"
             type="text"
             className="h-14 rounded border px-4 outline-none"
           />
         </div>
 
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label 
+            htmlFor="province"
+            className="text-base font-semibold">
             Province
           </label>
 
           <select
+            id="province"
             className="h-14 rounded border px-4 outline-none"
             defaultValue="">
 
@@ -82,11 +93,13 @@ return (
         </div>
 
         <div className="flex flex-col gap-3">
-          <label className="text-base font-semibold">
+          <label htmlFor="postalCode"
+            className="text-base font-semibold">
             Postal Code
           </label>
 
           <input
+            id="postalCode"
             type="text"
             className="h-14 rounded border px-4 outline-none"
           />

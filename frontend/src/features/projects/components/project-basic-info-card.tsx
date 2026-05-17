@@ -68,33 +68,39 @@ export default function ProjectBasicInfoCard() {
           <div className="flex flex-col gap-6">
             {/* Project Name */}
             <div className="flex flex-col gap-3">
-            <label className="text-base font-semibold">
+            <label htmlFor="projectName"
+            className="text-base font-semibold">
               Project Name
             </label>
 
             <input type="text"
+              id="projectName"
               placeholder="Enter project name"
               className="h-14 rounded-xl border px-4 text-base outline-none "/>
           </div>
 
           {/* Client Name */}
           <div className="flex flex-col gap-3">
-            <label className="text-base font-semibold">
+            <label htmlFor="clientName"
+             className="text-base font-semibold">
               Client Name
             </label>
 
             <input type="text"
+              id="clientName"
               placeholder="Enter client name"
               className="h-14 rounded-xl border px-4 text-base outline-none "/>
           </div>
 
           {/* Team Size */}
           <div className="flex flex-col gap-3">
-            <label className="text-base font-semibold">
+            <label htmlFor="teamSize"
+             className="text-base font-semibold">
               Team Size
             </label>
 
             <input type="number"
+              id="teamSize"
               placeholder="Enter team size"
               className="h-14 rounded-xl border px-4 text-base outline-none"/>
           </div>
@@ -105,24 +111,28 @@ export default function ProjectBasicInfoCard() {
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="flex flex-col gap-3">
-              <label className="text-base font-semibold">
+              <label htmlFor="startDate"
+               className="text-base font-semibold">
                 Start Date
               </label>
 
               <input 
                 type="date"
+                id="startDate"
                 value={startDate}
                 onChange={handleStartDateChange}
                 className=" h-14 rounded-xl border px-4 text-base outline-none"/>
             </div>
 
             <div className="flex flex-col gap-3">
-              <label className="text-base font-semibold">
+              <label htmlFor="endDate"
+               className="text-base font-semibold">
                 End Date
               </label>
 
               <input 
                 type="date"
+                id="endDate"
                 value={endDate}
                 min={startDate}
                 onChange={(e) => setEndDate(e.target.value)}
@@ -132,22 +142,26 @@ export default function ProjectBasicInfoCard() {
 
           {/* Allocation */}
           <div className="flex flex-col gap-3">
-            <label className="text-base font-semibold">
+            <label htmlFor="allocation"
+             className="text-base font-semibold">
               Allocation %
             </label>
 
             <input type="number"
+              id="allocation"
               placeholder="Enter allocation %"
               className=" h-14 rounded-xl border px-4 text-base outline-none"/>
           </div>
 
           {/* Budget */}
           <div className="flex flex-col gap-3">
-            <label className="text-base font-semibold">
+            <label htmlFor="budget"
+             className="text-base font-semibold">
               Billing Budget (ZAR/hr)
             </label>
 
             <input type="number"
+              id="budget"
               placeholder="R 0"
               className="h-14 rounded-xl border px-4 text-base outline-none"/>
           </div>
@@ -156,11 +170,13 @@ export default function ProjectBasicInfoCard() {
 
       {/* Description */}
       <div className="flex flex-col gap-3 w-full">
-        <label className="text-base font-semibold">
+        <label htmlFor="description"
+         className="text-base font-semibold">
           Description
         </label>
 
         <textarea
+          id="description"
           placeholder="Enter project description"
           className="min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none"/>
       </div>

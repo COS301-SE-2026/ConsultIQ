@@ -1,7 +1,6 @@
 import * as React from "react";
 
-interface CardProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+type CardProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Card({
   className,

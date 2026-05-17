@@ -12,10 +12,27 @@ import {
 } from '@nestjs/common';
 
 describe('AuthService', () => {
-  let service: AuthService;
-  let prisma: jest.Mocked<PrismaService>;
-  let email: jest.Mocked<EmailService>;
-  let token: jest.Mocked<TokenService>;
+let prisma: {
+  user: {
+    findUnique: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  token: {
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    count: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+let email: { sendActivationEmail: jest.Mock };
+let token: {
+  generateActivationToken: jest.Mock;
+  getTokenExpiry: jest.Mock;
+  hashToken: jest.Mock;
+  isTokenExpired: jest.Mock;
+};
 
   const mockUser = {
     id: 'user-uuid-123',

@@ -23,10 +23,10 @@ class TooManyRequestsException extends HttpException {
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private email: EmailService,
-    private token: TokenService,
-    private config: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly email: EmailService,
+    private readonly token: TokenService,
+    private readonly config: ConfigService,
   ) {}
 
   async createUser(dto: CreateUserDto) {
@@ -154,7 +154,7 @@ export class AuthService {
     });
 
     // Always return success to prevent email enumeration
-    if (!user || user.status !== 'PENDING') {
+    if (user?.status !== 'PENDING') {
       return {
         message: 'If your account is pending verification, a new link has been sent.',
       };

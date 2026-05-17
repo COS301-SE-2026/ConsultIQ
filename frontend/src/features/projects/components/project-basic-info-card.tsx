@@ -1,7 +1,19 @@
+import { useState } from "react";
 import { Camera, Upload } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 
 export default function ProjectBasicInfoCard() {
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStart = e.target.value;
+    setStartDate(newStart);
+    if (endDate && newStart > endDate) {
+      setEndDate("");
+    }
+  };
+
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col gap-12">
@@ -97,7 +109,10 @@ export default function ProjectBasicInfoCard() {
                 Start Date
               </label>
 
-              <input type="date"
+              <input 
+                type="date"
+                value={startDate}
+                onChange={handleStartDateChange}
                 className=" h-14 rounded-xl border px-4 text-base outline-none"/>
             </div>
 
@@ -106,7 +121,11 @@ export default function ProjectBasicInfoCard() {
                 End Date
               </label>
 
-              <input type="date"
+              <input 
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
                 className="h-14 rounded-xl border px-4 text-base outline-none"/>
             </div>
           </div>

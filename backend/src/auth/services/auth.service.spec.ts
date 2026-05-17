@@ -12,27 +12,28 @@ import {
 } from '@nestjs/common';
 
 describe('AuthService', () => {
-let prisma: {
-  user: {
-    findUnique: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
+  let service: AuthService;
+  let prisma: {
+    user: {
+      findUnique: jest.Mock;
+      create: jest.Mock;
+      update: jest.Mock;
+    };
+    token: {
+      create: jest.Mock;
+      findFirst: jest.Mock;
+      update: jest.Mock;
+      count: jest.Mock;
+    };
+    $transaction: jest.Mock;
   };
-  token: {
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
-    count: jest.Mock;
+  let email: { sendActivationEmail: jest.Mock };
+  let token: {
+    generateActivationToken: jest.Mock;
+    getTokenExpiry: jest.Mock;
+    hashToken: jest.Mock;
+    isTokenExpired: jest.Mock;
   };
-  $transaction: jest.Mock;
-};
-let email: { sendActivationEmail: jest.Mock };
-let token: {
-  generateActivationToken: jest.Mock;
-  getTokenExpiry: jest.Mock;
-  hashToken: jest.Mock;
-  isTokenExpired: jest.Mock;
-};
 
   const mockUser = {
     id: 'user-uuid-123',
@@ -61,7 +62,7 @@ let token: {
   };
 
   beforeEach(async () => {
-    const mockPrisma = {
+    prisma = {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
@@ -76,11 +77,11 @@ let token: {
       $transaction: jest.fn(),
     };
 
-    const mockEmail = {
+    email = {
       sendActivationEmail: jest.fn().mockResolvedValue(undefined),
     };
 
-    const mockToken = {
+    token = {
       generateActivationToken: jest.fn().mockReturnValue({
         rawToken: 'raw-token-abc123',
         hashedToken: 'hashed-token-xyz',
@@ -99,17 +100,14 @@ let token: {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: PrismaService, useValue: mockPrisma },
-        { provide: EmailService, useValue: mockEmail },
-        { provide: TokenService, useValue: mockToken },
+        { provide: PrismaService, useValue: prisma },
+        { provide: EmailService, useValue: email },
+        { provide: TokenService, useValue: token },
         { provide: ConfigService, useValue: mockConfig },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prisma = module.get(PrismaService);
-    email = module.get(EmailService);
-    token = module.get(TokenService);
   });
 
   // ---------------------------------------createUser-------------------------------------------
@@ -305,7 +303,7 @@ let token: {
       try {
         await service.resendVerification(mockUser.email);
       } catch (e) {
-        expect(e.getStatus()).toBe(429);
+        expect((e as any).getStatus()).toBe(429);
       }
     });
 

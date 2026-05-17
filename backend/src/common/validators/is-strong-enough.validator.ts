@@ -5,7 +5,7 @@ import {
   ValidatorConstraintInterface,
   ValidationArguments,
 } from 'class-validator';
-import zxcvbn = require('zxcvbn');
+import zxcvbn from 'zxcvbn';
 
 @ValidatorConstraint({ name: 'isStrongEnough', async: false })
 export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {

@@ -1,8 +1,36 @@
 import { useState } from "react";
 import { Card } from "../../../components/ui/card";
+import ProjectSkillsTable from "./project-skills-table";
+import type { Skill } from "./project-skills-table";
 
 export default function SkillsCard() {
  const [isMandatory, setIsMandatory] = useState(false);
+ const [skills, setSkills] = useState<Skill[]>([
+   { id: "1", name: "Java", competency: "Intermediate", years: 3 }
+ ]);
+ const [skillName, setSkillName] = useState("");
+ const [competency, setCompetency] = useState("Intermediate");
+ const [years, setYears] = useState("");
+
+ const handleAddSkill = () => {
+   if (!skillName.trim() || !years) return;
+   
+   setSkills((prev) => [
+     ...prev,
+     {
+       id: Math.random().toString(36).substring(2, 9),
+       name: skillName,
+       competency,
+       years: Number(years),
+     },
+   ]);
+
+   setSkillName("");
+   setCompetency("Intermediate");
+   setYears("");
+   setIsMandatory(false);
+ };
+
   return (
     <Card className="p-12 h-full w-full flex items-start justify-center">
         
@@ -23,6 +51,8 @@ export default function SkillsCard() {
           </label>
           <input type="text"
             placeholder=""
+            value={skillName}
+            onChange={(e) => setSkillName(e.target.value)}
             className="h-14 rounded border px-4 outline-none"/>
         </div>
 
@@ -32,7 +62,9 @@ export default function SkillsCard() {
             Competency
           </label>
           <select
-            className=" h-14 rounded border px-4 outline-none " defaultValue="">
+            value={competency}
+            onChange={(e) => setCompetency(e.target.value)}
+            className=" h-14 rounded border px-4 outline-none ">
             <option>Beginner</option>
             <option>Intermediate</option>
             <option>Advanced</option>
@@ -47,6 +79,8 @@ export default function SkillsCard() {
           <input
             type="number"
             placeholder="Years of experience"
+            value={years}
+            onChange={(e) => setYears(e.target.value)}
             className="
               h-14
               rounded
@@ -78,8 +112,10 @@ export default function SkillsCard() {
         {/* Add Button */}
         <button
           type="button"
+          onClick={handleAddSkill}
+          disabled={!skillName.trim() || !years}
           className="
-            h-14 rounded text-white font-semibold text-lg mt-2"
+            h-14 rounded text-white font-semibold text-lg mt-2 transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{
             backgroundColor:
               "var(--color-primary)",
@@ -89,27 +125,7 @@ export default function SkillsCard() {
         </button>
 
         {/* Skills Table */}
-        <div className="mt-6 border-t pt-6">
-          <div className="grid grid-cols-3 text-sm font-semibold mb-4">
-            <span>Skill</span>
-            <span>Competency</span>
-            <span>Years</span>
-          </div>
-
-          <div
-            className="
-              grid
-              grid-cols-3
-              py-4
-              border-t
-              text-base
-            "
-          >
-            <span>Java</span>
-            <span>Intermediate</span>
-            <span>3</span>
-          </div>
-        </div>
+        <ProjectSkillsTable skills={skills} />
 
         {/* Done Button */}
         <div className="mt-auto flex justify-end">

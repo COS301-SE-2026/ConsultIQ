@@ -26,7 +26,7 @@ function Sidebar({ items }: SidebarProps) {
       <div
         style={{
           backgroundColor: "white",
-          height: "170px",
+          height: "150px",
 
           display: "flex",
           alignItems: "center",

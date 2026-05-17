@@ -4,8 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+ url      = env("DATABASE_URL")
 }
+
 
 // ----------------------------------------Enums---------------------------------------------------
 
@@ -73,7 +74,7 @@ model User {
   updatedAt         DateTime   @updatedAt
 
   tokens            Token[]
-  auditLogs         AuditLog[]
+  auditLogs         authAuditLog[]
   consultant        Consultant?
   managedProjects   ProjectManager[]
   managedConsultants  ConsultantManager[]
@@ -94,7 +95,7 @@ model Token {
   @@map("tokens")
 }
 
-model AuditLog {
+model authAuditLog {
   id        String       @id @default(uuid())
   email     String
   outcome   AuditOutcome
@@ -104,7 +105,7 @@ model AuditLog {
   userAgent String?
   timestamp DateTime     @default(now())
 
-  @@map("audit_logs")
+  @@map("auth_audit_logs")
 }
 
 model Consultant {

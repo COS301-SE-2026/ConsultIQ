@@ -1,23 +1,19 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from '../../auth/services/auth.service';
-import { UserService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
 import { ResendVerificationDto } from '../../auth/dto/resend-verification.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(
     @Body() dto: CreateUserDto,
   ): Promise<{ message: string; userId: string }> {
-    return await this.userService.createUser(dto);
+    return await this.authService.createUser(dto);
   }
 
   @Post('activate')
@@ -25,7 +21,7 @@ export class AuthController {
   async activate(
     @Body() dto: ActivateAccountDto,
   ): Promise<{ message: string }> {
-    return await this.userService.activateAccount(dto);
+    return await this.authService.activateAccount(dto);
   }
 
   @Post('resend-verification')
@@ -33,6 +29,6 @@ export class AuthController {
   async resendVerification(
     @Body() dto: ResendVerificationDto,
   ): Promise<{ message: string }> {
-    return await this.userService.resendVerification(dto.email);
+    return await this.authService.resendVerification(dto.email);
   }
 }

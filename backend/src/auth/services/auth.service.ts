@@ -47,10 +47,13 @@ class TooManyRequestsException extends HttpException {
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly prisma: PrismaService,
+    private readonly email: EmailService,
+    private readonly token: TokenService,
+    private readonly config: ConfigService,
     private readonly credentialService: CredentialService,
     private readonly lockoutService: LockoutService,
     private readonly auditLogService: AuditLogService,
-    private readonly userService: UserService,
   ) {}
 
   async login(
@@ -170,16 +173,6 @@ export class AuthService {
       }
     }
   }
-}
-
-@Injectable()
-export class UserService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly email: EmailService,
-    private readonly token: TokenService,
-    private readonly config: ConfigService,
-  ) {}
 
   async createUser(dto: CreateUserDto) {
     // Check if a user with this email already exists

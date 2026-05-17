@@ -1,5 +1,4 @@
 import { TokenService } from './token.service';
-import { ConfigService } from '@nestjs/config';
 
 describe('TokenService', () => {
   let service: TokenService;

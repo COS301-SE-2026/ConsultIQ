@@ -7,10 +7,15 @@ import {
 } from 'class-validator';
 import zxcvbn from 'zxcvbn';
 
+interface UserInputObject {
+  email?: string;
+  fullName?: string;
+}
+
 @ValidatorConstraint({ name: 'isStrongEnough', async: false })
 export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
   validate(password: string, args: ValidationArguments): boolean {
-    const object = args.object as any;
+    const object = args.object as UserInputObject;
 
     // Build a list of user inputs to check against
     // zxcvbn will penalise the score if the password contains any of these

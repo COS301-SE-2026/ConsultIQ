@@ -19,7 +19,9 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['src/**/*.spec.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -35,15 +37,6 @@ export default tseslint.config(
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
-    },
-  },
-  {
-    files: ['**/*.spec.ts'],
-    languageOptions: {
-      parserOptions: {
-        project: './tsconfig.spec.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
   },
 );

@@ -27,7 +27,7 @@ export class TokenService {
 
   // Calculates when the token should expire
   getTokenExpiry(): Date {
-    const hours = this.config.get<number>('ACTIVATION_TOKEN_EXPIRY_HOURS', 24);
+    const hours = this.config.get<number>('ACTIVATION_TOKEN_EXPIRY_HOURS') ?? 24;
     const expiry = new Date();
     expiry.setHours(expiry.getHours() + hours);
     return expiry;

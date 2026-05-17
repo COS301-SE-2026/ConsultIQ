@@ -6,7 +6,7 @@ import { LockoutService } from './services/auth.lockout.service';
 import { AuditLogService } from './services/auth.audit-log.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { UserService } from './services/auth.service';
+
 
 @Module({
   imports: [
@@ -26,8 +26,7 @@ import { UserService } from './services/auth.service';
     CredentialService,
     LockoutService,
     AuditLogService,
-    UserService,
   ],
-  exports: [AuthService, UserService],
+  exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

@@ -9,18 +9,7 @@ export default tseslint.config(
     ignores: ['eslint.config.mjs', '**/*.spec.ts'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked.map(config => ({
-    ...config,
-    languageOptions: {
-      ...config.languageOptions,
-      parserOptions: {
-        ...config.languageOptions?.parserOptions,
-        project: undefined, // Explicitly remove project
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-  })),
+  ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
@@ -34,12 +23,6 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },

@@ -8,7 +8,7 @@ export interface Skill {
 }
 
 interface ProjectSkillsTableProps {
-  skills: Skill[];
+  readonly skills: Skill[];
 }
 
 export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) {

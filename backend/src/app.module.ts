@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './auth/auth.module';
+import { ConsultantsModule } from './consultants.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthModule } from './auth/auth.module';
     EmailModule,
     CommonModule,
     AuthModule,
+    ConsultantsModule,
   ],
   providers: [
     {

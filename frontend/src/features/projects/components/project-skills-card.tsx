@@ -18,7 +18,7 @@ export default function SkillsCard() {
    setSkills((prev) => [
      ...prev,
      {
-       id: Math.random().toString(36).substring(2, 9),
+       id: crypto.randomUUID(),
        name: skillName,
        competency,
        years: Number(years),

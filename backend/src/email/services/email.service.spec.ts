@@ -1,5 +1,4 @@
 import { EmailService } from './email.service';
-import { ConfigService } from '@nestjs/config';
 
 describe('EmailService', () => {
   let service: EmailService;

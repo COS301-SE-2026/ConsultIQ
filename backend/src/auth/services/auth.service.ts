@@ -41,28 +41,35 @@ export class AuthService {
       );
     }
 
-    // Generate a secure activation token
-    const { rawToken, hashedToken } = this.token.generateActivationToken();
-    const expiry = this.token.getTokenExpiry();
-
-    // Create the user record in the database
+    // Create the user record
     const user = await this.prisma.user.create({
       data: {
         fullName: dto.fullName,
         email: dto.email,
         role: dto.role,
         status: 'PENDING',
-        activationToken: hashedToken,
-        activationTokenExpiry: expiry,
       },
     });
 
-    // Build the activation link that goes in the email
-    // The raw token goes in the URL, never the hashed one
+    // Generate a secure activation token
+    const { rawToken, hashedToken } = this.token.generateActivationToken();
+    const expiry = this.token.getTokenExpiry();
+
+    // Store the hashed token in the Token table
+    await this.prisma.token.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        type: 'ACTIVATION',
+        expiresAt: expiry,
+      },
+    });
+
+    // Build the activation link — raw token goes in the URL, never the hash
     const appUrl = this.config.get<string>('APP_URL');
     const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(dto.email)}`;
 
-    // Send the activation email
+    // Send activation email, fire and forget, does not block response
     this.email.sendActivationEmail(
       user.email,
       user.fullName,
@@ -87,7 +94,6 @@ export class AuthService {
       throw new NotFoundException('Account not found.');
     }
 
-    // Check the account is in the right state to be activated
     if (user.status === 'ACTIVE') {
       throw new BadRequestException('This account is already active.');
     }
@@ -96,39 +102,46 @@ export class AuthService {
       throw new BadRequestException('This account has been suspended.');
     }
 
-    // Check the token exists
-    if (!user.activationToken || !user.activationTokenExpiry) {
-      throw new BadRequestException('No activation token found for this account.');
+    // Hash the incoming token and find a matching unused token in the Token table
+    const hashedIncomingToken = this.token.hashToken(dto.token);
+
+    const tokenRecord = await this.prisma.token.findFirst({
+      where: {
+        userId: user.id,
+        token: hashedIncomingToken,
+        type: 'ACTIVATION',
+        usedAt: null,
+      },
+    });
+
+    if (!tokenRecord) {
+      throw new BadRequestException('Invalid activation token.');
     }
 
     // Check the token has not expired
-    if (this.token.isTokenExpired(user.activationTokenExpiry)) {
+    if (this.token.isTokenExpired(tokenRecord.expiresAt)) {
       throw new BadRequestException(
         'This activation link has expired. Please contact your administrator to resend it.',
       );
     }
 
-    // Hash the incoming token and compare against the stored hash
-    const hashedIncomingToken = this.token.hashToken(dto.token);
-    if (hashedIncomingToken !== user.activationToken) {
-      throw new BadRequestException('Invalid activation token.');
-    }
-
-    // Hash the password using bcrypt with a cost factor of 12
-    // Cost factor 12 means bcrypt runs 2^12 = 4096 iterations
-    // making it slow enough to resist brute force attacks
+    // Hash the password with bcrypt at cost factor 12
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
-    // Update the user record — activate the account and clear the token
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash,
-        status: 'ACTIVE',
-        activationToken: null,
-        activationTokenExpiry: null,
-      },
-    });
+    // Mark the token as used and activate the account in a transaction
+    await this.prisma.$transaction([
+      this.prisma.token.update({
+        where: { id: tokenRecord.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          status: 'ACTIVE',
+        },
+      }),
+    ]);
 
     return {
       message: 'Account activated successfully. You can now log in.',
@@ -136,71 +149,60 @@ export class AuthService {
   }
 
   async resendVerification(email: string): Promise<{ message: string }> {
-      const user = await this.prisma.user.findUnique({
-        where: { email },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-      // Always return success to prevent email enumeration
-      // An attacker should not know whether an email exists in the system
-      if (!user || user.status !== 'PENDING') {
-        return {
-          message: 'If your account is pending verification, a new link has been sent.',
-        };
-      }
+    // Always return success to prevent email enumeration
+    if (!user || user.status !== 'PENDING') {
+      return {
+        message: 'If your account is pending verification, a new link has been sent.',
+      };
+    }
 
-      // Per-email rate limiting — maximum 3 resends per hour
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    // Count activation tokens created in the last hour for this user
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentTokenCount = await this.prisma.token.count({
+      where: {
+        userId: user.id,
+        type: 'ACTIVATION',
+        createdAt: { gte: oneHourAgo },
+      },
+    });
 
-      // Check if the resend window has expired and reset if so
-      const windowExpired =
-        !user.resendWindowStart || user.resendWindowStart < oneHourAgo;
+    if (recentTokenCount >= 3) {
+      throw new TooManyRequestsException(
+        'You have requested too many verification emails. Please wait an hour before trying again.',
+      );
+    }
 
-      if (windowExpired) {
-        // Reset the counter — start a fresh window
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: {
-            resendCount: 0,
-            resendWindowStart: now,
-          },
-        });
-      } else if (user.resendCount >= 3) {
-        // Window is still active and limit reached
-        throw new TooManyRequestsException(
-          'You have requested too many verification emails. Please wait an hour before trying again.',
-        );
-      }
+    // Generate a fresh token and store it
+    const { rawToken, hashedToken } = this.token.generateActivationToken();
+    const expiry = this.token.getTokenExpiry();
 
-      // Generate a fresh token
-      const { rawToken, hashedToken } = this.token.generateActivationToken();
-      const expiry = this.token.getTokenExpiry();
+    await this.prisma.token.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        type: 'ACTIVATION',
+        expiresAt: expiry,
+      },
+    });
 
-      // Update the user with the new token and increment resend count
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          activationToken: hashedToken,
-          activationTokenExpiry: expiry,
-          resendCount: windowExpired ? 1 : user.resendCount + 1,
-          resendWindowStart: windowExpired ? now : user.resendWindowStart,
-        },
-      });
+    // Send the email — fire and forget
+    const appUrl = this.config.get<string>('APP_URL');
+    const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
-      // Build the activation link and send the email
-      const appUrl = this.config.get<string>('APP_URL');
-      const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    this.email.sendActivationEmail(
+      user.email,
+      user.fullName,
+      activationLink,
+    ).catch(err => {
+      console.error('Failed to send verification email:', err);
+    });
 
-      this.email.sendActivationEmail(
-        user.email,
-        user.fullName,
-        activationLink,
-      ).catch(err => {
-        console.error('Failed to send verification email:', err);
-      });
-
-   return {
-     message: 'If your account is pending verification, a new link has been sent.',
-   };
+    return {
+      message: 'If your account is pending verification, a new link has been sent.',
+    };
   }
 }

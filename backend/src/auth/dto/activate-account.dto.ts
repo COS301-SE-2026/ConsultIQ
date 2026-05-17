@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   IsStrongPassword,
 } from 'class-validator';
@@ -13,6 +14,10 @@ export class ActivateAccountDto {
   @IsString()
   @IsNotEmpty({ message: 'Activation token is required.' })
   token: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
 
   @IsStrongPassword(
     {

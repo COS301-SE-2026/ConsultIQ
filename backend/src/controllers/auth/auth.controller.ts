@@ -4,13 +4,11 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  Req,
 } from '@nestjs/common';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
 import { ResendVerificationDto } from '../../auth/dto/resend-verification.dto';
-import { Request } from 'express';
 
 @Controller('auth')
 export class AuthController {

@@ -56,7 +56,7 @@ enum ProjectStatus {
   CLOSED
 }
 
-----------------------------------------Models---------------------------------------------------
+// ----------------------------------------Models---------------------------------------------------
 model User {
   id                String     @id @default(uuid())
   fullName          String
@@ -113,7 +113,7 @@ model Consultant {
   user          User               @relation(fields: [userId], references: [id])
   location      String
   costToCompany Float
-  availability  String             @default("Available")
+  availability  ConsultantAvailability  @default(AVAILABLE)
   tenantId      String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -125,6 +125,12 @@ model Consultant {
   managers  ConsultantManager[]
 
   @@map("consultants")
+}
+
+enum ConsultantAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  ON_LEAVE
 }
 
 model ConsultantManager {

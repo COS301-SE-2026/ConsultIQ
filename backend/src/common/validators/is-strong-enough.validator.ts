@@ -18,14 +18,12 @@ export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
 
     if (object.email) {
       // Add the full email and just the local part (before the @)
-      userInputs.push(object.email);
-      userInputs.push(object.email.split('@')[0]);
+      userInputs.push(object.email, object.email.split('@')[0]);
     }
 
     if (object.fullName) {
       // Add the full name and each individual word in the name
-      userInputs.push(object.fullName);
-      userInputs.push(...object.fullName.split(' '));
+      userInputs.push(object.fullName, ...object.fullName.split(' '));
     }
 
     const result = zxcvbn(password, userInputs);

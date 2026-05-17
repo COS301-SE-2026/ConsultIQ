@@ -1,6 +1,6 @@
 import { Injectable} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateConsultantDto } from '../create-consultant/dto/create-consultant.dto';
+import { CreateConsultantDto } from '../consultants/dto/create-consultant.dto';
 import { CompetencyLevel, ConsultantAvailability, Role } from '@prisma/client';
 
 @Injectable()

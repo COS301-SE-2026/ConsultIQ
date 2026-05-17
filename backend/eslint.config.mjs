@@ -9,7 +9,18 @@ export default tseslint.config(
     ignores: ['eslint.config.mjs', '**/*.spec.ts'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommendedTypeChecked.map(config => ({
+    ...config,
+    languageOptions: {
+      ...config.languageOptions,
+      parserOptions: {
+        ...config.languageOptions?.parserOptions,
+        project: undefined, // Explicitly remove project
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  })),
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
@@ -18,10 +29,6 @@ export default tseslint.config(
         ...globals.jest,
       },
       sourceType: 'commonjs',
-      parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
   },
   {

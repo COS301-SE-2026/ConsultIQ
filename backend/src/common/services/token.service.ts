@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 @Injectable()
 export class TokenService {
-  constructor(private config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {}
 
   // Generates a secure random token and its hash
   generateActivationToken(): { rawToken: string; hashedToken: string } {

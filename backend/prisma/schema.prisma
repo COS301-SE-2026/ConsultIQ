@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -53,20 +51,13 @@ enum PlacementStatus {
   CANCELLED
 }
 
-
 enum ProjectStatus {
   OPEN
   IN_PROGRESS
   CLOSED
 }
 
-enum ConsultantAvailability {
-  AVAILABLE
-  UNAVAILABLE
-  ON_LEAVE
-}
-
-
+// ----------------------------------------Models---------------------------------------------------
 model User {
   id                String     @id @default(uuid())
   fullName          String
@@ -83,9 +74,10 @@ model User {
   updatedAt         DateTime   @updatedAt
 
   tokens            Token[]
-  auditLogs         authAuditLog[]
+  auditLogs         AuditLog[]
   consultant        Consultant?
   managedProjects   ProjectManager[]
+  managedConsultants  ConsultantManager[]
 
   @@map("users")
 }
@@ -102,7 +94,6 @@ model Token {
 
   @@map("tokens")
 }
-
 
 model authAuditLog {
   id        String       @id @default(uuid())
@@ -123,7 +114,7 @@ model Consultant {
   user          User               @relation(fields: [userId], references: [id])
   location      String
   costToCompany Float
- availability  ConsultantAvailability  @default(AVAILABLE)
+  availability  ConsultantAvailability  @default(AVAILABLE)
   tenantId      String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -132,10 +123,28 @@ model Consultant {
   certificates  Certificate[]
   placements    ProjectPlacement[]
   cvFiles       CvFile[]
+  managers  ConsultantManager[]
 
   @@map("consultants")
 }
 
+enum ConsultantAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  ON_LEAVE
+}
+
+model ConsultantManager {
+  id           String     @id @default(uuid())
+  userId       String
+  consultantId String
+  user         User       @relation(fields: [userId], references: [id])
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
+  assignedAt   DateTime   @default(now())
+
+  @@unique([userId, consultantId])
+  @@map("consultant_managers")
+}
 
 model Skill {
   id                String             @id @default(uuid())
@@ -186,7 +195,6 @@ model CvFile {
 
   @@map("cv_files")
 }
-
 
 model Project {
   id                         String           @id @default(uuid())

@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import { AuditOutcome, Role, User } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 
 import { AuthService } from '../../services/auth.service';
 import { CredentialService } from '../../services/auth.credential.service';
 import { LockoutService } from '../../services/auth.lockout.service';
 import { AuditLogService } from '../../services/auth.audit-log.service';
 import { LoginDto } from '../../dto/login.dto';
+import { EmailService } from '../../../email/services/email.service';;
+import { TokenService } from '../../../common/services/token.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -45,11 +50,27 @@ interface MockLockoutService {
 interface MockAuditLogService {
   log: jest.MockedFunction<() => Promise<void>>;
 }
+const mockPrismaService = {
+  user: {
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    create: jest.fn(),
+  },
+};
 
 const mockCredentialService: MockCredentialService = {
   validateCredentials: jest.fn(),
   isCurrentlyLocked: jest.fn(),
 };
+const mockEmailService = {
+  sendVerificationEmail: jest.fn(),
+  sendPasswordResetEmail: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn().mockReturnValue('test-value'),
+};
+
 
 const mockLockoutService: MockLockoutService = {
   recordFailedAttempt: jest.fn(),
@@ -59,7 +80,10 @@ const mockLockoutService: MockLockoutService = {
 const mockAuditLogService: MockAuditLogService = {
   log: jest.fn(),
 };
-
+const mockTokenService = {
+  generateAccessToken: jest.fn(),
+  verifyToken: jest.fn(),
+};
 // ---------------------------------------------------------------------------
 // Suite
 // ---------------------------------------------------------------------------
@@ -73,6 +97,10 @@ describe('AuthService Testing Suite', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: EmailService, useValue: mockEmailService },
+        { provide: TokenService, useValue: mockTokenService },
+        { provide: ConfigService, useValue: mockConfigService },
         { provide: CredentialService, useValue: mockCredentialService },
         { provide: LockoutService, useValue: mockLockoutService },
         { provide: AuditLogService, useValue: mockAuditLogService },

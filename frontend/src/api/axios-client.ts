@@ -50,7 +50,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status !== 401 || originalRequest._retry) {
-      return Promise.reject(error);
+      throw error;
     }
 
     originalRequest._retry = true;
@@ -80,7 +80,7 @@ api.interceptors.response.use(
     } catch (err) {
       processQueue(null);
       logoutFn();
-      return Promise.reject(err);
+      throw err;
     } finally {
       isRefreshing = false;
     }

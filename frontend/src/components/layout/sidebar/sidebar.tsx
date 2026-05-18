@@ -3,7 +3,7 @@ import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 import type { SidebarItem } from "./sidebar.types";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "../../../api/use-auth";
+import { useAuth } from "../../../context/use-auth";
 
 interface SidebarProps {
   readonly items: SidebarItem[];

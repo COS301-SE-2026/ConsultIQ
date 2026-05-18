@@ -1,16 +1,8 @@
-import { createContext, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import axios from "axios";
-import { injectAuth } from "./axios-client";
-
-interface AuthContextType {
-  accessToken: string | null;
-  setAccessToken: (token: string | null) => void;
-  refreshToken: () => Promise<string | null>;
-  logout: () => void;
-}
-
-export const AuthContext = createContext<AuthContextType | null>(null);
+import { injectAuth } from "../api/axios-client";
+import { AuthContext } from "./auth-context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);

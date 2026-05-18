@@ -10,7 +10,9 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-
+import { CredentialService } from './auth.credential.service';
+import { LockoutService } from './auth.lockout.service';
+import { AuditLogService } from './auth.audit-log.service';
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
@@ -97,6 +99,20 @@ describe('AuthService', () => {
       get: jest.fn().mockReturnValue('http://localhost:5173'),
     };
 
+    const mockLockoutService = {
+      recordFailedAttempt: jest.fn(),
+      resetFailedAttempts: jest.fn(),
+    };
+
+    const mockAuditLogService = {
+      log: jest.fn(),
+    };
+
+    const mockCredentialService = {
+      validateCredentials: jest.fn(),
+      isCurrentlyLocked: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -104,6 +120,9 @@ describe('AuthService', () => {
         { provide: EmailService, useValue: email },
         { provide: TokenService, useValue: token },
         { provide: ConfigService, useValue: mockConfig },
+        { provide: CredentialService, useValue: mockCredentialService },  // ADD
+        { provide: LockoutService, useValue: mockLockoutService },        // ADD
+        { provide: AuditLogService, useValue: mockAuditLogService },      // ADD
       ],
     }).compile();
 
@@ -168,7 +187,7 @@ describe('AuthService', () => {
     });
 
     it('should not throw if email sending fails', async () => {
-      jest.spyOn(console, 'error').mockImplementation(() => {});
+      jest.spyOn(console, 'error').mockImplementation(() => { });
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue(mockUser as any);
       prisma.token.create.mockResolvedValue(mockTokenRecord as any);
@@ -308,7 +327,7 @@ describe('AuthService', () => {
     });
 
     it('should not throw if resend email fails', async () => {
-      jest.spyOn(console, 'error').mockImplementation(() => {});
+      jest.spyOn(console, 'error').mockImplementation(() => { });
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.token.count.mockResolvedValue(0);
       prisma.token.create.mockResolvedValue(mockTokenRecord as any);

@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from "@nestjs/common";
 import { ConsultantRepository } from "../repositories/consultant.repository";
 import { CreateConsultantDto } from "../dto/create-consultant.dto";
+import { ConsultantListItemDto, PaginatedConsultantsResponseDto } from '../dto/consultant-list.dto';
 
 @Injectable()
 export class ConsultantService {
@@ -18,6 +19,32 @@ export class ConsultantService {
         return {
             message: 'Consultant created successfully',
             consultantId: result.consultantId,
+        };
+    }
+    
+    async getAllConsultants(page: number, limit: number, userRole: string): Promise<PaginatedConsultantsResponseDto> {
+        const { consultants, total } = await this.consultantRepository.getAllConsultants(page, limit);
+
+        const mappedConsultants: ConsultantListItemDto[] = consultants.map((consultant) => {
+            const dto: ConsultantListItemDto = {
+                id: consultant.id,
+                fullName: consultant.user.fullName,
+                location: consultant.location,
+                availabilityStatus: consultant.availability,
+                primarySkills: consultant.skills.map((cs) => cs.skill.name),
+            };
+
+            if (userRole !== 'PROJECT_MANAGER') {
+                dto.costToCompanyRate = consultant.costToCompany;
+            }
+
+            return dto;
+        });
+
+        return {
+            page,
+            total,
+            consultants: mappedConsultants,
         };
     }
 }

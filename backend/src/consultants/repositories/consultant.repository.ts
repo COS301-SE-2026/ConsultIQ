@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConsultantDto } from '../dto/create-consultant.dto';
 import { CompetencyLevel, ConsultantAvailability, Role } from '@prisma/client';
-import { skip } from 'node:test';
+
 @Injectable()
 export class ConsultantRepository {
     constructor(private prisma: PrismaService) {}
@@ -65,7 +65,7 @@ export class ConsultantRepository {
     });
     }
 
-    async findAllConsultants(page: number, limit: number) {
+    async getAllConsultants(page: number, limit: number) {
         const skip = (page - 1) * limit;
 
         const [consultants, total] = await Promise.all([

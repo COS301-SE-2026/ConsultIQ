@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ProjectCard from "./project-card";
 import type { Project } from "../types/project.types";
 
@@ -12,12 +12,14 @@ export default function ProjectGrid({
   onViewDetails,
 }: ProjectGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [prevProjects, setPrevProjects] = useState(projects);
   const ITEMS_PER_PAGE = 6;
 
   // Reset to page 1 when the filtered projects change
-  useEffect(() => {
+  if (projects !== prevProjects) {
+    setPrevProjects(projects);
     setCurrentPage(1);
-  }, [projects]);
+  }
 
   const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;

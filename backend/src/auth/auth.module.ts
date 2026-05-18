@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { AuthController } from './controller/auth.controller';
+import { AuthController } from '../controllers/auth/auth.controller';
 import { AuthService } from './services/auth.service';
 import { CredentialService } from './services/auth.credential.service';
 import { LockoutService } from './services/auth.lockout.service';

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException } from '@nestjs/common';
+import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { AuditOutcome, Role, User } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
@@ -11,7 +11,6 @@ import { LoginDto } from '../../dto/login.dto';
 import { EmailService } from '../../../email/services/email.service';;
 import { TokenService } from '../../../common/services/token.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,6 +32,14 @@ const LOGIN_DTO: LoginDto = { email: 'test@example.com', password: 'secret' };
 const TEST_IP = '203.0.113.5';
 const TEST_UA = 'jest-agent';
 
+
+function makeIp(overrides?: string): string {
+  return overrides ?? '127.0.0.1';
+}
+
+function makeUserAgent(overrides?: string): string {
+  return overrides ?? 'jest-agent';
+}
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
@@ -48,7 +55,7 @@ interface MockLockoutService {
 }
 
 interface MockAuditLogService {
-  log: jest.MockedFunction<() => Promise<void>>;
+  log: jest.Mock;
 }
 const mockPrismaService = {
   user: {
@@ -340,6 +347,188 @@ describe('AuthService Testing Suite', () => {
           outcome: AuditOutcome.ACCOUNT_PENDING,
           userId: BASE_USER.id,
         }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // USER_NOT_FOUND
+  // -------------------------------------------------------------------------
+
+  describe('USER_NOT_FOUND outcome', () => {
+    beforeEach(() => {
+      mockCredentialService.validateCredentials.mockResolvedValue({
+        outcome: 'USER_NOT_FOUND',
+      });
+      mockAuditLogService.log.mockResolvedValue(undefined);
+    });
+
+    it('throws UnauthorizedException', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('logs USER_NOT_FOUND without a userId', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: LOGIN_DTO.email,
+          outcome: AuditOutcome.USER_NOT_FOUND,
+        }),
+      );
+
+      // No userId should be present (key absent or undefined)
+      expect(mockAuditLogService.log).toHaveBeenCalledTimes(1);
+      const call = mockAuditLogService.log.mock.calls[0]?.[0] as unknown as Record<string, unknown>;
+      expect(call.userId).toBeUndefined();
+    });
+
+    it('does not touch lockout service', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+      expect(mockLockoutService.recordFailedAttempt).not.toHaveBeenCalled();
+      expect(mockLockoutService.resetFailedAttempts).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ACCOUNT_SUSPENDED
+  // -------------------------------------------------------------------------
+
+  describe('ACCOUNT_SUSPENDED outcome', () => {
+    beforeEach(() => {
+      mockCredentialService.validateCredentials.mockResolvedValue({
+        outcome: 'ACCOUNT_SUSPENDED',
+        user: BASE_USER,
+      });
+      mockAuditLogService.log.mockResolvedValue(undefined);
+    });
+
+    it('throws ForbiddenException', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('message mentions contacting support', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        /contact support/i,
+      );
+    });
+
+    it('logs ACCOUNT_SUSPENDED with userId', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outcome: AuditOutcome.ACCOUNT_SUSPENDED,
+          userId: BASE_USER.id,
+        }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // ACCOUNT_LOCKED (pre-existing lock)
+  // -------------------------------------------------------------------------
+
+  describe('ACCOUNT_LOCKED outcome (pre-existing)', () => {
+    beforeEach(() => {
+      mockCredentialService.validateCredentials.mockResolvedValue({
+        outcome: 'ACCOUNT_LOCKED',
+        user: BASE_USER,
+      });
+      mockAuditLogService.log.mockResolvedValue(undefined);
+    });
+
+    it('throws ForbiddenException', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('message mentions administrator unlock', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        /administrator/i,
+      );
+    });
+
+    it('logs ACCOUNT_LOCKED with userId', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outcome: AuditOutcome.ACCOUNT_LOCKED,
+          userId: BASE_USER.id,
+        }),
+      );
+    });
+
+    it('does not call lockout service (no new attempt to record)', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+      expect(mockLockoutService.recordFailedAttempt).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // FAILED_PASSWORD — does NOT trigger a new lockout
+  // -------------------------------------------------------------------------
+
+  describe('FAILED_PASSWORD outcome — account not yet locked', () => {
+    const updatedUser = { ...BASE_USER, failedLoginAttempts: 1 };
+
+    beforeEach(() => {
+      mockCredentialService.validateCredentials.mockResolvedValue({
+        outcome: 'FAILED_PASSWORD',
+        user: BASE_USER,
+      });
+      mockLockoutService.recordFailedAttempt.mockResolvedValue(updatedUser);
+      mockCredentialService.isCurrentlyLocked.mockReturnValue(false);
+      mockAuditLogService.log.mockResolvedValue(undefined);
+    });
+
+    it('throws UnauthorizedException', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('increments the failed attempt counter', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+      expect(mockLockoutService.recordFailedAttempt).toHaveBeenCalledWith(
+        BASE_USER,
+      );
+    });
+
+    it('logs FAILED_PASSWORD (not ACCOUNT_LOCKED)', async () => {
+      await expect(service.login(LOGIN_DTO, makeIp(), makeUserAgent())).rejects.toThrow();
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outcome: AuditOutcome.FAILED_PASSWORD,
+          userId: BASE_USER.id,
+        }),
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Audit log always receives userAgent
+  // -------------------------------------------------------------------------
+  describe('audit log userAgent propagation', () => {
+    it('passes userAgent from the request header to the audit log', async () => {
+      mockCredentialService.validateCredentials.mockResolvedValue({
+        outcome: 'USER_NOT_FOUND',
+      });
+      mockAuditLogService.log.mockResolvedValue(undefined);
+
+      await expect(
+        service.login(LOGIN_DTO, '127.0.0.1', 'Mozilla/5.0 (custom)')
+      ).rejects.toThrow();
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ userAgent: 'Mozilla/5.0 (custom)' }),
       );
     });
   });

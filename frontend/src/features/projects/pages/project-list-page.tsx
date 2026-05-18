@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 
@@ -253,6 +254,7 @@ export default function ProjectListPage() {
   const [budgetFilter, setBudgetFilter] = useState("");
   const [teamSizeFilter, setTeamSizeFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const navigate = useNavigate();
 
   const filteredProjects = useMemo(() => {
     return mockProjects.filter((project) => {
@@ -357,7 +359,9 @@ export default function ProjectListPage() {
           </h1>
 
           <div className="flex gap-6">
-            <button className="h-16 w-48 flex items-center justify-center gap-2 text-lg rounded text-white font-semibold transition hover:brightness-110"
+            <button
+              onClick={() => navigate("/project-specification")}
+              className="h-16 w-48 flex items-center justify-center gap-2 text-lg rounded text-white font-semibold transition hover:brightness-110"
               style={{
                 backgroundColor: "var(--color-accent)",
               }}

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 
@@ -6,6 +7,8 @@ import ProjectLocationCard from "../components/project-location-card";
 import ProjectSkillsCard from "../components/project-skills-card";
 
 function ProjectSpecificationPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Sidebar */}
@@ -32,7 +35,9 @@ function ProjectSpecificationPage() {
           </h1>
 
           <div className="flex gap-6">
-            <button className=" h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
+            <button 
+              onClick={() => navigate(-1)}
+              className=" h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
               style={{
                 color:
                   "var(--color-primary)",
@@ -40,7 +45,9 @@ function ProjectSpecificationPage() {
               Cancel
             </button>
 
-            <button className="h-16 w-48 text-lg rounded text-white font-semibold transition hover:brightness-110"
+            <button 
+              onClick={() => navigate("/projects")}
+              className="h-16 w-48 text-lg rounded text-white font-semibold transition hover:brightness-110"
               style={{
                 backgroundColor:
                   "var(--color-accent)",

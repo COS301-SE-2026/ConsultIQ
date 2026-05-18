@@ -8,7 +8,7 @@ export class CreateConsultantSkillDto {
     @IsNumber()
     @Min(1)
     @Max(50)
-    yearsOfExperience!: number;
+    yearsExperience!: number;
 
     @IsNumber()
     @Min(1)

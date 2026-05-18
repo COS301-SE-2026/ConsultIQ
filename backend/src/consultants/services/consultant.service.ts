@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from "@nestjs/common";
-import { ConsultantRepository } from "src/repositories/consultant.repository";
+import { ConsultantRepository } from "../repositories/consultant.repository";
 import { CreateConsultantDto } from "../dto/create-consultant.dto";
 
 @Injectable()

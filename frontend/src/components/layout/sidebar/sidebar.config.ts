@@ -22,6 +22,15 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
 
 ]
 
+export const projectManagerSidebarItems: SidebarItem[] = [
+    {
+        label: "Projects",
+        path: "/projects",
+        icon: Briefcase
+    },
+
+] 
+
 export const consultantSidebarItems: SidebarItem[] = [
     {
         label: "Projects",

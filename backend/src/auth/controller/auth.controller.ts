@@ -11,10 +11,12 @@ import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dto/login.dto';
 import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { UserAgent } from '../../common/decorators/user-agent.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 
+@Public()
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   /**
    * POST /auth/login

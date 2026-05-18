@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
 import {
   Injectable,
+  UnauthorizedException,
+  ForbiddenException,
   ConflictException,
   NotFoundException,
   BadRequestException,
@@ -11,9 +12,31 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/services/email.service';
 import { TokenService } from '../../common/services/token.service';
 import { ConfigService } from '@nestjs/config';
+import { CredentialService } from './auth.credential.service';
+import { LockoutService } from './auth.lockout.service';
+import { AuditLogService } from './auth.audit-log.service';
+import { AuditOutcome, Role } from '@prisma/client';
+import { LoginDto } from '../dto/login.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ActivateAccountDto } from '../dto/activate-account.dto';
 import * as bcrypt from 'bcrypt';
+
+/** Shape returned to the controller on successful login. */
+export interface LoginResult {
+  userId: string;
+  email: string;
+  role: Role;
+  /** Redirect to dashboard route */
+  dashboardRoute: string;
+}
+
+/** Map role -> frontend route  */
+const ROLE_DASHBOARD_MAP: Record<Role, string> = {
+  ADMIN: '/admin',
+  PROJECT_MANAGER: '/projects',
+  CONSULTANT_MANAGER: '/consultant-profiles',
+  CONSULTANT: '/profile',
+};
 
 class TooManyRequestsException extends HttpException {
   constructor(message: string) {
@@ -28,7 +51,128 @@ export class AuthService {
     private readonly email: EmailService,
     private readonly token: TokenService,
     private readonly config: ConfigService,
+    private readonly credentialService: CredentialService,
+    private readonly lockoutService: LockoutService,
+    private readonly auditLogService: AuditLogService,
   ) {}
+
+  async login(
+    dto: LoginDto,
+    ipAddress: string,
+    userAgent?: string,
+  ): Promise<LoginResult> {
+    // 1: validate credentials
+    const result = await this.credentialService.validateCredentials(
+      dto.email,
+      dto.password,
+    );
+
+    // 2: handle each outcome
+    switch (result.outcome) {
+      // Unknown email
+      case 'USER_NOT_FOUND': {
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: AuditOutcome.USER_NOT_FOUND,
+          ipAddress,
+          userAgent,
+        });
+
+        throw new UnauthorizedException('Invalid credentials.');
+      }
+
+      // Status blocks
+      case 'ACCOUNT_PENDING': {
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: AuditOutcome.ACCOUNT_PENDING,
+          userId: result.user.id,
+          ipAddress,
+          userAgent,
+        });
+        throw new ForbiddenException(
+          'Your account is pending email verification. Please verify your email before logging in.',
+        );
+      }
+
+      // Account suspended (admin action)
+      case 'ACCOUNT_SUSPENDED': {
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: AuditOutcome.ACCOUNT_SUSPENDED,
+          userId: result.user.id,
+          ipAddress,
+          userAgent,
+        });
+        throw new ForbiddenException(
+          'Your account has been suspended. Please contact support.',
+        );
+      }
+
+      // Account locked (pre-existing lock detected before password check)
+      case 'ACCOUNT_LOCKED': {
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: AuditOutcome.ACCOUNT_LOCKED,
+          userId: result.user.id,
+          ipAddress,
+          userAgent,
+        });
+        throw new ForbiddenException(
+          'Your account has been locked due to too many failed login attempts. ' +
+            'Please contact an administrator to unlock your account.',
+        );
+      }
+
+      // Wrong password
+      case 'FAILED_PASSWORD': {
+        const updatedUser = await this.lockoutService.recordFailedAttempt(
+          result.user,
+        );
+
+        const nowLocked = this.credentialService.isCurrentlyLocked(updatedUser);
+
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: nowLocked
+            ? AuditOutcome.ACCOUNT_LOCKED
+            : AuditOutcome.FAILED_PASSWORD,
+          userId: result.user.id,
+          ipAddress,
+          userAgent,
+        });
+
+        if (nowLocked) {
+          throw new ForbiddenException(
+            'Your account has been locked due to too many failed login attempts. ' +
+              'Please contact an administrator to unlock your account.',
+          );
+        }
+
+        throw new UnauthorizedException('Invalid credentials.');
+      }
+
+      // Successful login
+      case 'SUCCESS': {
+        await this.lockoutService.resetFailedAttempts(result.user);
+
+        await this.auditLogService.log({
+          email: dto.email,
+          outcome: AuditOutcome.SUCCESS,
+          userId: result.user.id,
+          ipAddress,
+          userAgent,
+        });
+
+        return {
+          userId: result.user.id,
+          email: result.user.email,
+          role: result.user.role,
+          dashboardRoute: ROLE_DASHBOARD_MAP[result.user.role],
+        };
+      }
+    }
+  }
 
   async createUser(dto: CreateUserDto) {
     // Check if a user with this email already exists
@@ -71,16 +215,15 @@ export class AuthService {
     const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(dto.email)}`;
 
     // Send activation email, fire and forget, does not block response
-    this.email.sendActivationEmail(
-      user.email,
-      user.fullName,
-      activationLink,
-    ).catch(err => {
-      console.error('Failed to send activation email:', err);
-    });
+    this.email
+      .sendActivationEmail(user.email, user.fullName, activationLink)
+      .catch((err) => {
+        console.error('Failed to send activation email:', err);
+      });
 
     return {
-      message: 'Account created successfully. An activation email has been sent.',
+      message:
+        'Account created successfully. An activation email has been sent.',
       userId: user.id,
     };
   }
@@ -157,7 +300,8 @@ export class AuthService {
     // Always return success to prevent email enumeration
     if (user?.status !== 'PENDING') {
       return {
-        message: 'If your account is pending verification, a new link has been sent.',
+        message:
+          'If your account is pending verification, a new link has been sent.',
       };
     }
 
@@ -194,16 +338,15 @@ export class AuthService {
     const appUrl = this.config.get<string>('APP_URL');
     const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(email)}`;
 
-    this.email.sendActivationEmail(
-      user.email,
-      user.fullName,
-      activationLink,
-    ).catch(err => {
-      console.error('Failed to send verification email:', err);
-    });
+    this.email
+      .sendActivationEmail(user.email, user.fullName, activationLink)
+      .catch((err) => {
+        console.error('Failed to send verification email:', err);
+      });
 
     return {
-      message: 'If your account is pending verification, a new link has been sent.',
+      message:
+        'If your account is pending verification, a new link has been sent.',
     };
   }
 }

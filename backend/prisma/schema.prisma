@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+ url      = env("DATABASE_URL")
 }
 
 model User {
@@ -43,7 +43,7 @@ model Token {
   @@map("tokens")
 }
 
-model AuditLog {
+model authAuditLog {
   id        String       @id @default(uuid())
   email     String
   outcome   AuditOutcome
@@ -53,7 +53,7 @@ model AuditLog {
   timestamp DateTime     @default(now())
   user      User?        @relation(fields: [userId], references: [id])
 
-  @@map("audit_logs")
+  @@map("auth_audit_logs")
 }
 
 model Consultant {

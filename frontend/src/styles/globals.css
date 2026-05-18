@@ -72,13 +72,11 @@ h3 {
   color: var(--color-primary);
 }
 
-p,
 label,
-span,
 input,
 textarea,
 select {
-  font-size: var(--text-body);
+  font-size: var(--text-h3);
   color: var(--color-text-primary);
 }
 

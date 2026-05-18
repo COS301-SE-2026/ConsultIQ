@@ -8,11 +8,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
-<<<<<<< HEAD
 import { AuthModule } from './auth/auth.module';
 import { ConsultantsModule } from './consultants.module';
-=======
->>>>>>> origin/dev
 
 @Module({
   imports: [

@@ -204,7 +204,7 @@ describe('JwtAuthGuard', () => {
         });
 
         it('should throw 401 with expiry message when token is expired', () => {
-            const token = jwt.sign(
+            const token = jwt.sign( // NOSONAR
                 { userId: 'uuid-exp', role: Role.ADMIN },
                 TEST_SECRET,
                 { expiresIn: -1 }, // already expired
@@ -217,7 +217,7 @@ describe('JwtAuthGuard', () => {
 
         it('should throw 401 when payload is missing userId', () => {
             // Sign a token without userId
-            const token = jwt.sign({ role: Role.ADMIN }, TEST_SECRET);
+            const token = jwt.sign({ role: Role.ADMIN }, TEST_SECRET); // NOSONAR
             const ctx = buildContext({ authHeader: `Bearer ${token}` });
 
             expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);

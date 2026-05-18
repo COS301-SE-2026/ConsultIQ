@@ -4,198 +4,11 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+ url      = env("DATABASE_URL")
 }
 
-model User {
-  id                 String              @id @default(uuid())
-  fullName           String
-  email              String              @unique
-  passwordHash       String?
-  role               Role
-  status             UserStatus          @default(PENDING)
-  failedAttempts     Int                 @default(0)
-  lockedUntil        DateTime?
-  isLocked           Boolean             @default(false)
-  termsAcceptedAt    DateTime?
-  tenantId           String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  auditLogs          AuditLog[]
-  managedConsultants ConsultantManager[]
-  consultant         Consultant?
-  managedProjects    ProjectManager[]
-  tokens             Token[]
 
-  @@map("users")
-}
-
-model Token {
-  id        String    @id @default(uuid())
-  userId    String
-  token     String
-  type      TokenType
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("tokens")
-}
-
-model AuditLog {
-  id        String       @id @default(uuid())
-  email     String
-  outcome   AuditOutcome
-  userId    String?
-  ipAddress String
-  userAgent String?
-  timestamp DateTime     @default(now())
-  user      User?        @relation(fields: [userId], references: [id])
-
-  @@map("audit_logs")
-}
-
-model Consultant {
-  id            String                 @id @default(uuid())
-  userId        String                 @unique
-  location      String
-  costToCompany Float
-  availability  ConsultantAvailability @default(AVAILABLE)
-  tenantId      String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
-  certificates  Certificate[]
-  managers      ConsultantManager[]
-  skills        ConsultantSkill[]
-  user          User                   @relation(fields: [userId], references: [id])
-  cvFiles       CvFile[]
-  placements    ProjectPlacement[]
-
-  @@map("consultants")
-}
-
-model ConsultantManager {
-  id           String     @id @default(uuid())
-  userId       String
-  consultantId String
-  assignedAt   DateTime   @default(now())
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
-  user         User       @relation(fields: [userId], references: [id])
-
-  @@unique([userId, consultantId])
-  @@map("consultant_managers")
-}
-
-model Skill {
-  id               String            @id @default(uuid())
-  name             String            @unique
-  category         String
-  tenantId         String?
-  consultantSkills ConsultantSkill[]
-  projectSkills    ProjectSkill[]
-
-  @@map("skills")
-}
-
-model ConsultantSkill {
-  id              String          @id @default(uuid())
-  consultantId    String
-  skillId         String
-  competencyLevel CompetencyLevel
-  yearsExperience Int
-  confidenceLevel Int
-  consultant      Consultant      @relation(fields: [consultantId], references: [id])
-  skill           Skill           @relation(fields: [skillId], references: [id])
-
-  @@unique([consultantId, skillId])
-  @@map("consultant_skills")
-}
-
-model Certificate {
-  id           String     @id @default(uuid())
-  consultantId String
-  title        String
-  issuingBody  String
-  uploadedAt   DateTime   @default(now())
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
-
-  @@map("certificates")
-}
-
-model CvFile {
-  id           String     @id @default(uuid())
-  consultantId String
-  fileName     String
-  mimeType     String
-  fileData     Bytes
-  status       String     @default("PENDING")
-  uploadedAt   DateTime   @default(now())
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
-
-  @@map("cv_files")
-}
-
-model Project {
-  id                           String             @id @default(uuid())
-  projectName                  String
-  clientName                   String
-  city                         String
-  province                     String
-  startDate                    DateTime
-  endDate                      DateTime?
-  teamSize                     Int
-  requiredAllocationPercentage Int
-  clientBillingBudget          Float
-  status                       ProjectStatus      @default(OPEN)
-  tenantId                     String?
-  createdAt                    DateTime           @default(now())
-  updatedAt                    DateTime           @updatedAt
-  managers                     ProjectManager[]
-  placements                   ProjectPlacement[]
-  skills                       ProjectSkill[]
-
-  @@map("projects")
-}
-
-model ProjectSkill {
-  id                String          @id @default(uuid())
-  projectId         String
-  skillId           String
-  minimumCompetency CompetencyLevel
-  isMandatory       Boolean         @default(true)
-  project           Project         @relation(fields: [projectId], references: [id])
-  skill             Skill           @relation(fields: [skillId], references: [id])
-
-  @@unique([projectId, skillId])
-  @@map("project_skills")
-}
-
-model ProjectManager {
-  id        String  @id @default(uuid())
-  userId    String
-  projectId String
-  project   Project @relation(fields: [projectId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
-
-  @@unique([userId, projectId])
-  @@map("project_managers")
-}
-
-model ProjectPlacement {
-  id           String          @id @default(uuid())
-  projectId    String
-  consultantId String
-  startDate    DateTime
-  endDate      DateTime?
-  allocation   Int
-  status       PlacementStatus @default(ACTIVE)
-  createdAt    DateTime        @default(now())
-  consultant   Consultant      @relation(fields: [consultantId], references: [id])
-  project      Project         @relation(fields: [projectId], references: [id])
-
-  @@map("project_placements")
-}
+// ----------------------------------------Enums---------------------------------------------------
 
 enum Role {
   ADMIN
@@ -242,6 +55,77 @@ enum ProjectStatus {
   OPEN
   IN_PROGRESS
   CLOSED
+}
+
+// ----------------------------------------Models---------------------------------------------------
+model User {
+  id                String     @id @default(uuid())
+  fullName          String
+  email             String     @unique
+  passwordHash      String?
+  role              Role
+  status            UserStatus @default(PENDING)
+  failedAttempts    Int        @default(0)
+  lockedUntil       DateTime?
+  isLocked          Boolean    @default(false)
+  termsAcceptedAt   DateTime?
+  tenantId          String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  tokens            Token[]
+  auditLogs         authAuditLog[]
+  consultant        Consultant?
+  managedProjects   ProjectManager[]
+  managedConsultants  ConsultantManager[]
+
+  @@map("users")
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  type      TokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("tokens")
+}
+
+model authAuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  @@map("auth_audit_logs")
+}
+
+model Consultant {
+  id            String             @id @default(uuid())
+  userId        String             @unique
+  user          User               @relation(fields: [userId], references: [id])
+  location      String
+  costToCompany Float
+  availability  ConsultantAvailability  @default(AVAILABLE)
+  tenantId      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  skills        ConsultantSkill[]
+  certificates  Certificate[]
+  placements    ProjectPlacement[]
+  cvFiles       CvFile[]
+  managers  ConsultantManager[]
+
+  @@map("consultants")
 }
 
 enum ConsultantAvailability {

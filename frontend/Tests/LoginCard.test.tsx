@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { LoginCard } from '../src/features/authentication/components/LoginCard';
+import { LoginCard } from '../src/features/authentication/components/login-card';
 import { toast } from 'sonner';
 import { BrowserRouter } from 'react-router-dom';
 

@@ -1,139 +1,259 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+ url      = env("DATABASE_URL")
 }
 
-model User {
-  id          Int          @id @default(autoincrement()) @map("userID")
-  roleID      Int
-  name        String
-  surname     String
-  idNumber    String       @map("IDNumber")
-  email       String       @unique
-  phoneNumber String       @map("PhoneNumber")
-  hashedPassword String
-  tokens      String?
-  tokenExpiry    DateTime?
-  status         UserStatus   @default(Available)
-  acceptedTsAndCs Boolean     @default(false)
-  role        Role         @relation(fields: [roleID], references: [id])
-  consultant  Consultant?
-  managers    ProjectManager[]
+
+// ----------------------------------------Enums---------------------------------------------------
+
+enum Role {
+  ADMIN
+  PROJECT_MANAGER
+  CONSULTANT_MANAGER
+  CONSULTANT
 }
 
 enum UserStatus {
-  Available
-  Unavailable
-  onLeave
-}
-model Role {
-  id          Int              @id @default(autoincrement()) @map("roleID")
-  title       String
-  users       User[]
-  permissions RolePermission[]
+  PENDING
+  ACTIVE
+  SUSPENDED
+  LOCKED
 }
 
-model Permission {
-  id          Int              @id @default(autoincrement()) @map("permissionID")
-  title       String
+enum TokenType {
+  ACTIVATION
+  PASSWORD_RESET
+  REFRESH
 }
 
-model RolePermission {
-  permissionID Int
-  roleID       Int
-  role         Role       @relation(fields: [roleID], references: [id])
-  @@id([permissionID, roleID])
-  @@map("role_permission")
+enum AuditOutcome {
+  SUCCESS
+  USER_NOT_FOUND
+  ACCOUNT_PENDING
+  ACCOUNT_SUSPENDED
+  ACCOUNT_LOCKED
+  FAILED_PASSWORD
 }
 
-model Consultant {
-  id           Int                @id @default(autoincrement()) @map("consultantID")
-  userID       Int                @unique @map("UserID")
-  availability Boolean
-  location     String
-  user         User               @relation(fields: [userID], references: [id])
-  certificates Certificate[]
-  skills       ConsultantSkills[]
-  placements   ProjectPlacement[]
+enum CompetencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  EXPERT
 }
 
-model Certificate {
-  id           Int        @id @default(autoincrement()) @map("certificateID")
-  consultantID Int
-  uploadedAt   DateTime   @default(now()) @map("uploaded_at")
-  title        String
-  consultant   Consultant @relation(fields: [consultantID], references: [id])
-}
-
-model Skills {
-  id               Int                @id @default(autoincrement()) @map("skillID")
-  name             String
-  consultants      ConsultantSkills[]
-  projects         ProjectSkills[]
-}
-
-model ConsultantSkills {
-  id             Int        @id @default(autoincrement()) @map("consultantSkillsID")
-  consultantID   Int
-  skillID        Int
-  competencyLevel String    
-  experience      String
-  consultant     Consultant @relation(fields: [consultantID], references: [id])
-  skill          Skills     @relation(fields: [skillID], references: [id])
-}
-model Project {
-  id                          String           @id @default(uuid()) @map("projectID")
-  projectName                 String
-  clientName                  String
-  city                        String
-  province                    String
-  startDate                   DateTime
-  endDate                     DateTime
-  teamSize                    Int
-  requiredAllocationPercentage Float
-  clientBillingBudget         Float
-  status                      ProjectStatus    @default(Open)
-  notes                       String?
-  skills                      ProjectSkills[]
-  managers                    ProjectManager[]
-  placements                  ProjectPlacement[]
+enum PlacementStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
 }
 
 enum ProjectStatus {
-  Open
-  InProgress
-  Closed
+  OPEN
+  IN_PROGRESS
+  CLOSED
 }
 
-model ProjectSkills {
-  id        Int     @id @default(autoincrement()) @map("skillsProjectID")
-  skillID   Int
-  projectID String
-  skill     Skills  @relation(fields: [skillID], references: [id])
-  project   Project @relation(fields: [projectID], references: [id])
+// ----------------------------------------Models---------------------------------------------------
+model User {
+  id                String     @id @default(uuid())
+  fullName          String
+  email             String     @unique
+  passwordHash      String?
+  role              Role
+  status            UserStatus @default(PENDING)
+  failedAttempts    Int        @default(0)
+  lockedUntil       DateTime?
+  isLocked          Boolean    @default(false)
+  termsAcceptedAt   DateTime?
+  tenantId          String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  tokens            Token[]
+  auditLogs         authAuditLog[]
+  consultant        Consultant?
+  managedProjects   ProjectManager[]
+  managedConsultants  ConsultantManager[]
+
+  @@map("users")
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String
+  type      TokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("tokens")
+}
+
+model authAuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  @@map("auth_audit_logs")
+}
+
+model Consultant {
+  id            String             @id @default(uuid())
+  userId        String             @unique
+  user          User               @relation(fields: [userId], references: [id])
+  location      String
+  costToCompany Float
+  availability  ConsultantAvailability  @default(AVAILABLE)
+  tenantId      String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  skills        ConsultantSkill[]
+  certificates  Certificate[]
+  placements    ProjectPlacement[]
+  cvFiles       CvFile[]
+  managers  ConsultantManager[]
+
+  @@map("consultants")
+}
+
+enum ConsultantAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  ON_LEAVE
+}
+
+model ConsultantManager {
+  id           String     @id @default(uuid())
+  userId       String
+  consultantId String
+  user         User       @relation(fields: [userId], references: [id])
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
+  assignedAt   DateTime   @default(now())
+
+  @@unique([userId, consultantId])
+  @@map("consultant_managers")
+}
+
+model Skill {
+  id                String             @id @default(uuid())
+  name              String             @unique
+  category          String
+  tenantId          String?
+
+  consultantSkills  ConsultantSkill[]
+  projectSkills     ProjectSkill[]
+
+  @@map("skills")
+}
+
+model ConsultantSkill {
+  id              String          @id @default(uuid())
+  consultantId    String
+  skillId         String
+  competencyLevel CompetencyLevel
+  yearsExperience Int
+  confidenceLevel Int
+  consultant      Consultant      @relation(fields: [consultantId], references: [id])
+  skill           Skill           @relation(fields: [skillId], references: [id])
+
+  @@unique([consultantId, skillId])
+  @@map("consultant_skills")
+}
+
+model Certificate {
+  id           String     @id @default(uuid())
+  consultantId String
+  title        String
+  issuingBody  String
+  uploadedAt   DateTime   @default(now())
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
+
+  @@map("certificates")
+}
+
+model CvFile {
+  id           String     @id @default(uuid())
+  consultantId String
+  fileName     String
+  mimeType     String
+  fileData     Bytes
+  status       String     @default("PENDING")
+  uploadedAt   DateTime   @default(now())
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
+
+  @@map("cv_files")
+}
+
+model Project {
+  id                         String           @id @default(uuid())
+  projectName                String
+  clientName                 String
+  city                       String
+  province                   String
+  startDate                  DateTime
+  endDate                    DateTime?
+  teamSize                   Int
+  requiredAllocationPercentage Int
+  clientBillingBudget        Float
+  status                     ProjectStatus    @default(OPEN)
+  tenantId                   String?
+  createdAt                  DateTime         @default(now())
+  updatedAt                  DateTime         @updatedAt
+
+  skills                     ProjectSkill[]
+  managers                   ProjectManager[]
+  placements                 ProjectPlacement[]
+
+  @@map("projects")
+}
+
+model ProjectSkill {
+  id                String          @id @default(uuid())
+  projectId         String
+  skillId           String
+  minimumCompetency CompetencyLevel
+  isMandatory       Boolean         @default(true)
+  project           Project         @relation(fields: [projectId], references: [id])
+  skill             Skill           @relation(fields: [skillId], references: [id])
+
+  @@unique([projectId, skillId])
+  @@map("project_skills")
 }
 
 model ProjectManager {
-  id        Int     @id @default(autoincrement()) @map("projectManagerID")
-  userID    Int
-  projectID String
-  user      User    @relation(fields: [userID], references: [id])
-  project   Project @relation(fields: [projectID], references: [id])
+  id        String  @id @default(uuid())
+  userId    String
+  projectId String
+  user      User    @relation(fields: [userId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+  @@map("project_managers")
 }
 
 model ProjectPlacement {
-  id               Int        @id @default(autoincrement()) @map("projectPlacementId")
-  projectID        String
-  consultantID     Int
-  project          Project    @relation(fields: [projectID], references: [id])
-  consultant       Consultant @relation(fields: [consultantID], references: [id])
+  id           String          @id @default(uuid())
+  projectId    String
+  consultantId String
+  startDate    DateTime
+  endDate      DateTime?
+  allocation   Int
+  status       PlacementStatus @default(ACTIVE)
+  createdAt    DateTime        @default(now())
+  project      Project         @relation(fields: [projectId], references: [id])
+  consultant   Consultant      @relation(fields: [consultantId], references: [id])
+
+  @@map("project_placements")
 }

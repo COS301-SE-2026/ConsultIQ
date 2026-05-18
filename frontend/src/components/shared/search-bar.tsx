@@ -1,36 +1,61 @@
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 
 interface SearchBarProps {
-  readonly value: string;
-  readonly placeholder?: string;
-  readonly onChange: (value: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  onFilterClick?: () => void;
 }
 
-export default function SearchBar({
-  value,
-  placeholder = "Search...",
-  onChange,
-}: SearchBarProps) {
+function SearchBar({ value, onChange, placeholder = "Search...", onFilterClick }: SearchBarProps) {
   return (
-    <div className="relative w-full">
-      <Search
-        className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-        size={22}
-      />
-
-      <input
-        id="search"
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full h-16 pr-4 rounded border bg-white text-lg outline-none transition"
+    <div className="flex items-center gap-3">
+     
+      <div
+        className="flex-1 flex items-center gap-3 bg-white rounded-xl"
         style={{
-            borderColor: "var(--color-border)",
-            color: "var(--color-text-primary)",
-            paddingLeft: "60px",
+          border: "1px solid var(--color-border)",
+          height: "52px",
+          padding: "0 16px",
         }}
+      >
+        <Search size={18} style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            flex: 1,
+            border: "none",
+            outline: "none",
+            padding: 0,
+            background: "transparent",
+            fontSize: "16px",
+            color: "var(--color-text-primary)",
+            fontFamily: "var(--font-primary)",
+          }}
         />
+      </div>
+
+      {/* Filters button */}
+      <button
+        onClick={onFilterClick}
+        className="flex items-center gap-2 bg-white rounded-xl font-medium transition hover:opacity-80"
+        style={{
+          border: "1px solid var(--color-border)",
+          height: "52px",
+          padding: "0 20px",
+          fontSize: "16px",
+          color: "var(--color-text-primary)",
+          fontFamily: "var(--font-primary)",
+        }}
+      >
+        <SlidersHorizontal size={18} style={{ color: "var(--color-primary)" }} />
+        Filters
+      </button>
     </div>
   );
 }
+
+export default SearchBar;

@@ -4,27 +4,12 @@ import axios from "axios";
 import { injectAuth } from "../api/axios-client";
 import { AuthContext } from "./auth-context";
 
-
 interface AuthProviderProps {
   readonly children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
-
- 
-  const refreshToken = useCallback(async (): Promise<string | null> => {
-    try {
-      //will be adjsuted to use the actual refresh url
-      const res = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
-      const token = res.data.accessToken;
-      setAccessToken(token);
-      return token;
-    } catch {
-      logout();
-      return null;
-    }
-  }, []);
 
   
   const logout = useCallback(async () => {
@@ -34,10 +19,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("Server-side logout failed:", err);
     } finally {
       setAccessToken(null);
-      
       globalThis.location.href = "/login";
     }
   }, []);
+
+ 
+  const refreshToken = useCallback(async (): Promise<string | null> => {
+    try {
+      // will be adjusted to use the actual refresh url
+      const res = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+      const token = res.data.accessToken;
+      setAccessToken(token);
+      return token;
+    } catch {
+      logout();
+      return null;
+    }
+  }, [logout]);
 
   injectAuth({
     getToken: () => accessToken,
@@ -45,7 +43,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
   });
 
-  
   const contextValue = useMemo(() => ({
     accessToken,
     setAccessToken,

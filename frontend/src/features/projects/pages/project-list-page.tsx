@@ -254,6 +254,7 @@ export default function ProjectListPage() {
   const [budgetFilter, setBudgetFilter] = useState("");
   const [teamSizeFilter, setTeamSizeFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
 
   const filteredProjects = useMemo(() => {
@@ -383,21 +384,24 @@ export default function ProjectListPage() {
               value={search}
               onChange={setSearch}
               placeholder="Search projects..."
+              onFilterClick={() => setShowFilters((prev) => !prev)}
             />
           </div>
 
           {/* Filters */}
-          <div className="mt-6">
-            <div className="h-6" />
-            <ProjectFilters
-            budgetFilter={budgetFilter}
-            teamSizeFilter={teamSizeFilter}
-            locationFilter={locationFilter}
-            onBudgetChange={setBudgetFilter}
-            onTeamSizeChange={setTeamSizeFilter}
-            onLocationChange={setLocationFilter}
-            />
-          </div>
+          {showFilters && (
+            <div className="mt-6">
+              <div className="h-6" />
+              <ProjectFilters
+                budgetFilter={budgetFilter}
+                teamSizeFilter={teamSizeFilter}
+                locationFilter={locationFilter}
+                onBudgetChange={setBudgetFilter}
+                onTeamSizeChange={setTeamSizeFilter}
+                onLocationChange={setLocationFilter}
+              />
+            </div>
+          )}
 
           {/* Projects */}
           <div className="mt-10">

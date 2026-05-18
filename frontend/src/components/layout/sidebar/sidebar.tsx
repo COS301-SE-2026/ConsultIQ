@@ -3,6 +3,7 @@ import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 import type { SidebarItem } from "./sidebar.types";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../../api/auth-context";
 
 interface SidebarProps {
   readonly items: SidebarItem[];
@@ -10,7 +11,7 @@ interface SidebarProps {
 
 function Sidebar({ items }: SidebarProps) {
   const [activePath, setActivePath] = useState(items[0].path);
-
+  const { logout } = useAuth();
   return (
     <aside
       style={{
@@ -96,6 +97,7 @@ function Sidebar({ items }: SidebarProps) {
 
       {/* Logout */}
       <div
+        onClick={logout}
         style={{
             padding: "24px",
 

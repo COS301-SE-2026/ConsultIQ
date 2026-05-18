@@ -17,6 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshToken = async (): Promise<string | null> => {
     try {
+      //will be adjsuted to use the actual refresh url
       const res = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
       const token = res.data.accessToken;
       setAccessToken(token);
@@ -27,10 +28,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = () => {
+  
+
+const logout = async () => {
+  try {
+   
+    await axios.post("logout url", {}, { withCredentials: true });
+  } catch (err) {
+
+    console.error("Server-side logout failed:", err);
+  } finally {
     setAccessToken(null);
     window.location.href = "/login";
-  };
+  }
+};
+
 
   injectAuth({
     getToken: () => accessToken,

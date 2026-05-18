@@ -57,7 +57,7 @@ enum ProjectStatus {
 }
 
 // ----------------------------------------Models---------------------------------------------------
-model AuditLog {
+model authAuditLog {
   id        String       @id @default(uuid())
   email     String
   outcome   AuditOutcome
@@ -86,7 +86,7 @@ model User {
   updatedAt         DateTime   @updatedAt
 
   tokens            Token[]
-  auditLogs         AuditLog[]
+  auditLogs         authAuditLog[]
   consultant        Consultant?
   managedProjects   ProjectManager[]
   managedConsultants  ConsultantManager[]

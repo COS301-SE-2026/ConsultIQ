@@ -50,3 +50,19 @@ export class CreateCertificationDto {
     @Type(() => CreateCertificationDto)
     certifications!: CreateCertificationDto[];
 }
+
+export class ConsultantListItemDto {
+    id!: string;
+    fullName!: string;
+    email!: string;
+    location!: string;
+    costToCompanyRate!: number;
+    availabilityStatus!: string;
+    primarySkills!: string[];
+}
+
+export class PaginatedConsultantsResponseDto {
+  page!: number;
+  total!: number;
+  consultants!: ConsultantListItemDto[];
+}

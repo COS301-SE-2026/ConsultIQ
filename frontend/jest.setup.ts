@@ -1,4 +1,4 @@
 import '@testing-library/jest-dom';
-import { TextEncoder, TextDecoder } from 'util';
+import { TextEncoder, TextDecoder } from 'node:util';
 
-Object.assign(global, { TextEncoder, TextDecoder });
+Object.assign(globalThis, { TextEncoder, TextDecoder });

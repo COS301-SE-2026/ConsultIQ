@@ -57,6 +57,19 @@ enum ProjectStatus {
 }
 
 // ----------------------------------------Models---------------------------------------------------
+model AuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  @@map("audit_logs")
+}
+
 model User {
   id                String     @id @default(uuid())
   fullName          String
@@ -92,19 +105,6 @@ model Token {
   createdAt DateTime  @default(now())
 
   @@map("tokens")
-}
-
-model AuditLog {
-  id        String       @id @default(uuid())
-  email     String
-  outcome   AuditOutcome
-  userId    String?
-  user      User?        @relation(fields: [userId], references: [id])
-  ipAddress String
-  userAgent String?
-  timestamp DateTime     @default(now())
-
-  @@map("audit_logs")
 }
 
 model Consultant {

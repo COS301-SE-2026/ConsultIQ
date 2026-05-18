@@ -15,9 +15,9 @@ import { RolesGuard, ROLES_KEY } from './roles.guard';
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
-// ---------------------------------------------------------------------------
+// --------------------------------- ------------------------------------------
 
-const TEST_SECRET = 'test-secret';
+const TEST_SECRET = 'test-secret'; //NOSONAR
 
 /** Builds a valid signed JWT for the given payload */
 function signToken(payload: Partial<JwtPayload>, secret = TEST_SECRET): string {
@@ -225,7 +225,7 @@ describe('JwtAuthGuard', () => {
         });
 
         it('should throw 401 when payload is missing role', () => {
-            const token = jwt.sign({ userId: 'uuid-x' }, TEST_SECRET);
+            const token = jwt.sign({ userId: 'uuid-x' }, TEST_SECRET); // NOSONAR
             const ctx = buildContext({ authHeader: `Bearer ${token}` });
 
             expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
@@ -233,7 +233,7 @@ describe('JwtAuthGuard', () => {
         });
 
         it('should throw 401 when role in payload is not a recognised ConsultIQ role', () => {
-            const token = jwt.sign(
+            const token = jwt.sign( // NOSONAR
                 { userId: 'uuid-x', role: 'SUPER_ADMIN' },
                 TEST_SECRET,
             );

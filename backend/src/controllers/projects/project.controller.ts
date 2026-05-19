@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -19,5 +21,15 @@ export class ProjectController {
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async createProject(@Body() dto: CreateProjectDto) {
     return await this.projectService.createProject(dto);
+  }
+  @Get()
+  async getAllProjects(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    return await this.projectService.getAllProjects(pageNum, limitNum);
   }
 }

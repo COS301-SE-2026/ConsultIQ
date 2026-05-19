@@ -10,11 +10,12 @@ export class ProjectListItemDto {
     requiredAllocationPercentage!: number;
     clientBillingBudget!: number;
     status!: string
-    primarySkills!: string[];
+    skillCount!: number;
 }
 
 export class PaginatedProjectsResponseDto {
     page!: number;
+    limit!: number;
     total!: number
     projects!: ProjectListItemDto[];
 }

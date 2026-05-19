@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 // ----------------------------------------Enums---------------------------------------------------
 
 enum Role {
@@ -143,19 +142,6 @@ model Token {
   familyId  String?   // groups rotated refresh tokens from the same login session
 
   @@map("tokens")
-}
-
-model authAuditLog {
-  id        String       @id @default(uuid())
-  email     String
-  outcome   AuditOutcome
-  userId    String?
-  user      User?        @relation(fields: [userId], references: [id])
-  ipAddress String
-  userAgent String?
-  timestamp DateTime     @default(now())
-
-  @@map("auth_audit_logs")
 }
 
 model Consultant {

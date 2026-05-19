@@ -1,20 +1,10 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
-
-const sanitizeInput = (input: string) => {
-    if (!input) return "";
-    return input
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/\//g, "&#x2F;");
-};
 
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
@@ -58,17 +48,17 @@ export default function EducationForm() {
     };
 
     useEffect(() => {
-        sessionStorage.setItem("education_institutionName", sanitizeInput(institutionName));
-        sessionStorage.setItem("education_qualification", sanitizeInput(qualification));
-        sessionStorage.setItem("education_startDate", sanitizeInput(startDate));
-        sessionStorage.setItem("education_endDate", sanitizeInput(endDate));
+        sessionStorage.setItem("education_institutionName", DOMPurify.sanitize(institutionName));
+        sessionStorage.setItem("education_qualification", DOMPurify.sanitize(qualification));
+        sessionStorage.setItem("education_startDate", DOMPurify.sanitize(startDate));
+        sessionStorage.setItem("education_endDate", DOMPurify.sanitize(endDate));
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {
         const sanitizedList = educationList.map(edu => ({
             ...edu,
-            institution: sanitizeInput(edu.institution),
-            qualification: sanitizeInput(edu.qualification),
+            institution: DOMPurify.sanitize(edu.institution),
+            qualification: DOMPurify.sanitize(edu.qualification),
         }));
         sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));
     }, [educationList]);

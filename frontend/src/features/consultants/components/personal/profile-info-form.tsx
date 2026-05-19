@@ -1,18 +1,8 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-
-const sanitizeInput = (input: string) => {
-    if (!input) return "";
-    return input
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/\//g, "&#x2F;");
-};
 
 export default function ProfileInfoForm() {
     const [firstName, setFirstName] = useState(() => sessionStorage.getItem("profile_firstName") || "");
@@ -23,12 +13,12 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("profile_firstName", sanitizeInput(firstName));
-        sessionStorage.setItem("profile_lastName", sanitizeInput(lastName));
-        sessionStorage.setItem("profile_email", sanitizeInput(email));
-        sessionStorage.setItem("profile_phone", sanitizeInput(phone));
-        sessionStorage.setItem("profile_idNumber", sanitizeInput(idNumber));
-        sessionStorage.setItem("profile_nationality", sanitizeInput(nationality));
+        sessionStorage.setItem("profile_firstName", DOMPurify.sanitize(firstName));
+        sessionStorage.setItem("profile_lastName", DOMPurify.sanitize(lastName));
+        sessionStorage.setItem("profile_email", DOMPurify.sanitize(email));
+        sessionStorage.setItem("profile_phone", DOMPurify.sanitize(phone));
+        sessionStorage.setItem("profile_idNumber", DOMPurify.sanitize(idNumber));
+        sessionStorage.setItem("profile_nationality", DOMPurify.sanitize(nationality));
 
         console.log("Profile Info Saved:", {
             firstName,

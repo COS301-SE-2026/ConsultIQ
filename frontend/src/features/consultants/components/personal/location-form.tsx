@@ -1,18 +1,8 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-
-const sanitizeInput = (input: string) => {
-    if (!input) return "";
-    return input
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/\//g, "&#x2F;");
-};
 
 export default function LocationForm() {
     const [addressLine1, setAddressLine1] = useState(() => sessionStorage.getItem("location_addressLine1") || "");
@@ -23,12 +13,12 @@ export default function LocationForm() {
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("location_addressLine1", sanitizeInput(addressLine1));
-        sessionStorage.setItem("location_addressLine2", sanitizeInput(addressLine2));
-        sessionStorage.setItem("location_suburb", sanitizeInput(suburb));
-        sessionStorage.setItem("location_city", sanitizeInput(city));
-        sessionStorage.setItem("location_province", sanitizeInput(province));
-        sessionStorage.setItem("location_postalCode", sanitizeInput(postalCode));
+        sessionStorage.setItem("location_addressLine1", DOMPurify.sanitize(addressLine1));
+        sessionStorage.setItem("location_addressLine2", DOMPurify.sanitize(addressLine2));
+        sessionStorage.setItem("location_suburb", DOMPurify.sanitize(suburb));
+        sessionStorage.setItem("location_city", DOMPurify.sanitize(city));
+        sessionStorage.setItem("location_province", DOMPurify.sanitize(province));
+        sessionStorage.setItem("location_postalCode", DOMPurify.sanitize(postalCode));
 
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };

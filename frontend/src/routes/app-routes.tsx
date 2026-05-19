@@ -6,6 +6,7 @@ import PopiaConsentPage from "../features/authentication/pages/popia-consent-pag
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
+import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 
 function AppRoutes() {
     return (
@@ -17,6 +18,7 @@ function AppRoutes() {
             <Route path="/consultants-manager" element={<ConsultantsPage />} />
             <Route path="/project-specification" element={<ProjectSpecificationPage />} />
             <Route path="/projects" element={<ProjectListPage />} />
+            <Route path="/create-profile" element={<CreateProfilePage />} />
         </Routes>
         </BrowserRouter>
     );

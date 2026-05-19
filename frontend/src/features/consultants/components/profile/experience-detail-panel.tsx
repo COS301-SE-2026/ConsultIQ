@@ -19,11 +19,17 @@ interface ExperienceDetailPanelProps {
 
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-2 mb-8">
-      <p className="font-semibold text-base" style={{ color: "var(--color-secondary)" }}>
+    <div className="flex flex-col" style={{ gap: "10px", marginBottom: "28px" }}>
+      <p
+        className="font-semibold"
+        style={{ color: "var(--color-secondary)", fontSize: "var(--text-h4)" }}
+      >
         {label}
       </p>
-      <p className="text-base leading-relaxed" style={{ color: "var(--color-text-primary)" }}>
+      <p
+        className="leading-relaxed"
+        style={{ color: "var(--color-text-primary)", fontSize: "var(--text-h3)" }}
+      >
         {value}
       </p>
     </div>
@@ -40,21 +46,30 @@ function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelPro
     >
       {/* Panel */}
       <div
-        className="bg-white h-full overflow-y-auto w-1/2 max-w-2xl px-12 py-10"
+        className="bg-white h-full overflow-y-auto w-1/2 max-w-2xl"
+        style={{ padding: "40px 48px" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Back button */}
         <button
           onClick={onClose}
-          className="flex items-center gap-2 mb-10 font-medium hover:opacity-70 transition"
-          style={{ color: "var(--color-primary)" }}
+          className="flex items-center gap-2 font-medium hover:opacity-70 transition"
+          style={{
+            color: "var(--color-primary)",
+            fontSize: "var(--text-h4)",
+            marginBottom: "32px",
+          }}
         >
           <ArrowLeft size={18} /> Back
         </button>
 
         <h1
-          className="font-bold text-4xl mb-10"
-          style={{ color: "var(--color-primary)" }}
+          className="font-bold"
+          style={{
+            color: "var(--color-primary)",
+            fontSize: "32px",
+            marginBottom: "36px",
+          }}
         >
           Experience
         </h1>

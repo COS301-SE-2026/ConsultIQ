@@ -8,6 +8,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
+import { ConsultantsModule } from './consultants.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CommonModule } from './common/common.module';
     EmailModule,
     CommonModule,
     AuthModule,
+    ConsultantsModule,
   ],
   controllers: [AppController],
   providers: [

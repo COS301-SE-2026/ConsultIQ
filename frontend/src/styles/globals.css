@@ -2,6 +2,32 @@
 
 /* Global Reset */
 
+
+
+@theme {
+   
+  /*login theme*/
+  --color-brand-blue: #002D62;
+  --color-brand-navy: #092352;
+  --color-brand-muted: #6B7280;
+  --color-brand-gold: #C9A84C;
+  --color-brand-slate: #E2E8F0;
+  --color-brand-bg: #F4F6FA;
+  --color-white: #FFFFFF;
+
+  --font-calibri: "Calibri", "Candara", "Segoe UI", "Optima", "Arial", sans-serif;
+  
+  --text-h1: var(--text-h1);
+  --text-h2: var(--text-h2);
+  --text-h3: var(--text-h3);
+  --text-body: var(--text-body);
+
+  --radius-sm: var(--radius-sm);
+
+
+
+}
+
 * {
   margin: 0;
   padding: 0;

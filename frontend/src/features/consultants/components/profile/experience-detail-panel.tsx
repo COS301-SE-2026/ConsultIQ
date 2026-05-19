@@ -13,8 +13,8 @@ export interface Experience {
 }
 
 interface ExperienceDetailPanelProps {
-   experience: Experience;
-   onClose: () => void;
+   readonly experience: Experience;
+   readonly onClose: () => void;
 }
 
 function DetailField({ label, value }: { 

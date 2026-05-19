@@ -21,21 +21,34 @@ function EducationCard({ educationList }: EducationCardProps) {
   return (
     <>
       <div
-        className="bg-white rounded-2xl px-10 py-8"
-        style={{ boxShadow: "var(--shadow-card)" }}
+        className="bg-white rounded-2xl w-full flex flex-col"
+        style={{
+          padding: "28px 28px 28px 28px",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          gap: "28px",
+        }}
       >
+       
         <h2
-          className="font-bold text-xl mb-8"
-          style={{ color: "var(--color-primary)" }}
+          className="font-bold"
+          style={{ color: "var(--color-primary)", fontSize: "22px" }}
         >
           Education
         </h2>
 
+        <hr style={{ borderColor: "var(--color-border)" }} />
+
+        {/* Education rows */}
         <div className="flex flex-col">
           {educationList.map((edu, index) => (
             <div key={edu.id}>
               {index > 0 && (
-                <hr className="my-6" style={{ borderColor: "var(--color-border)" }} />
+                <hr
+                  style={{
+                    borderColor: "var(--color-border)",
+                    margin: "24px 0",
+                  }}
+                />
               )}
 
               <button
@@ -43,19 +56,35 @@ function EducationCard({ educationList }: EducationCardProps) {
                 className="w-full text-left hover:opacity-70 transition cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-6">
-                
-                  <div className="flex flex-col gap-1.5">
-                    <p className="font-bold text-base" style={{ color: "var(--color-text-primary)" }}>
+                  {/* institution info */}
+                  <div className="flex flex-col" style={{ gap: "8px" }}>
+                    <p
+                      className="font-bold"
+                      style={{
+                        color: "var(--color-text-primary)",
+                        fontSize: "var(--text-h3)",
+                      }}
+                    >
                       {edu.institution}
                     </p>
-                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                    <p
+                      className="font-medium"
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        fontSize: "var(--text-h4)",
+                      }}
+                    >
                       {edu.qualification}
                     </p>
                   </div>
 
+                  {/* date range */}
                   <span
-                    className="text-sm shrink-0"
-                    style={{ color: "var(--color-text-secondary)" }}
+                    className="shrink-0"
+                    style={{
+                      color: "var(--color-text-secondary)",
+                      fontSize: "var(--text-h4)",
+                    }}
                   >
                     {formatDateRange(edu.startDate, edu.endDate)}
                   </span>
@@ -66,7 +95,6 @@ function EducationCard({ educationList }: EducationCardProps) {
         </div>
       </div>
 
-      {/* Detail panel */}
       {selected && (
         <EducationDetailPanel
           education={selected}

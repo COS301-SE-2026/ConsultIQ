@@ -10,7 +10,7 @@ export interface Education {
 }
 
 interface EducationDetailPanelProps {
-   readonly education: Education;
+  readonly education: Education;
   readonly onClose: () => void;
 }
 
@@ -36,12 +36,21 @@ function DetailField({ label, value }: {
 }
 
 function EducationDetailPanel({ education, onClose }: EducationDetailPanelProps) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  };
+
   return (
-      /* Backdrop */
+    /* Backdrop  */
     <div
       className="fixed inset-0 z-50 flex justify-end"
       style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
       onClick={onClose}
+      onKeyDown={handleKeyDown}
+      role="presentation"
+      aria-label="Close panel"
     >
       {/* Panel */}
       <div

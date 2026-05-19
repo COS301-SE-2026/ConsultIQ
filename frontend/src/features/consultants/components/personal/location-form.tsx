@@ -1,8 +1,12 @@
 import { useState } from "react";
-import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+
+const sanitizeText = (input: string) => {
+    if (!input) return "";
+    return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
+};
 
 export default function LocationForm() {
     const [addressLine1, setAddressLine1] = useState(() => sessionStorage.getItem("location_addressLine1") || "");
@@ -13,25 +17,12 @@ export default function LocationForm() {
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
 
     const handleDone = () => {
-        const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
-
-        const sanitizedAddressLine1 = DOMPurify.sanitize(addressLine1, purifyConfig);
-        sessionStorage.setItem("location_addressLine1", sanitizedAddressLine1);
-
-        const sanitizedAddressLine2 = DOMPurify.sanitize(addressLine2, purifyConfig);
-        sessionStorage.setItem("location_addressLine2", sanitizedAddressLine2);
-
-        const sanitizedSuburb = DOMPurify.sanitize(suburb, purifyConfig);
-        sessionStorage.setItem("location_suburb", sanitizedSuburb);
-
-        const sanitizedCity = DOMPurify.sanitize(city, purifyConfig);
-        sessionStorage.setItem("location_city", sanitizedCity);
-
-        const sanitizedProvince = DOMPurify.sanitize(province, purifyConfig);
-        sessionStorage.setItem("location_province", sanitizedProvince);
-
-        const sanitizedPostalCode = DOMPurify.sanitize(postalCode, purifyConfig);
-        sessionStorage.setItem("location_postalCode", sanitizedPostalCode);
+        sessionStorage.setItem("location_addressLine1", sanitizeText(addressLine1));
+        sessionStorage.setItem("location_addressLine2", sanitizeText(addressLine2));
+        sessionStorage.setItem("location_suburb", sanitizeText(suburb));
+        sessionStorage.setItem("location_city", sanitizeText(city));
+        sessionStorage.setItem("location_province", sanitizeText(province));
+        sessionStorage.setItem("location_postalCode", sanitizeText(postalCode));
 
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };

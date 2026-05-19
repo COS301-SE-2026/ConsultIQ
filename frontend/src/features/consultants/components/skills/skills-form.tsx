@@ -1,10 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
-import DOMPurify from "dompurify";
 import { Card } from "../../../../components/ui/card"
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import ProjectSkillsTable from "../../../projects/components/project-skills-table";
 import type { Skill } from "../../../projects/components/project-skills-table";
+
+const sanitizeText = (input: string) => {
+    if (!input) return "";
+    return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
+};
 
 export default function SkillsForm() {
     const [skills, setSkills] = useState<Skill[]>(() => {
@@ -50,8 +54,8 @@ export default function SkillsForm() {
     useEffect(() => {
         const sanitizedList = skills.map((skill) => ({
             ...skill,
-            name: DOMPurify.sanitize(skill.name, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
-            competency: DOMPurify.sanitize(skill.competency, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            name: sanitizeText(skill.name),
+            competency: sanitizeText(skill.competency),
         }));
         sessionStorage.setItem("skills_list", JSON.stringify(sanitizedList));
     }, [skills]);

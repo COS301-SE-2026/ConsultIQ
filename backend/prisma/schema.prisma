@@ -140,6 +140,7 @@ model Token {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+  familyId  String?   // groups rotated refresh tokens from the same login session
 
   @@map("tokens")
 }

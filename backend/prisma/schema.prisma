@@ -287,3 +287,17 @@ model ProjectPlacement {
 
   @@map("project_placements")
 }
+
+model authAuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("auth_audit_logs")
+}

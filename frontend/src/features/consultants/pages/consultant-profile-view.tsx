@@ -10,7 +10,6 @@ import {
 } from "../components/profile";
 import type { Skill, Experience, Education } from "../components/profile";
 
-
 interface Profile {
   id: string;
   firstName: string;
@@ -28,7 +27,6 @@ interface Profile {
   experience: Experience[];
   education: Education[];
 }
-
 
 const mockProfile: Profile = {
   id: "CON123",
@@ -92,22 +90,19 @@ const mockProfile: Profile = {
   ],
 };
 
-
 function ConsultantProfileViewPage() {
- 
   const profile = mockProfile;
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-
-   
+    <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
 
-      <div className="flex-1 flex flex-col px-2 sm:px-4 min-w-0">
-
+  
+      <div className="flex-1 flex flex-col overflow-y-auto">
+       
        
         <header
-          className="bg-white flex items-center h-[90px] px-10 border-b"
+          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)" }}
         >
           <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)" }}>
@@ -116,36 +111,39 @@ function ConsultantProfileViewPage() {
         </header>
 
       
-        <main className="flex-1 flex flex-col gap-6 px-12 py-10">
-          <ProfileHeroCard
-            firstName={profile.firstName}
-            lastName={profile.lastName}
-            status={profile.status}
-          />
+        <main className="flex-1 flex flex-col items-center p-10">
+          <div className="flex flex-col gap-8 w-full max-w-[1024px]">
+            <div className="h-1" />
 
-          <PersonalInfoCard
-            firstName={profile.firstName}
-            lastName={profile.lastName}
-            email={profile.email}
-            phone={profile.phone}
-          />
+            <ProfileHeroCard
+              firstName={profile.firstName}
+              lastName={profile.lastName}
+              status={profile.status}
+            />
 
-          <LocationCard
-            address1={profile.address1}
-            address2={profile.address2}
-            suburb={profile.suburb}
-            city={profile.city}
-            province={profile.province}
-            postalCode={profile.postalCode}
-          />
+            <PersonalInfoCard
+              firstName={profile.firstName}
+              lastName={profile.lastName}
+              email={profile.email}
+              phone={profile.phone}
+            />
 
-          <ExperienceCard experiences={profile.experience} />
+            <LocationCard
+              address1={profile.address1}
+              address2={profile.address2}
+              suburb={profile.suburb}
+              city={profile.city}
+              province={profile.province}
+              postalCode={profile.postalCode}
+            />
 
-          <SkillsCard skills={profile.skills} />
+            <ExperienceCard experiences={profile.experience} />
 
-          <EducationCard educationList={profile.education} />
+            <SkillsCard skills={profile.skills} />
+
+            <EducationCard educationList={profile.education} />
+          </div>
         </main>
-
       </div>
     </div>
   );

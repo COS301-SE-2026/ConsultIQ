@@ -4,7 +4,7 @@ import ExperienceDetailPanel, { type Experience } from "./experience-detail-pane
 export type { Experience };
 
 interface ExperienceCardProps {
-  experiences: Experience[];
+ readonly experiences: readonly Experience[];
 }
 
 function formatDateRange(startDate: string, endDate: string) {
@@ -28,7 +28,7 @@ function ExperienceCard({ experiences }: ExperienceCardProps) {
           gap: "28px",
         }}
       >
-        
+
         <h2
           className="font-bold"
           style={{ color: "var(--color-primary)", fontSize: "22px" }}

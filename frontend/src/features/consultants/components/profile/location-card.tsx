@@ -1,10 +1,10 @@
 interface LocationCardProps {
-  address1: string;
-  address2: string;
-  suburb: string;
-  city: string;
-  province: string;
-  postalCode: string;
+  readonly address1: string;
+  readonly address2: string;
+  readonly suburb: string;
+  readonly city: string;
+  readonly province: string;
+  readonly postalCode: string;
 }
 
 function ProfileField({ label, value }: { label: string; value: string }) {

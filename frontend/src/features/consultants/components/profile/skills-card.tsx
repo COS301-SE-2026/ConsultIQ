@@ -7,7 +7,7 @@ export interface Skill {
 }
  
 interface SkillsCardProps {
-  skills: Skill[];
+  readonly skills: readonly Skill[];
 }
  
 function SkillsCard({ skills }: SkillsCardProps) {
@@ -20,7 +20,7 @@ function SkillsCard({ skills }: SkillsCardProps) {
         gap: "28px",
       }}
     >
-      
+
       <h2
         className="font-bold"
         style={{ color: "var(--color-primary)", fontSize: "22px" }}

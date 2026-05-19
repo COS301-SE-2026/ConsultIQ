@@ -4,7 +4,7 @@ import EducationDetailPanel, { type Education } from "./education-detail-panel";
 export type { Education };
 
 interface EducationCardProps {
-  educationList: Education[];
+   readonly educationList: readonly Education[];
 }
 
 function formatDateRange(startDate: string, endDate: string) {

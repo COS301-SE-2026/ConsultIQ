@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { useCallback } from "react";
 
 export interface Experience {
   id: string;
@@ -13,13 +14,14 @@ export interface Experience {
 }
 
 interface ExperienceDetailPanelProps {
-   readonly experience: Experience;
-   readonly onClose: () => void;
+  readonly experience: Experience;
+  readonly onClose: () => void;
 }
 
 function DetailField({ label, value }: { 
   readonly label: string; 
-  readonly value: string }) {
+  readonly value: string;
+}) {
   return (
     <div className="flex flex-col" style={{ gap: "10px", marginBottom: "28px" }}>
       <p
@@ -39,12 +41,22 @@ function DetailField({ label, value }: {
 }
 
 function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelProps) {
+
+  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+    }
+  }, [onClose]);
+
   return (
-    /* Backdrop */
+    /* Backdrop  */
     <div
       className="fixed inset-0 z-50 flex justify-end"
       style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
       onClick={onClose}
+      onKeyDown={handleBackdropKeyDown}
+      role="presentation"
+      aria-label="Close panel"
     >
       {/* Panel */}
       <div

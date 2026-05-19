@@ -1,7 +1,7 @@
-type Props = {
-    label: string;
-    active?: boolean;
-    onClick: () => void;
+type  Props = {
+    readonly label: string;
+    readonly active?: boolean;
+    readonly onClick: () => void;
 };
 
 export default function TabButton({

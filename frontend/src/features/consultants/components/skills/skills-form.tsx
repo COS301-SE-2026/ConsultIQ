@@ -5,6 +5,21 @@ import { Button } from "../../../../components/ui/button";
 import ProjectSkillsTable from "../../../projects/components/project-skills-table";
 import type { Skill } from "../../../projects/components/project-skills-table";
 
+const sanitizeInput = (input: string) => {
+    if (!input) return "";
+    return input.replace(/[&<>"'/]/g, (match) => {
+        switch (match) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            case '/': return '&#x2F;';
+            default: return match;
+        }
+    });
+};
+
 export default function SkillsForm() {
     const [skills, setSkills] = useState<Skill[]>(() => {
         const saved = sessionStorage.getItem("skills_list");
@@ -51,7 +66,12 @@ export default function SkillsForm() {
     };
 
     useEffect(() => {
-        sessionStorage.setItem("skills_list", JSON.stringify(skills));
+        const sanitizedList = skills.map((skill) => ({
+            ...skill,
+            name: sanitizeInput(skill.name),
+            competency: sanitizeInput(skill.competency),
+        }));
+        sessionStorage.setItem("skills_list", JSON.stringify(sanitizedList));
     }, [skills]);
 
     return (

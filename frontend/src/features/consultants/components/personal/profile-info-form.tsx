@@ -3,6 +3,21 @@ import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 
+const sanitizeInput = (input: string) => {
+    if (!input) return "";
+    return input.replace(/[&<>"'/]/g, (match) => {
+        switch (match) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            case '/': return '&#x2F;';
+            default: return match;
+        }
+    });
+};
+
 export default function ProfileInfoForm() {
     const [firstName, setFirstName] = useState(() => sessionStorage.getItem("profile_firstName") || "");
     const [lastName, setLastName] = useState(() => sessionStorage.getItem("profile_lastName") || "");
@@ -12,12 +27,12 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("profile_firstName", firstName);
-        sessionStorage.setItem("profile_lastName", lastName);
-        sessionStorage.setItem("profile_email", email);
-        sessionStorage.setItem("profile_phone", phone);
-        sessionStorage.setItem("profile_idNumber", idNumber);
-        sessionStorage.setItem("profile_nationality", nationality);
+        sessionStorage.setItem("profile_firstName", sanitizeInput(firstName));
+        sessionStorage.setItem("profile_lastName", sanitizeInput(lastName));
+        sessionStorage.setItem("profile_email", sanitizeInput(email));
+        sessionStorage.setItem("profile_phone", sanitizeInput(phone));
+        sessionStorage.setItem("profile_idNumber", sanitizeInput(idNumber));
+        sessionStorage.setItem("profile_nationality", sanitizeInput(nationality));
 
         console.log("Profile Info Saved:", {
             firstName,

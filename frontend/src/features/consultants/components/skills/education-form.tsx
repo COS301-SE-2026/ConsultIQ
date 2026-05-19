@@ -5,6 +5,21 @@ import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 
+const sanitizeInput = (input: string) => {
+    if (!input) return "";
+    return input.replace(/[&<>"'/]/g, (match) => {
+        switch (match) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            case '/': return '&#x2F;';
+            default: return match;
+        }
+    });
+};
+
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
@@ -50,14 +65,19 @@ export default function EducationForm() {
     };
 
     useEffect(() => {
-        sessionStorage.setItem("education_institutionName", institutionName);
-        sessionStorage.setItem("education_qualification", qualification);
-        sessionStorage.setItem("education_startDate", startDate);
-        sessionStorage.setItem("education_endDate", endDate);
+        sessionStorage.setItem("education_institutionName", sanitizeInput(institutionName));
+        sessionStorage.setItem("education_qualification", sanitizeInput(qualification));
+        sessionStorage.setItem("education_startDate", sanitizeInput(startDate));
+        sessionStorage.setItem("education_endDate", sanitizeInput(endDate));
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {
-        sessionStorage.setItem("education_list", JSON.stringify(educationList));
+        const sanitizedList = educationList.map(edu => ({
+            ...edu,
+            institution: sanitizeInput(edu.institution),
+            qualification: sanitizeInput(edu.qualification),
+        }));
+        sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));
     }, [educationList]);
 
     return (

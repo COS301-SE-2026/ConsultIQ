@@ -3,6 +3,20 @@ import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 
+const sanitizeInput = (input: string) => {
+    return input.replace(/[&<>"'/]/g, (match) => {
+        switch (match) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            case "'": return '&#39;';
+            case '/': return '&#x2F;';
+            default: return match;
+        }
+    });
+};
+
 export default function LocationForm() {
     const [addressLine1, setAddressLine1] = useState(() => sessionStorage.getItem("location_addressLine1") || "");
     const [addressLine2, setAddressLine2] = useState(() => sessionStorage.getItem("location_addressLine2") || "");
@@ -12,12 +26,12 @@ export default function LocationForm() {
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("location_addressLine1", addressLine1);
-        sessionStorage.setItem("location_addressLine2", addressLine2);
-        sessionStorage.setItem("location_suburb", suburb);
-        sessionStorage.setItem("location_city", city);
-        sessionStorage.setItem("location_province", province);
-        sessionStorage.setItem("location_postalCode", postalCode);
+        sessionStorage.setItem("location_addressLine1", sanitizeInput(addressLine1));
+        sessionStorage.setItem("location_addressLine2", sanitizeInput(addressLine2));
+        sessionStorage.setItem("location_suburb", sanitizeInput(suburb));
+        sessionStorage.setItem("location_city", sanitizeInput(city));
+        sessionStorage.setItem("location_province", sanitizeInput(province));
+        sessionStorage.setItem("location_postalCode", sanitizeInput(postalCode));
 
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };

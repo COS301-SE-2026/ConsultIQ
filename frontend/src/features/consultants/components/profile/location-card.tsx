@@ -9,38 +9,65 @@ interface LocationCardProps {
 
 function ProfileField({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
+    <div className="flex flex-col" style={{ gap: "10px", minWidth: 0 }}>
+      <p
+        className="font-semibold"
+        style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-h4)" }}
+      >
         {label}
       </p>
-      <p className="font-semibold text-base" style={{ color: "var(--color-text-primary)" }}>
-        {value}
+      <p
+        className="font-semibold break-words"
+        style={{ color: "var(--color-text-primary)", fontSize: "var(--text-h3)" }}
+      >
+        {value || "—"}
       </p>
     </div>
   );
 }
 
-function LocationCard({ address1, address2, suburb, city, province, postalCode }: LocationCardProps) {
+function LocationCard({
+  address1,
+  address2,
+  suburb,
+  city,
+  province,
+  postalCode,
+}: LocationCardProps) {
   return (
     <div
-      className="bg-white rounded-2xl px-10 py-8"
-      style={{ boxShadow: "var(--shadow-card)" }}
+      className="bg-white rounded-2xl w-full flex flex-col"
+      style={{
+        padding: "28px 28px 28px 28px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        gap: "28px",
+      }}
     >
+     
       <h2
-        className="font-bold text-xl mb-8"
-        style={{ color: "var(--color-primary)" }}
+        className="font-bold"
+        style={{ color: "var(--color-primary)", fontSize: "22px" }}
       >
         Location
       </h2>
 
-      <div className="grid grid-cols-2 gap-x-20 gap-y-8">
-        <ProfileField label="Address line 1" value={address1} />
-        <ProfileField label="City"           value={city} />
-        <ProfileField label="Address line 2" value={address2} />
-        <ProfileField label="Postal code"    value={postalCode} />
-        <ProfileField label="Suburb"         value={suburb} />
-        <div />
-        <ProfileField label="Province"       value={province} />
+      <hr style={{ borderColor: "var(--color-border)" }} />
+
+      <div className="flex flex-col" style={{ gap: "28px" }}>
+        <ProfileField label="Address Line 1" value={address1} />
+        <ProfileField label="Address Line 2" value={address2} />
+      </div>
+
+      <hr style={{ borderColor: "var(--color-border)" }} />
+
+      <div
+        className="grid grid-cols-1 md:grid-cols-2"
+        style={{ gap: "28px" }}
+      >
+        <ProfileField label="Suburb"      value={suburb} />
+        <ProfileField label="City"        value={city} />
+        <ProfileField label="Province"    value={province} />
+        <ProfileField label="Postal Code" value={postalCode} />
       </div>
     </div>
   );

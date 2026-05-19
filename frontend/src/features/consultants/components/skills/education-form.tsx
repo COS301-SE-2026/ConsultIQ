@@ -24,11 +24,8 @@ export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
         if (saved) {
-            try {
                 return JSON.parse(saved);
-            } catch (e) {
-                return [];
-            }
+        
         }
         return [];
     });

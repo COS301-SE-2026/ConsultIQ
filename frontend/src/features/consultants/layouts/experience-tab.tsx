@@ -32,11 +32,7 @@ export default function ExperienceTab() {
     const [experiences, setExperiences] = useState<ExperienceItem[]>(() => {
         const saved = sessionStorage.getItem("experience_list");
         if (saved) {
-            try {
                 return JSON.parse(saved);
-            } catch (e) {
-                return [];
-            }
         }
         return [];
     });

@@ -24,11 +24,7 @@ export default function SkillsForm() {
     const [skills, setSkills] = useState<Skill[]>(() => {
         const saved = sessionStorage.getItem("skills_list");
         if (saved) {
-            try {
                 return JSON.parse(saved);
-            } catch (e) {
-                return [];
-            }
         }
         return [];
     });

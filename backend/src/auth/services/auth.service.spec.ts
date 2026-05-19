@@ -13,6 +13,9 @@ import {
 import { CredentialService } from './auth.credential.service';
 import { LockoutService } from './auth.lockout.service';
 import { AuditLogService } from './auth.audit-log.service';
+import { RefreshTokenService } from './auth.refresh-token.service';
+import { JwtService } from '@nestjs/jwt';
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: {
@@ -120,9 +123,24 @@ describe('AuthService', () => {
         { provide: EmailService, useValue: email },
         { provide: TokenService, useValue: token },
         { provide: ConfigService, useValue: mockConfig },
-        { provide: CredentialService, useValue: mockCredentialService },  // ADD
-        { provide: LockoutService, useValue: mockLockoutService },        // ADD
-        { provide: AuditLogService, useValue: mockAuditLogService },      // ADD
+        { provide: CredentialService, useValue: mockCredentialService },
+        { provide: LockoutService, useValue: mockLockoutService },
+        { provide: AuditLogService, useValue: mockAuditLogService },
+        {
+          provide: RefreshTokenService,
+          useValue: {
+            createRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
+            revokeAllForUser: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('mock-jwt-token'),
+          },
+        },
+
+
       ],
     }).compile();
 

@@ -10,6 +10,8 @@ import { AuditLogService } from '../../services/auth.audit-log.service';
 import { EmailService } from '../../../email/services/email.service';
 import { TokenService } from '../../../common/services/token.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { RefreshTokenService } from '../../services/auth.refresh-token.service';
+import { JwtService } from '@nestjs/jwt';
 
 import {
   BASE_USER,
@@ -52,6 +54,20 @@ describe('AuthService Testing Suite', () => {
         { provide: CredentialService, useValue: mockCredentialService },
         { provide: LockoutService, useValue: mockLockoutService },
         { provide: AuditLogService, useValue: mockAuditLogService },
+        {
+          provide: RefreshTokenService,
+          useValue: {
+            createRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
+            revokeAllForUser: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('mock-jwt-token'),
+          },
+        },
+
       ],
     }).compile();
 
@@ -147,6 +163,8 @@ describe('AuthService Testing Suite', () => {
         email: BASE_USER.email,
         role: Role.CONSULTANT,
         dashboardRoute: '/profile',
+        accessToken: 'mock-jwt-token',
+        refreshToken: 'mock-refresh-token',
       });
     });
 

@@ -346,8 +346,8 @@ export default function ProjectListPage() {
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full" 
           style={{
             borderColor: "var(--color-border)",
-            paddingLeft: "80px",
-            paddingRight: "80px",
+            paddingLeft: "40px",
+            paddingRight: "40px",
           }}
         >
           <h1 className="text-4xl font-bold"
@@ -374,7 +374,7 @@ export default function ProjectListPage() {
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+          <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "40px", paddingRight: "40px" }}>
 
           {/* Search */}
           <div className="mt-8">

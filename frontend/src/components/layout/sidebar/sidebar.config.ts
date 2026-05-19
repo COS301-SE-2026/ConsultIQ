@@ -1,9 +1,14 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck } from "lucide-react";
+import { Users, Briefcase, UserCheck, Settings, LayoutDashboard} from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
-        label: "Consultants",
-        path: "/consultants",
+        label: "Dashboard",
+        path: "/dashboard",
+        icon: LayoutDashboard
+    },
+    {
+        label: "Users",
+        path: "/users",
         icon: Users
     },
     {
@@ -11,12 +16,17 @@ export const adminSidebarItems: SidebarItem[] = [
         path: "/projects",
         icon: Briefcase
     },
+    {
+        label: "Configurations",
+        path: "/configurations",
+        icon: Settings
+    },
 ]
 
 export const consultantManagerSidebarItems: SidebarItem[] = [
     {
         label: "Consultants",
-        path: "/consultants",
+        path: "/consultants-manager",
         icon: Users
     },
 
@@ -33,7 +43,7 @@ export const projectManagerSidebarItems: SidebarItem[] = [
 
 export const consultantSidebarItems: SidebarItem[] = [
     {
-        label: "Projects",
+        label: "Profile",
         path: "/profile",
         icon: UserCheck
     },

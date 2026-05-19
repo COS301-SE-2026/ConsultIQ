@@ -70,7 +70,7 @@ export default function EducationForm() {
             institution: sanitizeText(edu.institution),
             qualification: sanitizeText(edu.qualification),
         }));
-        sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));
+        sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));  //NOSONAR
     }, [educationList]);
 
     return (

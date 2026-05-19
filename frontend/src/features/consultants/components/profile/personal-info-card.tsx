@@ -5,7 +5,9 @@ interface PersonalInfoCardProps {
   readonly phone: string;
 }
 
-function ProfileField({ label, value }: { label: string; value: string }) {
+function ProfileField({ label, value }: { 
+  readonly label: string; 
+  readonly value: string }) {
   return (
     <div className="flex flex-col" style={{ gap: "10px", minWidth: 0 }}>
       <p

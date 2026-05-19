@@ -10,11 +10,13 @@ export interface Education {
 }
 
 interface EducationDetailPanelProps {
-  readonly education: Education;
-  readonly onClose: () => void;
+   education: Education;
+  onClose: () => void;
 }
 
-function DetailField({ label, value }: { label: string; value: string }) {
+function DetailField({ label, value }: {
+  readonly label: string;
+  readonly value: string }) {
   return (
     <div className="flex flex-col" style={{ gap: "10px", marginBottom: "28px" }}>
       <p

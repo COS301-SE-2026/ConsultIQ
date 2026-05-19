@@ -21,7 +21,7 @@ export class AuditLogService {
      */
     async log(ctx: AuditContext): Promise<void> {
         try {
-            await this.prisma.auditLog.create({
+            await this.prisma.authAuditLog.create({
                 data: {
                     email: ctx.email.toLowerCase().trim(),
                     outcome: ctx.outcome,

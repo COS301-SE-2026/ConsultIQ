@@ -10,6 +10,7 @@ import ProjectListPage from "../features/projects/pages/project-list-page";
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 
+import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 
 function AppRoutes() {
     return (
@@ -24,6 +25,7 @@ function AppRoutes() {
             <Route path="/projects" element={<ProjectListPage />} />
             <Route path="/consultant-FAQ" element={<UnderConstructionPage/>}/>
             <Route path="/profile-view" element={<ConsultantProfileViewPage/>}/>
+            <Route path="/create-profile" element={<CreateProfilePage />} />
         </Routes>
         </BrowserRouter>
     );

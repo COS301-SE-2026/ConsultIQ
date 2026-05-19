@@ -1,5 +1,4 @@
 import { useState } from "react";
-import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
@@ -13,26 +12,30 @@ export default function LocationForm() {
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
 
     const handleDone = () => {
-        const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
+        // Strict allowlist sanitization for plain text fields
+        const sanitizeAddress = (text: string) => text.replace(/[^a-zA-Z0-9\s.,#'-]/g, "");
+        const sanitizeText = (text: string) => text.replace(/[^a-zA-Z\s.,'-]/g, "");
+        const sanitizeAlphanumeric = (text: string) => text.replace(/[^a-zA-Z0-9\s-]/g, "");
 
-        const sanitizedAddressLine1 = String(DOMPurify.sanitize(addressLine1, purifyConfig));
+        const sanitizedAddressLine1 = sanitizeAddress(addressLine1);
         sessionStorage.setItem("location_addressLine1", sanitizedAddressLine1);
 
-        const sanitizedAddressLine2 = String(DOMPurify.sanitize(addressLine2, purifyConfig));
+        const sanitizedAddressLine2 = sanitizeAddress(addressLine2);
         sessionStorage.setItem("location_addressLine2", sanitizedAddressLine2);
 
-        const sanitizedSuburb = String(DOMPurify.sanitize(suburb, purifyConfig));
+        const sanitizedSuburb = sanitizeText(suburb);
         sessionStorage.setItem("location_suburb", sanitizedSuburb);
 
-        const sanitizedCity = String(DOMPurify.sanitize(city, purifyConfig));
+        const sanitizedCity = sanitizeText(city);
         sessionStorage.setItem("location_city", sanitizedCity);
 
-        const sanitizedProvince = String(DOMPurify.sanitize(province, purifyConfig));
+        const sanitizedProvince = sanitizeText(province);
         sessionStorage.setItem("location_province", sanitizedProvince);
 
-        const sanitizedPostalCode = String(DOMPurify.sanitize(postalCode, purifyConfig));
+        const sanitizedPostalCode = sanitizeAlphanumeric(postalCode);
         sessionStorage.setItem("location_postalCode", sanitizedPostalCode);
 
+        // eslint-disable-next-line no-console
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };
 

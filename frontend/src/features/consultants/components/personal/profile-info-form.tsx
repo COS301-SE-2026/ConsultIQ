@@ -1,5 +1,4 @@
 import { useState } from "react";
-import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
@@ -13,26 +12,30 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
 
     const handleDone = () => {
-        const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
+        // Strict allowlist sanitization for plain text fields
+        const sanitizeName = (text: string) => text.replace(/[^a-zA-Z\s.,'-]/g, "");
+        const sanitizeEmail = (text: string) => text.replace(/[^a-zA-Z0-9._@+-]/g, "");
+        const sanitizeNumeric = (text: string) => text.replace(/\D/g, "");
 
-        const sanitizedFirstName = String(DOMPurify.sanitize(firstName, purifyConfig));
+        const sanitizedFirstName = sanitizeName(firstName);
         sessionStorage.setItem("profile_firstName", sanitizedFirstName);
 
-        const sanitizedLastName = String(DOMPurify.sanitize(lastName, purifyConfig));
+        const sanitizedLastName = sanitizeName(lastName);
         sessionStorage.setItem("profile_lastName", sanitizedLastName);
 
-        const sanitizedEmail = String(DOMPurify.sanitize(email, purifyConfig));
+        const sanitizedEmail = sanitizeEmail(email);
         sessionStorage.setItem("profile_email", sanitizedEmail);
 
-        const sanitizedPhone = String(DOMPurify.sanitize(phone, purifyConfig));
+        const sanitizedPhone = sanitizeNumeric(phone);
         sessionStorage.setItem("profile_phone", sanitizedPhone);
 
-        const sanitizedIdNumber = String(DOMPurify.sanitize(idNumber, purifyConfig));
+        const sanitizedIdNumber = sanitizeNumeric(idNumber);
         sessionStorage.setItem("profile_idNumber", sanitizedIdNumber);
 
-        const sanitizedNationality = String(DOMPurify.sanitize(nationality, purifyConfig));
+        const sanitizedNationality = sanitizeName(nationality);
         sessionStorage.setItem("profile_nationality", sanitizedNationality);
 
+        // eslint-disable-next-line no-console
         console.log("Profile Info Saved:", {
             firstName,
             lastName,

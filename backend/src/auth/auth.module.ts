@@ -9,6 +9,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
+import { RefreshTokenService } from './services/auth.refresh-token.service';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
     CredentialService,
     LockoutService,
     AuditLogService,
+    RefreshTokenService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

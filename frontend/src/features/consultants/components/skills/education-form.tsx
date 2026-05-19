@@ -6,14 +6,6 @@ import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 
-const safeSetSessionStorage = (key: string, value: string) => {
-    const sanitized = DOMPurify.sanitize(value, {
-        ALLOWED_TAGS: [],
-        ALLOWED_ATTR: [],
-    });
-    sessionStorage.setItem(key, sanitized);
-};
-
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
@@ -56,10 +48,19 @@ export default function EducationForm() {
     };
 
     useEffect(() => {
-        safeSetSessionStorage("education_institutionName", institutionName);
-        safeSetSessionStorage("education_qualification", qualification);
-        safeSetSessionStorage("education_startDate", startDate);
-        safeSetSessionStorage("education_endDate", endDate);
+        const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
+
+        const sanitizedInstitutionName = DOMPurify.sanitize(institutionName, purifyConfig);
+        sessionStorage.setItem("education_institutionName", sanitizedInstitutionName);
+
+        const sanitizedQualification = DOMPurify.sanitize(qualification, purifyConfig);
+        sessionStorage.setItem("education_qualification", sanitizedQualification);
+
+        const sanitizedStartDate = DOMPurify.sanitize(startDate, purifyConfig);
+        sessionStorage.setItem("education_startDate", sanitizedStartDate);
+
+        const sanitizedEndDate = DOMPurify.sanitize(endDate, purifyConfig);
+        sessionStorage.setItem("education_endDate", sanitizedEndDate);
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {

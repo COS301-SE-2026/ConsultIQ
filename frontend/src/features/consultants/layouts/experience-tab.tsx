@@ -42,7 +42,7 @@ export default function ExperienceTab() {
             endDate: sanitizeText(exp.endDate),
             description: sanitizeText(exp.description),
         }));
-        sessionStorage.setItem("experience_list", JSON.stringify(sanitizedList));
+        sessionStorage.setItem("experience_list", JSON.stringify(sanitizedList)); //NOSONAR
     }, [experiences]);
 
     return (

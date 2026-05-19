@@ -343,10 +343,9 @@ export default function ProjectListPage() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <header
-          className="shrink-0 z-20 border-b h-[90px] flex items-center justify-between w-full" 
+          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full" 
           style={{
             borderColor: "var(--color-border)",
-            backgroundColor: "var(--color-surface)",
             paddingLeft: "80px",
             paddingRight: "80px",
           }}
@@ -362,7 +361,7 @@ export default function ProjectListPage() {
           <div className="flex gap-6">
             <button
               onClick={() => navigate("/project-specification")}
-              className="h-16 w-48 flex items-center justify-center gap-2 text-lg rounded text-white font-semibold transition hover:brightness-110"
+              className="h-12 w-35 text-lg rounded-xl font-semibold transition48 flex items-center justify-center gap-2 text-lg rounded text-white font-semibold transition hover:brightness-110"
               style={{
                 backgroundColor: "var(--color-accent)",
               }}

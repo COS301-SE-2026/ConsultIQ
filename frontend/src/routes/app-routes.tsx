@@ -8,6 +8,8 @@ import ConsultantsPage from "../features/consultants/pages/consultant-list-page"
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
+import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
+
 
 function AppRoutes() {
     return (
@@ -21,6 +23,7 @@ function AppRoutes() {
             <Route path="/project-specification" element={<ProjectSpecificationPage />} />
             <Route path="/projects" element={<ProjectListPage />} />
             <Route path="/consultant-FAQ" element={<UnderConstructionPage/>}/>
+            <Route path="/profile-view" element={<ConsultantProfileViewPage/>}/>
         </Routes>
         </BrowserRouter>
     );

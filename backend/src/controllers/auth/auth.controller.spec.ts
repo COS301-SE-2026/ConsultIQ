@@ -6,7 +6,8 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { Role } from '../../auth/enums/role.enum';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
-import { ForbiddenException } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -25,6 +26,12 @@ describe('AuthController', () => {
     revokeAllForUser: jest.fn(),
   };
 
+  const mockPrismaService = {
+    user: {
+      findUnique: jest.fn(),
+    },
+  };
+
   // userId matches JwtPayload shape
   const mockReq = (userId: string, role: Role) => ({
     user: { userId, role },
@@ -36,6 +43,7 @@ describe('AuthController', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: RefreshTokenService, useValue: mockRefreshTokenService },
+        { provide: PrismaService, useValue: mockPrismaService },
         {
           provide: APP_GUARD,
           useValue: { canActivate: jest.fn().mockReturnValue(true) },
@@ -261,6 +269,61 @@ describe('AuthController', () => {
       await expect(
         controller.logout(mockReq('user-123', Role.CONSULTANT) as any),
       ).rejects.toThrow('DB error');
+    });
+  });
+
+  //  GET ME (/auth/me) 
+
+  describe('getProfile', () => {
+    it('should return the user profile with email and mapped dashboard route', async () => {
+      const mockJwtPayload = {
+        userId: 'admin-uuid-123',
+        role: Role.ADMIN,
+      };
+
+      // Mock the request object populated by JwtAuthGuard
+      const req = { user: mockJwtPayload };
+
+      // Mock Prisma returning the email
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        email: 'admin@consultiq.dev',
+      });
+
+      const result = await controller.getProfile(req as any);
+
+      // Verify Prisma was called correctly
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'admin-uuid-123' },
+        select: { email: true },
+      });
+
+      // Verify the controller stitched the payload and database result together
+      expect(result).toEqual({
+        message: 'Profile retrieved successfully.',
+        result: {
+          userId: 'admin-uuid-123',
+          email: 'admin@consultiq.dev',
+          role: Role.ADMIN,
+          dashboardRoute: '/admin',
+        },
+      });
+    });
+
+    it('should throw UnauthorizedException if the user no longer exists', async () => {
+      const req = {
+        user: { userId: 'ghost-uuid-456', role: Role.CONSULTANT },
+      };
+
+      // Mock Prisma returning null (user was deleted from DB)
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      await expect(controller.getProfile(req as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
+
+      await expect(controller.getProfile(req as any)).rejects.toThrow(
+        'User account no longer exists.',
+      );
     });
   });
 });

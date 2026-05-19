@@ -170,7 +170,7 @@ export class AuthService {
         });
 
         const accessToken = this.jwt.sign({
-          sub: result.user.id,
+          userId: result.user.id,
           role: result.user.role,
         });
 
@@ -183,8 +183,8 @@ export class AuthService {
           email: result.user.email,
           role: result.user.role,
           dashboardRoute: ROLE_DASHBOARD_MAP[result.user.role],
-          accessToken,
-          refreshToken,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
         };
       }
     }

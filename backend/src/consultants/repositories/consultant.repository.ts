@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConsultantDto } from '../dto/create-consultant.dto';
 import { CompetencyLevel, ConsultantAvailability, Role } from '@prisma/client';
+
 @Injectable()
 export class ConsultantRepository {
     constructor(private prisma: PrismaService) {}
@@ -63,6 +64,38 @@ export class ConsultantRepository {
         return { consultantId: consultant.id }
     });
     }
+
+    async getAllConsultants(page: number, limit: number) {
+        const skip = (page - 1) * limit;
+
+        const [consultants, total] = await Promise.all([
+            this.prisma.consultant.findMany({
+            skip,
+            take: limit,
+            include: {
+                user: {
+                select: {
+                    fullName: true,
+                    email: true,
+                },
+                },
+                skills: {
+                include: {
+                    skill: {
+                    select: {
+                        name: true,
+                    },
+                    },
+                },
+                },
+            },
+            }),
+            this.prisma.consultant.count(),
+        ]);
+
+        return { consultants, total };
+    }
+
 }
 
 

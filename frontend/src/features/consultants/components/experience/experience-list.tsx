@@ -3,14 +3,14 @@ import { Card } from "../../../../components/ui/card";
 import ExperienceCard from "./experience-card";
 
 type ExperienceItem = {
-    id: string;
-    jobTitle: string;
-    companyName: string;
-    jobType: string;
-    workModel: string;
-    startDate: string;
-    endDate: string;
-    description: string;
+    readonly id: string;
+    readonly jobTitle: string;
+    readonly companyName: string;
+    readonly jobType: string;
+    readonly workModel: string;
+    readonly startDate: string;
+    readonly endDate: string;
+    readonly description: string;
 };
 
 type Props = {

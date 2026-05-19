@@ -15,17 +15,13 @@ export type ExperienceItem = {
 
 const sanitizeInput = (input: string) => {
     if (!input) return "";
-    return input.replace(/[&<>"'/]/g, (match) => {
-        switch (match) {
-            case '&': return '&amp;';
-            case '<': return '&lt;';
-            case '>': return '&gt;';
-            case '"': return '&quot;';
-            case "'": return '&#39;';
-            case '/': return '&#x2F;';
-            default: return match;
-        }
-    });
+    return input
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;")
+        .replace(/\//g, "&#x2F;");
 };
 
 export default function ExperienceTab() {

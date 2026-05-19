@@ -46,5 +46,35 @@ export class ProjectRepository {
             return { projectId: project.id };
         })
     }
+
+    async getAllProjects(page: number, limit: number) {
+        const skip = (page - 1) * limit;
+
+        const [projects, total] = await Promise.all([
+            this.prisma.$queryRaw<any[]>`
+            SELECT
+                p.id,
+                p.project_name   AS "projectName",
+                p.client_name    AS "clientName",
+                p.city,
+                p.province,
+                p.start_date     AS "startDate",
+                p.end_date       AS "endDate",
+                p.team_size      AS "teamSize",
+                p.required_allocation_percentage AS "requiredAllocationPercentage",
+                p.client_billing_budget          AS "clientBillingBudget",
+                p.status,
+                COUNT(ps.id)::int                AS "skillCount"
+            FROM projects p
+            LEFT JOIN project_skills ps ON ps.project_id = p.id
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
+            LIMIT ${limit} OFFSET ${skip}
+            `,
+            this.prisma.project.count(),
+        ]);
+
+        return { projects, total };
+    }
 }
 

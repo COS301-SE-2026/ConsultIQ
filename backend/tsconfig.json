@@ -30,5 +30,11 @@
     "src/**/*",
     "src/types/**/*",
     "test/**/*"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "generated"
   ]
 }

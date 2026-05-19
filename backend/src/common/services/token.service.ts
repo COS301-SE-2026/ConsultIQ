@@ -27,7 +27,8 @@ export class TokenService {
 
   // Calculates when the token should expire
   getTokenExpiry(): Date {
-    const hours = this.config.get<number>('ACTIVATION_TOKEN_EXPIRY_HOURS') ?? 24;
+    const hours =
+      this.config.get<number>('ACTIVATION_TOKEN_EXPIRY_HOURS') ?? 24;
     const expiry = new Date();
     expiry.setHours(expiry.getHours() + hours);
     return expiry;
@@ -36,5 +37,19 @@ export class TokenService {
   // Checks whether a token expiry date has passed
   isTokenExpired(expiry: Date): boolean {
     return new Date() > expiry;
+  }
+
+  generateRefreshToken() {
+    return this.generateActivationToken(); // same mechanism, raw + hashed
+  }
+
+  generateFamilyId(): string {
+    return crypto.randomUUID();
+  }
+
+  getRefreshTokenExpiry(): Date {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + 7); // 7 days
+    return expiry;
   }
 }

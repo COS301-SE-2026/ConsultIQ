@@ -20,14 +20,17 @@ import { LoginDto } from '../dto/login.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { ActivateAccountDto } from '../dto/activate-account.dto';
 import * as bcrypt from 'bcrypt';
+import { RefreshTokenService } from './auth.refresh-token.service';
+import { JwtService } from '@nestjs/jwt';
 
 /** Shape returned to the controller on successful login. */
 export interface LoginResult {
   userId: string;
   email: string;
   role: Role;
-  /** Redirect to dashboard route */
   dashboardRoute: string;
+  accessToken: string;
+  refreshToken: string;
 }
 
 /** Map role -> frontend route  */
@@ -54,6 +57,8 @@ export class AuthService {
     private readonly credentialService: CredentialService,
     private readonly lockoutService: LockoutService,
     private readonly auditLogService: AuditLogService,
+    private readonly refreshTokenService: RefreshTokenService,
+    private readonly jwt: JwtService,
   ) {}
 
   async login(
@@ -164,11 +169,22 @@ export class AuthService {
           userAgent,
         });
 
+        const accessToken = this.jwt.sign({
+          userId: result.user.id,
+          role: result.user.role,
+        });
+
+        const refreshToken = await this.refreshTokenService.createRefreshToken(
+          result.user.id,
+        );
+
         return {
           userId: result.user.id,
           email: result.user.email,
           role: result.user.role,
           dashboardRoute: ROLE_DASHBOARD_MAP[result.user.role],
+          accessToken: accessToken,
+          refreshToken: refreshToken,
         };
       }
     }

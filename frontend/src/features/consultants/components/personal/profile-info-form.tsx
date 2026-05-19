@@ -1,13 +1,8 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-
-const sanitizeText = (input: string) => {
-    if (!input) return "";
-    // Allow alphanumeric, spaces, and safe punctuation (including @, _, + for email/phone)
-    return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
-};
 
 export default function ProfileInfoForm() {
     const [firstName, setFirstName] = useState(() => sessionStorage.getItem("profile_firstName") || "");
@@ -18,12 +13,25 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("profile_firstName", sanitizeText(firstName));
-        sessionStorage.setItem("profile_lastName", sanitizeText(lastName));
-        sessionStorage.setItem("profile_email", sanitizeText(email));
-        sessionStorage.setItem("profile_phone", sanitizeText(phone));
-        sessionStorage.setItem("profile_idNumber", sanitizeText(idNumber));
-        sessionStorage.setItem("profile_nationality", sanitizeText(nationality));
+        const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
+
+        const sanitizedFirstName = DOMPurify.sanitize(firstName, purifyConfig);
+        sessionStorage.setItem("profile_firstName", sanitizedFirstName);
+
+        const sanitizedLastName = DOMPurify.sanitize(lastName, purifyConfig);
+        sessionStorage.setItem("profile_lastName", sanitizedLastName);
+
+        const sanitizedEmail = DOMPurify.sanitize(email, purifyConfig);
+        sessionStorage.setItem("profile_email", sanitizedEmail);
+
+        const sanitizedPhone = DOMPurify.sanitize(phone, purifyConfig);
+        sessionStorage.setItem("profile_phone", sanitizedPhone);
+
+        const sanitizedIdNumber = DOMPurify.sanitize(idNumber, purifyConfig);
+        sessionStorage.setItem("profile_idNumber", sanitizedIdNumber);
+
+        const sanitizedNationality = DOMPurify.sanitize(nationality, purifyConfig);
+        sessionStorage.setItem("profile_nationality", sanitizedNationality);
 
         console.log("Profile Info Saved:", {
             firstName,

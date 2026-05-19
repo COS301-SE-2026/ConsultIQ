@@ -10,8 +10,8 @@ export interface Education {
 }
 
 interface EducationDetailPanelProps {
-  education: Education;
-  onClose: () => void;
+  readonly education: Education;
+  readonly onClose: () => void;
 }
 
 function DetailField({ label, value }: { label: string; value: string }) {

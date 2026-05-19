@@ -1,8 +1,8 @@
 interface PersonalInfoCardProps {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly email: string;
+  readonly phone: string;
 }
 
 function ProfileField({ label, value }: { label: string; value: string }) {

@@ -1,7 +1,7 @@
 interface ProfileHeroCardProps {
-  firstName: string;
-  lastName: string;
-  status: "Available" | "Unavailable";
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly status: "Available" | "Unavailable";
 }
 
 function getInitials(first: string, last: string) {

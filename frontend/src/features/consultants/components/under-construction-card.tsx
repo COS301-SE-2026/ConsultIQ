@@ -66,10 +66,10 @@ function FAQItem({
   isOpen,
   onToggle,
 }: {
-  question: string;
-  answer: string;
-  isOpen: boolean;
-  onToggle: () => void;
+  readonly question: string;
+  readonly answer: string;
+  readonly isOpen: boolean;
+  readonly onToggle: () => void;
 }) {
   return (
     <div className="border-b px-2 sm:px-4" style={{ borderColor: "var(--color-border)" }}>

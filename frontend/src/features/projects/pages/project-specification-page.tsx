@@ -19,12 +19,11 @@ function ProjectSpecificationPage() {
       <div className="flex-1 flex flex-col overflow-y-auto">
         {/* Header */}
         <header
-          className=" shrink-0 sticky top-0 z-20 border-b px-10 h-[90px] flex items-center justify-end relative" 
+          className=" shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center justify-end relative" 
           style={{
             borderColor:
-              "var(--color-border)",
-              backgroundColor:
-              "var(--color-surface)",
+              "var(--color-border)"
+
           }}>
           <h1 className="text-4xl font-bold absolute left-1/2 -translate-x-1/2"
             style={{
@@ -37,7 +36,7 @@ function ProjectSpecificationPage() {
           <div className="flex gap-6">
             <button 
               onClick={() => navigate(-1)}
-              className=" h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
+              className=" h-12 w-35 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
               style={{
                 color:
                   "var(--color-primary)",
@@ -47,7 +46,7 @@ function ProjectSpecificationPage() {
 
             <button 
               onClick={() => navigate("/projects")}
-              className="h-16 w-48 text-lg rounded text-white font-semibold transition hover:brightness-110"
+              className="h-12 w-35 text-lg rounded-xl text-white font-semibold transition hover:brightness-110"
               style={{
                 backgroundColor:
                   "var(--color-accent)",

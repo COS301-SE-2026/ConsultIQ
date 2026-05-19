@@ -4,6 +4,7 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import ConsultantCard, { type Consultant } from "../components/consultant-card";
 import SearchBar from "../../../components/shared/search-bar";
+import { useNavigate } from "react-router-dom";
 
 
 const mockConsultants: Consultant[] = [
@@ -45,6 +46,7 @@ const mockConsultants: Consultant[] = [
 function ConsultantsPage() {
   // role must first be determined from context
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
 
   const available   = mockConsultants.filter((c) => c.status === "Available");
   const unavailable = mockConsultants.filter((c) => c.status === "Unavailable");
@@ -144,6 +146,7 @@ function ConsultantsPage() {
             </button>
 
             <button
+              onClick={() => navigate("/create-profile")}  
               className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
               style={{
                 backgroundColor: "var(--color-accent)",

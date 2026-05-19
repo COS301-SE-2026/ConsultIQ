@@ -1,60 +1,74 @@
-
 export type CompetencyLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
-
+ 
 export interface Skill {
   name: string;
   competencyLevel: CompetencyLevel;
   yearsOfExperience: number;
 }
-
-
+ 
 interface SkillsCardProps {
   skills: Skill[];
 }
-
+ 
 function SkillsCard({ skills }: SkillsCardProps) {
   return (
     <div
-      className="bg-white rounded-2xl px-10 py-8"
-      style={{ boxShadow: "var(--shadow-card)" }}
+      className="bg-white rounded-2xl w-full flex flex-col"
+      style={{
+        padding: "28px 28px 28px 28px",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+        gap: "28px",
+      }}
     >
+      
       <h2
-        className="font-bold text-xl mb-8"
-        style={{ color: "var(--color-primary)" }}
+        className="font-bold"
+        style={{ color: "var(--color-primary)", fontSize: "22px" }}
       >
         Skills
       </h2>
-
+ 
+      <hr style={{ borderColor: "var(--color-border)" }} />
+ 
       {/* Table header */}
       <div
-        className="grid grid-cols-3 pb-3 mb-1 text-sm font-medium"
+        className="grid grid-cols-3 font-semibold"
         style={{
-          borderBottom: "1px solid var(--color-border)",
+          fontSize: "var(--text-h4)",
           color: "var(--color-text-secondary)",
+          paddingBottom: "12px",
+          borderBottom: "1px solid var(--color-border)",
         }}
       >
-        <span>Skill</span>
-        <span>Competency level</span>
-        <span>Years of experience</span>
+        <span>Skill Name</span>
+        <span>Competency Level</span>
+        <span>Years of Experience</span>
       </div>
-
+ 
       {/* Rows */}
-      {skills.map((skill, index) => (
-        <div
-          key={skill.name}
-          className="grid grid-cols-3 py-5 text-base"
-          style={{
-            borderBottom: index < skills.length - 1 ? "1px solid var(--color-border)" : "none",
-            color: "var(--color-text-primary)",
-          }}
-        >
-          <span>{skill.name}</span>
-          <span>{skill.competencyLevel}</span>
-          <span>{skill.yearsOfExperience}</span>
-        </div>
-      ))}
+      <div className="flex flex-col">
+        {skills.map((skill, index) => (
+          <div
+            key={skill.name}
+            className="grid grid-cols-3 font-medium"
+            style={{
+              fontSize: "var(--text-h3)",
+              color: "var(--color-text-primary)",
+              padding: "18px 0",
+              borderBottom:
+                index < skills.length - 1
+                  ? "1px solid var(--color-border)"
+                  : "none",
+            }}
+          >
+            <span>{skill.name}</span>
+            <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
+            <span>{skill.yearsOfExperience}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
-
+ 
 export default SkillsCard;

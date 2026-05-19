@@ -2,17 +2,7 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import  {UnderConstructionCard}  from "../components/under-construction-card";
 
-//redirect to ConsultantProfileViewPage when profile is complete:
-
-type ProfileStatus = "INCOMPLETE" | "COMPLETE";
-
-interface ConsultantProfile {
-  id: string;
-  firstName: string;
-  lastName: string;
-  status: ProfileStatus;
-
-}
+//redirect to ConsultantProfileViewPage when profile is complete
 
 /* 
    const [profile, setProfile] = useState<ConsultantProfile | null>(null);
@@ -22,17 +12,10 @@ interface ConsultantProfile {
 */
 
 
-const mockProfile: ConsultantProfile = {
-  id: "CON123",
-  firstName: "Asanda",
-  lastName: "Black",
-  status: "INCOMPLETE",
-};
+
 
 function ConsultantProfilePage() {
-  /* replace with real profile state */
-  const profile = mockProfile;
-
+ 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />

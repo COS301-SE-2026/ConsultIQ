@@ -20,8 +20,8 @@ export default function SkillsForm() {
 
     const competencyLevel = useMemo(() => {
         if (!confidence || !years) return "";
-        const c = parseInt(confidence, 10);
-        const y = parseInt(years, 10);
+        const c = Number.parseInt(confidence, 10);
+        const y = Number.parseInt(years, 10);
         
         if (c >= 4 && y >= 5) return "Expert";
         if (c >= 3 && y >= 3) return "Advanced";
@@ -50,8 +50,8 @@ export default function SkillsForm() {
     useEffect(() => {
         const sanitizedList = skills.map((skill) => ({
             ...skill,
-            name: DOMPurify.sanitize(skill.name),
-            competency: DOMPurify.sanitize(skill.competency),
+            name: DOMPurify.sanitize(skill.name, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            competency: DOMPurify.sanitize(skill.competency, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
         }));
         sessionStorage.setItem("skills_list", JSON.stringify(sanitizedList));
     }, [skills]);

@@ -15,7 +15,7 @@ type Props = {
     }) => void;
 };
 
-export default function ExperienceForm({ onAdd }: Props) {
+export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const [jobTitle, setJobTitle] = useState("");
     const [companyName, setCompanyName] = useState("");
     const [jobType, setJobType] = useState("");

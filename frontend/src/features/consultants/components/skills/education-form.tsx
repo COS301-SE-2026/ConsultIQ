@@ -6,6 +6,14 @@ import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 
+const safeSetSessionStorage = (key: string, value: string) => {
+    const sanitized = DOMPurify.sanitize(value, {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+    });
+    sessionStorage.setItem(key, sanitized);
+};
+
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
@@ -48,17 +56,17 @@ export default function EducationForm() {
     };
 
     useEffect(() => {
-        sessionStorage.setItem("education_institutionName", DOMPurify.sanitize(institutionName));
-        sessionStorage.setItem("education_qualification", DOMPurify.sanitize(qualification));
-        sessionStorage.setItem("education_startDate", DOMPurify.sanitize(startDate));
-        sessionStorage.setItem("education_endDate", DOMPurify.sanitize(endDate));
+        safeSetSessionStorage("education_institutionName", institutionName);
+        safeSetSessionStorage("education_qualification", qualification);
+        safeSetSessionStorage("education_startDate", startDate);
+        safeSetSessionStorage("education_endDate", endDate);
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {
         const sanitizedList = educationList.map(edu => ({
             ...edu,
-            institution: DOMPurify.sanitize(edu.institution),
-            qualification: DOMPurify.sanitize(edu.qualification),
+            institution: DOMPurify.sanitize(edu.institution, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            qualification: DOMPurify.sanitize(edu.qualification, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
         }));
         sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));
     }, [educationList]);

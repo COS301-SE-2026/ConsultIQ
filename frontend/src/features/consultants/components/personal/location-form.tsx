@@ -4,6 +4,14 @@ import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 
+const safeSetSessionStorage = (key: string, value: string) => {
+    const sanitized = DOMPurify.sanitize(value, {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+    });
+    sessionStorage.setItem(key, sanitized);
+};
+
 export default function LocationForm() {
     const [addressLine1, setAddressLine1] = useState(() => sessionStorage.getItem("location_addressLine1") || "");
     const [addressLine2, setAddressLine2] = useState(() => sessionStorage.getItem("location_addressLine2") || "");
@@ -13,12 +21,12 @@ export default function LocationForm() {
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("location_addressLine1", DOMPurify.sanitize(addressLine1));
-        sessionStorage.setItem("location_addressLine2", DOMPurify.sanitize(addressLine2));
-        sessionStorage.setItem("location_suburb", DOMPurify.sanitize(suburb));
-        sessionStorage.setItem("location_city", DOMPurify.sanitize(city));
-        sessionStorage.setItem("location_province", DOMPurify.sanitize(province));
-        sessionStorage.setItem("location_postalCode", DOMPurify.sanitize(postalCode));
+        safeSetSessionStorage("location_addressLine1", addressLine1);
+        safeSetSessionStorage("location_addressLine2", addressLine2);
+        safeSetSessionStorage("location_suburb", suburb);
+        safeSetSessionStorage("location_city", city);
+        safeSetSessionStorage("location_province", province);
+        safeSetSessionStorage("location_postalCode", postalCode);
 
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };

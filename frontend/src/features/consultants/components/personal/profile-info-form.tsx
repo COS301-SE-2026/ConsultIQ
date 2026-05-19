@@ -4,6 +4,14 @@ import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 
+const safeSetSessionStorage = (key: string, value: string) => {
+    const sanitized = DOMPurify.sanitize(value, {
+        ALLOWED_TAGS: [],
+        ALLOWED_ATTR: [],
+    });
+    sessionStorage.setItem(key, sanitized);
+};
+
 export default function ProfileInfoForm() {
     const [firstName, setFirstName] = useState(() => sessionStorage.getItem("profile_firstName") || "");
     const [lastName, setLastName] = useState(() => sessionStorage.getItem("profile_lastName") || "");
@@ -13,12 +21,12 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
 
     const handleDone = () => {
-        sessionStorage.setItem("profile_firstName", DOMPurify.sanitize(firstName));
-        sessionStorage.setItem("profile_lastName", DOMPurify.sanitize(lastName));
-        sessionStorage.setItem("profile_email", DOMPurify.sanitize(email));
-        sessionStorage.setItem("profile_phone", DOMPurify.sanitize(phone));
-        sessionStorage.setItem("profile_idNumber", DOMPurify.sanitize(idNumber));
-        sessionStorage.setItem("profile_nationality", DOMPurify.sanitize(nationality));
+        safeSetSessionStorage("profile_firstName", firstName);
+        safeSetSessionStorage("profile_lastName", lastName);
+        safeSetSessionStorage("profile_email", email);
+        safeSetSessionStorage("profile_phone", phone);
+        safeSetSessionStorage("profile_idNumber", idNumber);
+        safeSetSessionStorage("profile_nationality", nationality);
 
         console.log("Profile Info Saved:", {
             firstName,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import ExperienceForm from "../components/experience/experience-form";
 import ExperienceList from "../components/experience/experience-list";
 
@@ -11,17 +12,6 @@ export type ExperienceItem = {
     startDate: string;
     endDate: string;
     description: string;
-};
-
-const sanitizeInput = (input: string) => {
-    if (!input) return "";
-    return input
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;")
-        .replace(/\//g, "&#x2F;");
 };
 
 export default function ExperienceTab() {
@@ -40,13 +30,13 @@ export default function ExperienceTab() {
     useEffect(() => {
         const sanitizedList = experiences.map((exp) => ({
             ...exp,
-            jobTitle: sanitizeInput(exp.jobTitle),
-            companyName: sanitizeInput(exp.companyName),
-            jobType: sanitizeInput(exp.jobType),
-            workModel: sanitizeInput(exp.workModel),
-            startDate: sanitizeInput(exp.startDate),
-            endDate: sanitizeInput(exp.endDate),
-            description: sanitizeInput(exp.description),
+            jobTitle: DOMPurify.sanitize(exp.jobTitle, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            companyName: DOMPurify.sanitize(exp.companyName, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            jobType: DOMPurify.sanitize(exp.jobType, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            workModel: DOMPurify.sanitize(exp.workModel, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            startDate: DOMPurify.sanitize(exp.startDate, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            endDate: DOMPurify.sanitize(exp.endDate, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
+            description: DOMPurify.sanitize(exp.description, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }),
         }));
         sessionStorage.setItem("experience_list", JSON.stringify(sanitizedList));
     }, [experiences]);

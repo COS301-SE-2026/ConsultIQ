@@ -15,22 +15,22 @@ export default function LocationForm() {
     const handleDone = () => {
         const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
 
-        const sanitizedAddressLine1 = DOMPurify.sanitize(addressLine1, purifyConfig);
+        const sanitizedAddressLine1 = String(DOMPurify.sanitize(addressLine1, purifyConfig));
         sessionStorage.setItem("location_addressLine1", sanitizedAddressLine1);
 
-        const sanitizedAddressLine2 = DOMPurify.sanitize(addressLine2, purifyConfig);
+        const sanitizedAddressLine2 = String(DOMPurify.sanitize(addressLine2, purifyConfig));
         sessionStorage.setItem("location_addressLine2", sanitizedAddressLine2);
 
-        const sanitizedSuburb = DOMPurify.sanitize(suburb, purifyConfig);
+        const sanitizedSuburb = String(DOMPurify.sanitize(suburb, purifyConfig));
         sessionStorage.setItem("location_suburb", sanitizedSuburb);
 
-        const sanitizedCity = DOMPurify.sanitize(city, purifyConfig);
+        const sanitizedCity = String(DOMPurify.sanitize(city, purifyConfig));
         sessionStorage.setItem("location_city", sanitizedCity);
 
-        const sanitizedProvince = DOMPurify.sanitize(province, purifyConfig);
+        const sanitizedProvince = String(DOMPurify.sanitize(province, purifyConfig));
         sessionStorage.setItem("location_province", sanitizedProvince);
 
-        const sanitizedPostalCode = DOMPurify.sanitize(postalCode, purifyConfig);
+        const sanitizedPostalCode = String(DOMPurify.sanitize(postalCode, purifyConfig));
         sessionStorage.setItem("location_postalCode", sanitizedPostalCode);
 
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });

@@ -15,22 +15,22 @@ export default function ProfileInfoForm() {
     const handleDone = () => {
         const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
 
-        const sanitizedFirstName = DOMPurify.sanitize(firstName, purifyConfig);
+        const sanitizedFirstName = String(DOMPurify.sanitize(firstName, purifyConfig));
         sessionStorage.setItem("profile_firstName", sanitizedFirstName);
 
-        const sanitizedLastName = DOMPurify.sanitize(lastName, purifyConfig);
+        const sanitizedLastName = String(DOMPurify.sanitize(lastName, purifyConfig));
         sessionStorage.setItem("profile_lastName", sanitizedLastName);
 
-        const sanitizedEmail = DOMPurify.sanitize(email, purifyConfig);
+        const sanitizedEmail = String(DOMPurify.sanitize(email, purifyConfig));
         sessionStorage.setItem("profile_email", sanitizedEmail);
 
-        const sanitizedPhone = DOMPurify.sanitize(phone, purifyConfig);
+        const sanitizedPhone = String(DOMPurify.sanitize(phone, purifyConfig));
         sessionStorage.setItem("profile_phone", sanitizedPhone);
 
-        const sanitizedIdNumber = DOMPurify.sanitize(idNumber, purifyConfig);
+        const sanitizedIdNumber = String(DOMPurify.sanitize(idNumber, purifyConfig));
         sessionStorage.setItem("profile_idNumber", sanitizedIdNumber);
 
-        const sanitizedNationality = DOMPurify.sanitize(nationality, purifyConfig);
+        const sanitizedNationality = String(DOMPurify.sanitize(nationality, purifyConfig));
         sessionStorage.setItem("profile_nationality", sanitizedNationality);
 
         console.log("Profile Info Saved:", {

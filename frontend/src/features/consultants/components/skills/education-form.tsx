@@ -50,16 +50,16 @@ export default function EducationForm() {
     useEffect(() => {
         const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
 
-        const sanitizedInstitutionName = DOMPurify.sanitize(institutionName, purifyConfig);
+        const sanitizedInstitutionName = String(DOMPurify.sanitize(institutionName, purifyConfig));
         sessionStorage.setItem("education_institutionName", sanitizedInstitutionName);
 
-        const sanitizedQualification = DOMPurify.sanitize(qualification, purifyConfig);
+        const sanitizedQualification = String(DOMPurify.sanitize(qualification, purifyConfig));
         sessionStorage.setItem("education_qualification", sanitizedQualification);
 
-        const sanitizedStartDate = DOMPurify.sanitize(startDate, purifyConfig);
+        const sanitizedStartDate = String(DOMPurify.sanitize(startDate, purifyConfig));
         sessionStorage.setItem("education_startDate", sanitizedStartDate);
 
-        const sanitizedEndDate = DOMPurify.sanitize(endDate, purifyConfig);
+        const sanitizedEndDate = String(DOMPurify.sanitize(endDate, purifyConfig));
         sessionStorage.setItem("education_endDate", sanitizedEndDate);
     }, [institutionName, qualification, startDate, endDate]);
 
@@ -67,8 +67,8 @@ export default function EducationForm() {
         const purifyConfig = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
         const sanitizedList = educationList.map(edu => ({
             ...edu,
-            institution: DOMPurify.sanitize(edu.institution, purifyConfig),
-            qualification: DOMPurify.sanitize(edu.qualification, purifyConfig),
+            institution: String(DOMPurify.sanitize(edu.institution, purifyConfig)),
+            qualification: String(DOMPurify.sanitize(edu.qualification, purifyConfig)),
         }));
         sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));
     }, [educationList]);

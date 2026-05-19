@@ -222,9 +222,9 @@ async function main() {
     //  Step 4: Bootstrap admin user (TASK-30) 
     console.log('👤  Seeding bootstrap admin user...');
 
-    const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@consultiq.dev';
-    const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? 'Admin@ConsultIQ2025!';
-    const adminName = process.env.BOOTSTRAP_ADMIN_FULL_NAME ?? 'System Administrator';
+    const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL;
+    const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD ?? ' ';
+    const adminName = process.env.BOOTSTRAP_ADMIN_FULL_NAME;
 
     if (!process.env.BOOTSTRAP_ADMIN_PASSWORD) {
         console.warn(
@@ -249,8 +249,8 @@ async function main() {
             status: UserStatus.ACTIVE,
         },
         create: {
-            fullName: adminName,
-            email: adminEmail,
+            fullName: adminName ?? ' ',
+            email: adminEmail ?? ' ',
             passwordHash: passwordHash,
             role: Role.ADMIN,
             roleId: adminRoleRecord?.id,

@@ -16,105 +16,30 @@ import { AuditLogService } from './auth.audit-log.service';
 import { RefreshTokenService } from './auth.refresh-token.service';
 import { JwtService } from '@nestjs/jwt';
 
+import {
+  MOCK_USER,
+  MOCK_TOKEN_RECORD,
+  createMockPrismaService,
+  createMockEmailService,
+  createMockTokenService,
+  createMockConfigService,
+  createMockCredentialService,
+  createMockLockoutService,
+  createMockAuditLogService,
+  createMockRefreshTokenService,
+  createMockJwtService,
+} from '../tests/helpers/auth-test.helpers';
+
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: {
-    user: {
-      findUnique: jest.Mock;
-      create: jest.Mock;
-      update: jest.Mock;
-    };
-    token: {
-      create: jest.Mock;
-      findFirst: jest.Mock;
-      update: jest.Mock;
-      count: jest.Mock;
-    };
-    $transaction: jest.Mock;
-  };
-  let email: { sendActivationEmail: jest.Mock };
-  let token: {
-    generateActivationToken: jest.Mock;
-    getTokenExpiry: jest.Mock;
-    hashToken: jest.Mock;
-    isTokenExpired: jest.Mock;
-  };
-
-  const mockUser = {
-    id: 'user-uuid-123',
-    fullName: 'Jane Smith',
-    email: 'jane@consultiq.com',
-    passwordHash: null,
-    role: 'CONSULTANT' as any,
-    status: 'PENDING' as any,
-    failedAttempts: 0,
-    isLocked: false,
-    lockedUntil: null,
-    termsAcceptedAt: null,
-    tenantId: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const mockTokenRecord = {
-    id: 'token-uuid-456',
-    userId: mockUser.id,
-    token: 'hashed-token',
-    type: 'ACTIVATION' as any,
-    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    usedAt: null,
-    createdAt: new Date(),
-  };
+  let prisma: ReturnType<typeof createMockPrismaService>;
+  let email: ReturnType<typeof createMockEmailService>;
+  let token: ReturnType<typeof createMockTokenService>;
 
   beforeEach(async () => {
-    prisma = {
-      user: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        update: jest.fn(),
-      },
-      token: {
-        create: jest.fn(),
-        findFirst: jest.fn(),
-        update: jest.fn(),
-        count: jest.fn(),
-      },
-      $transaction: jest.fn(),
-    };
-
-    email = {
-      sendActivationEmail: jest.fn().mockResolvedValue(undefined),
-    };
-
-    token = {
-      generateActivationToken: jest.fn().mockReturnValue({
-        rawToken: 'raw-token-abc123',
-        hashedToken: 'hashed-token-xyz',
-      }),
-      getTokenExpiry: jest.fn().mockReturnValue(
-        new Date(Date.now() + 24 * 60 * 60 * 1000),
-      ),
-      hashToken: jest.fn().mockReturnValue('hashed-token'),
-      isTokenExpired: jest.fn().mockReturnValue(false),
-    };
-
-    const mockConfig = {
-      get: jest.fn().mockReturnValue('http://localhost:5173'),
-    };
-
-    const mockLockoutService = {
-      recordFailedAttempt: jest.fn(),
-      resetFailedAttempts: jest.fn(),
-    };
-
-    const mockAuditLogService = {
-      log: jest.fn(),
-    };
-
-    const mockCredentialService = {
-      validateCredentials: jest.fn(),
-      isCurrentlyLocked: jest.fn(),
-    };
+    prisma = createMockPrismaService();
+    email = createMockEmailService();
+    token = createMockTokenService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -122,25 +47,12 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EmailService, useValue: email },
         { provide: TokenService, useValue: token },
-        { provide: ConfigService, useValue: mockConfig },
-        { provide: CredentialService, useValue: mockCredentialService },
-        { provide: LockoutService, useValue: mockLockoutService },
-        { provide: AuditLogService, useValue: mockAuditLogService },
-        {
-          provide: RefreshTokenService,
-          useValue: {
-            createRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
-            revokeAllForUser: jest.fn().mockResolvedValue(undefined),
-          },
-        },
-        {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn().mockReturnValue('mock-jwt-token'),
-          },
-        },
-
-
+        { provide: ConfigService, useValue: createMockConfigService() },
+        { provide: CredentialService, useValue: createMockCredentialService() },
+        { provide: LockoutService, useValue: createMockLockoutService() },
+        { provide: AuditLogService, useValue: createMockAuditLogService() },
+        { provide: RefreshTokenService, useValue: createMockRefreshTokenService() },
+        { provide: JwtService, useValue: createMockJwtService() },
       ],
     }).compile();
 
@@ -158,8 +70,8 @@ describe('AuthService', () => {
 
     it('should create a user and send an activation email', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue(mockUser as any);
-      prisma.token.create.mockResolvedValue(mockTokenRecord as any);
+      prisma.user.create.mockResolvedValue(MOCK_USER as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
 
       const result = await service.createUser(dto);
 
@@ -179,7 +91,7 @@ describe('AuthService', () => {
       expect(prisma.token.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            userId: mockUser.id,
+            userId: MOCK_USER.id,
             type: 'ACTIVATION',
           }),
         }),
@@ -187,17 +99,17 @@ describe('AuthService', () => {
 
       // Activation email triggered
       expect(email.sendActivationEmail).toHaveBeenCalledWith(
-        mockUser.email,
-        mockUser.fullName,
+        MOCK_USER.email,
+        MOCK_USER.fullName,
         expect.stringContaining('raw-token-abc123'),
       );
 
       expect(result.message).toContain('activation email has been sent');
-      expect(result.userId).toBe(mockUser.id);
+      expect(result.userId).toBe(MOCK_USER.id);
     });
 
     it('should throw ConflictException if email already exists', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
 
       await expect(service.createUser(dto)).rejects.toThrow(ConflictException);
       expect(prisma.user.create).not.toHaveBeenCalled();
@@ -207,11 +119,9 @@ describe('AuthService', () => {
     it('should not throw if email sending fails', async () => {
       jest.spyOn(console, 'error').mockImplementation(() => { });
       prisma.user.findUnique.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue(mockUser as any);
-      prisma.token.create.mockResolvedValue(mockTokenRecord as any);
-      email.sendActivationEmail.mockRejectedValue(
-        new Error('Email provider down'),
-      );
+      prisma.user.create.mockResolvedValue(MOCK_USER as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+      email.sendActivationEmail.mockRejectedValue(new Error('Email provider down'));
 
       await expect(service.createUser(dto)).resolves.toBeDefined();
     });
@@ -227,8 +137,8 @@ describe('AuthService', () => {
     };
 
     it('should activate the account successfully', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      prisma.token.findFirst.mockResolvedValue(mockTokenRecord as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.token.findFirst.mockResolvedValue(MOCK_TOKEN_RECORD as any);
       token.isTokenExpired.mockReturnValue(false);
       prisma.$transaction.mockResolvedValue([{}, {}] as any);
 
@@ -242,50 +152,34 @@ describe('AuthService', () => {
     it('should throw NotFoundException if user does not exist', async () => {
       prisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.activateAccount(dto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.activateAccount(dto)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if account is already ACTIVE', async () => {
-      prisma.user.findUnique.mockResolvedValue({
-        ...mockUser,
-        status: 'ACTIVE',
-      } as any);
+      prisma.user.findUnique.mockResolvedValue({ ...MOCK_USER, status: 'ACTIVE' } as any);
 
-      await expect(service.activateAccount(dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.activateAccount(dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if account is SUSPENDED', async () => {
-      prisma.user.findUnique.mockResolvedValue({
-        ...mockUser,
-        status: 'SUSPENDED',
-      } as any);
+      prisma.user.findUnique.mockResolvedValue({ ...MOCK_USER, status: 'SUSPENDED' } as any);
 
-      await expect(service.activateAccount(dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.activateAccount(dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if token record is not found', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
       prisma.token.findFirst.mockResolvedValue(null);
 
-      await expect(service.activateAccount(dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.activateAccount(dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if token is expired', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      prisma.token.findFirst.mockResolvedValue(mockTokenRecord as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.token.findFirst.mockResolvedValue(MOCK_TOKEN_RECORD as any);
       token.isTokenExpired.mockReturnValue(true);
 
-      await expect(service.activateAccount(dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.activateAccount(dto)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -302,43 +196,38 @@ describe('AuthService', () => {
     });
 
     it('should return generic message if user is already ACTIVE', async () => {
-      prisma.user.findUnique.mockResolvedValue({
-        ...mockUser,
-        status: 'ACTIVE',
-      } as any);
+      prisma.user.findUnique.mockResolvedValue({ ...MOCK_USER, status: 'ACTIVE' } as any);
 
-      const result = await service.resendVerification(mockUser.email);
+      const result = await service.resendVerification(MOCK_USER.email);
 
       expect(result.message).toContain('pending verification');
       expect(email.sendActivationEmail).not.toHaveBeenCalled();
     });
 
     it('should send a new verification email for a PENDING user', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(0);
-      prisma.token.create.mockResolvedValue(mockTokenRecord as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
 
-      const result = await service.resendVerification(mockUser.email);
+      const result = await service.resendVerification(MOCK_USER.email);
 
       expect(prisma.token.create).toHaveBeenCalled();
       expect(result.message).toContain('pending verification');
     });
 
     it('should throw 429 when rate limit is exceeded', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(3);
 
-      await expect(
-        service.resendVerification(mockUser.email),
-      ).rejects.toThrow();
+      await expect(service.resendVerification(MOCK_USER.email)).rejects.toThrow();
     });
 
     it('should throw with 429 status code', async () => {
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(3);
 
       try {
-        await service.resendVerification(mockUser.email);
+        await service.resendVerification(MOCK_USER.email);
       } catch (e) {
         expect((e as any).getStatus()).toBe(429);
       }
@@ -346,16 +235,12 @@ describe('AuthService', () => {
 
     it('should not throw if resend email fails', async () => {
       jest.spyOn(console, 'error').mockImplementation(() => { });
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(0);
-      prisma.token.create.mockResolvedValue(mockTokenRecord as any);
-      email.sendActivationEmail.mockRejectedValue(
-        new Error('Email provider down'),
-      );
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+      email.sendActivationEmail.mockRejectedValue(new Error('Email provider down'));
 
-      await expect(
-        service.resendVerification(mockUser.email),
-      ).resolves.toBeDefined();
+      await expect(service.resendVerification(MOCK_USER.email)).resolves.toBeDefined();
     });
   });
 });

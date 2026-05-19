@@ -27,6 +27,8 @@ import {
   createMockEmailService,
   createMockTokenService,
   createMockConfigService,
+  createMockRefreshTokenService,
+  createMockJwtService,
 } from '../helpers/auth-test.helpers';
 
 // ---------------------------------------------------------------------------
@@ -54,20 +56,8 @@ describe('AuthService Testing Suite', () => {
         { provide: CredentialService, useValue: mockCredentialService },
         { provide: LockoutService, useValue: mockLockoutService },
         { provide: AuditLogService, useValue: mockAuditLogService },
-        {
-          provide: RefreshTokenService,
-          useValue: {
-            createRefreshToken: jest.fn().mockResolvedValue('mock-refresh-token'),
-            revokeAllForUser: jest.fn().mockResolvedValue(undefined),
-          },
-        },
-        {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn().mockReturnValue('mock-jwt-token'),
-          },
-        },
-
+        { provide: RefreshTokenService, useValue: createMockRefreshTokenService() },
+        { provide: JwtService, useValue: createMockJwtService() },
       ],
     }).compile();
 

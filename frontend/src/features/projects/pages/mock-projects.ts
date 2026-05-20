@@ -19,7 +19,7 @@ function createMockProject(
         province: string;
         postalCode: string;
     },
-    skills: any[]
+    skills: Project["skills"]
 ): Project {
     return {
         id,

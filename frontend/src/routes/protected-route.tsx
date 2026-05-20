@@ -1,15 +1,16 @@
-
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-export const ProtectedRoute = () => {
-    const { isAuthenticated } = useAuth();
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
 
-    // If they don't have a valid token in context, kick them to login
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated } = useAuth();
 
-    // If they are authenticated, render the nested child routes
-    return <Outlet />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 };

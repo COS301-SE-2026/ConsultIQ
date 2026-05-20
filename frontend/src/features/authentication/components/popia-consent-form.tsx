@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { acceptTerms } from "../../../api/auth.api";
+import WelcomeModal from "../../../components/ui/welcome-modal";
 
 function PopiaConsentForm() {
   const [searchParams] = useSearchParams();
@@ -10,6 +11,7 @@ function PopiaConsentForm() {
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +22,8 @@ function PopiaConsentForm() {
 
     try {
       await acceptTerms(email);
-      navigate("/login");
+      setShowWelcome(true);
+      //navigate("/login");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -153,6 +156,13 @@ function PopiaConsentForm() {
           </div>
         </div>
       </div>
+      <WelcomeModal
+        show={showWelcome}
+        onContinue={() => {
+          setShowWelcome(false);
+          navigate("/login");
+        }}
+      />
     </form>
   );
 }

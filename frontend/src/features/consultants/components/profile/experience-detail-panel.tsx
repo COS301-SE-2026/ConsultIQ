@@ -41,28 +41,28 @@ function DetailField({ label, value }: {
 }
 
 function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelProps) {
-
-  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === "Escape") {
       onClose();
     }
   }, [onClose]);
 
   return (
-    /* Backdrop  */
-    <div
-      className="fixed inset-0 z-50 flex justify-end"
-      style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
-      onClick={onClose}
-      onKeyDown={handleBackdropKeyDown}
-      role="presentation"
-      aria-label="Close panel"
-    >
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop button */}
+      <button
+        className="absolute inset-0 w-full h-full cursor-pointer"
+        style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
+        onClick={onClose}
+        onKeyDown={handleBackdropKeyDown}
+        aria-label="Close panel"
+        type="button"
+      />
+      
       {/* Panel */}
       <div
-        className="bg-white h-full overflow-y-auto w-1/2 max-w-2xl"
+        className="relative bg-white h-full overflow-y-auto w-1/2 max-w-2xl"
         style={{ padding: "40px 48px" }}
-        onClick={(e) => e.stopPropagation()}
       >
         {/* Back button */}
         <button
@@ -73,6 +73,7 @@ function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelPro
             fontSize: "var(--text-h4)",
             marginBottom: "32px",
           }}
+          type="button"
         >
           <ArrowLeft size={18} /> Back
         </button>

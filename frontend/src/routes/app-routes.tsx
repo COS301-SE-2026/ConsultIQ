@@ -2,7 +2,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 
 // Auth Pages (Public)
 import RegisterUserPage from "../features/authentication/pages/register-user-page";
-import { LoginForm } from "../features/authentication/pages/login-page";
+import  LoginForm  from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
 

@@ -9,7 +9,7 @@ export interface ProjectSkillData {
 
 export interface ProjectLocation {
   readonly addressLine1: string;
-  readonly addressLine2: string;
+  readonly addressLine2?: string;
   readonly suburb: string;
   readonly city: string;
   readonly province: string;
@@ -18,6 +18,8 @@ export interface ProjectLocation {
 
 export interface Project {
   readonly id: string;
+  readonly name: string;
+  readonly location: ProjectLocation;
   readonly projectName: string;
   readonly clientName: string;
   readonly description: string;

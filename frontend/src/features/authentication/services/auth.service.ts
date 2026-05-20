@@ -41,9 +41,9 @@ export const authService = {
             credentials: 'include',
             body: JSON.stringify(payload),
         }).then((res) => handleResponse<LoginResult>(res)),
-    getProfile: async (): Promise<Omit<LoginResult, 'accessToken' | 'refreshToken'>> => {
-        // Hits your /auth/me endpoint 
-        const response = await apiClient.get<{ result: Omit<LoginResult, 'accessToken' | 'refreshToken'> }>('/auth/me');
-        return response.result;
-    }
+    getProfile: async () => {
+
+        const response = await apiClient.get<Record<string, unknown>>('/auth/me');
+        return response?.result ? response.result : response;
+    },
 };

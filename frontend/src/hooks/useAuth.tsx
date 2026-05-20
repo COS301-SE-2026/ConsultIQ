@@ -11,8 +11,7 @@ const REFRESH_TOKEN_KEY = 'ciq_refresh_token';
 const USER_PROFILE_KEY = 'ciq_user_profile';
 
 // Clean profile shape stripped of the token strings
-export type UserProfile = Omit<LoginResult, 'accessToken' | 'refreshToken'>;
-
+export type UserProfile = Omit<LoginResult['result'], 'accessToken' | 'refreshToken'>;
 interface AuthContextValue {
     tokens: { accessToken: string; refreshToken: string } | null;
     user: UserProfile | null;
@@ -56,8 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             const cached = sessionStorage.getItem(USER_PROFILE_KEY);
             if (cached) return;
+
             try {
-                const profile = await authService.getProfile();
+
+                const profile = (await authService.getProfile() as unknown) as UserProfile;
+
                 if (isMounted) setUser(profile);
             } catch (error) {
                 console.error('Session restoration failed:', error);
@@ -66,28 +68,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         checkAuth();
-        return () => { isMounted = false; };
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // Login processor
+    // Login processor
     const login = useCallback(async (payload: LoginPayload) => {
-        const response: any = await authService.login(payload);
+        // Explicitly type the response as LoginResult to satisfy ESLint
+        const response = await authService.login(payload) as LoginResult;
 
-        if (response?.result?.accessToken) {
+        if (response && response.result && response.result.accessToken) {
+            // TypeScript now knows EXACTLY what is inside response.result
             const { accessToken, refreshToken, ...userProfile } = response.result;
 
-            // Persist tokens across page reloads in sessionStorage
             sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
             sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-            sessionStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
+
             setTokens({ accessToken, refreshToken });
+
+            // userProfile now perfectly matches the new UserProfile type
             setUser(userProfile);
 
-            // Return dashboard route to let the Login page wrap up routing
             return userProfile.dashboardRoute;
+        } else {
+            console.error('Actual response received:', response);
+            throw new Error('Malformed response structure from authentication server.');
         }
-
-        throw new Error('Malformed response structure from authentication server.');
     }, []);
 
     // Memoized value to eliminate unneeded re-renders

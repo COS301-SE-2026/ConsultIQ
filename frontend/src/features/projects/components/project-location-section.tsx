@@ -35,14 +35,13 @@ function Info({
   value,
 }: {
   readonly label: string;
-  readonly value: string;
+  readonly value: string | undefined;
 }) {
   return (
     <div>
       <p className="font-semibold mb-2">{label}</p>
-
       <p style={{ color: "var(--color-text-secondary)" }}>
-        {value}
+        {value ?? "—"}
       </p>
     </div>
   );

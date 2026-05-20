@@ -21,7 +21,7 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
     if (response.status === 204) return {} as T;
 
 
-    let responseData: any = null;
+    let responseData: Record<string, unknown> | null = null;
     try {
         responseData = await response.json();
     } catch {
@@ -38,10 +38,10 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
         let errorMessage = `Request failed (${response.status})`;
 
+
         if (responseData && responseData.message) {
-            errorMessage = Array.isArray(responseData.message)
-                ? responseData.message.join(', ')
-                : responseData.message;
+            const msg = responseData.message;
+            errorMessage = Array.isArray(msg) ? msg.join(', ') : String(msg);
         }
 
 

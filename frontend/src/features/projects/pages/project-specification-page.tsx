@@ -56,7 +56,7 @@ function ProjectSpecificationPage() {
     skills: [],
   });
 
-  const updateForm = (field: keyof ProjectFormData, value: any) => {
+  const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 

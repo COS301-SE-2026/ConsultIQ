@@ -3,7 +3,7 @@ import type { ProjectFormData } from "../pages/project-specification-page";
 
 interface ProjectLocationCardProps {
   data: ProjectFormData;
-  onChange: (field: keyof ProjectFormData, value: any) => void;
+  readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
 }
 
 export default function ProjectLocationCard({ data, onChange }: ProjectLocationCardProps) {

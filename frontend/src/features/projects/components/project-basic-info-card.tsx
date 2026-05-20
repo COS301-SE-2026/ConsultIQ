@@ -4,7 +4,7 @@ import type { ProjectFormData } from "../pages/project-specification-page";
 
 interface ProjectBasicInfoCardProps {
   data: ProjectFormData;
-  onChange: (field: keyof ProjectFormData, value: any) => void;
+  readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
 }
 
 export default function ProjectBasicInfoCard({ data, onChange }: ProjectBasicInfoCardProps) {

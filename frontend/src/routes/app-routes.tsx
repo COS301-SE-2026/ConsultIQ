@@ -11,36 +11,39 @@ import ConsultantsPage from "../features/consultants/pages/consultant-list-page"
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
-
+import { AuthProvider } from "../hooks/useAuth";
 // Route Guard
 import { ProtectedRoute } from "./protected-route";
 
 function AppRoutes() {
     return (
-        <BrowserRouter>
-            <Routes>
-                {/* ------------------------------------------- */}
-                {/* PUBLIC ROUTES (Accessible to anyone)        */}
-                {/* ------------------------------------------- */}
-                <Route path="/register" element={<RegisterUserPage />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/set-password" element={<SetPasswordPage />} />
-                <Route path="/popia-consent" element={<PopiaConsentPage />} />
+        <AuthProvider>
+            <BrowserRouter>
+                <Routes>
+                    {/* ------------------------------------------- */}
+                    {/* PUBLIC ROUTES (Accessible to anyone)        */}
+                    {/* ------------------------------------------- */}
+                    <Route path="/register" element={<RegisterUserPage />} />
+                    <Route path="/login" element={<LoginForm />} />
+                    <Route path="/set-password" element={<SetPasswordPage />} />
+                    <Route path="/popia-consent" element={<PopiaConsentPage />} />
 
-                {/* ------------------------------------------- */}
-                {/* PROTECTED ROUTES (Requires Authentication)  */}
-                {/* ------------------------------------------- */}
-                <Route element={<ProtectedRoute />}>
-                    <Route path="/consultants-manager" element={<ConsultantsPage />} />
-                    <Route path="/project-specification" element={<ProjectSpecificationPage />} />
-                    <Route path="/projects" element={<ProjectListPage />} />
-                    <Route path="/create-profile" element={<CreateProfilePage />} />
-                </Route>
+                    {/* ------------------------------------------- */}
+                    {/* PROTECTED ROUTES (Requires Authentication)  */}
+                    {/* ------------------------------------------- */}
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="/consultants-manager" element={<ConsultantsPage />} />
+                        <Route path="/project-specification" element={<ProjectSpecificationPage />} />
+                        <Route path="/projects" element={<ProjectListPage />} />
+                        <Route path="/create-profile" element={<CreateProfilePage />} />
+                    </Route>
 
-                {/* Catch-all: Redirect unknown URLs to login */}
-                <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-        </BrowserRouter>
+                    {/* Catch-all: Redirect unknown URLs to login */}
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
+            </BrowserRouter>
+
+        </AuthProvider>
     );
 }
 

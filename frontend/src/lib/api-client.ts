@@ -1,4 +1,3 @@
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -18,6 +17,18 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         headers,
     });
 
+
+    if (response.status === 204) return {} as T;
+
+
+    let responseData: any = null;
+    try {
+        responseData = await response.json();
+    } catch {
+        // If parsing fails
+    }
+
+
     if (!response.ok) {
         if (response.status === 401) {
             sessionStorage.removeItem('ciq_access_token');
@@ -26,15 +37,19 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         }
 
         let errorMessage = `Request failed (${response.status})`;
-        try {
-            const body = await response.json();
-            errorMessage = Array.isArray(body?.message) ? body.message.join(', ') : body?.message || errorMessage;
-        } catch { throw new Error(errorMessage); }
 
+        if (responseData && responseData.message) {
+            errorMessage = Array.isArray(responseData.message)
+                ? responseData.message.join(', ')
+                : responseData.message;
+        }
+
+
+        throw new Error(errorMessage);
     }
 
-    if (response.status === 204) return {} as T;
-    return response.json() as Promise<T>;
+
+    return responseData as T;
 }
 
 export const apiClient = {
@@ -42,4 +57,4 @@ export const apiClient = {
     post: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'POST', body: data ? JSON.stringify(data) : undefined }),
     put: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
     delete: <T>(endpoint: string, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'DELETE' }),
-};//
+};

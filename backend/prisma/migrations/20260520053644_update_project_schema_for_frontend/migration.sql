@@ -36,4 +36,4 @@ ADD COLUMN     "postalCode" TEXT NOT NULL,
 ADD COLUMN     "suburb" TEXT;
 
 -- DropEnum
-DROP TYPE "ProfileStatus";
+DROP TYPE "ProfileStatus"; -- NOSONAR

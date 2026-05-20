@@ -24,6 +24,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { Roles } from '../../common/guards/roles.guard';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -108,6 +109,7 @@ export class AuthController {
     return { message: 'Logged out successfully.' };
   }
 
+  @SkipThrottle()
   @Get('me')
   async getProfile(@Request() req: any) {
     const user = req.user;

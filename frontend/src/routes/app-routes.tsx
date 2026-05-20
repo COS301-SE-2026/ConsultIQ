@@ -9,6 +9,7 @@ import PopiaConsentPage from "../features/authentication/pages/popia-consent-pag
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
+import { ProtectedRoute } from "./protected-route";
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -16,14 +17,17 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
+        {/* Public routes */}
         <Route path="/login" element={<PageTransition><LoginForm /></PageTransition>} />
         <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
         <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
         <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
-        <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
-        <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
-        <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
+
+        {/* Protected routes */}
+        <Route path="/register" element={<ProtectedRoute><PageTransition><RegisterUserPage /></PageTransition></ProtectedRoute>} />
+        <Route path="/consultants-manager" element={<ProtectedRoute><PageTransition><ConsultantsPage /></PageTransition></ProtectedRoute>} />
+        <Route path="/project-specification" element={<ProtectedRoute><PageTransition><ProjectSpecificationPage /></PageTransition></ProtectedRoute>} />
+        <Route path="/projects" element={<ProtectedRoute><PageTransition><ProjectListPage /></PageTransition></ProtectedRoute>} />
       </Routes>
     </AnimatePresence>
   );

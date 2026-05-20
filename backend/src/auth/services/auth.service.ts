@@ -37,8 +37,8 @@ export interface LoginResult {
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
   ADMIN: '/register',
   PROJECT_MANAGER: '/projects',
-  CONSULTANT_MANAGER: '/consultants-manager',
-  CONSULTANT: '/consultant-profile',
+  CONSULTANT_MANAGER: '/consultant-manager',
+  CONSULTANT: '/profile',
 };
 
 class TooManyRequestsException extends HttpException {
@@ -59,7 +59,7 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async login(
     dto: LoginDto,
@@ -125,7 +125,7 @@ export class AuthService {
         });
         throw new ForbiddenException(
           'Your account has been locked due to too many failed login attempts. ' +
-            'Please contact an administrator to unlock your account.',
+          'Please contact an administrator to unlock your account.',
         );
       }
 
@@ -150,7 +150,7 @@ export class AuthService {
         if (nowLocked) {
           throw new ForbiddenException(
             'Your account has been locked due to too many failed login attempts. ' +
-              'Please contact an administrator to unlock your account.',
+            'Please contact an administrator to unlock your account.',
           );
         }
 
@@ -365,4 +365,23 @@ export class AuthService {
         'If your account is pending verification, a new link has been sent.',
     };
   }
+
+   async acceptTerms(email: string): Promise<{ message: string }> {
+      const user = await this.prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        throw new NotFoundException('Account not found.');
+      }
+
+      if (user.status !== 'ACTIVE') {
+        throw new BadRequestException('Account must be active before accepting terms.');
+      }
+
+      await this.prisma.user.update({
+        where: { email },
+        data: { termsAcceptedAt: new Date() },
+      });
+
+      return { message: 'Terms accepted successfully.' };
+   }
 }

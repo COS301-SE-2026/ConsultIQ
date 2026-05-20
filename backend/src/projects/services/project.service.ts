@@ -6,7 +6,9 @@ import { CreateProjectDto } from '../dto/create-project.dto';
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  async createProject(dto: CreateProjectDto) {
+  async createProject(
+    dto: CreateProjectDto,
+  ): Promise<{ message: string; projectId: string }> {
     if (dto.endDate) {
       const start = new Date(dto.startDate);
       const end = new Date(dto.endDate);

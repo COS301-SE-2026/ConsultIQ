@@ -1,14 +1,16 @@
 import { useState } from "react";
 
-export interface Skill {
-  id: string;
+interface TableSkill {
+  id?: string;
   name: string;
   competency: string;
   years: number;
+  mandatory?: boolean;
 }
 
+
 interface ProjectSkillsTableProps {
-  readonly skills: Skill[];
+  readonly skills: TableSkill[];
 }
 
 export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) {
@@ -21,23 +23,26 @@ export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) 
 
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
-      <div className="grid grid-cols-3 text-sm font-semibold mb-4 px-2">
+
+      <div className="grid grid-cols-4 text-sm font-semibold mb-4 px-2">
         <span>Skill</span>
         <span>Competency</span>
         <span>Years</span>
+        <span>Mandatory</span>
       </div>
 
-      {/* Table Content */}
       <div className="flex flex-col h-[200px] overflow-y-auto">
         {currentSkills.length > 0 ? (
-          currentSkills.map((skill) => (
+          currentSkills.map((skill, index) => (
             <div
-              key={skill.id}
-              className="grid grid-cols-3 py-3 border-t text-base px-2 shrink-0"
+              key={index}
+              className="grid grid-cols-4 py-3 border-t text-base px-2 shrink-0"
             >
               <span className="truncate pr-2">{skill.name}</span>
               <span className="truncate pr-2">{skill.competency}</span>
               <span>{skill.years}</span>
+              {/* Show a clear Yes/No instead of a raw boolean */}
+              <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
             </div>
           ))
         ) : (
@@ -47,7 +52,6 @@ export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) 
         )}
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-between items-center mt-2 pt-4 border-t">
         <button
           type="button"

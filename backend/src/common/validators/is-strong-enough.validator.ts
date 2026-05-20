@@ -14,26 +14,33 @@ interface UserInputObject {
 
 @ValidatorConstraint({ name: 'isStrongEnough', async: false })
 export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
-  validate(password: string, args: ValidationArguments): boolean {
+validate(password: string, args: ValidationArguments): boolean {
     const object = args.object as UserInputObject;
-
-    // Build a list of user inputs to check against
-    // zxcvbn will penalise the score if the password contains any of these
     const userInputs: string[] = [];
+    const passwordLower = password.toLowerCase();
 
     if (object.email) {
-      // Add the full email and just the local part (before the @)
-      userInputs.push(object.email, object.email.split('@')[0]);
+      const localPart = object.email.split('@')[0];
+      userInputs.push(object.email, localPart);
+      // Check if password contains any substring of the local part longer than 4 chars
+      for (let i = 0; i <= localPart.length - 5; i++) {
+        for (let j = i + 5; j <= localPart.length; j++) {
+          const substring = localPart.slice(i, j).toLowerCase();
+          if (passwordLower.includes(substring)) return false;
+        }
+      }
     }
 
     if (object.fullName) {
-      // Add the full name and each individual word in the name
-      userInputs.push(object.fullName, ...object.fullName.split(' '));
+      const nameParts = object.fullName.split(' ');
+      userInputs.push(object.fullName, ...nameParts);
+      // Explicit check — reject if password contains any part of the name
+      for (const part of nameParts) {
+        if (part.length > 2 && passwordLower.includes(part.toLowerCase())) return false;
+      }
     }
 
     const result = zxcvbn(password, userInputs);
-    // Score 0 = very weak, 1 = weak, 2 = fair, 3 = strong, 4 = very strong
-    // We require at least a 3
     return result.score >= 3;
   }
 

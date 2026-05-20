@@ -1,52 +1,67 @@
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, useLocation, Routes, Route, Navigate } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 
-// Auth Pages (Public)
+import PageTransition from "../components/layout/page-transition";
+
+// Authentication
 import RegisterUserPage from "../features/authentication/pages/register-user-page";
-import { LoginForm } from "../features/authentication/pages/login-page";
+import LoginForm from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
 
-// Protected Pages (Require Login)
+// Consultants
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
-import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
-import ProjectListPage from "../features/projects/pages/project-list-page";
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
-
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 
-// Route Guard
-import { ProtectedRoute } from "./protected-route";
+// Project pages (Added missing imports)
+import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
+import ProjectListPage from "../features/projects/pages/project-list-page";
+
 import { AuthProvider } from "../hooks/useAuth";
+import { ProtectedRoute } from "./protected-route";
+
+function AnimatedRoutes() {
+    const location = useLocation();
+
+    return (
+        <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+                {/* ------------------------------------------- */}
+                {/* PUBLIC ROUTES                               */}
+                {/* ------------------------------------------- */}
+                <Route path="/login" element={<PageTransition><LoginForm /></PageTransition>} />
+                <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
+                <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
+                <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
+
+                {/* ------------------------------------------- */}
+                {/* PROTECTED ROUTES                            */}
+                {/* ------------------------------------------- */}
+                <Route element={<ProtectedRoute />}>
+                    <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
+                    <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
+                    <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
+                    <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
+                    <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
+                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
+                    <Route path="/create-profile" element={<PageTransition><CreateProfilePage /></PageTransition>} />
+                </Route>
+
+                {/* Catch-all: Redirect unknown URLs to login */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+        </AnimatePresence>
+    );
+}
 
 function AppRoutes() {
     return (
         <AuthProvider>
             <BrowserRouter>
-                <Routes>
-                    {/* ------------------------------------------- */}
-                    {/* PUBLIC ROUTES (Accessible to anyone)        */}
-                    {/* ------------------------------------------- */}
-                    <Route path="/register" element={<RegisterUserPage />} />
-                    <Route path="/login" element={<LoginForm />} />
-                    <Route path="/set-password" element={<SetPasswordPage />} />
-                    <Route path="/popia-consent" element={<PopiaConsentPage />} />
-
-                    {/* ------------------------------------------- */}
-                    {/* PROTECTED ROUTES (Requires Authentication)  */}
-                    {/* ------------------------------------------- */}
-                    <Route element={<ProtectedRoute />}>
-                        <Route path="/consultants-manager" element={<ConsultantsPage />} />
-                        <Route path="/project-specification" element={<ProjectSpecificationPage />} />
-                        <Route path="/projects" element={<ProjectListPage />} />
-                        <Route path="/consultant-FAQ" element={<UnderConstructionPage />} />
-                        <Route path="/profile-view" element={<ConsultantProfileViewPage />} />
-                        <Route path="/create-profile" element={<CreateProfilePage />} />
-                    </Route>
-
-                    {/* Catch-all: Redirect unknown URLs to login */}
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
+                {/* Swapped the old static markup out for your animated wrapper component */}
+                <AnimatedRoutes />
             </BrowserRouter>
         </AuthProvider>
     );

@@ -4,21 +4,36 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { ApiError } from '../services/auth.service';
 
-
+// ---------------------------------------------------------------------------
+// Validation
+// ---------------------------------------------------------------------------
+function validate(email: string, password: string): string | null {
+  if (!email) return 'Email is required.';
+  if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(email))
+    return 'Invalid email format.';
+  if (!password) return 'Password is required.';
+  return null;
+}
 
 // ---------------------------------------------------------------------------
-// Friendly error messages
+// Friendly error messages for known HTTP status codes
 // ---------------------------------------------------------------------------
 function friendlyError(err: unknown): string {
   if (err instanceof ApiError) {
     switch (err.status) {
-      case 401: return 'Incorrect email or password.';
-      case 403: return 'Your account is not yet activated. Check your inbox.';
-      case 429: return 'Too many login attempts. Please wait a minute and try again.';
-      case 500: return 'Something went wrong on our end. Please try again shortly.';
-      default:  return err.message;
+      case 401:
+        return 'Incorrect email or password.';
+      case 403:
+        return 'Your account is not yet activated. Check your inbox.';
+      case 429:
+        return 'Too many login attempts. Please wait a minute and try again.';
+      case 500:
+        return 'Something went wrong on our end. Please try again shortly.';
+      default:
+        return err.message;
     }
   }
+  // Network failure / fetch threw
   return 'Unable to reach the server. Check your connection.';
 }
 
@@ -29,25 +44,22 @@ export const LoginCard: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading]   = useState(false);
-  const [errors, setErrors]     = useState<{ email?: string; password?: string }>({});
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    // Client-side validation
-    const newErrors: { email?: string; password?: string } = {};
-    if (!email)   newErrors.email    = 'Email is required.';
-    else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(email))
-                  newErrors.email    = 'Invalid email format.';
-    if (!password) newErrors.password = 'Password is required.';
-
-    setErrors(newErrors);
-    if (Object.keys(newErrors).length > 0) return;
+    // Client-side validation before hitting the API
+    const validationError = validate(email, password);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
 
     setLoading(true);
     try {
       const targetRoute = await login({ email, password });
+
       toast.success('Login successful');
       navigate(targetRoute || '/dashboard');
     } catch (err) {
@@ -66,7 +78,7 @@ export const LoginCard: React.FC = () => {
       onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
       className="flex flex-col w-[560px] min-h-[580px] bg-white rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] items-center gap-6 pt-12 pb-10"
     >
-      {/* Logo   */}
+      {/* Logo placeholder */}
       <div className="flex justify-center mb-8">
         <div className="w-[115px]" />
       </div>
@@ -106,13 +118,8 @@ export const LoginCard: React.FC = () => {
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className={`mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50 ${
-              errors.email ? "border-red-500" : "border-[#E2E8F0]"
-            }`}
+            className="mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border border-[#E2E8F0] text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm">{errors.email}</p>
-          )}
         </div>
 
         {/* Password */}
@@ -132,17 +139,12 @@ export const LoginCard: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className={`mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50 ${
-              errors.password ? "border-red-500" : "border-[#E2E8F0]"
-            }`}
+            className="mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border border-[#E2E8F0] text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
           />
-          {errors.password && (
-            <p className="text-red-500 text-sm">{errors.password}</p>
-          )}
         </div>
 
-        {/* Forgot password link */}
-        <div className="w-96 max-w-[520px] flex justify-start mt-1">
+        {/* Forgot password link - centered */}
+        <div className="w-96 max-w-[520px] flex justify-center mt-1">
           <Link
             to="/forgot-password"
             className="text-sm font-semibold hover:underline"

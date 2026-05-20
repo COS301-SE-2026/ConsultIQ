@@ -14,10 +14,12 @@ import CreateProfilePage from "../features/consultants/pages/create-profile-page
 
 // Route Guard
 import { ProtectedRoute } from "./protected-route";
+import { AuthProvider } from "../hooks/useAuth";
 
 function AppRoutes() {
     return (
-        <BrowserRouter>
+        <AuthProvider>
+            <BrowserRouter>
             <Routes>
                 {/* ------------------------------------------- */}
                 {/* PUBLIC ROUTES (Accessible to anyone)        */}
@@ -40,7 +42,8 @@ function AppRoutes() {
                 {/* Catch-all: Redirect unknown URLs to login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
-        </BrowserRouter>
+            </BrowserRouter>
+        </AuthProvider>
     );
 }
 

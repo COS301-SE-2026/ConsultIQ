@@ -59,9 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Login processor
     const login = useCallback(async (payload: LoginPayload) => {
+        // The backend wraps the response in a result object via a global interceptor
         const response = await authService.login(payload);
 
-        if (response && response.result) {
+        if (response && response.result && response.result.accessToken) {
             const { accessToken, refreshToken, ...userProfile } = response.result;
 
             // Persist tokens across page reloads in sessionStorage
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Return dashboard route to let the Login page wrap up routing
             return userProfile.dashboardRoute;
         } else {
-            console.error('Backend response structure is unexpected:', response);
+            console.error('Login failed or backend response structure is unexpected:', response);
             throw new Error('Malformed response structure from authentication server.');
         }
     }, []);

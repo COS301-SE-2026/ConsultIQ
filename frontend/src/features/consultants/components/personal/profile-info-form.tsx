@@ -36,7 +36,7 @@ export default function ProfileInfoForm() {
         sessionStorage.setItem("profile_nationality", sanitizedNationality); //NOSONAR
 
 
-        // eslint-disable-next-line no-console
+        
         console.log("Profile Info Saved:", {
             firstName,
             lastName,

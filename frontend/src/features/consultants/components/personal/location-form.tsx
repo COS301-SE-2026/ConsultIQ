@@ -35,7 +35,7 @@ export default function LocationForm() {
         const sanitizedPostalCode = sanitizeAlphanumeric(postalCode);
         sessionStorage.setItem("location_postalCode", sanitizedPostalCode); //NOSONAR
 
-        // eslint-disable-next-line no-console
+      
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
     };
 

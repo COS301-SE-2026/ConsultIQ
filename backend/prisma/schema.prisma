@@ -56,40 +56,76 @@ enum ProjectStatus {
   CLOSED
 }
 
-// ----------------------------------------Models---------------------------------------------------
-model authAuditLog {
-  id        String       @id @default(uuid())
-  email     String
-  outcome   AuditOutcome
-  userId    String?
-  user      User?        @relation(fields: [userId], references: [id])
-  ipAddress String
-  userAgent String?
-  timestamp DateTime     @default(now())
-
-  @@map("audit_logs")
+enum ConsultantAvailability {
+  AVAILABLE
+  UNAVAILABLE
+  ON_LEAVE
 }
 
-model User {
-  id                String     @id @default(uuid())
-  fullName          String
-  email             String     @unique
-  passwordHash      String?
-  role              Role
-  status            UserStatus @default(PENDING)
-  failedAttempts    Int        @default(0)
-  lockedUntil       DateTime?
-  isLocked          Boolean    @default(false)
-  termsAcceptedAt   DateTime?
-  tenantId          String?
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
+// ---------------------------------------- RBAC Models------------------------------------
 
-  tokens            Token[]
-  auditLogs         authAuditLog[]
-  consultant        Consultant?
-  managedProjects   ProjectManager[]
-  managedConsultants  ConsultantManager[]
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RoleDefinition {
+  id          String   @id @default(uuid())
+  name        Role     @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+  users           User[]
+
+  @@map("roles")
+}
+
+// RolePermission — join table mapping which permissions belong to which role.
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String   @map("role_id")
+  permissionId String   @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       RoleDefinition @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ---------------------------------------- Models -----------------------------
+
+model User {
+  id              String          @id @default(uuid())
+  fullName        String
+  email           String          @unique
+  passwordHash    String?
+  role            Role
+  roleId          String?         @map("role_id")
+  roleDefinition  RoleDefinition? @relation(fields: [roleId], references: [id])
+  status          UserStatus      @default(PENDING)
+  failedAttempts  Int             @default(0)
+  lockedUntil     DateTime?
+  isLocked        Boolean         @default(false)
+  termsAcceptedAt DateTime?
+  tenantId        String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  tokens             Token[]
+  auditLogs          authAuditLog[]
+  consultant         Consultant?
+  managedProjects    ProjectManager[]
+  managedConsultants ConsultantManager[]
 
   @@map("users")
 }
@@ -103,34 +139,29 @@ model Token {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+  familyId  String? // groups rotated refresh tokens from the same login session
 
   @@map("tokens")
 }
 
 model Consultant {
-  id            String             @id @default(uuid())
-  userId        String             @unique
-  user          User               @relation(fields: [userId], references: [id])
+  id            String                 @id @default(uuid())
+  userId        String                 @unique
+  user          User                   @relation(fields: [userId], references: [id])
   location      String
   costToCompany Float
-  availability  ConsultantAvailability  @default(AVAILABLE)
+  availability  ConsultantAvailability @default(AVAILABLE)
   tenantId      String?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
 
-  skills        ConsultantSkill[]
-  certificates  Certificate[]
-  placements    ProjectPlacement[]
-  cvFiles       CvFile[]
-  managers  ConsultantManager[]
+  skills       ConsultantSkill[]
+  certificates Certificate[]
+  placements   ProjectPlacement[]
+  cvFiles      CvFile[]
+  managers     ConsultantManager[]
 
   @@map("consultants")
-}
-
-enum ConsultantAvailability {
-  AVAILABLE
-  UNAVAILABLE
-  ON_LEAVE
 }
 
 model ConsultantManager {
@@ -146,13 +177,13 @@ model ConsultantManager {
 }
 
 model Skill {
-  id                String             @id @default(uuid())
-  name              String             @unique
-  category          String
-  tenantId          String?
+  id       String  @id @default(uuid())
+  name     String  @unique
+  category String
+  tenantId String?
 
-  consultantSkills  ConsultantSkill[]
-  projectSkills     ProjectSkill[]
+  consultantSkills ConsultantSkill[]
+  projectSkills    ProjectSkill[]
 
   @@map("skills")
 }
@@ -196,36 +227,43 @@ model CvFile {
 }
 
 model Project {
-  id                         String           @id @default(uuid())
-  projectName                String
-  clientName                 String
-  city                       String
-  province                   String
-  startDate                  DateTime
-  endDate                    DateTime?
-  teamSize                   Int
-  requiredAllocationPercentage Int
-  clientBillingBudget        Float
-  status                     ProjectStatus    @default(OPEN)
-  tenantId                   String?
-  createdAt                  DateTime         @default(now())
-  updatedAt                  DateTime         @updatedAt
+  id           String        @id @default(uuid())
+  projectName  String
+  clientName   String
+  description  String? // Added for frontend
+  addressLine1 String // Added for frontend
+  addressLine2 String? // Added for frontend
+  suburb       String? // Added for frontend
+  city         String
+  province     String
+  postalCode   String // Added for frontend
+  startDate    DateTime
+  endDate      DateTime?
+  teamSize     Int
+  allocation   Int // Renamed from requiredAllocationPercentage
+  budget       Float // Renamed from clientBillingBudget
+  status       ProjectStatus @default(OPEN)
+  tenantId     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
-  skills                     ProjectSkill[]
-  managers                   ProjectManager[]
-  placements                 ProjectPlacement[]
+  skills     ProjectSkill[]
+  managers   ProjectManager[]
+  placements ProjectPlacement[]
 
   @@map("projects")
 }
 
 model ProjectSkill {
-  id                String          @id @default(uuid())
-  projectId         String
-  skillId           String
-  minimumCompetency CompetencyLevel
-  isMandatory       Boolean         @default(true)
-  project           Project         @relation(fields: [projectId], references: [id])
-  skill             Skill           @relation(fields: [skillId], references: [id])
+  id         String          @id @default(uuid())
+  projectId  String
+  skillId    String
+  competency CompetencyLevel // Renamed from minimumCompetency
+  years      Int // Added for frontend
+  mandatory  Boolean         @default(true) // Renamed from isMandatory
+
+  project Project @relation(fields: [projectId], references: [id])
+  skill   Skill   @relation(fields: [skillId], references: [id])
 
   @@unique([projectId, skillId])
   @@map("project_skills")
@@ -255,4 +293,18 @@ model ProjectPlacement {
   consultant   Consultant      @relation(fields: [consultantId], references: [id])
 
   @@map("project_placements")
+}
+
+model authAuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("auth_audit_logs")
 }

@@ -1,5 +1,5 @@
-import { ArrowLeft } from "lucide-react";
-import { useCallback } from "react";
+import { DetailPanel } from "../../../../components/shared/detail-panel";
+import { DetailField } from "../../../../components/shared/detail-field";
 
 export interface Experience {
   id: string;
@@ -18,89 +18,18 @@ interface ExperienceDetailPanelProps {
   readonly onClose: () => void;
 }
 
-function DetailField({ label, value }: { 
-  readonly label: string; 
-  readonly value: string;
-}) {
+export default function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelProps) {
   return (
-    <div className="flex flex-col" style={{ gap: "10px", marginBottom: "28px" }}>
-      <p
-        className="font-semibold"
-        style={{ color: "var(--color-secondary)", fontSize: "var(--text-h4)" }}
-      >
-        {label}
-      </p>
-      <p
-        className="leading-relaxed"
-        style={{ color: "var(--color-text-primary)", fontSize: "var(--text-h3)" }}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelProps) {
-  const handleBackdropKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "Escape") {
-      onClose();
-    }
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop button */}
-      <button
-        className="absolute inset-0 w-full h-full cursor-pointer"
-        style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
-        onClick={onClose}
-        onKeyDown={handleBackdropKeyDown}
-        aria-label="Close panel"
-        type="button"
+    <DetailPanel title="Experience" onClose={onClose}>
+      <DetailField label="Job title" value={experience.jobTitle} />
+      <DetailField label="Company/organisation" value={experience.company} />
+      <DetailField label="Location" value={experience.location} />
+      <DetailField label="Job type" value={experience.jobType} />
+      <DetailField
+        label="Start and end date"
+        value={`${experience.startDate}, ${experience.endDate}`}
       />
-      
-      {/* Panel */}
-      <div
-        className="relative bg-white h-full overflow-y-auto w-1/2 max-w-2xl"
-        style={{ padding: "40px 48px" }}
-      >
-        {/* Back button */}
-        <button
-          onClick={onClose}
-          className="flex items-center gap-2 font-medium hover:opacity-70 transition"
-          style={{
-            color: "var(--color-primary)",
-            fontSize: "var(--text-h4)",
-            marginBottom: "32px",
-          }}
-          type="button"
-        >
-          <ArrowLeft size={18} /> Back
-        </button>
-
-        <h1
-          className="font-bold"
-          style={{
-            color: "var(--color-primary)",
-            fontSize: "32px",
-            marginBottom: "36px",
-          }}
-        >
-          Experience
-        </h1>
-
-        <DetailField label="Job title"            value={experience.jobTitle} />
-        <DetailField label="Company/organisation" value={experience.company} />
-        <DetailField label="Location"             value={experience.location} />
-        <DetailField label="Job type"             value={experience.jobType} />
-        <DetailField
-          label="Start and end date"
-          value={`${experience.startDate}, ${experience.endDate}`}
-        />
-        <DetailField label="Role description" value={experience.roleDescription} />
-      </div>
-    </div>
+      <DetailField label="Role description" value={experience.roleDescription} />
+    </DetailPanel>
   );
 }
-
-export default ExperienceDetailPanel;

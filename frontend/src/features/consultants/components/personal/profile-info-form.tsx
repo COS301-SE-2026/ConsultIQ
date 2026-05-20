@@ -10,6 +10,8 @@ export default function ProfileInfoForm() {
     const [phone, setPhone] = useState(() => sessionStorage.getItem("profile_phone") || "");
     const [idNumber, setIdNumber] = useState(() => sessionStorage.getItem("profile_idNumber") || "");
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
+    const [isAvailable, setIsAvailable] = useState(() => sessionStorage.getItem("profile_isAvailable") === "true");
+    const [costToCompany, setCostToCompany] = useState(() => sessionStorage.getItem("profile_costToCompany") || "");
 
     const handleDone = () => {
         // Strict allowlist sanitization for plain text fields
@@ -35,8 +37,12 @@ export default function ProfileInfoForm() {
         const sanitizedNationality = sanitizeName(nationality);
         sessionStorage.setItem("profile_nationality", sanitizedNationality); //NOSONAR
 
+        sessionStorage.setItem("profile_isAvailable", String(isAvailable)); //NOSONAR
 
-        
+        const sanitizeCurrency = (text: string) => text.replace(/[^0-9.]/g, "");
+        const sanitizedCTC = sanitizeCurrency(costToCompany);
+        sessionStorage.setItem("profile_costToCompany", sanitizedCTC); //NOSONAR
+
         console.log("Profile Info Saved:", {
             firstName,
             lastName,
@@ -44,6 +50,8 @@ export default function ProfileInfoForm() {
             phone,
             idNumber,
             nationality,
+            isAvailable,
+            costToCompany: sanitizedCTC,
         });
     };
 
@@ -130,6 +138,62 @@ export default function ProfileInfoForm() {
                     </div>
                 </div>
                 <div className="h-6" />
+
+                {/* Availability & Cost to Company */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Availability Toggle */}
+                    <div className="flex flex-col gap-3">
+                        <label className="text-base font-semibold">Availability</label>
+                        <div className="flex items-center gap-4 h-10">
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={isAvailable}
+                                onClick={() => setIsAvailable((prev) => !prev)}
+                                className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                                style={{
+                                    backgroundColor: isAvailable ? "var(--color-accent)" : "#d1d5db",
+                                }}
+                            >
+                                <span
+                                    className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200"
+                                    style={{
+                                        transform: isAvailable ? "translateX(20px)" : "translateX(0px)",
+                                    }}
+                                />
+                            </button>
+                            <span
+                                className="text-base font-medium"
+                                style={{ color: isAvailable ? "var(--color-accent)" : "#6b7280" }}
+                            >
+                                {isAvailable ? "Available" : "Unavailable"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Cost to Company */}
+                    <div className="flex flex-col gap-3">
+                        <label htmlFor="cost-to-company" className="text-base font-semibold">Cost to Company (R)</label>
+                        <div className="relative">
+                            <span
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold select-none"
+                                style={{ color: "var(--color-primary)" }}
+                            >
+                                R
+                            </span>
+                            <Input
+                                id="cost-to-company"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={costToCompany}
+                                onChange={(e) => setCostToCompany(e.target.value)}
+                                className="pl-7"
+                            />
+                        </div>
+                    </div>
+                </div>
                 <div className="mt-8 flex justify-end w-full">
                     <Button onClick={handleDone} className="h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
                         style={{

@@ -4,16 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { ApiError } from '../services/auth.service';
 
-// ---------------------------------------------------------------------------
-// Validation
-// ---------------------------------------------------------------------------
-function validate(email: string, password: string): string | null {
-  if (!email) return 'Email is required.';
-  if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(email))
-    return 'Invalid email format.';
-  if (!password) return 'Password is required.';
-  return null;
-}
+
 
 // ---------------------------------------------------------------------------
 // Friendly error messages

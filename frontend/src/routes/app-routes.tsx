@@ -18,9 +18,6 @@ import ConsultantProfileViewPage from "../features/consultants/pages/consultant-
 
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 
-// Route Guard
-import { ProtectedRoute } from "./protected-route";
-
 function AppRoutes() {
     return (
         <BrowserRouter>
@@ -35,8 +32,7 @@ function AppRoutes() {
             <Route path="/consultant-FAQ" element={<UnderConstructionPage/>}/>
             <Route path="/profile-view" element={<ConsultantProfileViewPage/>}/>
             <Route path="/create-profile" element={<CreateProfilePage />} />
-        </Routes>
-            <Routes>
+        
                 {/* ------------------------------------------- */}
                 {/* PUBLIC ROUTES (Accessible to anyone)        */}
                 {/* ------------------------------------------- */}
@@ -44,7 +40,7 @@ function AppRoutes() {
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/set-password" element={<SetPasswordPage />} />
                 <Route path="/popia-consent" element={<PopiaConsentPage />} />
-
+            </Routes>
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -62,7 +58,7 @@ function AppRoutes() {
       </Routes>
     </AnimatePresence>
   );
-
+}
 
 function AppRoutes() {
   return (

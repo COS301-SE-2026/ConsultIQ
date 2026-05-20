@@ -3,18 +3,18 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuditOutcome } from '@prisma/client';
 
 export interface AuditContext {
-    email: string;
-    outcome: AuditOutcome;
-    userId?: string;
-    ipAddress?: string;
-    userAgent?: string;
+  email: string;
+  outcome: AuditOutcome;
+  userId?: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 @Injectable()
 export class AuditLogService {
-    private readonly logger = new Logger(AuditLogService.name);
+  private readonly logger = new Logger(AuditLogService.name);
 
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) { }
 
     /**
      * Persists an audit record for every login attempt.
@@ -32,11 +32,11 @@ export class AuditLogService {
             });
         } catch (err) {
 
-            const error = err as Error;
-            this.logger.error(
-                `Failed to write audit log [${ctx.outcome}] for ${ctx.email}: ${error.message}`,
-                error.stack,
-            );
-        }
+      const error = err as Error;
+      this.logger.error(
+        `Failed to write audit log [${ctx.outcome}] for ${ctx.email}: ${error.message}`,
+        error.stack,
+      );
     }
+  }
 }

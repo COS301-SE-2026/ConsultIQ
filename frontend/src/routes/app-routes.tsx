@@ -2,13 +2,20 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "../components/layout/page-transition";
 
+// Auth Pages (Public)
 import RegisterUserPage from "../features/authentication/pages/register-user-page";
 import { LoginForm } from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
+
+// Protected Pages (Require Login)
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
+import CreateProfilePage from "../features/consultants/pages/create-profile-page";
+
+// Route Guard
+import { ProtectedRoute } from "./protected-route";
 
 function AnimatedRoutes() {
   const location = useLocation();

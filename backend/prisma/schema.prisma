@@ -86,7 +86,7 @@ model User {
   updatedAt         DateTime   @updatedAt
 
   tokens            Token[]
-  auditLogs         AuditLog[]
+  auditLogs         authAuditLog[]
   consultant        Consultant?
   managedProjects   ProjectManager[]
   managedConsultants  ConsultantManager[]

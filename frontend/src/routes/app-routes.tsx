@@ -11,7 +11,7 @@ import PageTransition from "../components/layout/page-transition";
 
 // Authentication
 import RegisterUserPage from "../features/authentication/pages/register-user-page";
-import  LoginForm  from "../features/authentication/pages/login-page";
+import  LoginPage  from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
 
@@ -35,7 +35,7 @@ function AnimatedRoutes() {
         <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
                 {/* Public Routes */}
-                <Route path="/login" element={<PageTransition><LoginForm /></PageTransition>} />
+                <Route path="/login" element={<PageTransition><LoginPage /></PageTransition>} />
                 <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />

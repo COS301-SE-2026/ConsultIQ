@@ -3,7 +3,7 @@ import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 import type { SidebarItem } from "./sidebar.types";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "../../../context/use-auth";
+import { useAuth } from "../../../hooks/useAuth";
 
 interface SidebarProps {
   readonly items: SidebarItem[];
@@ -42,7 +42,7 @@ function Sidebar({ items }: SidebarProps) {
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            }}
+          }}
         />
       </div>
 
@@ -54,13 +54,13 @@ function Sidebar({ items }: SidebarProps) {
         }}
       >
         {items.map((item) => {
-        const Icon = item.icon;
+          const Icon = item.icon;
 
-        return (
+          return (
             <button
-            key={item.path}
-            onClick={() => setActivePath(item.path)}
-            style={{
+              key={item.path}
+              onClick={() => setActivePath(item.path)}
+              style={{
                 padding: "18px 20px",
 
                 borderRadius: "12px",
@@ -80,18 +80,18 @@ function Sidebar({ items }: SidebarProps) {
                 width: "100%",
 
                 backgroundColor:
-                activePath === item.path
+                  activePath === item.path
                     ? "var(--color-secondary)"
                     : "transparent",
 
                 transition: "0.2s ease",
-            }}
+              }}
             >
-            <Icon size={22} />
+              <Icon size={22} />
 
-            {item.label}
+              {item.label}
             </button>
-        );
+          );
         })}
       </nav>
 
@@ -99,29 +99,29 @@ function Sidebar({ items }: SidebarProps) {
       <button
         onClick={logout}
         style={{
-            padding: "24px",
+          padding: "24px",
 
-            color: "white",
+          color: "white",
 
-            fontSize: "18px",
-            fontWeight: 500,
+          fontSize: "18px",
+          fontWeight: 500,
 
-            border: "none",
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            backgroundColor: "transparent",
+          border: "none",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          backgroundColor: "transparent",
 
-            cursor: "pointer",
+          cursor: "pointer",
 
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
-            width: "100%",
-            opacity: 0.9,
-            
-            fontFamily: "inherit",
-            textAlign: "left",
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          width: "100%",
+          opacity: 0.9,
+
+          fontFamily: "inherit",
+          textAlign: "left",
         }}
-        >
+      >
         <LogOut size={22} />
 
         Logout

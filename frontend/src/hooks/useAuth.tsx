@@ -1,10 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
+import React, {
+    createContext, useCallback, useContext,
+    useMemo, useState, useEffect, useRef,
+} from 'react';
 import { authService } from '../features/authentication/services/auth.service';
 import type { LoginPayload, LoginResult } from '../features/authentication/types/auth.types';
 
 const ACCESS_TOKEN_KEY = 'ciq_access_token';
 const REFRESH_TOKEN_KEY = 'ciq_refresh_token';
+const USER_PROFILE_KEY = 'ciq_user_profile';
 
 // Clean profile shape stripped of the token strings
 export type UserProfile = Omit<LoginResult, 'accessToken' | 'refreshToken'>;
@@ -24,70 +28,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [tokens, setTokens] = useState<{ accessToken: string; refreshToken: string } | null>(() => {
         const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
         const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
-        if (accessToken && refreshToken) return { accessToken, refreshToken };
-        return null;
+        return accessToken && refreshToken ? { accessToken, refreshToken } : null;
     });
 
-    // Initialize user profile state
-    const [user, setUser] = useState<UserProfile | null>(null);
 
-    // Clear storage and state on logout
+    const [user, setUser] = useState<UserProfile | null>(() => {
+        const stored = sessionStorage.getItem(USER_PROFILE_KEY);
+        return stored ? JSON.parse(stored) : null;
+    });
     const logout = useCallback(() => {
         sessionStorage.removeItem(ACCESS_TOKEN_KEY);
         sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+        sessionStorage.removeItem(USER_PROFILE_KEY);
         setTokens(null);
         setUser(null);
     }, []);
 
-    // Session recovery: Run on app mount to get user metadata if an active token exists
+    const logoutRef = useRef(logout);
+    useEffect(() => { logoutRef.current = logout; }, [logout]);
+
     useEffect(() => {
+        let isMounted = true;
+
         const checkAuth = async () => {
             const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
             if (!token) return;
 
+            const cached = sessionStorage.getItem(USER_PROFILE_KEY);
+            if (cached) return;
             try {
                 const profile = await authService.getProfile();
-                setUser(profile);
+                if (isMounted) setUser(profile);
             } catch (error) {
                 console.error('Session restoration failed:', error);
-                logout();
+                if (isMounted) logoutRef.current();
             }
         };
 
         checkAuth();
-    }, [logout]);
+        return () => { isMounted = false; };
+    }, []);
 
     // Login processor
     const login = useCallback(async (payload: LoginPayload) => {
-        const response = await authService.login(payload);
+        const response: any = await authService.login(payload);
 
-        if (response && response.result) {
+        if (response?.result?.accessToken) {
             const { accessToken, refreshToken, ...userProfile } = response.result;
 
             // Persist tokens across page reloads in sessionStorage
             sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
             sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-
+            sessionStorage.setItem(USER_PROFILE_KEY, JSON.stringify(userProfile));
             setTokens({ accessToken, refreshToken });
             setUser(userProfile);
 
             // Return dashboard route to let the Login page wrap up routing
             return userProfile.dashboardRoute;
-        } else {
-            console.error('Backend response structure is unexpected:', response);
-            throw new Error('Malformed response structure from authentication server.');
         }
+
+        throw new Error('Malformed response structure from authentication server.');
     }, []);
 
     // Memoized value to eliminate unneeded re-renders
     const value = useMemo<AuthContextValue>(
-        () => ({
-            tokens,
-            user,
-            isAuthenticated: tokens !== null,
-            login,
-            logout,
-        }),
+        () => ({ tokens, user, isAuthenticated: tokens !== null, login, logout }),
         [tokens, user, login, logout],
     );
 

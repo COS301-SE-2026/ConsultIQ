@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from '../controllers/auth/auth.controller';
 import { AuthService } from './services/auth.service';
 import { CredentialService } from './services/auth.credential.service';
@@ -16,15 +14,6 @@ import { RefreshTokenService } from './services/auth.refresh-token.service';
 @Module({
   imports: [
     PrismaModule,
-    ConfigModule,
-    JwtModule.registerAsync({
-    imports: [ConfigModule],
-    useFactory: (configService: ConfigService) => ({
-      secret: configService.get<string>('JWT_SECRET'),
-      signOptions: { expiresIn: '15m' },
-    }),
-    inject: [ConfigService],
-  }),
     // Rate-limit the /auth/login route at the HTTP layer as a first defence.
     ThrottlerModule.forRoot([
       {

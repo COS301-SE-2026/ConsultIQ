@@ -10,6 +10,8 @@ import {
   Get,
   Request,
 } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';

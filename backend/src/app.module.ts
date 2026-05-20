@@ -9,7 +9,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants.module';
-import { ProjectsModule } from './projects.module';
+// import { ProjectsModule } from './projects.module';
 
 @Module({
   imports: [
@@ -26,7 +26,7 @@ import { ProjectsModule } from './projects.module';
     CommonModule,
     AuthModule,
     ConsultantsModule,
-    ProjectsModule,
+
   ],
   controllers: [AppController],
   providers: [

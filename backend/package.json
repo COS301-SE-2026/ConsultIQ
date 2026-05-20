@@ -81,7 +81,7 @@
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-    "^(\\.{1,2}/.*)/prisma/client$": "<rootDir>/common/__mocks__/prisma.service.ts"
-  }
+      "^(\\.{1,2}/.*)/prisma/client$": "<rootDir>/common/__mocks__/prisma.service.ts"
+    }
   }
 }

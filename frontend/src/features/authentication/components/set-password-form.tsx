@@ -71,18 +71,22 @@ function SetPasswordForm() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="flex flex-col w-[560px] min-h-[580px] bg-white rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] items-center justify-center gap-6 px-12 text-center">
-        <h1 className="font-bold text-2xl" style={{ color: "var(--color-primary)" }}>
-          Account Activated!
-        </h1>
-        <p style={{ color: "var(--color-text-secondary)" }}>
-          Your password has been set successfully. You can now log in.
-        </p>
-      </div>
-    );
-  }
+    if (success) {
+      setTimeout(() => {
+        window.location.href = `/popia-consent?email=${encodeURIComponent(email)}`;
+      }, 2000);
+
+      return (
+        <div className="flex flex-col w-[560px] min-h-[580px] bg-white rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] items-center justify-center gap-6 px-12 text-center">
+          <h1 className="font-bold text-2xl" style={{ color: "var(--color-primary)" }}>
+            Account Activated!
+          </h1>
+          <p style={{ color: "var(--color-text-secondary)" }}>
+            Your password has been set successfully. Redirecting you to our terms and conditions...
+          </p>
+        </div>
+      );
+    }
 
   return (
     <form

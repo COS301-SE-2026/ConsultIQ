@@ -62,7 +62,7 @@ function AppRoutes() {
       </Routes>
     </AnimatePresence>
   );
-}
+
 
 function AppRoutes() {
   return (

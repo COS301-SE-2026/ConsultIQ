@@ -365,4 +365,23 @@ export class AuthService {
         'If your account is pending verification, a new link has been sent.',
     };
   }
+
+   async acceptTerms(email: string): Promise<{ message: string }> {
+      const user = await this.prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        throw new NotFoundException('Account not found.');
+      }
+
+      if (user.status !== 'ACTIVE') {
+        throw new BadRequestException('Account must be active before accepting terms.');
+      }
+
+      await this.prisma.user.update({
+        where: { email },
+        data: { termsAcceptedAt: new Date() },
+      });
+
+      return { message: 'Terms accepted successfully.' };
+   }
 }

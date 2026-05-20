@@ -5,9 +5,11 @@ import { Resend } from 'resend';
 @Injectable()
 export class EmailService {
   private readonly resend: Resend;
+  private readonly fromEmail: string;
 
   constructor(private readonly config: ConfigService) {
     this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
+    this.fromEmail = this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
   }
 
   async sendActivationEmail(
@@ -16,7 +18,7 @@ export class EmailService {
     activationLink: string,
   ): Promise<void> {
     await this.resend.emails.send({
-      from: 'ConsultIQ <onboarding@resend.dev>',
+      from: `ConsultIQ <${this.fromEmail}>`,
       to,
       subject: 'Activate your ConsultIQ account',
       html: `

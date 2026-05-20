@@ -41,6 +41,7 @@ function AppRoutes() {
                 <Route path="/set-password" element={<SetPasswordPage />} />
                 <Route path="/popia-consent" element={<PopiaConsentPage />} />
             </Routes>
+          <BrowserRouter>
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>

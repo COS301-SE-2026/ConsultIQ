@@ -10,6 +10,9 @@ import PopiaConsentPage from "../features/authentication/pages/popia-consent-pag
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
+import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
+import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
+
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 
 // Route Guard
@@ -18,6 +21,18 @@ import { ProtectedRoute } from "./protected-route";
 function AppRoutes() {
     return (
         <BrowserRouter>
+        <Routes>
+            <Route path="/register" element={<RegisterUserPage />} />
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/set-password" element={<SetPasswordPage />} />
+            <Route path="/popia-consent" element={<PopiaConsentPage />} />
+            <Route path="/consultants-manager" element={<ConsultantsPage />} />
+            <Route path="/project-specification" element={<ProjectSpecificationPage />} />
+            <Route path="/projects" element={<ProjectListPage />} />
+            <Route path="/consultant-FAQ" element={<UnderConstructionPage/>}/>
+            <Route path="/profile-view" element={<ConsultantProfileViewPage/>}/>
+            <Route path="/create-profile" element={<CreateProfilePage />} />
+        </Routes>
             <Routes>
                 {/* ------------------------------------------- */}
                 {/* PUBLIC ROUTES (Accessible to anyone)        */}

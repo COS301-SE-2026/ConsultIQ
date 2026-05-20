@@ -6,3 +6,5 @@
 //   if (!context) throw new Error("useAuth must be used within AuthProvider");
 //   return context;
 // };
+
+export { useAuth } from "../hooks/useAuth";

@@ -8,11 +8,16 @@ export interface AuthTokens {
     refreshToken: string;
 }
 
-export interface LoginResult extends AuthTokens {
-    userId: string;
-    email: string;
-    role: string;
-    dashboardRoute: string;
+export interface LoginResult {
+    message: string;
+    result: {
+        userId: string;
+        email: string;
+        role: string;
+        dashboardRoute: string;
+        accessToken: string;
+        refreshToken: string;
+    }
 }
 
 export interface LoginResponse {

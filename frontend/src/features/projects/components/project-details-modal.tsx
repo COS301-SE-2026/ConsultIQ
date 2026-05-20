@@ -57,6 +57,7 @@ export default function ProjectDetailsModal({
                 name: skill.name,
                 competency: skill.competency,
                 years: skill.years,
+                mandatory: skill.mandatory,
               }))}
             />
           </Card>

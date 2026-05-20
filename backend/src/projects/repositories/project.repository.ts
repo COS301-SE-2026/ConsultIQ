@@ -5,28 +5,33 @@ import { CompetencyLevel, ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService) { }
 
-     async createProject(dto: CreateProjectDto) {
+    async createProject(dto: CreateProjectDto) {
         return await this.prisma.$transaction(async (tx) => {
             const project = await tx.project.create({
                 data: {
                     projectName: dto.projectName,
                     clientName: dto.clientName,
+                    description: dto.description,
+                    addressLine1: dto.addressLine1,
+                    addressLine2: dto.addressLine2,
+                    suburb: dto.suburb,
                     city: dto.city,
                     province: dto.province,
+                    postalCode: dto.postalCode || "",
                     startDate: new Date(dto.startDate),
                     endDate: dto.endDate ? new Date(dto.endDate) : null,
                     teamSize: dto.teamSize,
-                    requiredAllocationPercentage: dto.requiredAllocationPercentage,
-                    clientBillingBudget: dto.clientBillingBudget,
+                    allocation: dto.allocation, // Updated
+                    budget: dto.budget,         // Updated
                     status: ProjectStatus.OPEN,
                 },
 
             });
 
             for (const skill of dto.skills) {
-                const normalizedSkillName = skill.skillName.trim().toLowerCase();
+                const normalizedSkillName = skill.name.trim().toLowerCase();
 
                 const skillRecord = await tx.skill.upsert({
                     where: { name: normalizedSkillName },
@@ -38,8 +43,9 @@ export class ProjectRepository {
                     data: {
                         projectId: project.id,
                         skillId: skillRecord.id,
-                        minimumCompetency: skill.minimumCompetency as CompetencyLevel,
-                        isMandatory: skill.isMandatory,
+                        competency: skill.competency as CompetencyLevel, // Updated
+                        years: skill.years,                              // Added
+                        mandatory: skill.mandatory,
                     }
                 });
             }

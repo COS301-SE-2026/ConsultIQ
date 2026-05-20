@@ -14,13 +14,17 @@ import { Type } from 'class-transformer';
 
 export class CreateProjectSkillDto {
   @IsString()
-  skillName!: string;
+  name!: string;
 
   @IsString()
-  minimumCompetency!: string;
+  competency!: string;
+
+  @IsInt()
+  @Min(0)
+  years!: number;
 
   @IsBoolean()
-  isMandatory!: boolean;
+  mandatory!: boolean;
 }
 
 export class CreateProjectDto {
@@ -31,10 +35,29 @@ export class CreateProjectDto {
   clientName!: string;
 
   @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  addressLine1!: string;
+
+  @IsString()
+  @IsOptional()
+  addressLine2?: string;
+
+  @IsString()
+  @IsOptional()
+  suburb?: string;
+
+  @IsString()
   city!: string;
 
   @IsString()
   province!: string;
+
+  @IsString()
+  @IsOptional()
+  postalCode?: string;
 
   @IsDateString()
   startDate!: string;
@@ -50,19 +73,14 @@ export class CreateProjectDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  requiredAllocationPercentage!: number;
+  allocation!: number;
 
   @IsNumber()
   @Min(0)
-  clientBillingBudget!: number;
+  budget!: number;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProjectSkillDto)
   skills!: CreateProjectSkillDto[];
-}
-
-export class CreateProjectResponseDto {
-  message!: string;
-  projectId!: string;
 }

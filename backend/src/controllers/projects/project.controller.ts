@@ -9,11 +9,12 @@ import {
 } from '@nestjs/common';
 import { ProjectService } from '../../projects/services/project.service';
 import { CreateProjectDto } from '../../projects/dto/create-project.dto';
+import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('projects')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
-
+  constructor(private readonly projectService: ProjectService) { }
+  @SkipThrottle()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true }))

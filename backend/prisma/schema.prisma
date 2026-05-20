@@ -230,18 +230,18 @@ model Project {
   id           String        @id @default(uuid())
   projectName  String
   clientName   String
-  description  String? // Added for frontend
-  addressLine1 String // Added for frontend
-  addressLine2 String? // Added for frontend
-  suburb       String? // Added for frontend
+  description  String? 
+  addressLine1 String 
+  addressLine2 String? 
+  suburb       String? 
   city         String
   province     String
-  postalCode   String // Added for frontend
+  postalCode   String 
   startDate    DateTime
   endDate      DateTime?
   teamSize     Int
-  allocation   Int // Renamed from requiredAllocationPercentage
-  budget       Float // Renamed from clientBillingBudget
+  allocation   Int // requiredAllocationPercentage
+  budget       Float // clientBillingBudget
   status       ProjectStatus @default(OPEN)
   tenantId     String?
   createdAt    DateTime      @default(now())
@@ -259,7 +259,7 @@ model ProjectSkill {
   projectId  String
   skillId    String
   competency CompetencyLevel // Renamed from minimumCompetency
-  years      Int // Added for frontend
+  years      Int 
   mandatory  Boolean         @default(true) // Renamed from isMandatory
 
   project Project @relation(fields: [projectId], references: [id])

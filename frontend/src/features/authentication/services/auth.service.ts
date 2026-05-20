@@ -1,4 +1,4 @@
-import type { LoginPayload, LoginResponse, LoginResult } from '../types/auth.types';
+import type { LoginPayload, LoginResult } from '../types/auth.types';
 import { apiClient } from '../../../lib/api-client';
 
 const API_BASE_URL = 'http://localhost:3000';
@@ -34,16 +34,16 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const authService = {
-    login: (payload: LoginPayload): Promise<LoginResponse> =>
+    login: (payload: LoginPayload): Promise<LoginResult> =>
         fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
             body: JSON.stringify(payload),
-        }).then((res) => handleResponse<LoginResponse>(res)),
-    getProfile: async (): Promise<Omit<LoginResult, 'accessToken' | 'refreshToken'>> => {
-        // Hits your /auth/me endpoint 
-        const response = await apiClient.get<{ result: Omit<LoginResult, 'accessToken' | 'refreshToken'> }>('/auth/me');
-        return response.result;
-    }
+        }).then((res) => handleResponse<LoginResult>(res)),
+    getProfile: async () => {
+
+        const response = await apiClient.get<Record<string, unknown>>('/auth/me');
+        return response?.result ? response.result : response;
+    },
 };

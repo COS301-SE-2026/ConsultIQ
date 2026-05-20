@@ -1,62 +1,50 @@
-import { useState } from "react";
 import { Camera, Upload } from "lucide-react";
 import { Card } from "../../../components/ui/card";
+import type { ProjectFormData } from "../pages/project-specification-page";
 
-export default function ProjectBasicInfoCard() {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+interface ProjectBasicInfoCardProps {
+  data: ProjectFormData;
+  readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
+}
+
+export default function ProjectBasicInfoCard({ data, onChange }: ProjectBasicInfoCardProps) {
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = e.target.value;
-    setStartDate(newStart);
-    if (endDate && newStart > endDate) {
-      setEndDate("");
+    onChange("startDate", newStart);
+
+    if (data.endDate && newStart > data.endDate) {
+      onChange("endDate", "");
     }
   };
 
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col gap-12">
-        
-        {/* Top Spacer */}
         <div className="h-1" />
 
         {/* Logo Upload */}
         <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8">
-          {/* Logo Preview */}
           <div className="relative shrink-0 w-[160px] h-[160px] rounded-2xl bg-[var(--color-primary)] flex items-center justify-center">
-            <span className="text-5xl font-bold text-white">
-              UN
-            </span>
-
-            <button type="button"
-              className=" absolute bottom-3 right-3 w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center" >
+            <span className="text-5xl font-bold text-white">UN</span>
+            <button
+              type="button"
+              className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center"
+            >
               <Camera className="w-6 h-6 text-gray-700" />
             </button>
           </div>
-
           {/* Upload Area */}
           <div className="flex-1 w-full">
-            <p
-              className="text-lg font-semibold mb-3"
-              style={{
-                color: "var(--color-text-primary)",
-              }}>
+            <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
               Upload project logo
             </p>
-
-            <div className="border-2 border-dashed rounded-xl h-[160px] flex flex-col items-center justify-center gap-4 cursor-pointer transition hover:bg-gray-50"
-              style={{
-                borderColor: "var(--color-border)",
-              }} >
+            <div
+              className="border-2 border-dashed rounded-xl h-[160px] flex flex-col items-center justify-center gap-4 cursor-pointer transition hover:bg-gray-50"
+              style={{ borderColor: "var(--color-border)" }}
+            >
               <Upload className="w-12 h-12 text-gray-500" />
-
-              <p
-                className="text-lg"
-                style={{
-                  color: "var(--color-text-secondary)",
-                }}
-              >
+              <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
                 Click to upload or drag and drop
               </p>
             </div>
@@ -68,121 +56,134 @@ export default function ProjectBasicInfoCard() {
           <div className="flex flex-col gap-6">
             {/* Project Name */}
             <div className="flex flex-col gap-3">
-            <label htmlFor="projectName"
-            className="text-base font-semibold">
-              Project Name
-            </label>
-
-            <input type="text"
-              id="projectName"
-              placeholder="Enter project name"
-              className="h-14 rounded-xl border px-4 text-base outline-none "/>
-          </div>
-
-          {/* Client Name */}
-          <div className="flex flex-col gap-3">
-            <label htmlFor="clientName"
-             className="text-base font-semibold">
-              Client Name
-            </label>
-
-            <input type="text"
-              id="clientName"
-              placeholder="Enter client name"
-              className="h-14 rounded-xl border px-4 text-base outline-none "/>
-          </div>
-
-          {/* Team Size */}
-          <div className="flex flex-col gap-3">
-            <label htmlFor="teamSize"
-             className="text-base font-semibold">
-              Team Size
-            </label>
-
-            <input type="number"
-              id="teamSize"
-              placeholder="Enter team size"
-              className="h-14 rounded-xl border px-4 text-base outline-none"/>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE */}
-        <div className="flex flex-col gap-6">
-          {/* Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-3">
-              <label htmlFor="startDate"
-               className="text-base font-semibold">
-                Start Date
+              <label htmlFor="projectName" className="text-base font-semibold">
+                Project Name
               </label>
 
-              <input 
-                type="date"
-                id="startDate"
-                value={startDate}
-                onChange={handleStartDateChange}
-                className=" h-14 rounded-xl border px-4 text-base outline-none"/>
+              <input
+                type="text"
+                id="projectName"
+                placeholder="Enter project name"
+                value={data.projectName}
+                onChange={(e) => onChange("projectName", e.target.value)}
+                className="h-14 rounded-xl border px-4 text-base outline-none"
+              />
             </div>
-
+            {/* Client Name */}
             <div className="flex flex-col gap-3">
-              <label htmlFor="endDate"
-               className="text-base font-semibold">
-                End Date
+              <label htmlFor="clientName" className="text-base font-semibold">
+                Client Name
               </label>
 
-              <input 
-                type="date"
-                id="endDate"
-                value={endDate}
-                min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="h-14 rounded-xl border px-4 text-base outline-none"/>
+              <input
+                type="text"
+                id="clientName"
+                placeholder="Enter client name"
+                value={data.clientName}
+                onChange={(e) => onChange("clientName", e.target.value)}
+                className="h-14 rounded-xl border px-4 text-base outline-none"
+              />
+            </div>
+            {/* Team Size */}
+            <div className="flex flex-col gap-3">
+              <label htmlFor="teamSize" className="text-base font-semibold">
+                Team Size
+              </label>
+
+              <input
+                type="number"
+                id="teamSize"
+                placeholder="Enter team size"
+                value={data.teamSize}
+                onChange={(e) => onChange("teamSize", Number(e.target.value))}
+                className="h-14 rounded-xl border px-4 text-base outline-none"
+              />
             </div>
           </div>
 
-          {/* Allocation */}
-          <div className="flex flex-col gap-3">
-            <label htmlFor="allocation"
-             className="text-base font-semibold">
-              Allocation %
-            </label>
+          {/* RIGHT SIDE */}
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-3">
+                <label htmlFor="startDate" className="text-base font-semibold">
+                  Start Date
+                </label>
 
-            <input type="number"
-              id="allocation"
-              placeholder="Enter allocation %"
-              className=" h-14 rounded-xl border px-4 text-base outline-none"/>
-          </div>
+                <input
+                  type="date"
+                  id="startDate"
+                  value={data.startDate}
+                  onChange={handleStartDateChange}
+                  className="h-14 rounded-xl border px-4 text-base outline-none"
+                />
+              </div>
 
-          {/* Budget */}
-          <div className="flex flex-col gap-3">
-            <label htmlFor="budget"
-             className="text-base font-semibold">
-              Billing Budget (ZAR/hr)
-            </label>
+              <div className="flex flex-col gap-3">
+                <label htmlFor="endDate" className="text-base font-semibold">
+                  End Date
+                </label>
 
-            <input type="number"
-              id="budget"
-              placeholder="R 0"
-              className="h-14 rounded-xl border px-4 text-base outline-none"/>
+                <input
+                  type="date"
+                  id="endDate"
+                  value={data.endDate}
+                  min={data.startDate}
+                  onChange={(e) => onChange("endDate", e.target.value)}
+                  className="h-14 rounded-xl border px-4 text-base outline-none"
+                />
+              </div>
+            </div>
+            {/* {Allocation} */}
+            <div className="flex flex-col gap-3">
+              <label htmlFor="allocation" className="text-base font-semibold">
+                Allocation %
+              </label>
+
+              <input
+                type="number"
+                id="allocation"
+                placeholder="Enter allocation %"
+                value={data.allocation}
+                onChange={(e) => onChange("allocation", Number(e.target.value))}
+                className="h-14 rounded-xl border px-4 text-base outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <label htmlFor="budget" className="text-base font-semibold">
+                Billing Budget (ZAR/hr)
+              </label>
+
+              <input
+                type="number"
+                id="budget"
+                placeholder="R 0"
+                value={data.budget}
+                onChange={(e) => onChange("budget", Number(e.target.value))}
+                className="h-14 rounded-xl border px-4 text-base outline-none"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Description */}
-      <div className="flex flex-col gap-3 w-full">
-        <label htmlFor="description"
-         className="text-base font-semibold">
-          Description
-        </label>
+        {/* {Description} */}
 
-        <textarea
-          id="description"
-          placeholder="Enter project description"
-          className="min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none"/>
-      </div>
+        <div className="flex flex-col gap-3 w-full">
+          <label htmlFor="description" className="text-base font-semibold">
+            Description
+          </label>
 
-      {/* Bottom Spacer */}
-      <div className="h-1" />
+          <textarea
+            id="description"
+            placeholder="Enter project description"
+            value={data.description}
+            onChange={(e) => onChange("description", e.target.value)}
+            className="min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none"
+          />
+        </div>
+
+        {/* Bottom Spacer */}
+        <div className="h-1" />
       </div>
     </Card>
   );

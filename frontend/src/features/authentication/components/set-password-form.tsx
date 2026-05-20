@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { activateAccount } from "../../../api/auth.api";
 import { Check, X } from "lucide-react";
 
@@ -24,6 +24,7 @@ function SetPasswordForm() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get("email") ?? "";
   const token = searchParams.get("token") ?? "";
+  const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -73,7 +74,7 @@ function SetPasswordForm() {
 
     if (success) {
       setTimeout(() => {
-        window.location.href = `/popia-consent?email=${encodeURIComponent(email)}`;
+        navigate( `/popia-consent?email=${encodeURIComponent(email)}`);
       }, 2000);
 
       return (

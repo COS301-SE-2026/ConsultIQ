@@ -10,10 +10,13 @@ import {
   Get,
   Request,
 } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
 import { ResendVerificationDto } from '../../auth/dto/resend-verification.dto';
+import { AcceptTermsDto } from '../../auth/dto/accept-terms.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { UserAgent } from '../../common/decorators/user-agent.decorator';
@@ -72,9 +75,16 @@ export class AuthController {
     return await this.authService.resendVerification(dto.email);
   }
 
-  // @UseGuards(ThrottlerGuard)
-  // @Throttle({ login: { limit: 5, ttl: 60000 } }) // Limit to 5 login attempts per minute per IP
-  @Public()
+  @Post('accept-terms')
+  @HttpCode(HttpStatus.OK)
+  async acceptTerms(
+    @Body() dto: AcceptTermsDto,
+  ): Promise<{ message: string }> {
+    return await this.authService.acceptTerms(dto.email);
+  }
+
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ login: { limit: 5, ttl: 60000 } }) // Limit to 5 login attempts per minute per IP
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(

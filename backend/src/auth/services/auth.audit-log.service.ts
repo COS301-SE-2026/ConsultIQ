@@ -16,21 +16,21 @@ export class AuditLogService {
 
   constructor(private readonly prisma: PrismaService) { }
 
-  /**
-   * Persists an audit record for every login attempt.
-   */
-  async log(ctx: AuditContext): Promise<void> {
-    try {
-      await this.prisma.authAuditLog.create({
-        data: {
-          email: ctx.email.toLowerCase().trim(),
-          outcome: ctx.outcome,
-          userId: ctx.userId ?? null,
-          ipAddress: ctx.ipAddress ?? "0.0.0.0",
-          userAgent: ctx.userAgent ?? null,
-        },
-      });
-    } catch (err) {
+    /**
+     * Persists an audit record for every login attempt.
+     */
+    async log(ctx: AuditContext): Promise<void> {
+        try {
+            await this.prisma.authAuditLog.create({
+                data: {
+                    email: ctx.email.toLowerCase().trim(),
+                    outcome: ctx.outcome,
+                    userId: ctx.userId ?? null,
+                    ipAddress: ctx.ipAddress ?? "0.0.0.0",
+                    userAgent: ctx.userAgent ?? null,
+                },
+            });
+        } catch (err) {
 
       const error = err as Error;
       this.logger.error(

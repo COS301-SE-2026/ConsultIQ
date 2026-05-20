@@ -38,3 +38,12 @@ export async function activateAccount(payload: ActivateAccountPayload): Promise<
   });
   return handleResponse(res);
 }
+
+export async function acceptTerms(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE_URL}/auth/accept-terms`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  return handleResponse(res);
+}

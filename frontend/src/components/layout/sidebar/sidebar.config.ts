@@ -33,7 +33,7 @@ export const projectManagerSidebarItems: SidebarItem[] = [
 
 export const consultantSidebarItems: SidebarItem[] = [
     {
-        label: "Projects",
+        label: "Profile",
         path: "/profile",
         icon: UserCheck
     },

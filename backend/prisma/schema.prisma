@@ -57,7 +57,7 @@ enum ProjectStatus {
 }
 
 // ----------------------------------------Models---------------------------------------------------
-model AuditLog {
+model authAuditLog {
   id        String       @id @default(uuid())
   email     String
   outcome   AuditOutcome

@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -22,14 +23,19 @@ export class ProjectController {
   async createProject(@Body() dto: CreateProjectDto) {
     return await this.projectService.createProject(dto);
   }
+
   @Get()
+  @HttpCode(HttpStatus.OK)
   async getAllProjects(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Req() req: any,
   ) {
     const pageNum = parseInt(page, 10);
     const limitNum = parseInt(limit, 10);
+    const userRole = req.user?.role ?? 'PROJECT_MANAGER';
+    const userId = req.user?.sub ?? null;
 
-    return await this.projectService.getAllProjects(pageNum, limitNum);
+    return await this.projectService.getAllProjects(pageNum, limitNum, userRole, userId);
   }
 }

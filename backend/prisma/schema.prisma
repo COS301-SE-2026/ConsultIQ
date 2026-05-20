@@ -56,10 +56,25 @@ enum ProjectStatus {
   CLOSED
 }
 
+<<<<<<< HEAD
 enum ConsultantAvailability {
   AVAILABLE
   UNAVAILABLE
   ON_LEAVE
+=======
+// ----------------------------------------Models---------------------------------------------------
+model authAuditLog {
+  id        String       @id @default(uuid())
+  email     String
+  outcome   AuditOutcome
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id])
+  ipAddress String
+  userAgent String?
+  timestamp DateTime     @default(now())
+
+  @@map("audit_logs")
+>>>>>>> 9c1c9f8 (Audit Log table changed to authAuditLog.)
 }
 
 // ---------------------------------------- RBAC Models------------------------------------

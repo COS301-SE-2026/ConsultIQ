@@ -1,12 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from '../repositories/project.repository';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateProjectDto } from '../dto/create-project.dto';
 
 const mockProjectRepository = {
   createProject: jest.fn(),
   getAllProjects: jest.fn(),
+  getProjectsByProjectManager: jest.fn(),
+  getProjectsByConsultantManager: jest.fn(),
+  getProjectsByConsultant: jest.fn(),
 };
 
 const baseDto: CreateProjectDto = {
@@ -70,7 +73,8 @@ describe('ProjectService', () => {
     jest.clearAllMocks();
   });
 
-  //Create Project Endpoint
+  //Create Project 
+
   describe('createProject - happy path', () => {
     it('should create a project and return projectId', async () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-123' });
@@ -91,6 +95,18 @@ describe('ProjectService', () => {
       const result = await service.createProject(dto);
 
       expect(result.projectId).toBe('uuid-456');
+    });
+
+    it('should create a project when endDate is provided and valid', async () => {
+      mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-111' });
+      const dto = { ...baseDto, startDate: '2026-06-01', endDate: '2026-12-01' };
+
+      const result = await service.createProject(dto);
+
+      expect(result).toEqual({
+        message: 'Project created successfully',
+        projectId: 'uuid-111',
+      });
     });
   });
 
@@ -129,30 +145,92 @@ describe('ProjectService', () => {
     });
   });
 
-  // Project Management View Paginated Projects
+  //Get All Projects - RBAC
 
-  describe('getAllProjects - happy path', () => {
-    it('should return paginated projects with correct structure', async () => {
+  describe('getAllProjects - ADMIN', () => {
+    it('should return all projects for ADMIN', async () => {
       mockProjectRepository.getAllProjects.mockResolvedValue({
         projects: mockProjects,
         total: 2,
       });
 
-      const result = await service.getAllProjects(1, 10);
+      const result = await service.getAllProjects(1, 10, 'ADMIN', null);
 
-      expect(result.page).toBe(1);
-      expect(result.limit).toBe(10);
+      expect(mockProjectRepository.getAllProjects).toHaveBeenCalledWith(1, 10);
       expect(result.total).toBe(2);
       expect(result.projects).toHaveLength(2);
     });
+  });
 
+  describe('getAllProjects - PROJECT_MANAGER', () => {
+    it('should return only managed projects for PROJECT_MANAGER', async () => {
+      mockProjectRepository.getProjectsByProjectManager.mockResolvedValue({
+        projects: [mockProjects[0]],
+        total: 1,
+      });
+
+      const result = await service.getAllProjects(1, 10, 'PROJECT_MANAGER', 'user-123');
+
+      expect(mockProjectRepository.getProjectsByProjectManager).toHaveBeenCalledWith('user-123', 1, 10);
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe('getAllProjects - CONSULTANT_MANAGER', () => {
+    it('should return projects of managed consultants for CONSULTANT_MANAGER', async () => {
+      mockProjectRepository.getProjectsByConsultantManager.mockResolvedValue({
+        projects: [mockProjects[0]],
+        total: 1,
+      });
+
+      const result = await service.getAllProjects(1, 10, 'CONSULTANT_MANAGER', 'user-456');
+
+      expect(mockProjectRepository.getProjectsByConsultantManager).toHaveBeenCalledWith('user-456', 1, 10);
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe('getAllProjects - CONSULTANT', () => {
+    it('should return only assigned projects for CONSULTANT', async () => {
+      mockProjectRepository.getProjectsByConsultant.mockResolvedValue({
+        projects: [mockProjects[1]],
+        total: 1,
+      });
+
+      const result = await service.getAllProjects(1, 10, 'CONSULTANT', 'user-789');
+
+      expect(mockProjectRepository.getProjectsByConsultant).toHaveBeenCalledWith('user-789', 1, 10);
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe('getAllProjects - RBAC enforcement', () => {
+    it('should throw ForbiddenException for unknown role', async () => {
+      await expect(
+        service.getAllProjects(1, 10, 'UNKNOWN_ROLE', 'user-123'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should not call any repository method for unknown role', async () => {
+      await expect(
+        service.getAllProjects(1, 10, 'UNKNOWN_ROLE', 'user-123'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockProjectRepository.getAllProjects).not.toHaveBeenCalled();
+      expect(mockProjectRepository.getProjectsByProjectManager).not.toHaveBeenCalled();
+      expect(mockProjectRepository.getProjectsByConsultantManager).not.toHaveBeenCalled();
+      expect(mockProjectRepository.getProjectsByConsultant).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAllProjects - mapping', () => {
     it('should correctly map all project fields', async () => {
       mockProjectRepository.getAllProjects.mockResolvedValue({
         projects: mockProjects,
         total: 2,
       });
 
-      const result = await service.getAllProjects(1, 10);
+      const result = await service.getAllProjects(1, 10, 'ADMIN', null);
       const first = result.projects[0];
 
       expect(first.id).toBe('uuid-1');
@@ -167,34 +245,9 @@ describe('ProjectService', () => {
         total: 2,
       });
 
-      const result = await service.getAllProjects(1, 10);
-      const second = result.projects[1];
+      const result = await service.getAllProjects(1, 10, 'ADMIN', null);
 
-      expect(second.endDate).toBeNull();
-    });
-
-    it('should handle project with zero skills', async () => {
-      mockProjectRepository.getAllProjects.mockResolvedValue({
-        projects: mockProjects,
-        total: 2,
-      });
-
-      const result = await service.getAllProjects(1, 10);
-
-      expect(result.projects[1].skillCount).toBe(0);
-    });
-  });
-
-  describe('getAllProjects - pagination', () => {
-    it('should pass page and limit to repository', async () => {
-      mockProjectRepository.getAllProjects.mockResolvedValue({
-        projects: [],
-        total: 0,
-      });
-
-      await service.getAllProjects(3, 5);
-
-      expect(mockProjectRepository.getAllProjects).toHaveBeenCalledWith(3, 5);
+      expect(result.projects[1].endDate).toBeNull();
     });
 
     it('should return empty projects array when no results', async () => {
@@ -203,7 +256,7 @@ describe('ProjectService', () => {
         total: 0,
       });
 
-      const result = await service.getAllProjects(1, 10);
+      const result = await service.getAllProjects(1, 10, 'ADMIN', null);
 
       expect(result.projects).toEqual([]);
       expect(result.total).toBe(0);

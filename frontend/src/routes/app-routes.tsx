@@ -15,6 +15,7 @@ function AppRoutes() {
             <Route path="/register" element={<RegisterUserPage />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/set-password" element={<SetPasswordPage />} />
+            <Route path="/activate" element={<SetPasswordPage />} />
             <Route path="/popia-consent" element={<PopiaConsentPage />} />
             <Route path="/consultants-manager" element={<ConsultantsPage />} />
             <Route path="/project-specification" element={<ProjectSpecificationPage />} />

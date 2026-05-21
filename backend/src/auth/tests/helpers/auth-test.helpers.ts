@@ -1,4 +1,3 @@
-
 import { Role, User } from '@prisma/client';
 import { LoginDto } from '../../dto/login.dto';
 
@@ -123,12 +122,12 @@ export function createMockTokenService() {
       rawToken: 'raw-token-abc',
       hashedToken: 'hashed-token-abc',
     }),
-    getTokenExpiry: jest.fn().mockReturnValue(
-      new Date(Date.now() + 24 * 60 * 60 * 1000),
-    ),
-    getRefreshTokenExpiry: jest.fn().mockReturnValue(
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    ),
+    getTokenExpiry: jest
+      .fn()
+      .mockReturnValue(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    getRefreshTokenExpiry: jest
+      .fn()
+      .mockReturnValue(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
     hashToken: jest.fn().mockReturnValue('hashed-token'),
     isTokenExpired: jest.fn().mockReturnValue(false),
     generateAccessToken: jest.fn(),
@@ -164,8 +163,6 @@ export function createMockJwtService() {
 // IP / UserAgent helpers
 // ---------------------------------------------------------------------------
 
-export const makeIp = (override?: string): string =>
-  override ?? TEST_IP;
+export const makeIp = (override?: string): string => override ?? TEST_IP;
 
-export const makeUserAgent = (override?: string): string =>
-  override ?? TEST_UA;
+export const makeUserAgent = (override?: string): string => override ?? TEST_UA;

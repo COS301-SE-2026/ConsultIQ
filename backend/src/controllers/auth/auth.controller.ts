@@ -34,7 +34,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -74,6 +74,7 @@ export class AuthController {
     return await this.authService.resendVerification(dto.email);
   }
 
+  @Public()
   @Post('accept-terms')
   @HttpCode(HttpStatus.OK)
   async acceptTerms(

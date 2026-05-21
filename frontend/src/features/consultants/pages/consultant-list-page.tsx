@@ -1,57 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserPlus, UserCircle2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-import ConsultantCard, { type Consultant } from "../components/consultant-card";
+import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
+import ConsultantCard, { type Consultant, type ConsultantStatus } from "../components/consultant-card";
 import SearchBar from "../../../components/shared/search-bar";
 import { useNavigate } from "react-router-dom";
-
-
-const mockConsultants: Consultant[] = [
-  {
-    id: "CON123",
-    firstName: "Asanda",
-    lastName: "Black",
-    email: "asandablack@gmail.com",
-    phone: "060 292 0109",
-    experienceYears: 2,
-    ratePerHour: 400,
-    skills: ["Java", "React"],
-    status: "Available",
-  },
-  {
-    id: "CON456",
-    firstName: "Connor",
-    lastName: "Sutherland",
-    email: "csutherland@gmail.com",
-    phone: "060 339 0122",
-    experienceYears: 1,
-    ratePerHour: 350,
-    skills: ["Python", "Django"],
-    status: "Available",
-  },
-  {
-    id: "CON789",
-    firstName: "Unathi",
-    lastName: "Nkosi",
-    email: "unathinkosi@gmail.com",
-    phone: "060 567 0133",
-    experienceYears: 3,
-    ratePerHour: 450,
-    skills: ["Angular", "TypeScript"],
-    status: "Available",
-  },
-];
+import { getConsultants } from "../services/consultant.service";
+import { toast } from "sonner";
 
 function ConsultantsPage() {
   // role must first be determined from context
   const [searchQuery, setSearchQuery] = useState("");
+  const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
 
-  const available   = mockConsultants.filter((c) => c.status === "Available");
-  const unavailable = mockConsultants.filter((c) => c.status === "Unavailable");
+  useEffect(() => {
+    const fetchConsultants = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getConsultants(1, 50);
+        console.log(response);
+        // Map the backend structure to what ConsultantCard expects
+        const mapped = response.consultants.map((dto) => {
+          const parts = dto.fullName.split(" ");
+          return {
+            id: dto.id,
+            firstName: parts[0] || "",
+            lastName: parts.slice(1).join(" ") || "",
+            email: dto.email,
+            phone: dto.phone || "", 
+            experienceYears: dto.experienceYears || 3,
+            ratePerHour: dto.costToCompanyRate || 0,
+            skills: dto.primarySkills,
+            status: dto.availabilityStatus as ConsultantStatus,
+          };
+        });
+        setConsultants(mapped);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to load consultants");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const filtered = mockConsultants.filter((c) => {
+    fetchConsultants();
+  }, []);
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const available   = consultants.filter((c) => c.status === "Available");
+  const unavailable = consultants.filter((c) => c.status === "Unavailable");
+
+  const filtered = consultants.filter((c) => {
     const q = searchQuery.toLowerCase();
     return (
       !q ||
@@ -61,20 +67,20 @@ function ConsultantsPage() {
     );
   });
 
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentConsultants = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={adminSidebarItems} />
+    <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+      <Sidebar items={consultantManagerSidebarItems} />
 
       <div className="flex-1 flex flex-col min-w-0">
 
         
         <header
-          className="bg-white flex items-center justify-between"
-          style={{
-            height: "90px",
-            padding: "0 40px",
-            borderBottom: "1px solid var(--color-border)",
-          }}
+          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
+          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
         >
        
           <div className="flex items-center gap-4">
@@ -85,47 +91,6 @@ function ConsultantsPage() {
               Consultants
             </h1>
 
-       
-            <div
-              className="relative bg-white rounded-sm flex items-center cursor-pointer hover:opacity-80 transition"
-              style={{
-                width: "80px",
-                height: "36px",
-                outline: "0.8px solid var(--color-border)",
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--color-primary)"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  position: "absolute",
-                  left: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "16px",
-                  height: "16px",
-                }}
-              >
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-              <span
-                style={{
-                  position: "absolute",
-                  left: "36px",
-                  color: "var(--color-primary)",
-                  fontSize: "14px",
-                  fontFamily: "var(--font-primary)",
-                  lineHeight: "20px",
-                }}
-              >
-                Dark
-              </span>
-            </div>
           </div>
 
         
@@ -162,12 +127,12 @@ function ConsultantsPage() {
             </button>
           </div>
         </header>
-
+        <div className="h-6" />
      
-        <main
-          className="flex-1 flex flex-col"
-          style={{ padding: "40px 48px", gap: "24px" }}
-        >
+        <main className="flex-1 overflow-y-auto"  >        
+          <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+           <div className="h-6" />
+         
           {/* availability */}
           <div className="flex items-center gap-6">
             <span
@@ -191,37 +156,70 @@ function ConsultantsPage() {
               Unavailable {unavailable.length}
             </span>
           </div>
+          <div className="h-6" />
 
           {/* Search bar */}
           <SearchBar
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={handleSearchChange}
             placeholder="Search consultants by name, skill, email..."
             onFilterClick={() => console.log("Open filters")}
           />
+          <div className="h-6" />
 
           {/* Consultants cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filtered.map((consultant) => (
+            {currentConsultants.map((consultant) => (
               <ConsultantCard
                 key={consultant.id}
                 consultant={consultant}
                 onViewDetails={(id) => console.log("View details for", id)}
               />
             ))}
+            {isLoading && (
+              <p className="text-center mt-16 col-span-full" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
+                Loading consultants...
+              </p>
+            )}
           </div>
 
+          {!isLoading && totalPages > 1 && (
+            <div className="flex justify-center items-center gap-6 mt-10 pb-8">
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-5 py-2.5 rounded-lg border-2 border-solid font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+              >
+                Previous
+              </button>
+              <span className="text-lg font-medium" style={{ color: "var(--color-text-secondary)" }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-5 py-2.5 rounded-lg border-2 border-solid font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
        
-          {filtered.length > 0 && (
+          {!isLoading && filtered.length > 0 && (
             <p
               className="text-center"
               style={{ color: "var(--color-text-secondary)", fontSize: "16px" }}
             >
-              Showing {filtered.length} of {mockConsultants.length} consultants
+              Showing {filtered.length} of {consultants.length} consultants
             </p>
           )}
 
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <p
               className="text-center mt-16"
               style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}
@@ -229,6 +227,7 @@ function ConsultantsPage() {
               No consultants match your search.
             </p>
           )}
+          </div>
         </main>
       </div>
     </div>

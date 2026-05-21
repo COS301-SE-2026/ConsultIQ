@@ -62,6 +62,20 @@ enum ConsultantAvailability {
   ON_LEAVE
 }
 
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+}
+
+enum WorkModel {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -149,17 +163,21 @@ model Consultant {
   userId        String                 @unique
   user          User                   @relation(fields: [userId], references: [id])
   location      String
+  phone         String?
+  idNumber      String?
+  nationality   String?
   costToCompany Float
   availability  ConsultantAvailability @default(AVAILABLE)
   tenantId      String?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
 
-  skills       ConsultantSkill[]
-  certificates Certificate[]
-  placements   ProjectPlacement[]
-  cvFiles      CvFile[]
-  managers     ConsultantManager[]
+  skills                ConsultantSkill[]
+  certificates          Certificate[]
+  placements            ProjectPlacement[]
+  cvFiles               CvFile[]
+  managers              ConsultantManager[]
+  consultantExperiences ConsultantExperience[]
 
   @@map("consultants")
 }
@@ -207,6 +225,8 @@ model Certificate {
   consultantId String
   title        String
   issuingBody  String
+  startDate    DateTime?
+  endDate      DateTime?
   uploadedAt   DateTime   @default(now())
   consultant   Consultant @relation(fields: [consultantId], references: [id])
 
@@ -230,13 +250,13 @@ model Project {
   id           String        @id @default(uuid())
   projectName  String
   clientName   String
-  description  String? // Added for frontend
-  addressLine1 String // Added for frontend
-  addressLine2 String? // Added for frontend
-  suburb       String? // Added for frontend
+  description  String?
+  addressLine1 String
+  addressLine2 String?
+  suburb       String?
   city         String
   province     String
-  postalCode   String // Added for frontend
+  postalCode   String
   startDate    DateTime
   endDate      DateTime?
   teamSize     Int
@@ -259,7 +279,7 @@ model ProjectSkill {
   projectId  String
   skillId    String
   competency CompetencyLevel // Renamed from minimumCompetency
-  years      Int // Added for frontend
+  years      Int
   mandatory  Boolean         @default(true) // Renamed from isMandatory
 
   project Project @relation(fields: [projectId], references: [id])
@@ -307,4 +327,21 @@ model authAuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("auth_audit_logs")
+}
+
+model ConsultantExperience {
+  id           String     @id @default(uuid())
+  consultantId String
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
+  jobTitle     String
+  companyName  String
+  jobType      JobType
+  workModel    WorkModel
+  startDate    DateTime
+  endDate      DateTime?
+  description  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("consultant_experience")
 }

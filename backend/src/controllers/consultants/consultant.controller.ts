@@ -1,8 +1,20 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, UsePipes, ValidationPipe, Param } from '@nestjs/common';
-import { ConsultantService } from '../../consultants/services/consultant.service';
-import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+  Req,
+  UsePipes,
+  ValidationPipe,
+  Param
+} from "@nestjs/common";
+import { ConsultantService } from "../../consultants/services/consultant.service";
+import { CreateConsultantDto } from "../../consultants/dto/create-consultant.dto";
 
-@Controller('consultants')
+@Controller("consultants")
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
 
@@ -15,23 +27,21 @@ export class ConsultantController {
 
   @Get()
   async getAllConsultants(
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
+    @Query("page") page: string = "1",
+    @Query("limit") limit: string = "10",
     @Req() req: any,
   ) {
-    const userRole = req.user?.role ?? 'PROJECT_MANAGER';
+    const userRole = req.user?.role ?? "PROJECT_MANAGER";
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),
       userRole,
-    )
+    );
   }
 
-  @Get(':id')
+  @Get(":id")
   @HttpCode(HttpStatus.OK)
-  async getConsultantById(@Param('id') id: string) {
+  async getConsultantById(@Param("id") id: string) {
     return await this.consultantService.getConsultantById(id);
   }
-
 }
-

@@ -1,159 +1,151 @@
-import { useState, useMemo, useEffect } from "react";
-import { Card } from "../../../../components/ui/card"
+import { useState, useMemo } from "react";
+import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
-import ProjectSkillsTable from "../../../projects/components/project-skills-table";
-import type { ProjectSkillData as Skill } from "../../../projects/types/project.types";
+import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import type { CreateConsultantSkillPayload } from "../../services/consultant.service";
 
 const sanitizeText = (input: string) => {
-    if (!input) return "";
-    return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
+  if (!input) return "";
+  return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
 };
 
 export default function SkillsForm() {
-    const [skills, setSkills] = useState<Skill[]>(() => {
-        const saved = sessionStorage.getItem("skills_list");
-        if (saved) {
-            return JSON.parse(saved);
-        }
-        return [];
-    });
-    const [skillName, setSkillName] = useState("");
-    const [confidence, setConfidence] = useState("");
-    const [years, setYears] = useState("");
+  const { profileData, updateProfileData } = useConsultantProfile();
+  const skills = profileData.skills;
 
-    const competencyLevel = useMemo(() => {
-        if (!confidence || !years) return "";
-        const c = Number.parseInt(confidence, 10);
-        const y = Number.parseInt(years, 10);
+  const [skillName, setSkillName] = useState("");
+  const [confidence, setConfidence] = useState("");
+  const [years, setYears] = useState("");
 
-        if (c >= 4 && y >= 5) return "Expert";
-        if (c >= 3 && y >= 3) return "Advanced";
-        if (c >= 2 && y >= 1) return "Intermediate";
-        return "Beginner";
-    }, [confidence, years]);
+  const competencyLevel = useMemo((): "BEGINNER" | "INTERMEDIATE" | "EXPERT" => {
+    const c = parseInt(confidence, 10);
+    const y = parseInt(years, 10);
+    if (c >= 4 && y >= 5) return "EXPERT";
+    if (c >= 3 && y >= 3) return "INTERMEDIATE";
+    return "BEGINNER";
+  }, [confidence, years]);
 
-    const handleAddSkill = () => {
-        if (!skillName.trim() || !years || !confidence) return;
+  const handleAddSkill = () => {
+    if (!skillName.trim() || !years || !confidence) return;
 
-        // Look for where you are updating the skill array state:
-        setSkills((prev) => [
-            ...prev,
-            {
-                id: crypto.randomUUID(),
-                name: skillName.trim(),
-                competency: competencyLevel,
-                years: Number.parseInt(years, 10) || 0,
-                mandatory: false, // Fully satisfies the ProjectSkillData type mapping
-            }
-        ]);
-
-        setSkillName("");
-        setConfidence("");
-        setYears("");
+    const newSkill: CreateConsultantSkillPayload = {
+      skillName: sanitizeText(skillName.trim()),
+      competencyLevel,
+      yearsExperience: parseInt(years, 10) || 0,
+      confidenceLevel: parseInt(confidence, 10) || 1,
     };
 
-    useEffect(() => {
-        const sanitizedList = skills.map((skill) => ({
-            ...skill,
-            name: sanitizeText(skill.name),
-            competency: sanitizeText(skill.competency),
-        }));
-        sessionStorage.setItem("skills_list", JSON.stringify(sanitizedList));
-    }, [skills]);
+    updateProfileData({ skills: [...skills, newSkill] });
+    setSkillName("");
+    setConfidence("");
+    setYears("");
+  };
 
-    return (
-        <Card className="p-12 h-full w-full flex items-start justify-center">
-            <div className="w-full max-w-[800px] flex flex-col h-full">
-                <div className="h-6" />
-                <h2
-                    className="text-3xl font-bold mb-8"
-                    style={{ color: "var(--color-primary)" }}
-                >
-                    Skills
-                </h2>
-                <div className="h-6" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-3">
-                        <label htmlFor="skill-name" className="text-sm font-medium">
-                            Skill Name
-                        </label>
+  return (
+    <Card className="p-12 h-full w-full flex items-start justify-center">
+      <div className="w-full max-w-[800px] flex flex-col h-full">
+        <div className="h-6" />
+        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+          Skills
+        </h2>
+        <div className="h-6" />
 
-                        <Input
-                            id="skill-name"
-                            placeholder="React"
-                            value={skillName}
-                            onChange={(e) => setSkillName(e.target.value)}
-                        />
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-3">
+            <label htmlFor="skill-name" className="text-sm font-medium">Skill Name</label>
+            <Input
+              id="skill-name"
+              placeholder="React"
+              value={skillName}
+              onChange={(e) => setSkillName(e.target.value)}
+            />
+          </div>
 
-                    <div className="flex flex-col gap-3">
-                        <label htmlFor="confidence" className="text-sm font-medium">
-                            Confidence
-                        </label>
+          <div className="flex flex-col gap-3">
+            <label htmlFor="confidence" className="text-sm font-medium">Confidence</label>
+            <select
+              id="confidence"
+              value={confidence}
+              onChange={(e) => setConfidence(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+            >
+              <option value="" disabled>Select confidence (1-4)</option>
+              <option value="1">1 - Low</option>
+              <option value="2">2 - Moderate</option>
+              <option value="3">3 - High</option>
+              <option value="4">4 - Expert</option>
+            </select>
+          </div>
 
-                        <select
-                            id="confidence"
-                            value={confidence}
-                            onChange={(e) => setConfidence(e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
-                        >
-                            <option value="" disabled>Select confidence (1-4)</option>
-                            <option value="1">1 - Low</option>
-                            <option value="2">2 - Moderate</option>
-                            <option value="3">3 - High</option>
-                            <option value="4">4 - Expert</option>
-                        </select>
-                    </div>
+          <div className="flex flex-col gap-3">
+            <label htmlFor="years-of-experience" className="text-sm font-medium">Years of Experience</label>
+            <Input
+              id="years-of-experience"
+              type="number"
+              placeholder="5"
+              min="0"
+              value={years}
+              onChange={(e) => setYears(e.target.value)}
+            />
+          </div>
 
-                    <div className="flex flex-col gap-3">
-                        <label htmlFor="years-of-experience" className="text-sm font-medium">
-                            Years of Experience
-                        </label>
+          <div className="flex flex-col gap-3">
+            <label htmlFor="competency-level" className="text-sm font-medium">Competency Level</label>
+            <Input
+              id="competency-level"
+              type="text"
+              placeholder="Auto-calculated"
+              value={competencyLevel}
+              readOnly
+              className="bg-slate-50 text-slate-500 cursor-not-allowed"
+            />
+          </div>
+        </div>
 
-                        <Input
-                            id="years-of-experience"
-                            type="number"
-                            placeholder="5"
-                            min="0"
-                            value={years}
-                            onChange={(e) => setYears(e.target.value)}
-                        />
+        <div className="h-6" />
+        <Button
+          onClick={handleAddSkill}
+          disabled={!skillName.trim() || !years || !confidence}
+          className="self-end h-8 w-20 px-6 text-sm font-medium rounded transition disabled:opacity-50"
+          style={{ backgroundColor: "var(--color-primary)" }}
+        >
+          Add Skill
+        </Button>
 
-                    </div>
-                    <div className="flex flex-col gap-3">
-                        <label htmlFor="competency-level" className="text-sm font-medium">
-                            Competency Level
-                        </label>
-                        <Input
-                            id="competency-level"
-                            type="text"
-                            placeholder="Auto-calculated"
-                            value={competencyLevel}
-                            readOnly
-                            className="bg-slate-50 text-slate-500 cursor-not-allowed"
-                        />
-                    </div>
+        <div className="h-6" />
+
+        {/* Skills list */}
+        {skills.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3">
+            <h3 className="text-base font-semibold" style={{ color: "var(--color-primary)" }}>
+              Added Skills
+            </h3>
+            {skills.map((skill, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between px-4 py-3 rounded-lg border"
+                style={{ borderColor: "var(--color-border)" }}
+              >
+                <div>
+                  <span className="font-medium">{skill.skillName}</span>
+                  <span className="ml-3 text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                    {skill.competencyLevel} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
+                  </span>
                 </div>
-                <div className="h-6" />
-
-                <Button
-                    onClick={handleAddSkill}
-                    disabled={!skillName.trim() || !years || !confidence}
-                    className="self-end h-8 w-20 px-6 text-sm font-medium rounded transition disabled:opacity-50"
-                    style={{
-                        backgroundColor:
-                            "var(--color-primary)",
-                    }}
+                <button
+                  onClick={() => updateProfileData({ skills: skills.filter((_, i) => i !== index) })}
+                  className="text-red-400 hover:text-red-600 text-sm font-medium"
                 >
-                    Add Skill
-                </Button>
-                <div className="h-6" />
-                <div className="mt-8 w-full">
-                    <ProjectSkillsTable skills={skills} />
-                </div>
-                <div className="h-6" />
-            </div>
-        </Card>
-    );
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="h-6" />
+      </div>
+    </Card>
+  );
 }

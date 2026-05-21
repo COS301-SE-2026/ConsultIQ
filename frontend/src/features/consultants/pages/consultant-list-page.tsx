@@ -39,8 +39,8 @@ function ConsultantsPage() {
           };
         });
         setConsultants(mapped);
-      } catch (error: any) {
-        toast.error(error.message || "Failed to load consultants");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to load consultants");
       } finally {
         setIsLoading(false);
       }
@@ -49,10 +49,10 @@ function ConsultantsPage() {
     fetchConsultants();
   }, []);
 
-  // Reset to first page when search query changes
-  useEffect(() => {
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
-  }, [searchQuery]);
+  };
 
   const available   = consultants.filter((c) => c.status === "Available");
   const unavailable = consultants.filter((c) => c.status === "Unavailable");
@@ -161,7 +161,7 @@ function ConsultantsPage() {
           {/* Search bar */}
           <SearchBar
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={handleSearchChange}
             placeholder="Search consultants by name, skill, email..."
             onFilterClick={() => console.log("Open filters")}
           />

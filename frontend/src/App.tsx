@@ -1,6 +1,6 @@
 import AppRoutes from "./routes/app-routes";
 import { Toaster } from 'sonner';
-// import { AuthProvider } from './context/auth-provider';
+import { AuthProvider } from './hooks/useAuth';
 
 function App() {
   return (

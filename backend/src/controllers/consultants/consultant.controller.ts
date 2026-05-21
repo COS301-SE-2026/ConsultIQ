@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
+import { ConsultantProfileDto } from '../../consultants/dto/consultant-profile.dto';
 @Controller('consultants')
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
@@ -39,7 +40,9 @@ export class ConsultantController {
   }
 
   @Get(':id')
-  async getConsultantById(@Param('id') id: string) {
+  async getConsultantById(
+    @Param('id') id: string,
+  ): Promise<ConsultantProfileDto> {
     return await this.consultantService.getConsultantById(id);
   }
 }

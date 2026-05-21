@@ -5,6 +5,7 @@ import {
   ConsultantListItemDto,
   PaginatedConsultantsResponseDto,
 } from '../dto/consultant-list.dto';
+import { ConsultantProfileDto } from '../dto/consultant-profile.dto';
 
 @Injectable()
 export class ConsultantService {
@@ -47,7 +48,8 @@ export class ConsultantService {
               ? 'Available'
               : 'Unavailable',
           primarySkills: consultant.skills.map((cs) => cs.skill.name),
-          costToCompanyRate: role === 'PROJECT_MANAGER' ? undefined : consultant.costToCompany,
+          costToCompanyRate:
+            role === 'PROJECT_MANAGER' ? undefined : consultant.costToCompany,
           phone: consultant.phone,
           idNumber: consultant.idNumber,
           experienceYears: consultant.skills.reduce(
@@ -69,7 +71,9 @@ export class ConsultantService {
     };
   }
 
-  async getConsultantById(id: string) {
-    return await (this.consultantRepository as any).getConsultantById(id);
+  async getConsultantById(id: string): Promise<ConsultantProfileDto> {
+    return (await (this.consultantRepository as any).getConsultantById(
+      id,
+    )) as ConsultantProfileDto;
   }
 }

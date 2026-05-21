@@ -35,7 +35,10 @@ export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
     return result.score >= 3;
   }
 
-  private containsEmailSubstring(passwordLower: string, localPart: string): boolean {
+  private containsEmailSubstring(
+    passwordLower: string,
+    localPart: string,
+  ): boolean {
     // Check if password contains any substring of the local part longer than 4 chars
     for (let i = 0; i <= localPart.length - 5; i++) {
       for (let j = i + 5; j <= localPart.length; j++) {
@@ -46,10 +49,14 @@ export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
     return false;
   }
 
-  private containsNamePart(passwordLower: string, nameParts: string[]): boolean {
+  private containsNamePart(
+    passwordLower: string,
+    nameParts: string[],
+  ): boolean {
     // Explicit check — reject if password contains any part of the name
     for (const part of nameParts) {
-      if (part.length > 2 && passwordLower.includes(part.toLowerCase())) return true;
+      if (part.length > 2 && passwordLower.includes(part.toLowerCase()))
+        return true;
     }
     return false;
   }

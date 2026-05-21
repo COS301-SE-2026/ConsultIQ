@@ -1,4 +1,3 @@
-
 export class ConsultantListItemDto {
   id!: string;
   fullName!: string;

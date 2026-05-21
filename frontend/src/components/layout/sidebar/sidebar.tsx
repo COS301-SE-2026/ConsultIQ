@@ -2,16 +2,17 @@ import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 
 import type { SidebarItem } from "./sidebar.types";
 import { LogOut, User } from "lucide-react";
-import { useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   readonly items: SidebarItem[];
 }
 
 function Sidebar({ items }: SidebarProps) {
-  const [activePath, setActivePath] = useState(items[0].path);
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   return (
     <aside
       style={{
@@ -50,7 +51,7 @@ function Sidebar({ items }: SidebarProps) {
       <nav
         style={{
           flex: 1,
-          padding: "32px 16px",
+          padding: "32px 0",
         }}
       >
         {items.map((item) => {
@@ -59,11 +60,9 @@ function Sidebar({ items }: SidebarProps) {
           return (
             <button
               key={item.path}
-              onClick={() => setActivePath(item.path)}
+              onClick={() => navigate(item.path)}
               style={{
-                padding: "18px 20px",
-
-                borderRadius: "12px",
+                padding: "14px 24px",
 
                 color: "white",
 
@@ -79,8 +78,14 @@ function Sidebar({ items }: SidebarProps) {
                 gap: "14px",
                 width: "100%",
 
+                border: "none",
+                borderLeft:
+                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                    ? "4px solid var(--color-accent)"
+                    : "4px solid transparent",
+
                 backgroundColor:
-                  activePath === item.path
+                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
                     ? "var(--color-secondary)"
                     : "transparent",
 

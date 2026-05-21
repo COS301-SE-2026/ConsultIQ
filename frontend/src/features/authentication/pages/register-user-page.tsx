@@ -4,8 +4,11 @@ import UserRegistrationForm from "../components/user-registration-form";
 import type { UserRole } from "../../../types/global.types";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+
 
 function RegisterUserPage() {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const currentUserRole = user?.role as UserRole | undefined;
     

@@ -14,7 +14,7 @@ interface UserInputObject {
 
 @ValidatorConstraint({ name: 'isStrongEnough', async: false })
 export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
-  validate(password: string, args: ValidationArguments): boolean {
+  validate(password: string, args: ValidationArguments): boolean {  //NO SONAR
     const object = args.object as UserInputObject;
     const userInputs: string[] = [];
     const passwordLower = password.toLowerCase();

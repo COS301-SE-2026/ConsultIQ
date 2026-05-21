@@ -121,13 +121,17 @@ export class ConsultantRepository {
       this.prisma.consultant.count(),
     ]);
 
+    // Added missing return block & closed out the method properly
+    return { consultants, total };
+  } 
+
   async getConsultantById(id: string) {
     return await this.prisma.consultant.findUnique({
       where: { id },
       include: {
         user: { select: { fullName: true, email: true } },
         skills: {
-        select: {
+          select: {
             id: true,                              
             competencyLevel: true,
             yearsExperience: true,
@@ -135,30 +139,30 @@ export class ConsultantRepository {
             skill: { select: { name: true } },
           },
         },
-       certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+        certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
         consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
       },
     });
   }
 
- async getConsultantByUserId(userId: string) {
-  return await this.prisma.consultant.findUnique({
-    where: { userId },          
-    include: {
-      user: { select: { fullName: true, email: true } },
-      skills: {
-      select: {
-          id: true,                              
-          competencyLevel: true,
-          yearsExperience: true,
-          confidenceLevel: true,
-          skill: { select: { name: true } },
+  async getConsultantByUserId(userId: string) {
+    return await this.prisma.consultant.findUnique({
+      where: { userId },          
+      include: {
+        user: { select: { fullName: true, email: true } },
+        skills: {
+          select: {
+            id: true,                              
+            competencyLevel: true,
+            yearsExperience: true,
+            confidenceLevel: true,
+            skill: { select: { name: true } },
+          },
         },
+        certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+        consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
       },
-      certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
-     consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
-    },
-  });
-}
+    });
+  } 
 
-}
+} 

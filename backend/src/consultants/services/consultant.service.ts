@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConsultantRepository } from '../repositories/consultant.repository';
 import { CreateConsultantDto } from '../dto/create-consultant.dto';
 import {
@@ -12,7 +12,6 @@ export class ConsultantService {
   constructor(private readonly consultantRepository: ConsultantRepository) {}
 
   async createConsultant(dto: CreateConsultantDto) {
-    //This function is for email duplication check
     const existingUser = await this.consultantRepository.findEmail(dto.email);
     if (existingUser) {
       throw new ConflictException(
@@ -33,8 +32,7 @@ export class ConsultantService {
     limit: number,
     role?: string,
   ): Promise<PaginatedConsultantsResponseDto> {
-    const { consultants, total } =
-      await this.consultantRepository.getAllConsultants(page, limit);
+    const { consultants, total } = await this.consultantRepository.getAllConsultants(page, limit);
 
     const mappedConsultants: ConsultantListItemDto[] = consultants.map(
       (consultant) => {
@@ -60,92 +58,112 @@ export class ConsultantService {
             consultant.certificates?.map((cert) => cert.title) || [],
         };
 
-  return {
-    id: consultant.id,
-    fullName: consultant.user.fullName,
-    email: consultant.user.email,
-    phoneNumber: consultant.phone ?? '',          
-    idNumber: consultant.idNumber ?? '',
-    nationality: consultant.nationality ?? '',
-    location: consultant.location,
-    costToCompany: consultant.costToCompany,
-    availability: consultant.availability,
-    
-    skills: consultant.skills.map((cs) => ({
-      id: cs.id,
-      skillName: cs.skill.name,
-      competencyLevel: cs.competencyLevel,
-      yearsExperience: cs.yearsExperience,
-      confidenceLevel: cs.confidenceLevel,
-    })),
+        return dto;
+      },
+    );
 
-    experience: consultant.consultantExperiences.map((exp) => ({
-      id: exp.id,
-      companyname: exp.companyName,               
-      jobTitle: exp.jobTitle,
-      jobType: exp.jobType,
-      startDate: exp.startDate,
-      endDate: exp.endDate ?? new Date(),          
-      roleDescription: exp.description,           
-      workModel: exp.workModel,
-    })),
-
-    certificates: consultant.certificates.map((cert) => ({
-      id: cert.id,
-      title: cert.title,
-      issuingBody: cert.issuingBody,
-      startDate: cert.startDate ?? new Date(),
-      endDate: cert.endDate ?? new Date(),
-      uploadedAt: cert.uploadedAt,
-    })),
-  };
-}
-
- async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
-  const consultant = await this.consultantRepository.getConsultantByUserId(userId);
-
-  if (!consultant) {
-    throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+    return {
+      page,
+      total,
+      consultants: mappedConsultants,
+    };
   }
 
-  return {
-    id: consultant.id,
-    fullName: consultant.user.fullName,
-    email: consultant.user.email,
-    phoneNumber: consultant.phone ?? '',
-    idNumber: consultant.idNumber ?? '',
-    nationality: consultant.nationality ?? '',
-    location: consultant.location,
-    costToCompany: consultant.costToCompany,
-    availability: consultant.availability,
+  async getConsultantById(id: string): Promise<ConsultantProfileDto> {
+    const consultant = await this.consultantRepository.getConsultantById(id);
 
-    skills: consultant.skills.map((cs) => ({
-      id: cs.id,
-      skillName: cs.skill.name,
-      competencyLevel: cs.competencyLevel,
-      yearsExperience: cs.yearsExperience,
-      confidenceLevel: cs.confidenceLevel,
-    })),
+    if (!consultant) {
+      throw new NotFoundException(`Consultant with id ${id} not found.`);
+    }
 
-    experience: consultant.consultantExperiences.map((exp) => ({
-      id: exp.id,
-      companyname: exp.companyName,
-      jobTitle: exp.jobTitle,
-      jobType: exp.jobType,
-      startDate: exp.startDate,
-      endDate: exp.endDate ?? new Date(),
-      roleDescription: exp.description,
-      workModel: exp.workModel,
-    })),
+    return {
+      id: consultant.id,
+      fullName: consultant.user.fullName,
+      email: consultant.user.email,
+      phoneNumber: consultant.phone ?? '',
+      idNumber: consultant.idNumber ?? '',
+      nationality: consultant.nationality ?? '',
+      location: consultant.location,
+      costToCompany: consultant.costToCompany,
+      availability: consultant.availability,
 
-    certificates: consultant.certificates.map((cert) => ({
-      id:cert.id,
-      title: cert.title,
-      issuingBody: cert.issuingBody,
-      startDate: cert.startDate ?? new Date(),
-      endDate: cert.endDate ?? new Date(),
-      uploadedAt: cert.uploadedAt,
-    })),
-  };
+      skills: consultant.skills.map((cs) => ({
+        id: cs.id,
+        skillName: cs.skill.name,
+        competencyLevel: cs.competencyLevel,
+        yearsExperience: cs.yearsExperience,
+        confidenceLevel: cs.confidenceLevel,
+      })),
+
+      experience: consultant.consultantExperiences.map((exp) => ({
+        id: exp.id,
+        companyname: exp.companyName,
+        jobTitle: exp.jobTitle,
+        jobType: exp.jobType,
+        startDate: exp.startDate,
+        endDate: exp.endDate ?? new Date(),
+        roleDescription: exp.description,
+        workModel: exp.workModel,
+      })),
+
+      certificates: consultant.certificates.map((cert) => ({
+        id: cert.id,
+        title: cert.title,
+        issuingBody: cert.issuingBody,
+        startDate: cert.startDate ?? new Date(),
+        endDate: cert.endDate ?? new Date(),
+        uploadedAt: cert.uploadedAt,
+      })),
+    };
+  }
+
+  async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
+    const consultant = await this.consultantRepository.getConsultantByUserId(userId);
+
+    if (!consultant) {
+      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+    }
+
+    return {
+      id: consultant.id,
+      fullName: consultant.user.fullName,
+      email: consultant.user.email,
+      phoneNumber: consultant.phone ?? '',
+      idNumber: consultant.idNumber ?? '',
+      nationality: consultant.nationality ?? '',
+      location: consultant.location,
+      costToCompany: consultant.costToCompany,
+      availability: consultant.availability,
+
+      skills: consultant.skills.map((cs) => ({
+        id: cs.id,
+        skillName: cs.skill.name,
+        competencyLevel: cs.competencyLevel,
+        yearsExperience: cs.yearsExperience,
+        confidenceLevel: cs.confidenceLevel,
+      })),
+
+      experience: consultant.consultantExperiences.map((exp) => ({
+        id: exp.id,
+        companyname: exp.companyName,
+        jobTitle: exp.jobTitle,
+        jobType: exp.jobType,
+        startDate: exp.startDate,
+        endDate: exp.endDate ?? new Date(),
+        roleDescription: exp.description,
+        workModel: exp.workModel,
+      })),
+
+      certificates: consultant.certificates.map((cert) => ({
+        id: cert.id,
+        title: cert.title,
+        issuingBody: cert.issuingBody,
+        startDate: cert.startDate ?? new Date(),
+        endDate: cert.endDate ?? new Date(),
+        uploadedAt: cert.uploadedAt,
+      })),
+    };
+  }
 }
-}
+    
+

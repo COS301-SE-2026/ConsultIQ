@@ -42,7 +42,7 @@ function CreateProfileContent() {
             // Get skills from session storage
             const rawSkills = sessionStorage.getItem("skills_list");
             const parsedSkills = rawSkills ? JSON.parse(rawSkills) : [];
-            const actualSkills = parsedSkills.length ? parsedSkills.map((s: any) => ({
+            const actualSkills = parsedSkills.length ? parsedSkills.map((s: { name?: string; skillName?: string; yearsOfExperience?: string | number; experience?: string | number; competencyLevel?: string }) => ({
                 skillName: s.name || s.skillName,
                 experience: String(s.yearsOfExperience || s.experience || "0"),
                 competencyLevel: (s.competencyLevel || "BEGINNER").toUpperCase(),
@@ -51,14 +51,14 @@ function CreateProfileContent() {
             // Get education/certifications from session storage
             const rawCerts = sessionStorage.getItem("education_list") || sessionStorage.getItem("certifications_list");
             const parsedCerts = rawCerts ? JSON.parse(rawCerts) : [];
-            const actualCerts = parsedCerts.length ? parsedCerts.map((c: any) => ({
+            const actualCerts = parsedCerts.length ? parsedCerts.map((c: { qualification?: string; title?: string; name?: string }) => ({
                 title: c.qualification || c.title || c.name || "Unknown Qualification",
             })) : profileData.certifications;
 
             // Get work experiences from session storage
             const rawExperiences = sessionStorage.getItem("experience_list");
             const parsedExperiences = rawExperiences ? JSON.parse(rawExperiences) : [];
-            const actualExperiences = parsedExperiences.length ? parsedExperiences.map((e: any) => ({
+            const actualExperiences = parsedExperiences.length ? parsedExperiences.map((e: { jobTitle?: string; companyName?: string; company?: string; jobType?: string; workModel?: string; startDate?: string; endDate?: string; description?: string; roleDescription?: string }) => ({
                 jobTitle: e.jobTitle || "",
                 companyName: e.companyName || e.company || "",
                 jobType: e.jobType || "Full-time",
@@ -110,8 +110,8 @@ function CreateProfileContent() {
 
             toast.success("Consultant profile created successfully!");
             navigate("/consultants-manager");
-        } catch (error: any) {
-            toast.error(error.message || "Failed to create consultant profile");
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : "Failed to create consultant profile");
         }
     };
 

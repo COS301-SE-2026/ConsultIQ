@@ -10,18 +10,23 @@ export class ProjectRepository {
     async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {
         const project = await tx.project.create({
-        data: {
-            projectName: dto.projectName,
-            clientName: dto.clientName,
-            city: dto.city,
-            province: dto.province,
-            startDate: new Date(dto.startDate),
-            endDate: dto.endDate ? new Date(dto.endDate) : null,
-            teamSize: dto.teamSize,
-            requiredAllocationPercentage: dto.allocation,
-            clientBillingBudget: dto.budget,
-            status: ProjectStatus.OPEN,
-        },
+            data: {
+                projectName: dto.projectName,
+                clientName: dto.clientName,
+                addressLine1: dto.addressLine1,
+                addressLine2: dto.addressLine2,
+                suburb: dto.suburb,
+                description: dto.description,
+                postalCode: dto.postalCode ?? '',
+                city: dto.city,
+                province: dto.province,
+                startDate: new Date(dto.startDate),
+                endDate: dto.endDate ? new Date(dto.endDate) : null,
+                teamSize: dto.teamSize,
+                allocation: dto.allocation,
+                budget: dto.budget,
+                status: ProjectStatus.OPEN,
+            },
         });
 
         await tx.projectManager.create({
@@ -39,12 +44,13 @@ export class ProjectRepository {
             create: { name: normalizedSkillName, category: 'General' },
         });
         await tx.projectSkill.create({
-            data: {
+        data: {
             projectId: project.id,
             skillId: skillRecord.id,
-            minimumCompetency: skill.competency as CompetencyLevel,
-            isMandatory: skill.mandatory,
-            },
+            competency: skill.competency as CompetencyLevel,
+            mandatory: skill.mandatory,
+            years: skill.years,
+        },
         });
         }
 

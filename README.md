@@ -1,9 +1,9 @@
 # ConsultIQ
 
-## Project Description
+**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** 
 
-ConsultIQ is a consultancy platform that is built to match the right consultants to the right projects. Using a configurable fit-scoring engine weighting skills, availability, location, and cost-to-company the platform surfaces a ranked shortlist of the right candidates for the job followed by a transparent breakdown of each candidate's score.
-
+### What is ConsultIQ?
+ConsultIQ is an intelligent matching platform designed for consultancy firms. Using a configurable fit-scoring engine that weighs skills, availability, location, and cost-to-company, the platform surfaces a ranked shortlist of the ideal candidates for any given job. This is followed by a transparent breakdown of each candidate's score, taking the guesswork out of resource allocation.
 
 <div align="center">
   <!-- (c) Requirements Badge -->
@@ -30,15 +30,33 @@ ConsultIQ is a consultancy platform that is built to match the right consultants
   <a href="https://stats.uptimerobot.com/YOUR_STATUS_PAGE">
     <img src="https://img.shields.io/uptimerobot/ratio/YOUR_MONITOR_ID?style=for-the-badge&logo=uptimerobot&logoColor=white&label=Uptime" alt="Uptime Monitoring" />
   </a>-->
-
 </div>
-
 
 ---
 
-## Documentation
+## Git Structure & Management
+
+This repository is structured as a **Monorepo**, housing both the frontend client and the backend API in a single repository. This approach simplifies dependency management, allows for shared TypeScript interfaces, and streamlines CI/CD workflows.
+
+* `apps/frontend/` - Contains the React/Vite web dashboard.
+* `apps/backend/` - Contains the NestJS API and PostgreSQL database schemas.
+* `.github/workflows/` - Contains our GitHub Actions scripts for automated testing and CI/CD.
+
+## Branching Strategy
+
+Our team follows a structured Git Flow strategy to maintain high code quality and prevent build breaks on the main branch:
+
+* `main`: Production-ready, stable code. All merges require PR approvals and passing CI builds.
+* `develop`: The primary integration branch for the next release.
+* `feature/*`: Used for developing new features (e.g., `feature/fit-scoring-engine`). Branches off `develop`.
+* `bugfix/*` or `hotfix/*`: Used for resolving bugs (e.g., `bugfix/auth-token-refresh`).
+
+---
 
 <div align="center">
+
+  <h2>Documentation</h2>
+
   <table>
     <thead>
       <tr>
@@ -50,13 +68,12 @@ ConsultIQ is a consultancy platform that is built to match the right consultants
         <td align="center"><a href="...">Functional Requirements (SRS)</a></td>
       </tr>
       <tr>
-        <td align="center"><a href="...">TROOS Project Board</a>https://github.com/orgs/COS301-SE-2026/projects/66</td>
+        <td align="center"><a href="https://github.com/orgs/COS301-SE-2026/projects/66">TROOS Project Board</a></td>
       </tr>
     </tbody>
   </table>
-</div>
 
-<div align="center">
+  <br>
 
   <h2>Meet the Team</h2>
 
@@ -112,10 +129,10 @@ ConsultIQ is a consultancy platform that is built to match the right consultants
     </tbody>
   </table>
 
-</div>
-<div align="center">
-  
+  <br>
+
 ---
+
   <h2>Tech Stack</h2>
 
   <!-- Tech Stack Badges -->

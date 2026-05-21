@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Post,
   Query,
-  Req,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -27,13 +26,10 @@ export class ConsultantController {
   async getAllConsultants(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
-    @Req() req: any,
   ) {
-    const userRole = req.user?.role ?? 'PROJECT_MANAGER';
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),
-      userRole,
     );
   }
 }

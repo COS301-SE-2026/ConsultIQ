@@ -42,15 +42,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         }
         return null;
     };
-
-    const parseDate = (dateStr: string) => {
-        const parts = dateStr.split("/");
-        if (parts.length === 3 && parts[2].length === 4) {
-            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-        }
-        return null;
-    };
-
+    
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
         setStartDate(newStart);

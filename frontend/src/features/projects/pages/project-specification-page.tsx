@@ -6,6 +6,9 @@ import ProjectLocationCard from "../components/project-location-card";
 import ProjectSkillsCard from "../components/project-skills-card";
 import { useState } from "react";
 import { apiClient } from "../../../lib/api-client";
+import { toast } from "sonner";
+
+import axios from 'axios';
 
 
 export interface ProjectSkillData {
@@ -60,20 +63,36 @@ function ProjectSpecificationPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+
   const handleSave = async () => {
     try {
       setIsSubmitting(true);
 
       await apiClient.post("/projects", formData);
+
+      toast.success("Project created successfully!");
       navigate("/projects");
+
     } catch (error) {
       console.error("Error creating project:", error);
-      // TODO: show a toast notification
+
+      let errorMessage = "Failed to create project. Please try again.";
+
+
+      if (axios.isAxiosError(error)) {
+
+        errorMessage = error.response?.data?.message || errorMessage;
+      } else if (error instanceof Error) {
+
+        errorMessage = error.message;
+      }
+
+      toast.error(errorMessage);
+
     } finally {
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems} />

@@ -46,8 +46,7 @@ function AnimatedRoutes() {
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
                     <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
-                    <Route path="/create-profile" element={<PageTransition><CreateProfilePage /></PageTransition>} />
-                </Route>
+                    <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />                </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />

@@ -1,0 +1,157 @@
+import { useConsultantProfile } from "../pages/consultant-profile.context";
+import type { Tab } from "../pages/create-profile-page";
+import { Pencil, CheckCircle } from "lucide-react";
+
+interface Props {
+  onEdit: (tab: Tab) => void;
+  onSave: () => void;
+  isSaving: boolean;
+}
+
+function formatDate(iso: string) {
+  if (!iso) return "Present";
+  return new Date(iso).toLocaleDateString("en-ZA", { year: "numeric", month: "short", day: "numeric" });
+}
+
+function SectionHeader({ title, tab, onEdit }: { title: string; tab: Tab; onEdit: (tab: Tab) => void }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-xl font-bold" style={{ color: "var(--color-primary)" }}>{title}</h2>
+      <button
+        onClick={() => onEdit(tab)}
+        className="flex items-center gap-1.5 text-sm font-medium px-4 py-2 rounded-lg transition hover:bg-gray-100"
+        style={{ color: "var(--color-primary)" }}
+      >
+        <Pencil size={14} />
+        Edit
+      </button>
+    </div>
+  );
+}
+
+export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
+  const { profileData } = useConsultantProfile();
+  const location = sessionStorage.getItem("location_addressLine1")
+    ? [
+        sessionStorage.getItem("location_addressLine1"),
+        sessionStorage.getItem("location_suburb"),
+        sessionStorage.getItem("location_city"),
+        sessionStorage.getItem("location_province"),
+        sessionStorage.getItem("location_postalCode"),
+      ].filter(Boolean).join(", ")
+    : profileData.location;
+
+  const jobTypeLabel: Record<string, string> = {
+    FULL_TIME: "Full-time", PART_TIME: "Part-time", CONTRACT: "Contract",
+    INTERNSHIP: "Internship", FREELANCE: "Freelance",
+  };
+
+  const workModelLabel: Record<string, string> = {
+    ONSITE: "On-site", REMOTE: "Remote", HYBRID: "Hybrid",
+  };
+
+  return (
+    <div className="flex flex-col gap-8 pb-16">
+      <div className="bg-white rounded-2xl border p-8" style={{ borderColor: "var(--color-border)" }}>
+        <SectionHeader title="Personal Information" tab="personal" onEdit={onEdit} />
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="font-medium text-slate-500">Phone</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.phone || "—"}</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-500">SA ID Number</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.idNumber || "—"}</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-500">Nationality</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.nationality || "—"}</p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-500">Availability</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>
+              {profileData.availability === "AVAILABLE" ? "Available" : profileData.availability === "UNAVAILABLE" ? "Unavailable" : "On Leave"}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-500">Cost to Company</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>
+              {profileData.costToCompany > 0 ? `R ${profileData.costToCompany.toLocaleString()}` : "—"}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium text-slate-500">Location</p>
+            <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{location || "—"}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border p-8" style={{ borderColor: "var(--color-border)" }}>
+        <SectionHeader title={`Experience (${profileData.experiences.length})`} tab="experience" onEdit={onEdit} />
+        {profileData.experiences.length === 0 ? (
+          <p className="text-slate-400 text-sm">No experience added.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {profileData.experiences.map((exp, i) => (
+              <div key={exp.id ?? i} className="border rounded-xl p-5" style={{ borderColor: "var(--color-border)" }}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-base" style={{ color: "var(--color-primary)" }}>{exp.companyName}</p>
+                    <p className="font-medium text-slate-600 mt-0.5">{exp.jobTitle}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-xs px-3 py-1 rounded-full font-medium text-white" style={{ backgroundColor: "var(--color-primary)" }}>
+                      {jobTypeLabel[exp.jobType] ?? exp.jobType}
+                    </span>
+                    <span className="text-xs px-3 py-1 rounded-full font-medium border" style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)" }}>
+                      {workModelLabel[exp.workModel] ?? exp.workModel}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-500 mt-2">
+                  {formatDate(exp.startDate)} — {exp.endDate ? formatDate(exp.endDate) : "Present"}
+                </p>
+                {exp.description && (
+                  <p className="text-sm text-slate-600 mt-2 leading-relaxed">{exp.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border p-8" style={{ borderColor: "var(--color-border)" }}>
+        <SectionHeader title={`Skills (${profileData.skills.length})`} tab="skills" onEdit={onEdit} />
+        {profileData.skills.length === 0 ? (
+          <p className="text-slate-400 text-sm">No skills added.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {profileData.skills.map((skill, i) => (
+              <div key={i} className="flex flex-col items-start border rounded-xl px-4 py-3 min-w-[160px]" style={{ borderColor: "var(--color-border)" }}>
+                <p className="font-semibold text-sm" style={{ color: "var(--color-primary)" }}>{skill.skillName}</p>
+                <p className="text-xs text-slate-500 mt-1">{skill.competencyLevel} · {skill.yearsExperience} yrs · {skill.confidenceLevel}/4 confidence</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between bg-white rounded-2xl border p-6" style={{ borderColor: "var(--color-border)" }}>
+        <div className="flex items-center gap-3">
+          <CheckCircle size={22} className="text-green-500" />
+          <p className="font-semibold" style={{ color: "var(--color-primary)" }}>
+            Ready to create this consultant profile?
+          </p>
+        </div>
+        <button
+          onClick={onSave}
+          disabled={isSaving}
+          className="h-12 px-10 rounded-xl text-white font-bold text-base transition hover:brightness-110 disabled:opacity-60"
+          style={{ backgroundColor: "var(--color-accent)" }}
+        >
+          {isSaving ? "Creating Profile..." : "Create Profile"}
+        </button>
+      </div>
+    </div>
+  );
+}

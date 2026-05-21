@@ -9,29 +9,42 @@ import {
   Req,
   UsePipes,
   ValidationPipe,
-  Param
-} from "@nestjs/common";
-import { ConsultantService } from "../../consultants/services/consultant.service";
-import { CreateConsultantDto } from "../../consultants/dto/create-consultant.dto";
+  Param,
+} from '@nestjs/common';
+import { ConsultantService } from '../../consultants/services/consultant.service';
+import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
+import { Roles } from '../../common/guards/roles.guard';
+import { Role } from '../../auth/enums/role.enum';
 
-@Controller("consultants")
+@Controller('consultants')
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
 
-  @Post()
+  @Post('profile')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.CONSULTANT_MANAGER)
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async createConsultant(@Body() dto: CreateConsultantDto) {
-    return await this.consultantService.createConsultant(dto);
+  async createProfile(
+    @Body() dto: CreateConsultantDto,
+    @Req() req: any,
+  ): Promise<{ message: string; consultantId: string }> {
+    const cmUserId = req.user.userId as string;
+    return await this.consultantService.createConsultantProfile(cmUserId, dto);
+  }
+
+  @Get('pending-profiles')
+  @Roles(Role.CONSULTANT_MANAGER)
+  async getPendingProfiles(@Req() _req: any) {
+    return await this.consultantService.getPendingProfiles();
   }
 
   @Get()
   async getAllConsultants(
-    @Query("page") page: string = "1",
-    @Query("limit") limit: string = "10",
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
     @Req() req: any,
   ) {
-    const userRole = req.user?.role ?? "PROJECT_MANAGER";
+    const userRole = req.user?.role ?? 'PROJECT_MANAGER';
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),
@@ -39,9 +52,9 @@ export class ConsultantController {
     );
   }
 
-  @Get(":id")
+  @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getConsultantById(@Param("id") id: string) {
+  async getConsultantById(@Param('id') id: string) {
     return await this.consultantService.getConsultantById(id);
   }
 }

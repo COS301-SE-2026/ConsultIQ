@@ -1,3 +1,10 @@
+</div>
+<div align="center">
+  <img src="./Documents/Images/ConsultIQ logo.jpeg" alt="ConsultIQ Logo" width="350" />
+  <br>
+ <img src="./Documents/Images/Troos_Logo.png" alt="TROOS Logo" width="250" />
+</div>
+
 # ConsultIQ
 
 **Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** 
@@ -52,7 +59,6 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 * `bugfix/*` or `hotfix/*`: Used for resolving bugs (e.g., `bugfix/auth-token-refresh`).
 
 ---
-
 <div align="center">
 
   <h2>Documentation</h2>
@@ -80,50 +86,50 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
   <table>
     <thead>
       <tr>
-        <th align="left">Name</th>
-        <th align="left">Roles</th>
-        <th align="center">Links</th>
+        <th align="left" width="15%">Name</th>
+        <th align="left" width="60%">Profile Summary</th>
+        <th align="center" width="25%">Links</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td><b>Ofentse Modika</b></td>
-        <td>Team Lead, Backend Engineer, DevOps Engineer</td>
+        <td>I am a final-year BSc Computer Science student, motivated and goal-oriented in everything I pursue. I have a strong interest in cybersecurity, financial technology, and system architecture.</td>
         <td align="center">
-          <a href="https://github.com/Ofentse360"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
-          <a href="https://www.linkedin.com/in/ofentse-modika-b09126248"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+          <a href="https://github.com/Ofentse360"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a><br>
+          <a href="https://www.linkedin.com/in/ofentse-modika-b09126248"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
         </td>
       </tr>
       <tr>
         <td><b>Siyabonga Sibiya</b></td>
-        <td>Business Analyst, Database Engineer, Backend Engineer</td>
+        <td>As a Computer Science student, I enjoy exploring how technology can create smart, efficient solutions. My interests lie particularly in financial technology and the Internet of Things (IoT).</td>
         <td align="center">
-          <a href="https://github.com/SiyaSibiya"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
-          <a href="http://www.linkedin.com/in/siyabonga-sibiya-086543237"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+          <a href="https://github.com/SiyaSibiya"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a><br>
+          <a href="http://www.linkedin.com/in/siyabonga-sibiya-086543237"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
         </td>
       </tr>
       <tr>
         <td><b>Onthatile Molebaloa</b></td>
-        <td>Database Engineer, Frontend Engineer</td>
+        <td>My name is Onthatile Molebaloa, and I am a third-year BSc Computer Science student with a strong foundation in both front-end and back-end development. I create intuitive interfaces using React, HTML, CSS, and JavaScript, and build robust back-end systems with Node.js, Supabase, MySQL, MongoDB, Python, Java, and C++.</td>
         <td align="center">
-          <a href="https://github.com/Onthatile-22659812"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
-          <a href="https://www.linkedin.com/in/onthatile-molebaloa-93a4642a8/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+          <a href="https://github.com/Onthatile-22659812"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a><br>
+          <a href="https://www.linkedin.com/in/onthatile-molebaloa-93a4642a8/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
         </td>
       </tr>
       <tr>
         <td><b>Tshireletso Sebake</b></td>
-        <td>Frontend Engineer, DevOps Engineer</td>
+        <td>I am a final-year computer science student with experience in both frontend and backend development, working with technologies such as C++, Java, JavaScript, React, Next.js, NestJS, Go, and PostgreSQL.</td>
         <td align="center">
-          <a href="https://github.com/Ramatsobane29"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
-          <a href="https://www.linkedin.com/in/tshireletso-sebake-9b3397253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+          <a href="https://github.com/Ramatsobane29"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a><br>
+          <a href="https://www.linkedin.com/in/tshireletso-sebake-9b3397253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
         </td>
       </tr>
       <tr>
         <td><b>Retshepile Nkwana</b></td>
-        <td>Backend Engineer, DevOps Engineer, Data Analyst</td>
+        <td>I am a full-stack developer with a primary focus on backend development, experienced in Java, C#, .NET, and Node.js, with the strongest expertise in Java. I also contribute to frontend development using React and Next.js.</td>
         <td align="center">
-          <a href="https://github.com/RNkwana"><img src="https://img.shields.io/badge/GitHub-181717?style=flat&logo=github&logoColor=white" alt="GitHub"></a>
-          <a href="https://www.linkedin.com/in/retshepile-nkwana-817297292/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
+          <a href="https://github.com/RNkwana"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"></a><br>
+          <a href="https://www.linkedin.com/in/retshepile-nkwana-817297292/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"></a>
         </td>
       </tr>
     </tbody>

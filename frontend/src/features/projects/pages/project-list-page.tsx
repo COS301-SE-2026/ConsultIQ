@@ -10,6 +10,18 @@ import ProjectDetailsModal from "../components/project-details-modal";
 import EmptyProjectState from "../components/empty-project-state";
 import type { Project } from "../types/project.types";
 
+interface ApiProject {
+  id: string;
+  projectName: string;
+  clientName: string;
+  teamSize: number;
+  requiredAllocationPercentage: number;
+  clientBillingBudget: number;
+  startDate: string;
+  endDate?: string;
+  city: string;
+  province: string;
+}
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -44,7 +56,8 @@ export default function ProjectListPage() {
 
         const data = await response.json();
 
-        const mappedProjects: Project[] = data.projects.map((p: any) => ({
+        // 2. Replace 'any' with the 'ApiProject' interface
+        const mappedProjects: Project[] = data.projects.map((p: ApiProject) => ({
           id: p.id,
           name: p.projectName,
           projectName: p.projectName,

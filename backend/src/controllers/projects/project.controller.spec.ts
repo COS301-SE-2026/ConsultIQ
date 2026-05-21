@@ -40,7 +40,8 @@ describe('ProjectController', () => {
         ],
       };
 
-      const req = { user: { sub: 'user-123', role: 'PROJECT_MANAGER' } };
+      // Changed 'sub' to 'userId'
+      const req = { user: { userId: 'user-123', role: 'PROJECT_MANAGER' } };
 
       mockProjectService.createProject.mockResolvedValue({
         message: 'Project created successfully',
@@ -57,7 +58,8 @@ describe('ProjectController', () => {
     });
 
     it('should propagate errors from service', async () => {
-      const req = { user: { sub: 'user-123', role: 'PROJECT_MANAGER' } };
+      // Changed 'sub' to 'userId'
+      const req = { user: { userId: 'user-123', role: 'PROJECT_MANAGER' } };
       mockProjectService.createProject.mockRejectedValue(new Error('Service error'));
 
       await expect(controller.createProject({} as any, req)).rejects.toThrow('Service error');
@@ -73,7 +75,8 @@ describe('ProjectController', () => {
         projects: [],
       });
 
-      const result = await controller.getAllProjects('1', '10', { user: { role: 'ADMIN', sub: 'user-123' } } as any);
+      // Changed 'sub' to 'userId'
+      const result = await controller.getAllProjects('1', '10', { user: { role: 'ADMIN', userId: 'user-123' } } as any);
 
       expect(result).toEqual({ page: 1, limit: 10, total: 0, projects: [] });
       expect(mockProjectService.getAllProjects).toHaveBeenCalledWith(1, 10, 'ADMIN', 'user-123');
@@ -87,7 +90,8 @@ describe('ProjectController', () => {
         projects: [],
       });
 
-      await controller.getAllProjects('2', '5', { user: { role: 'ADMIN', sub: 'user-123' } } as any);
+      // Changed 'sub' to 'userId'
+      await controller.getAllProjects('2', '5', { user: { role: 'ADMIN', userId: 'user-123' } } as any);
 
       expect(mockProjectService.getAllProjects).toHaveBeenCalledWith(2, 5, 'ADMIN', 'user-123');
     });
@@ -117,7 +121,8 @@ describe('ProjectController', () => {
 
       mockProjectService.getAllProjects.mockResolvedValue(mockResponse);
 
-      await controller.getAllProjects('1', '10', { user: { role: 'ADMIN', sub: 'user-123' } } as any);
+      // Changed 'sub' to 'userId'
+      await controller.getAllProjects('1', '10', { user: { role: 'ADMIN', userId: 'user-123' } } as any);
 
       expect(mockProjectService.getAllProjects).toHaveBeenCalledWith(1, 10, 'ADMIN', 'user-123');
     });

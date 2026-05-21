@@ -5,7 +5,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {
@@ -82,7 +82,7 @@ export class ProjectRepository {
           GROUP BY p.id
           ORDER BY p."createdAt" DESC
           LIMIT ${limit} OFFSET ${skip}
-        `
+        `,
       ),
       this.prisma.project.count(),
     ]);
@@ -90,7 +90,11 @@ export class ProjectRepository {
     return { projects, total };
   }
 
-  async getProjectsByProjectManager(userId: string, page: number, limit: number) {
+  async getProjectsByProjectManager(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
     const skip = (page - 1) * limit;
 
     const [projects, totalResult] = await Promise.all([
@@ -116,7 +120,7 @@ export class ProjectRepository {
           GROUP BY p.id
           ORDER BY p."createdAt" DESC
           LIMIT ${limit} OFFSET ${skip}
-        `
+        `,
       ),
       this.prisma.$queryRaw<{ count: bigint }[]>(
         Prisma.sql`
@@ -124,14 +128,18 @@ export class ProjectRepository {
           FROM projects p
           INNER JOIN project_managers pm ON pm."projectId" = p.id
           WHERE pm."userId" = ${userId}
-        `
+        `,
       ),
     ]);
 
     return { projects, total: Number(totalResult[0]?.count ?? 0) };
   }
 
-  async getProjectsByConsultantManager(userId: string, page: number, limit: number) {
+  async getProjectsByConsultantManager(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
     const skip = (page - 1) * limit;
 
     const [projects, totalResult] = await Promise.all([
@@ -158,7 +166,7 @@ export class ProjectRepository {
           GROUP BY p.id
           ORDER BY p."createdAt" DESC
           LIMIT ${limit} OFFSET ${skip}
-        `
+        `,
       ),
       this.prisma.$queryRaw<{ count: bigint }[]>(
         Prisma.sql`
@@ -167,7 +175,7 @@ export class ProjectRepository {
           INNER JOIN project_placements pp ON pp."projectId" = p.id
           INNER JOIN consultant_managers cm ON cm."consultantId" = pp."consultantId"
           WHERE cm."userId" = ${userId}
-        `
+        `,
       ),
     ]);
 
@@ -201,7 +209,7 @@ export class ProjectRepository {
           GROUP BY p.id
           ORDER BY p."createdAt" DESC
           LIMIT ${limit} OFFSET ${skip}
-        `
+        `,
       ),
       this.prisma.$queryRaw<{ count: bigint }[]>(
         Prisma.sql`
@@ -210,7 +218,7 @@ export class ProjectRepository {
           INNER JOIN project_placements pp ON pp."projectId" = p.id
           INNER JOIN consultants c ON c.id = pp."consultantId"
           WHERE c."userId" = ${userId}
-        `
+        `,
       ),
     ]);
 

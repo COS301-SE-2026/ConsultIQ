@@ -10,7 +10,7 @@ import {
   UsePipes,
   ValidationPipe,
   UseGuards,
-  Param
+  Param,
 } from '@nestjs/common';
 import { ProjectService } from '../../projects/services/project.service';
 import { CreateProjectDto } from '../../projects/dto/create-project.dto';
@@ -25,7 +25,6 @@ export class ProjectController {
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async createProject(@Body() dto: CreateProjectDto, @Req() req: any) {
-
     const userId = req.user?.userId;
     const userRole = req.user?.role;
 
@@ -45,7 +44,12 @@ export class ProjectController {
     const userId = req.user?.userId;
     const userRole = req.user?.role;
 
-    return await this.projectService.getAllProjects(pageNum, limitNum, userRole, userId);
+    return await this.projectService.getAllProjects(
+      pageNum,
+      limitNum,
+      userRole,
+      userId,
+    );
   }
 
   @Get(':id')

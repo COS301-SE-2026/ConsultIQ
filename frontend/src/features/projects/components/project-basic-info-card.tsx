@@ -4,19 +4,47 @@ import type { ProjectFormData } from "../pages/project-specification-page";
 
 interface ProjectBasicInfoCardProps {
   data: ProjectFormData;
+  errors?: Partial<Record<keyof ProjectFormData, string>>;
   readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
 }
 
-export default function ProjectBasicInfoCard({ data, onChange }: ProjectBasicInfoCardProps) {
+export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: ProjectBasicInfoCardProps) {
+
+  // Get today's date in 'YYYY-MM-DD' format
+  const today = new Date().toISOString().split("T")[0];
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStart = e.target.value;
+
+
+    if (newStart && newStart < today) {
+      return;
+    }
+
     onChange("startDate", newStart);
+
 
     if (data.endDate && newStart > data.endDate) {
       onChange("endDate", "");
     }
   };
+
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnd = e.target.value;
+    const minimumAllowedDate = data.startDate || today;
+
+
+    if (newEnd && newEnd < minimumAllowedDate) {
+      return;
+    }
+
+    onChange("endDate", newEnd);
+  };
+
+
+  const getInputClass = (fieldName: keyof ProjectFormData) =>
+    `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${errors[fieldName] ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
+    }`;
 
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
@@ -55,134 +83,135 @@ export default function ProjectBasicInfoCard({ data, onChange }: ProjectBasicInf
           {/* LEFT SIDE */}
           <div className="flex flex-col gap-6">
             {/* Project Name */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <label htmlFor="projectName" className="text-base font-semibold">
-                Project Name
+                Project Name <span className="text-red-500">*</span>
               </label>
-
               <input
                 type="text"
                 id="projectName"
                 placeholder="Enter project name"
                 value={data.projectName}
+                maxLength={100}
                 onChange={(e) => onChange("projectName", e.target.value)}
-                className="h-14 rounded-xl border px-4 text-base outline-none"
+                className={getInputClass("projectName")}
               />
+              {errors.projectName && <span className="text-sm text-red-500">{errors.projectName}</span>}
             </div>
-            {/* Client Name */}
-            <div className="flex flex-col gap-3">
-              <label htmlFor="clientName" className="text-base font-semibold">
-                Client Name
-              </label>
 
+            {/* Client Name */}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="clientName" className="text-base font-semibold">
+                Client Name <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
                 id="clientName"
                 placeholder="Enter client name"
                 value={data.clientName}
+                maxLength={100}
                 onChange={(e) => onChange("clientName", e.target.value)}
-                className="h-14 rounded-xl border px-4 text-base outline-none"
+                className={getInputClass("clientName")}
               />
+              {errors.clientName && <span className="text-sm text-red-500">{errors.clientName}</span>}
             </div>
+
             {/* Team Size */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <label htmlFor="teamSize" className="text-base font-semibold">
                 Team Size
               </label>
-
               <input
                 type="number"
                 id="teamSize"
                 placeholder="Enter team size"
-                value={data.teamSize}
-                onChange={(e) => onChange("teamSize", Number(e.target.value))}
-                className="h-14 rounded-xl border px-4 text-base outline-none"
+                value={data.teamSize || ""}
+                min="1"
+                onChange={(e) => {
+                  const val = Math.max(1, parseInt(e.target.value) || 0);
+                  onChange("teamSize", val);
+                }}
+                className={getInputClass("teamSize")}
               />
+              {errors.teamSize && <span className="text-sm text-red-500">{errors.teamSize}</span>}
             </div>
           </div>
 
           {/* RIGHT SIDE */}
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="flex flex-col gap-3">
+              {/* Start Date */}
+              <div className="flex flex-col gap-2">
                 <label htmlFor="startDate" className="text-base font-semibold">
-                  Start Date
+                  Start Date <span className="text-red-500">*</span>
                 </label>
-
                 <input
                   type="date"
                   id="startDate"
                   value={data.startDate}
+                  min={today}
                   onChange={handleStartDateChange}
-                  className="h-14 rounded-xl border px-4 text-base outline-none"
+                  className={getInputClass("startDate")}
                 />
+                {errors.startDate && <span className="text-sm text-red-500">{errors.startDate}</span>}
               </div>
 
-              <div className="flex flex-col gap-3">
+              {/* End Date */}
+              <div className="flex flex-col gap-2">
                 <label htmlFor="endDate" className="text-base font-semibold">
                   End Date
                 </label>
-
                 <input
                   type="date"
                   id="endDate"
                   value={data.endDate}
-                  min={data.startDate}
-                  onChange={(e) => onChange("endDate", e.target.value)}
-                  className="h-14 rounded-xl border px-4 text-base outline-none"
+                  min={data.startDate || today}
+                  onChange={handleEndDateChange}
+                  className={getInputClass("endDate")}
                 />
+                {errors.endDate && <span className="text-sm text-red-500">{errors.endDate}</span>}
               </div>
             </div>
-            {/* {Allocation} */}
-            <div className="flex flex-col gap-3">
-              <label htmlFor="allocation" className="text-base font-semibold">
-                Allocation %
-              </label>
 
-              <input
-                type="number"
-                id="allocation"
-                placeholder="Enter allocation %"
-                value={data.allocation}
-                onChange={(e) => onChange("allocation", Number(e.target.value))}
-                className="h-14 rounded-xl border px-4 text-base outline-none"
-              />
-            </div>
-
-            <div className="flex flex-col gap-3">
+            {/* Budget */}
+            <div className="flex flex-col gap-2">
               <label htmlFor="budget" className="text-base font-semibold">
                 Billing Budget
               </label>
-
               <input
                 type="number"
                 id="budget"
                 placeholder="R 0"
-                value={data.budget}
-                onChange={(e) => onChange("budget", Number(e.target.value))}
-                className="h-14 rounded-xl border px-4 text-base outline-none"
+                value={data.budget || ""}
+                min="0"
+                onChange={(e) => {
+                  const val = Math.max(0, parseFloat(e.target.value) || 0);
+                  onChange("budget", val);
+                }}
+                className={getInputClass("budget")}
               />
+              {errors.budget && <span className="text-sm text-red-500">{errors.budget}</span>}
             </div>
           </div>
         </div>
 
-        {/* {Description} */}
-
-        <div className="flex flex-col gap-3 w-full">
+        {/* Description */}
+        <div className="flex flex-col gap-2 w-full">
           <label htmlFor="description" className="text-base font-semibold">
             Description
           </label>
-
           <textarea
             id="description"
             placeholder="Enter project description"
             value={data.description}
+            maxLength={500}
             onChange={(e) => onChange("description", e.target.value)}
-            className="min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none"
+            className={`min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none transition-colors ${errors.description ? "border-red-500" : "focus:border-[var(--color-primary)]"
+              }`}
           />
+          {errors.description && <span className="text-sm text-red-500">{errors.description}</span>}
         </div>
 
-        {/* Bottom Spacer */}
         <div className="h-1" />
       </div>
     </Card>

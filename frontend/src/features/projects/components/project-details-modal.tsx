@@ -12,6 +12,17 @@ interface ProjectDetailsModalProps {
   readonly onClose: () => void;
 }
 
+
+interface ApiProjectSkill {
+  skillId: string | number;
+  skill: {
+    name: string;
+  };
+  competency: string;
+  years: number;
+  mandatory: boolean;
+}
+
 export default function ProjectDetailsModal({
   open,
   project,
@@ -69,7 +80,8 @@ export default function ProjectDetailsModal({
               postalCode: data.postalCode || "",
             },
 
-            skills: data.skills.map((ps: any) => ({
+
+            skills: data.skills.map((ps: ApiProjectSkill) => ({
               id: String(ps.skillId),
               name: ps.skill.name,
               competency: ps.competency,
@@ -92,7 +104,6 @@ export default function ProjectDetailsModal({
   if (!open || !project) {
     return null;
   }
-
 
   const displayData = fullProject || project;
 

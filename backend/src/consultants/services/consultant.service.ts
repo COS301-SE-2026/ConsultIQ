@@ -82,4 +82,49 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     })),
   };
 }
+
+ async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
+  const consultant = await this.consultantRepository.getConsultantByUserId(userId);
+
+  if (!consultant) {
+    throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+  }
+
+  return {
+    id: consultant.id,
+    fullName: consultant.user.fullName,
+    email: consultant.user.email,
+    phoneNumber: consultant.phone ?? '',
+    idNumber: consultant.idNumber ?? '',
+    nationality: consultant.nationality ?? '',
+    location: consultant.location,
+    costToCompany: consultant.costToCompany,
+    availability: consultant.availability,
+
+    skills: consultant.skills.map((cs) => ({
+      skillName: cs.skill.name,
+      competencyLevel: cs.competencyLevel,
+      yearsExperience: cs.yearsExperience,
+      confidenceLevel: cs.confidenceLevel,
+    })),
+
+    experience: consultant.consultantExperiences.map((exp) => ({
+      companyname: exp.companyName,
+      jobTitle: exp.jobTitle,
+      jobType: exp.jobType,
+      startDate: exp.startDate,
+      endDate: exp.endDate ?? new Date(),
+      roleDescription: exp.description,
+      workModel: exp.workModel,
+    })),
+
+    certificates: consultant.certificates.map((cert) => ({
+      title: cert.title,
+      issuingBody: cert.issuingBody,
+      startDate: cert.startDate ?? new Date(),
+      endDate: cert.endDate ?? new Date(),
+      uploadedAt: cert.uploadedAt,
+    })),
+  };
+}
 }

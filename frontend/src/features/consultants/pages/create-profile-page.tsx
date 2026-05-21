@@ -4,6 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import ProfileTabs from "../components/tabs/profile-tabs";
+import { createConsultant } from "../services/consultant.service";
+import type { CreateConsultantPayload } from "../services/consultant.service";
+import { toast } from "sonner";
+import { ConsultantProfileProvider, useConsultantProfile } from "../pages/consultant-profile.context";
 
 import PersonalTab from "../layouts/personal-tab";
 import ExperienceTab from "../layouts/experience-tab";
@@ -11,9 +15,50 @@ import SkillsTab from "../layouts/skills-tab";
 
 type Tab = "personal" | "experience" | "skills";
 
-export default function CreateProfilePage() {
+function CreateProfileContent() {
     const [activeTab, setActiveTab] = useState<Tab>("personal");
     const navigate = useNavigate();
+    const { profileData } = useConsultantProfile();
+    
+    const handleSave = async () => {
+        try {
+            // Gather data saved by the individual form tabs directly from sessionStorage
+            const name = sessionStorage.getItem("profile_firstName") || profileData.name || "Jane";
+            const surname = sessionStorage.getItem("profile_lastName") || profileData.surname || "Doe";
+            const email = sessionStorage.getItem("profile_email") || profileData.email || `jane.doe.${Date.now()}@consultiq.dev`;
+            const idNumber = sessionStorage.getItem("profile_idNumber") || profileData.idNumber;
+            const phoneNumber = sessionStorage.getItem("profile_phone") || profileData.phoneNumber;
+            const isAvailableStr = sessionStorage.getItem("profile_isAvailable");
+            const availability = isAvailableStr ? isAvailableStr === "true" : (profileData.availability ?? true);
+            
+            // Combine location details
+            const addressLine1 = sessionStorage.getItem("location_addressLine1") || "";
+            const suburb = sessionStorage.getItem("location_suburb") || "";
+            const city = sessionStorage.getItem("location_city") || "";
+            const location = [addressLine1, suburb, city].filter(Boolean).join(", ") || profileData.location || "Johannesburg";
+
+            const payload: CreateConsultantPayload = {
+                name,
+                surname,
+                idNumber,
+                phoneNumber,
+                email,
+                location,
+                availability,
+                // Retaining fallback mock data if nothing is collected yet during testing
+                skills: profileData.skills?.length ? profileData.skills : [{ skillName: "TypeScript", experience: "4", competencyLevel: "EXPERT" }],
+                certifications: profileData.certifications?.length ? profileData.certifications : [{ title: "AWS Certified Developer" }]
+            };
+
+            await createConsultant(payload);
+            sessionStorage.removeItem("consultant_profile_draft");
+            toast.success("Consultant profile created successfully!");
+            navigate("/consultants-manager");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to create consultant profile");
+        }
+    };
+
     return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantManagerSidebarItems} />
@@ -49,7 +94,7 @@ export default function CreateProfilePage() {
                         </button>
 
                         <button 
-                        onClick={() => navigate("/consultants-manager")}
+                        onClick={handleSave}
                         className="h-12 w-35 text-lg rounded-xl text-white font-semibold transition hover:brightness-110"
                         style={{
                             backgroundColor:
@@ -83,5 +128,13 @@ export default function CreateProfilePage() {
                 </main>
             </div>
         </div>
+    );
+}
+
+export default function CreateProfilePage() {
+    return (
+        <ConsultantProfileProvider>
+            <CreateProfileContent />
+        </ConsultantProfileProvider>
     );
 }

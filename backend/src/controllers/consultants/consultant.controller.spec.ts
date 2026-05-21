@@ -1,199 +1,123 @@
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { ConsultantController } from './consultant.controller';
-// import { ConsultantService } from '../../consultants/services/consultant.service';
-//
-// const mockConsultantService = {
-//   createConsultant: jest.fn(),
-//   getAllConsultants: jest.fn(),
-//   getConsultantById: jest.fn(),
-// };
-//
-// describe('ConsultantController', () => {
-//   let controller: ConsultantController;
-//
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       controllers: [ConsultantController],
-//       providers: [
-//         { provide: ConsultantService, useValue: mockConsultantService },
-//       ],
-//     }).compile();
-//
-//     controller = module.get<ConsultantController>(ConsultantController);
-//     jest.clearAllMocks();
-//   });
-//
-//   describe('createConsultant', () => {
-//     it('should create a consultant and return the result', async () => {
-//       const dto = {
-//         fullName: 'John Doe',
-//         email: 'john@example.com',
-//         location: 'Pretoria',
-//         costToCompanyRate: 50000,
-//         availabilityStatus: 'AVAILABLE',
-//         skills: [
-//           { skillName: 'TypeScript', yearsExperience: 3, confidenceLevel: 8 },
-//         ],
-//         certifications: [],
-//       };
-//
-//       mockConsultantService.createConsultant.mockResolvedValue({
-//         message: 'Consultant created successfully',
-//         consultantId: 'uuid-123',
-//       });
-//
-//       const result = await controller.createConsultant(dto as any);
-//
-//       expect(result).toEqual({
-//         message: 'Consultant created successfully',
-//         consultantId: 'uuid-123',
-//       });
-//       expect(mockConsultantService.createConsultant).toHaveBeenCalledWith(dto);
-//     });
-//
-//     it('should propagate errors from service', async () => {
-//       mockConsultantService.createConsultant.mockRejectedValue(
-//         new Error('Service error'),
-//       );
-//
-//       await expect(controller.createConsultant({} as any)).rejects.toThrow(
-//         'Service error',
-//       );
-//     });
-//   });
-//
-//   describe('getAllConsultants', () => {
-//     it('should return paginated consultants', async () => {
-//       const mockResponse = {
-//         page: 1,
-//         total: 0,
-//         consultants: [],
-//       };
-//
-//       mockConsultantService.getAllConsultants.mockResolvedValue(mockResponse);
-//
-//       const req = { user: { role: 'ADMIN' } };
-//       const result = await controller.getAllConsultants('1', '10', req);
-//
-//       expect(result).toEqual(mockResponse);
-//       expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(
-//         1,
-//         10,
-//         'ADMIN',
-//       );
-//     });
-//
-//     it('should default to PROJECT_MANAGER role when no user on request', async () => {
-//       mockConsultantService.getAllConsultants.mockResolvedValue({
-//         page: 1,
-//         total: 0,
-//         consultants: [],
-//       });
-//
-//       const req = {};
-//       await controller.getAllConsultants('1', '10', req);
-//
-//       expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(
-//         1,
-//         10,
-//         'PROJECT_MANAGER',
-//       );
-//     });
-//
-//     it('should parse page and limit as integers', async () => {
-//       mockConsultantService.getAllConsultants.mockResolvedValue({
-//         page: 3,
-//         total: 30,
-//         consultants: [],
-//       });
-//
-//       const req = { user: { role: 'ADMIN' } };
-//       await controller.getAllConsultants('3', '5', req);
-//
-//       expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(
-//         3,
-//         5,
-//         'ADMIN',
-//       );
-//     });
-//
-//     it('should return consultants list', async () => {
-//       const mockResponse = {
-//         page: 1,
-//         total: 1,
-//         consultants: [
-//           {
-//             id: 'uuid-1',
-//             fullName: 'Jane Doe',
-//             location: 'Cape Town',
-//             availabilityStatus: 'AVAILABLE',
-//             primarySkills: ['TypeScript'],
-//             costToCompanyRate: 50000,
-//           },
-//         ],
-//       };
-//
-//       mockConsultantService.getAllConsultants.mockResolvedValue(mockResponse);
-//
-//       const req = { user: { role: 'ADMIN', sub: 'user-123' } };
-//       const result = await controller.getAllConsultants('1', '10', req);
-//
-//       expect(result.consultants).toHaveLength(1);
-//       expect(result.total).toBe(1);
-//     });
-//
-//   describe('getConsultantById', () => {
-//     it('should return a consultant profile DTO successfully', async () => {
-//       const mockConsultantProfile = {
-//         id: 'uuid-123',
-//         fullName: 'jazz',
-//         email: 'jazz@example.com',
-//         phoneNumber: '0123456789',
-//         idNumber: '9901015555081',
-//         nationality: 'South African',
-//         location: 'Pretoria',
-//         costToCompany: 45000,
-//         availability: 'AVAILABLE',
-//         skills: [
-//           {
-//             skillName: 'NestJS',
-//             competencyLevel: 'INTERMEDIATE',
-//             yearsExperience: 2,
-//             confidenceLevel: 9,
-//           },
-//         ],
-//         experience: [
-//           {
-//             companyname: 'ConsultIQ',
-//             jobTitle: 'Full-stack Developer',
-//             jobType: 'CONTRACT',
-//             startDate: new Date('2025-01-01'),
-//             endDate: null,
-//             roleDescription: 'Building out authentication services.',
-//             workModel: 'HYBRID',
-//           },
-//         ],
-//         certificates: [],
-//       };
-//
-//       mockConsultantService.getConsultantById.mockResolvedValue(mockConsultantProfile);
-//
-//       const result = await controller.getConsultantById('uuid-123');
-//
-//       expect(result).toEqual(mockConsultantProfile);
-//       expect(mockConsultantService.getConsultantById).toHaveBeenCalledWith('uuid-123');
-//     });
-//
-//     it('should propagate a NotFoundException or other errors from service', async () => {
-//       mockConsultantService.getConsultantById.mockRejectedValue(
-//         new Error('Consultant with id uuid-999 not found.'),
-//       );
-//
-//       await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(
-//         'Consultant with id uuid-999 not found.',
-//       );
-//       expect(mockConsultantService.getConsultantById).toHaveBeenCalledWith('uuid-999');
-//     });
-//    });
-//   });
-// });
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
+import { ConsultantController } from './consultant.controller';
+import { ConsultantService } from '../../consultants/services/consultant.service';
+
+const mockConsultantService = {
+  createConsultantProfile: jest.fn(),
+  getPendingProfiles: jest.fn(),
+  getAllConsultants: jest.fn(),
+  getConsultantById: jest.fn(),
+};
+
+describe('ConsultantController', () => {
+  let controller: ConsultantController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ConsultantController],
+      providers: [
+        { provide: ConsultantService, useValue: mockConsultantService },
+      ],
+    }).compile();
+
+    controller = module.get<ConsultantController>(ConsultantController);
+    jest.clearAllMocks();
+  });
+
+  // ─── createProfile ──────────────────────────────────────────────────────────
+
+  describe('createProfile', () => {
+    it('should call service with cmUserId from JWT and return result', async () => {
+      mockConsultantService.createConsultantProfile.mockResolvedValue({
+        message: 'Consultant profile created successfully.',
+        consultantId: 'uuid-123',
+      });
+
+      const req = { user: { userId: 'cm-uuid-123' } };
+      const dto = { consultantUserId: 'consultant-uuid-123' };
+
+      const result = await controller.createProfile(dto as any, req as any);
+      expect(result.message).toBe('Consultant profile created successfully.');
+      expect(result.consultantId).toBe('uuid-123');
+      expect(mockConsultantService.createConsultantProfile).toHaveBeenCalledWith('cm-uuid-123', dto);
+    });
+
+    it('should propagate errors from service', async () => {
+      mockConsultantService.createConsultantProfile.mockRejectedValue(new Error('Conflict'));
+      const req = { user: { userId: 'cm-uuid-123' } };
+      await expect(controller.createProfile({} as any, req as any)).rejects.toThrow('Conflict');
+    });
+  });
+
+  // ─── getPendingProfiles ─────────────────────────────────────────────────────
+
+  describe('getPendingProfiles', () => {
+    it('should return list of pending profile users', async () => {
+      const mockPending = [
+        { userId: 'user-1', fullName: 'Jane Doe', email: 'jane@consultiq.com', createdAt: new Date() },
+      ];
+      mockConsultantService.getPendingProfiles.mockResolvedValue(mockPending);
+
+      const result = await controller.getPendingProfiles({} as any);
+      expect(result).toHaveLength(1);
+      expect(result[0].userId).toBe('user-1');
+    });
+
+    it('should return empty array when no pending profiles', async () => {
+      mockConsultantService.getPendingProfiles.mockResolvedValue([]);
+      const result = await controller.getPendingProfiles({} as any);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  // ─── getAllConsultants ──────────────────────────────────────────────────────
+
+  describe('getAllConsultants', () => {
+    it('should return paginated consultants with correct role', async () => {
+      const mockResponse = { page: 1, total: 0, consultants: [] };
+      mockConsultantService.getAllConsultants.mockResolvedValue(mockResponse);
+
+      const req = { user: { role: 'CONSULTANT_MANAGER' } };
+      const result = await controller.getAllConsultants('1', '10', req);
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(1, 10, 'CONSULTANT_MANAGER');
+    });
+
+    it('should default to PROJECT_MANAGER when no user on request', async () => {
+      mockConsultantService.getAllConsultants.mockResolvedValue({ page: 1, total: 0, consultants: [] });
+      await controller.getAllConsultants('1', '10', {});
+      expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(1, 10, 'PROJECT_MANAGER');
+    });
+
+    it('should parse page and limit as integers', async () => {
+      mockConsultantService.getAllConsultants.mockResolvedValue({ page: 3, total: 30, consultants: [] });
+      const req = { user: { role: 'ADMIN' } };
+      await controller.getAllConsultants('3', '5', req);
+      expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(3, 5, 'ADMIN');
+    });
+  });
+
+  // ─── getConsultantById ──────────────────────────────────────────────────────
+
+  describe('getConsultantById', () => {
+    it('should return a consultant profile by id', async () => {
+      const mockProfile = {
+        id: 'uuid-1', fullName: 'Jane Smith', email: 'jane@consultiq.com',
+        location: 'Johannesburg', availability: 'AVAILABLE', skills: [], experience: [], certificates: [],
+      };
+      mockConsultantService.getConsultantById.mockResolvedValue(mockProfile);
+
+      const result = await controller.getConsultantById('uuid-1');
+      expect(result).toEqual(mockProfile);
+      expect(mockConsultantService.getConsultantById).toHaveBeenCalledWith('uuid-1');
+    });
+
+    it('should propagate NotFoundException from service', async () => {
+      mockConsultantService.getConsultantById.mockRejectedValue(
+        new NotFoundException('Consultant with id uuid-999 not found.'),
+      );
+      await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(NotFoundException);
+    });
+  });
+});

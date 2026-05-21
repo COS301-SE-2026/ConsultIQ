@@ -23,11 +23,12 @@ function CreateProfileContent() {
   const { userId } = useParams<{ userId: string }>();
   const { profileData, updateProfileData } = useConsultantProfile();
 
-  useEffect(() => {
-    if (userId) {
-      updateProfileData({ consultantUserId: userId });
-    }
-  }, [userId]);
+   useEffect(() => {
+      if (userId) {
+        updateProfileData({ consultantUserId: userId });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [userId]);
 
   const handleSave = async () => {
     if (!userId) {
@@ -55,7 +56,7 @@ function CreateProfileContent() {
       costToCompany: profileData.costToCompany,
       availability: profileData.availability,
       skills: profileData.skills,
-      experiences: profileData.experiences.map(({ id: _id, endDate, ...exp }) => ({
+      experiences: profileData.experiences.map(({ id: _, endDate, ...exp }) => ({
         ...exp,
         jobType: exp.jobType as "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | "FREELANCE",
         workModel: exp.workModel as "ONSITE" | "REMOTE" | "HYBRID",

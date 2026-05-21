@@ -1,94 +1,220 @@
-// import { Test, TestingModule } from "@nestjs/testing";
-// import { ConflictException } from "@nestjs/common";
-// import { ConsultantService } from "./consultant.service";
-// import { ConsultantRepository } from "../repositories/consultant.repository";
-//
-// const mockConsultantRepository = {
-//   findEmail: jest.fn(),
-//   createConsultant: jest.fn(),
-//   getAllConsultants: jest.fn(),
-//   getConsultantById: jest.fn(),
-// };
-//
-// describe("ConsultantService", () => {
-//   let service: ConsultantService;
-//
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       providers: [
-//         ConsultantService,
-//         { provide: ConsultantRepository, useValue: mockConsultantRepository },
-//       ],
-//     }).compile();
-//
-//     service = module.get<ConsultantService>(ConsultantService);
-//     jest.clearAllMocks();
-//   });
-//
-//   describe("createConsultant", () => {
-//     it("should create a consultant successfully", async () => {
-//       mockConsultantRepository.findEmail.mockResolvedValue(null);
-//       mockConsultantRepository.createConsultant.mockResolvedValue({ consultantId: "uuid-123" });
-//
-//       const result = await service.createConsultant({
-//         name: "Jane",
-//         surname: "Smith",
-//         email: "jane@consultiq.com",
-//         location: "Johannesburg",
-//         costToCompany: 650,
-//         availability: true,
-//         idNumber: "1234567890",
-//         phoneNumber: "0123456789",
-//         skills: [],
-//         certifications: [],
-//       } as any);
-//
-//       expect(result.message).toBe("Consultant created successfully");
-//       expect(result.consultantId).toBe("uuid-123");
-//     });
-//
-//     it("should throw ConflictException if email already exists", async () => {
-//       mockConsultantRepository.findEmail.mockResolvedValue({ id: "existing" });
-//
-//       await expect(service.createConsultant({ email: "jane@consultiq.com" } as any)).rejects.toThrow(ConflictException);
-//     });
-//   });
-//
-//   describe("getAllConsultants", () => {
-//     it("should return consultants with CTC for non-Project Manager", async () => {
-//       mockConsultantRepository.getAllConsultants.mockResolvedValue({
-//         consultants: [{
-//           id: "uuid-1",
-//           location: "Johannesburg",
-//           availability: "AVAILABLE",
-//           costToCompany: 650,
-//           user: { fullName: "Jane Smith", email: "jane@consultiq.com" },
-//           skills: [{ skill: { name: "java" } }],
-//           certificates: [],
-//         }],
-//         total: 1,
-//       });
-//
-//       const result = await service.getAllConsultants(1, 10, "CONSULTANT_MANAGER");
-//       expect(result.consultants[0].costToCompanyRate).toBe(650);
-//     });
-//
-//     it("should strip CTC for Project Manager", async () => {
-//       mockConsultantRepository.getAllConsultants.mockResolvedValue({
-//         consultants: [{
-//           id: "uuid-1",
-//           location: "Johannesburg",
-//           availability: "AVAILABLE",
-//           costToCompany: 650,
-//           user: { fullName: "Jane Smith", email: "jane@consultiq.com" },
-//           skills: [],
-//           certificates: [],
-//         }],
-//         total: 1,
-//       });
-//
-//       const result = await service.getAllConsultants(1, 10, "PROJECT_MANAGER");
-//       expect(result.consultants[0].costToCompanyRate).toBeUndefined();
-//     });
-//   });
-// });
+import { Test, TestingModule } from '@nestjs/testing';
+import {
+  ConflictException,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
+import { ConsultantService } from './consultant.service';
+import { PrismaService } from '../../prisma/prisma.service';
+
+const mockPrismaService = {
+  user: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  consultant: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+  },
+  $transaction: jest.fn(),
+};
+
+describe('ConsultantService', () => {
+  let service: ConsultantService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ConsultantService,
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
+    }).compile();
+
+    service = module.get<ConsultantService>(ConsultantService);
+    jest.clearAllMocks();
+  });
+
+  // ─── createConsultantProfile ────────────────────────────────────────────────
+
+  describe('createConsultantProfile', () => {
+    const cmUserId = 'cm-uuid-123';
+    const dto = {
+      consultantUserId: 'consultant-uuid-123',
+      idNumber: '9901015555081',
+      phone: '0123456789',
+      nationality: 'South African',
+      location: 'Johannesburg',
+      costToCompany: 50000,
+      availability: 'AVAILABLE',
+      skills: [
+        { skillName: 'TypeScript', competencyLevel: 'EXPERT', yearsExperience: 4, confidenceLevel: 4 },
+      ],
+      experiences: [
+        {
+          jobTitle: 'Developer',
+          companyName: 'ConsultIQ',
+          jobType: 'FULL_TIME',
+          workModel: 'REMOTE',
+          startDate: '2022-01-01T00:00:00.000Z',
+          description: 'Developed things',
+        },
+      ],
+    };
+
+    it('should throw NotFoundException if consultant user does not exist', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if user role is not CONSULTANT', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'ADMIN', status: 'ACTIVE',
+      });
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException if user account is not ACTIVE', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'PENDING',
+      });
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException if consultant profile already exists', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'existing-consultant' });
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ConflictException);
+    });
+
+    it('should create consultant profile successfully', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+      mockPrismaService.$transaction.mockResolvedValue({ consultantId: 'new-consultant-uuid' });
+
+      const result = await service.createConsultantProfile(cmUserId, dto as any);
+      expect(result.message).toBe('Consultant profile created successfully.');
+      expect(result.consultantId).toBe('new-consultant-uuid');
+    });
+  });
+
+  // ─── getPendingProfiles ─────────────────────────────────────────────────────
+
+  describe('getPendingProfiles', () => {
+    it('should return mapped pending profile users', async () => {
+      const mockUsers = [
+        { id: 'user-1', fullName: 'Jane Doe', email: 'jane@consultiq.com', createdAt: new Date() },
+      ];
+      mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
+
+      const result = await service.getPendingProfiles();
+      expect(result).toHaveLength(1);
+      expect(result[0].userId).toBe('user-1');
+      expect(result[0].fullName).toBe('Jane Doe');
+    });
+
+    it('should return empty array when no pending profiles exist', async () => {
+      mockPrismaService.user.findMany.mockResolvedValue([]);
+      const result = await service.getPendingProfiles();
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  // ─── getAllConsultants ──────────────────────────────────────────────────────
+
+  describe('getAllConsultants', () => {
+    const mockConsultants = [
+      {
+        id: 'uuid-1',
+        location: 'Johannesburg',
+        availability: 'AVAILABLE',
+        costToCompany: 650,
+        phone: '0123456789',
+        idNumber: '9901015555081',
+        user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
+        skills: [{ skill: { name: 'TypeScript' } }],
+        certificates: [{ title: 'AWS Certified' }],
+        consultantExperiences: [],
+      },
+    ];
+
+    it('should include costToCompanyRate for CONSULTANT_MANAGER', async () => {
+      mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
+      mockPrismaService.consultant.count.mockResolvedValue(1);
+
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      expect(result.consultants[0].costToCompanyRate).toBe(650);
+    });
+
+    it('should exclude costToCompanyRate for PROJECT_MANAGER', async () => {
+      mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
+      mockPrismaService.consultant.count.mockResolvedValue(1);
+
+      const result = await service.getAllConsultants(1, 10, 'PROJECT_MANAGER');
+      expect(result.consultants[0].costToCompanyRate).toBeUndefined();
+    });
+
+    it('should return correct primary skills', async () => {
+      mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
+      mockPrismaService.consultant.count.mockResolvedValue(1);
+
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      expect(result.consultants[0].primarySkills).toEqual(['TypeScript']);
+    });
+
+    it('should return empty list when no consultants exist', async () => {
+      mockPrismaService.consultant.findMany.mockResolvedValue([]);
+      mockPrismaService.consultant.count.mockResolvedValue(0);
+
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      expect(result.consultants).toHaveLength(0);
+      expect(result.total).toBe(0);
+    });
+
+    it('should return correct page number', async () => {
+      mockPrismaService.consultant.findMany.mockResolvedValue([]);
+      mockPrismaService.consultant.count.mockResolvedValue(0);
+
+      const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER');
+      expect(result.page).toBe(3);
+    });
+  });
+
+  // ─── getConsultantById ──────────────────────────────────────────────────────
+
+  describe('getConsultantById', () => {
+    it('should throw NotFoundException if consultant does not exist', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+      await expect(service.getConsultantById('non-existent')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return a mapped consultant profile DTO', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'uuid-1',
+        phone: '0123456789',
+        idNumber: '9901015555081',
+        nationality: 'South African',
+        location: 'Johannesburg',
+        costToCompany: 50000,
+        availability: 'AVAILABLE',
+        user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
+        skills: [
+          { skill: { name: 'TypeScript' }, competencyLevel: 'EXPERT', yearsExperience: 4, confidenceLevel: 4 },
+        ],
+        consultantExperiences: [],
+        certificates: [],
+      });
+
+      const result = await service.getConsultantById('uuid-1');
+      expect(result.id).toBe('uuid-1');
+      expect(result.fullName).toBe('Jane Smith');
+      expect(result.skills[0].skillName).toBe('TypeScript');
+      expect(result.skills[0].competencyLevel).toBe('EXPERT');
+    });
+  });
+});

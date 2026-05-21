@@ -32,7 +32,7 @@ function PopiaConsentForm() {
   }
 
   function handleDecline() {
-    navigate("/login");
+    navigate("/popia-decline");
   }
 
   return (

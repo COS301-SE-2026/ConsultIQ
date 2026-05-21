@@ -15,15 +15,16 @@ const mockProjectRepository = {
 const baseDto: CreateProjectDto = {
   projectName: 'Test Project',
   clientName: 'Test Client',
+  addressLine1: '123 Test Street',
   city: 'Pretoria',
   province: 'Gauteng',
   startDate: '2026-06-01',
   endDate: '2026-12-01',
   teamSize: 5,
-  requiredAllocationPercentage: 80,
-  clientBillingBudget: 500000,
+  allocation: 80,
+  budget: 500000,
   skills: [
-    { skillName: 'TypeScript', minimumCompetency: 'INTERMEDIATE', isMandatory: true },
+    { name: 'TypeScript', competency: 'INTERMEDIATE', mandatory: true, years: 2 },
   ],
 };
 
@@ -79,20 +80,20 @@ describe('ProjectService', () => {
     it('should create a project and return projectId', async () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-123' });
 
-      const result = await service.createProject(baseDto);
+      const result = await service.createProject(baseDto, 'user-123', 'PROJECT_MANAGER');
 
       expect(result).toEqual({
         message: 'Project created successfully',
         projectId: 'uuid-123',
       });
-      expect(mockProjectRepository.createProject).toHaveBeenCalledWith(baseDto);
+      expect(mockProjectRepository.createProject).toHaveBeenCalledWith(baseDto, 'user-123');
     });
 
     it('should create a project without an endDate', async () => {
       const dto = { ...baseDto, endDate: undefined };
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-456' });
 
-      const result = await service.createProject(dto);
+      const result = await service.createProject(dto, 'user-123', 'PROJECT_MANAGER');
 
       expect(result.projectId).toBe('uuid-456');
     });
@@ -101,7 +102,7 @@ describe('ProjectService', () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-111' });
       const dto = { ...baseDto, startDate: '2026-06-01', endDate: '2026-12-01' };
 
-      const result = await service.createProject(dto);
+      const result = await service.createProject(dto, 'user-123', 'PROJECT_MANAGER');
 
       expect(result).toEqual({
         message: 'Project created successfully',
@@ -114,10 +115,11 @@ describe('ProjectService', () => {
     it('should always pass dto as-is and let repository force status to OPEN', async () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-789' });
 
-      await service.createProject(baseDto);
+      await service.createProject(baseDto, 'user-123', 'PROJECT_MANAGER');
 
       expect(mockProjectRepository.createProject).toHaveBeenCalledWith(
         expect.not.objectContaining({ status: expect.anything() }),
+        'user-123',  // <-- add this second argument
       );
     });
   });
@@ -126,22 +128,22 @@ describe('ProjectService', () => {
     it('should throw BadRequestException if endDate is before startDate', async () => {
       const dto = { ...baseDto, startDate: '2026-12-01', endDate: '2026-06-01' };
 
-      await expect(service.createProject(dto)).rejects.toThrow(BadRequestException);
-      await expect(service.createProject(dto)).rejects.toThrow('End date must be after start date.');
+      await expect(service.createProject(dto, 'user-123', 'PROJECT_MANAGER')).rejects.toThrow(BadRequestException);
+      await expect(service.createProject(dto, 'user-123', 'PROJECT_MANAGER')).rejects.toThrow('End date must be after start date.');
       expect(mockProjectRepository.createProject).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if endDate equals startDate', async () => {
       const dto = { ...baseDto, startDate: '2026-06-01', endDate: '2026-06-01' };
 
-      await expect(service.createProject(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createProject(dto, 'user-123', 'PROJECT_MANAGER')).rejects.toThrow(BadRequestException);
     });
 
     it('should NOT throw if endDate is after startDate', async () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-999' });
       const dto = { ...baseDto, startDate: '2026-06-01', endDate: '2026-06-02' };
 
-      await expect(service.createProject(dto)).resolves.not.toThrow();
+      await expect(service.createProject(dto, 'user-123', 'PROJECT_MANAGER')).resolves.not.toThrow();
     });
   });
 
@@ -260,6 +262,19 @@ describe('ProjectService', () => {
 
       expect(result.projects).toEqual([]);
       expect(result.total).toBe(0);
+    });
+  });
+  describe('createProject - RBAC', () => {
+    it('should throw ForbiddenException if role is not PROJECT_MANAGER or ADMIN', async () => {
+      await expect(
+        service.createProject(baseDto, 'user-123', 'CONSULTANT'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow ADMIN to create a project', async () => {
+      mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-123' });
+      const result = await service.createProject(baseDto, 'user-123', 'ADMIN');
+      expect(result.projectId).toBe('uuid-123');
     });
   });
 });

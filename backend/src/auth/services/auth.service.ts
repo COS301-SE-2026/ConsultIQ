@@ -35,9 +35,9 @@ export interface LoginResult {
 
 /** Map role -> frontend route  */
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
-  ADMIN: '/admin',
+  ADMIN: '/register',
   PROJECT_MANAGER: '/projects',
-  CONSULTANT_MANAGER: '/consultant-profiles',
+  CONSULTANT_MANAGER: '/consultant-manager',
   CONSULTANT: '/profile',
 };
 
@@ -59,7 +59,7 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async login(
     dto: LoginDto,
@@ -125,7 +125,7 @@ export class AuthService {
         });
         throw new ForbiddenException(
           'Your account has been locked due to too many failed login attempts. ' +
-            'Please contact an administrator to unlock your account.',
+          'Please contact an administrator to unlock your account.',
         );
       }
 
@@ -150,7 +150,7 @@ export class AuthService {
         if (nowLocked) {
           throw new ForbiddenException(
             'Your account has been locked due to too many failed login attempts. ' +
-              'Please contact an administrator to unlock your account.',
+            'Please contact an administrator to unlock your account.',
           );
         }
 

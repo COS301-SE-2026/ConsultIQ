@@ -27,36 +27,40 @@ describe('ProjectController', () => {
       const dto = {
         projectName: 'Test Project',
         clientName: 'Test Client',
+        addressLine1: '123 Test Street',
         city: 'Pretoria',
         province: 'Gauteng',
         startDate: '2026-06-01',
         endDate: '2026-12-01',
         teamSize: 5,
-        requiredAllocationPercentage: 80,
-        clientBillingBudget: 500000,
+        allocation: 80,
+        budget: 500000,
         skills: [
-          { skillName: 'TypeScript', minimumCompetency: 'INTERMEDIATE', isMandatory: true },
+          { name: 'TypeScript', competency: 'INTERMEDIATE', mandatory: true, years: 2 },
         ],
       };
+
+      const req = { user: { sub: 'user-123', role: 'PROJECT_MANAGER' } };
 
       mockProjectService.createProject.mockResolvedValue({
         message: 'Project created successfully',
         projectId: 'uuid-123',
       });
 
-      const result = await controller.createProject(dto as any);
+      const result = await controller.createProject(dto as any, req);
 
       expect(result).toEqual({
         message: 'Project created successfully',
         projectId: 'uuid-123',
       });
-      expect(mockProjectService.createProject).toHaveBeenCalledWith(dto);
+      expect(mockProjectService.createProject).toHaveBeenCalledWith(dto, 'user-123', 'PROJECT_MANAGER');
     });
 
     it('should propagate errors from service', async () => {
+      const req = { user: { sub: 'user-123', role: 'PROJECT_MANAGER' } };
       mockProjectService.createProject.mockRejectedValue(new Error('Service error'));
 
-      await expect(controller.createProject({} as any)).rejects.toThrow('Service error');
+      await expect(controller.createProject({} as any, req)).rejects.toThrow('Service error');
     });
   });
 

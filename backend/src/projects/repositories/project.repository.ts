@@ -7,43 +7,50 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 export class ProjectRepository {
   constructor(private prisma: PrismaService) {}
 
-  async createProject(dto: CreateProjectDto) {
+    async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {
-      const project = await tx.project.create({
+        const project = await tx.project.create({
         data: {
-          projectName: dto.projectName,
-          clientName: dto.clientName,
-          city: dto.city,
-          province: dto.province,
-          startDate: new Date(dto.startDate),
-          endDate: dto.endDate ? new Date(dto.endDate) : null,
-          teamSize: dto.teamSize,
-          requiredAllocationPercentage: dto.requiredAllocationPercentage,
-          clientBillingBudget: dto.clientBillingBudget,
-          status: ProjectStatus.OPEN,
+            projectName: dto.projectName,
+            clientName: dto.clientName,
+            city: dto.city,
+            province: dto.province,
+            startDate: new Date(dto.startDate),
+            endDate: dto.endDate ? new Date(dto.endDate) : null,
+            teamSize: dto.teamSize,
+            requiredAllocationPercentage: dto.allocation,
+            clientBillingBudget: dto.budget,
+            status: ProjectStatus.OPEN,
         },
-      });
+        });
 
-      for (const skill of dto.skills) {
-        const normalizedSkillName = skill.skillName.trim().toLowerCase();
+        await tx.projectManager.create({
+        data: {
+            userId: creatorUserId,
+            projectId: project.id,
+        },
+        });
+
+        for (const skill of dto.skills) {
+        const normalizedSkillName = skill.name.trim().toLowerCase();
         const skillRecord = await tx.skill.upsert({
-          where: { name: normalizedSkillName },
-          update: {},
-          create: { name: normalizedSkillName, category: 'General' },
+            where: { name: normalizedSkillName },
+            update: {},
+            create: { name: normalizedSkillName, category: 'General' },
         });
         await tx.projectSkill.create({
-          data: {
+            data: {
             projectId: project.id,
             skillId: skillRecord.id,
-            minimumCompetency: skill.minimumCompetency as CompetencyLevel,
-            isMandatory: skill.isMandatory,
-          },
+            minimumCompetency: skill.competency as CompetencyLevel,
+            isMandatory: skill.mandatory,
+            },
         });
-      }
+        }
 
-      return { projectId: project.id };
+        return { projectId: project.id };
     });
-  }
+    }
 
   async getAllProjects(page: number, limit: number) {
     const skip = (page - 1) * limit;

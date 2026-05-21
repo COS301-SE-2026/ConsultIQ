@@ -20,8 +20,10 @@ export class ProjectController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async createProject(@Body() dto: CreateProjectDto) {
-    return await this.projectService.createProject(dto);
+  async createProject(@Body() dto: CreateProjectDto, @Req() req: any) {
+    const userId = req.user?.sub ?? null;
+    const userRole = req.user?.role ?? null;
+    return await this.projectService.createProject(dto, userId, userRole);
   }
 
   @Get()

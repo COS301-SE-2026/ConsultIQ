@@ -7,7 +7,11 @@ import { PaginatedProjectsResponseDto, ProjectListItemDto } from '../dto/project
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
 
-  async createProject(dto: CreateProjectDto) {
+  async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
+    if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
+      throw new ForbiddenException('Only Project Managers can create projects.');
+    }
+
     if (dto.endDate) {
       const start = new Date(dto.startDate);
       const end = new Date(dto.endDate);
@@ -16,7 +20,7 @@ export class ProjectService {
       }
     }
 
-    const result = await this.projectRepository.createProject(dto);
+    const result = await this.projectRepository.createProject(dto, userId);
 
     return {
       message: 'Project created successfully',

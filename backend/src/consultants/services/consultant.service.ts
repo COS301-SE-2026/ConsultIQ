@@ -243,12 +243,14 @@ export class ConsultantService {
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
       skills: consultant.skills.map((cs) => ({
+        id: cs.id,
         skillName: cs.skill.name,
         competencyLevel: cs.competencyLevel,
         yearsExperience: cs.yearsExperience,
         confidenceLevel: cs.confidenceLevel,
       })),
       experience: consultant.consultantExperiences.map((exp) => ({
+        id: exp.id,
         companyname: exp.companyName,
         jobTitle: exp.jobTitle,
         jobType: exp.jobType,
@@ -258,6 +260,7 @@ export class ConsultantService {
         workModel: exp.workModel,
       })),
       certificates: consultant.certificates.map((cert) => ({
+        id: cert.id,
         title: cert.title,
         issuingBody: cert.issuingBody,
         startDate: cert.startDate ?? new Date(),
@@ -266,6 +269,68 @@ export class ConsultantService {
       })),
     };
   }
+
+  async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },          
+      include: {
+        user: { select: { fullName: true, email: true } },
+        skills: {
+          select: {
+            id: true,                              
+            competencyLevel: true,
+            yearsExperience: true,
+            confidenceLevel: true,
+            skill: { select: { name: true } },
+          },
+        },
+        certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+        consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
+      },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+    }
+
+    return {
+      id: consultant.id,
+      fullName: consultant.user.fullName,
+      email: consultant.user.email,
+      phoneNumber: consultant.phone ?? '',
+      idNumber: consultant.idNumber ?? '',
+      nationality: consultant.nationality ?? '',
+      location: consultant.location,
+      costToCompany: consultant.costToCompany,
+      availability: consultant.availability,
+      skills: consultant.skills.map((cs) => ({
+        id: cs.id,
+        skillName: cs.skill.name,
+        competencyLevel: cs.competencyLevel,
+        yearsExperience: cs.yearsExperience,
+        confidenceLevel: cs.confidenceLevel,
+      })),
+      experience: consultant.consultantExperiences.map((exp) => ({
+        id: exp.id,
+        companyname: exp.companyName,
+        jobTitle: exp.jobTitle,
+        jobType: exp.jobType,
+        startDate: exp.startDate,
+        endDate: exp.endDate ?? new Date(),
+        roleDescription: exp.description,
+        workModel: exp.workModel,
+      })),
+      certificates: consultant.certificates.map((cert) => ({
+        id: cert.id,
+        title: cert.title,
+        issuingBody: cert.issuingBody,
+        startDate: cert.startDate ?? new Date(),
+        endDate: cert.endDate ?? new Date(),
+        uploadedAt: cert.uploadedAt,
+      })),
+    };
+  }
+
 }
     
 

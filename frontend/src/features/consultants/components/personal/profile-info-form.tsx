@@ -24,7 +24,7 @@ export default function ProfileInfoForm() {
         if (!email.trim()) {
             setEmailError("Email address is required");
             isValid = false;
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        } else if (!/^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]+$/.test(email)) {
             setEmailError("Please enter a valid email address");
             isValid = false;
         }

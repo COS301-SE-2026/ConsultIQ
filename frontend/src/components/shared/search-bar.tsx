@@ -39,21 +39,23 @@ function SearchBar({ value, onChange, placeholder = "Search...", onFilterClick }
       </div>
 
       {/* Filters button */}
-      <button
-        onClick={onFilterClick}
-        className="flex items-center gap-2 bg-white rounded-xl font-medium transition hover:opacity-80"
-        style={{
-          border: "1px solid var(--color-border)",
-          height: "52px",
-          padding: "0 20px",
-          fontSize: "16px",
-          color: "var(--color-text-primary)",
-          fontFamily: "var(--font-primary)",
-        }}
-      >
-        <SlidersHorizontal size={18} style={{ color: "var(--color-primary)" }} />
-        Filters
-      </button>
+      {onFilterClick && (
+        <button
+          onClick={onFilterClick}
+          className="flex items-center gap-2 bg-white rounded-xl font-medium transition hover:opacity-80"
+          style={{
+            border: "1px solid var(--color-border)",
+            height: "52px",
+            padding: "0 20px",
+            fontSize: "16px",
+            color: "var(--color-text-primary)",
+            fontFamily: "var(--font-primary)",
+          }}
+        >
+          <SlidersHorizontal size={18} style={{ color: "var(--color-primary)" }} />
+          Filters
+        </button>
+      )}
     </div>
   );
 }

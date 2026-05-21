@@ -2,7 +2,9 @@
 
 # ConsultIQ
 
-**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** ### What is ConsultIQ?
+**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** 
+
+### What is ConsultIQ?
 ConsultIQ is an intelligent matching platform designed for consultancy firms. Using a configurable fit-scoring engine that weighs skills, availability, location, and cost-to-company, the platform surfaces a ranked shortlist of the ideal candidates for any given job. This is followed by a transparent breakdown of each candidate's score, taking the guesswork out of resource allocation.
 
 <div align="center">

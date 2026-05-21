@@ -64,7 +64,7 @@ export default function ProfileInfoForm() {
 
     const isFormValid = useMemo(() => {
         if (!firstName.trim() || !lastName.trim() || !nationality.trim() || costToCompany === "") return false;
-        if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+        if (!email.trim() || !/^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]+$/.test(email)) return false;
         if (!/^\d{10}$/.test(phone)) return false;
         if (validateSouthAfricanId(idNumber) !== "") return false;
         if (Number(costToCompany) < 0) return false;
@@ -78,7 +78,7 @@ export default function ProfileInfoForm() {
         if (!email.trim()) {
             setEmailError("Email address is required");
             isValid = false;
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        } else if (!/^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]+$/.test(email)) {
             setEmailError("Please enter a valid email address");
             isValid = false;
         }

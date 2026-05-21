@@ -227,9 +227,8 @@ export class AuthService {
     });
 
     // Build the activation link — raw token goes in the URL, never the hash
-    const appUrl = this.config.get<string>('APP_URL');
-    const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(dto.email)}`;
-
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const activationLink = `${frontendUrl}/activate?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
     // Send activation email, fire and forget, does not block response
     this.email
       .sendActivationEmail(user.email, user.fullName, activationLink)
@@ -351,9 +350,8 @@ export class AuthService {
     });
 
     // Send the email — fire and forget
-    const appUrl = this.config.get<string>('APP_URL');
-    const activationLink = `${appUrl}/activate?token=${rawToken}&email=${encodeURIComponent(email)}`;
-
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const activationLink = `${frontendUrl}/activate?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
     this.email
       .sendActivationEmail(user.email, user.fullName, activationLink)
       .catch((err) => {
@@ -374,9 +372,7 @@ export class AuthService {
     }
 
     if (user.status !== 'ACTIVE') {
-      throw new BadRequestException(
-        'Account must be active before accepting terms.',
-      );
+      throw new BadRequestException('Account must be active before accepting terms.');
     }
 
     await this.prisma.user.update({

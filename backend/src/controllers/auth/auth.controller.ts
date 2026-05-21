@@ -73,6 +73,7 @@ export class AuthController {
     return await this.authService.resendVerification(dto.email);
   }
 
+  @Public()
   @Post('accept-terms')
   @HttpCode(HttpStatus.OK)
   async acceptTerms(@Body() dto: AcceptTermsDto): Promise<{ message: string }> {

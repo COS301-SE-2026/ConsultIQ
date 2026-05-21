@@ -8,10 +8,20 @@ export interface CreateConsultantPayload {
     email: string;
     location: string;
     availability: boolean;
+    costToCompany: number;
     skills: {
         skillName: string;
         experience: string;
         competencyLevel: string;
+    }[];
+    experiences?: {
+        jobTitle: string;
+        companyName: string;
+        jobType: string;
+        workModel: string;
+        startDate: string;
+        endDate?: string;
+        description: string;
     }[];
     certifications: {
         title: string;
@@ -26,6 +36,10 @@ export interface ConsultantListItemDto {
     availabilityStatus: string;
     primarySkills: string[];
     costToCompanyRate?: number;
+    phone?: string;
+    idNumber?: string;
+    experienceYears?: number;
+    certifications?: string[];
 }
 
 export interface PaginatedConsultantsResponseDto {

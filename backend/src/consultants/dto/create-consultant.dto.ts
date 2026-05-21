@@ -1,4 +1,4 @@
-import {IsEmail, IsString, IsNumber, IsArray, ValidateNested, Min, Max, IsBoolean} from "class-validator";
+import {IsEmail, IsString, IsNumber, IsArray, ValidateNested, Min, Max, IsBoolean, IsOptional} from "class-validator";
 import {Type} from "class-transformer";
 
 export class CreateConsultantSkillDto {
@@ -16,6 +16,30 @@ export class CreateCertificationDto {
     @IsString()
     title!: string;
     }
+
+export class CreateConsultantExperienceDto {
+    @IsString()
+    jobTitle!: string;
+
+    @IsString()
+    companyName!: string;
+
+    @IsString()
+    jobType!: string;
+
+    @IsString()
+    workModel!: string;
+
+    @IsString()
+    startDate!: string;
+
+    @IsOptional()
+    @IsString()
+    endDate?: string;
+
+    @IsString()
+    description!: string;
+}
 
     export class CreateConsultantDto {
     @IsString()
@@ -39,6 +63,9 @@ export class CreateCertificationDto {
     @IsBoolean()
     availability!: boolean;
 
+    @IsNumber()
+    costToCompany!: number;
+
     @IsArray()
     @ValidateNested({ each: true })
     @Type(() => CreateConsultantSkillDto)
@@ -57,6 +84,11 @@ export class ConsultantListItemDto {
     location!: string;
     availabilityStatus!: string;
     primarySkills!: string[];
+    costToCompanyRate?: number;
+    phone?: string | null;
+    idNumber?: string | null;
+    experienceYears?: number;
+    certifications?: string[];
 }
 
 export class PaginatedConsultantsResponseDto {

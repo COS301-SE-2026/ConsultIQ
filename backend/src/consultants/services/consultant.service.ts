@@ -33,6 +33,11 @@ export class ConsultantService {
                 location: consultant.location,
                 availabilityStatus: consultant.availability === 'AVAILABLE' ? 'Available' : 'Unavailable',
                 primarySkills: consultant.skills.map((cs) => cs.skill.name),
+                costToCompanyRate: consultant.costToCompany,
+                phone: consultant.phone,
+                idNumber: consultant.idNumber,
+                experienceYears: consultant.skills.reduce((max, cs) => Math.max(max, cs.yearsExperience), 0),
+                certifications: consultant.certificates?.map((cert) => cert.title) || [],
             };
 
             return dto;

@@ -30,12 +30,43 @@ function CreateProfileContent() {
             const phoneNumber = sessionStorage.getItem("profile_phone") || profileData.phoneNumber;
             const isAvailableStr = sessionStorage.getItem("profile_isAvailable");
             const availability = isAvailableStr ? isAvailableStr === "true" : (profileData.availability ?? true);
+            const costToCompanyStr = sessionStorage.getItem("profile_costToCompany");
+            const costToCompany = costToCompanyStr ? parseFloat(costToCompanyStr) : (profileData.costToCompany ?? 0);
             
             // Combine location details
             const addressLine1 = sessionStorage.getItem("location_addressLine1") || "";
             const suburb = sessionStorage.getItem("location_suburb") || "";
             const city = sessionStorage.getItem("location_city") || "";
             const location = [addressLine1, suburb, city].filter(Boolean).join(", ") || profileData.location || "Johannesburg";
+
+            // Get skills from session storage
+            const rawSkills = sessionStorage.getItem("skills_list");
+            const parsedSkills = rawSkills ? JSON.parse(rawSkills) : [];
+            const actualSkills = parsedSkills.length ? parsedSkills.map((s: any) => ({
+                skillName: s.name || s.skillName,
+                experience: String(s.yearsOfExperience || s.experience || "0"),
+                competencyLevel: (s.competencyLevel || "BEGINNER").toUpperCase(),
+            })) : profileData.skills;
+
+            // Get education/certifications from session storage
+            const rawCerts = sessionStorage.getItem("education_list") || sessionStorage.getItem("certifications_list");
+            const parsedCerts = rawCerts ? JSON.parse(rawCerts) : [];
+            const actualCerts = parsedCerts.length ? parsedCerts.map((c: any) => ({
+                title: c.qualification || c.title || c.name || "Unknown Qualification",
+            })) : profileData.certifications;
+
+            // Get work experiences from session storage
+            const rawExperiences = sessionStorage.getItem("experience_list");
+            const parsedExperiences = rawExperiences ? JSON.parse(rawExperiences) : [];
+            const actualExperiences = parsedExperiences.length ? parsedExperiences.map((e: any) => ({
+                jobTitle: e.jobTitle || "",
+                companyName: e.companyName || e.company || "",
+                jobType: e.jobType || "Full-time",
+                workModel: e.workModel || "Onsite",
+                startDate: e.startDate || new Date().toISOString(),
+                endDate: e.endDate || undefined,
+                description: e.description || e.roleDescription || "",
+            })) : profileData.experiences;
 
             const payload: CreateConsultantPayload = {
                 name,
@@ -45,13 +76,38 @@ function CreateProfileContent() {
                 email,
                 location,
                 availability,
-                // Retaining fallback mock data if nothing is collected yet during testing
-                skills: profileData.skills?.length ? profileData.skills : [{ skillName: "TypeScript", experience: "4", competencyLevel: "EXPERT" }],
-                certifications: profileData.certifications?.length ? profileData.certifications : [{ title: "AWS Certified Developer" }]
+                costToCompany,
+                skills: actualSkills?.length ? actualSkills : [{ skillName: "TypeScript", experience: "4", competencyLevel: "EXPERT" }],
+                certifications: actualCerts?.length ? actualCerts : [{ title: "AWS Certified Developer" }],
+                experiences: actualExperiences
             };
 
             await createConsultant(payload);
-            sessionStorage.removeItem("consultant_profile_draft");
+            
+            // Clear all form data from sessionStorage
+            const keysToRemove = [
+                "consultant_profile_draft",
+                "profile_firstName",
+                "profile_lastName",
+                "profile_email",
+                "profile_idNumber",
+                "profile_phone",
+                "profile_isAvailable",
+                "profile_costToCompany",
+                "profile_nationality",
+                "location_addressLine1",
+                "location_addressLine2",
+                "location_suburb",
+                "location_city",
+                "location_province",
+                "location_postalCode",
+                "experience_list",
+                "skills_list",
+                "education_list",
+                "certifications_list"
+            ];
+            keysToRemove.forEach(key => sessionStorage.removeItem(key));
+
             toast.success("Consultant profile created successfully!");
             navigate("/consultants-manager");
         } catch (error: any) {

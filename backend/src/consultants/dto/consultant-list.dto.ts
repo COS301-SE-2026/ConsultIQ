@@ -6,6 +6,10 @@ export class ConsultantListItemDto {
     availabilityStatus!: string;
     primarySkills!: string[];
     costToCompanyRate?: number;
+    phone?: string | null;
+    idNumber?: string | null;
+    experienceYears?: number;
+    certifications?: string[];
 }
 
 export class PaginatedConsultantsResponseDto {

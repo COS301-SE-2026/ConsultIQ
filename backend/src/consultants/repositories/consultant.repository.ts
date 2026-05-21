@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConsultantDto } from '../dto/create-consultant.dto';
-import { Role, ConsultantAvailability, CompetencyLevel } from '@prisma/client';
+import { Role, ConsultantAvailability, CompetencyLevel, JobType, WorkModel } from '@prisma/client';
 
 @Injectable()
 export class ConsultantRepository {
@@ -33,7 +33,7 @@ export class ConsultantRepository {
                 availability: dto.availability ? ConsultantAvailability.AVAILABLE : ConsultantAvailability.UNAVAILABLE,
                 phone: dto.phoneNumber,
                 idNumber: dto.idNumber,
-                costToCompany: 0,
+                costToCompany: dto.costToCompany,
             },
         });
 
@@ -103,6 +103,11 @@ export class ConsultantRepository {
                         name: true,
                     },
                     },
+                },
+                },
+                certificates: {
+                select: {
+                    title: true,
                 },
                 },
             },

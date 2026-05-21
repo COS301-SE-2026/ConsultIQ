@@ -29,6 +29,7 @@ const defaultState: ProfileState = {
     email: "",
     location: "",
     availability: true,
+    costToCompany: 0,
     skills: [],
     certifications: [],
     experiences: [],

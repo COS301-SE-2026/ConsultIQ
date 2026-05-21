@@ -38,29 +38,48 @@ export class ConsultantService {
     return { page, total, consultants: mappedConsultants };
   }
 
-  async getConsultantById(id: string): Promise<ConsultantProfileDto> {
-    const consultant = await this.consultantRepository.getConsultantById(id);
-    if (!consultant) {
-      throw new NotFoundException(`Consultant with id ${id} not found.`);
-    }
-    return {
-      id: consultant.id,
-      fullName: consultant.user.fullName,
-      email: consultant.user.email,
-      location: consultant.location,
-      availability: consultant.availability,
-      costToCompany: consultant.costToCompany,
-      skills: consultant.skills.map((cs) => ({
-        skillName: cs.skill.name,
-        competencyLevel: cs.competencyLevel,
-        yearsExperience: cs.yearsExperience,
-        confidenceLevel: cs.confidenceLevel,
-      })),
-      certificates: consultant.certificates.map((cert) => ({
-        title: cert.title,
-        issuingBody: cert.issuingBody,
-        uploadedAt: cert.uploadedAt,
-      })),
-    };
+async getConsultantById(id: string): Promise<ConsultantProfileDto> {
+  const consultant = await this.consultantRepository.getConsultantById(id);
+  
+  if (!consultant) {
+    throw new NotFoundException(`Consultant with id ${id} not found.`);
   }
+
+  return {
+    id: consultant.id,
+    fullName: consultant.user.fullName,
+    email: consultant.user.email,
+    phoneNumber: consultant.phone ?? '',          
+    idNumber: consultant.idNumber ?? '',
+    nationality: consultant.nationality ?? '',
+    location: consultant.location,
+    costToCompany: consultant.costToCompany,
+    availability: consultant.availability,
+    
+    skills: consultant.skills.map((cs) => ({
+      skillName: cs.skill.name,
+      competencyLevel: cs.competencyLevel,
+      yearsExperience: cs.yearsExperience,
+      confidenceLevel: cs.confidenceLevel,
+    })),
+
+    experience: consultant.consultantExperiences.map((exp) => ({
+      companyname: exp.companyName,               
+      jobTitle: exp.jobTitle,
+      jobType: exp.jobType,
+      startDate: exp.startDate,
+      endDate: exp.endDate ?? new Date(),          
+      roleDescription: exp.description,           
+      workModel: exp.workModel,
+    })),
+
+    certificates: consultant.certificates.map((cert) => ({
+      title: cert.title,
+      issuingBody: cert.issuingBody,
+      startDate: cert.startDate ?? new Date(),
+      endDate: cert.endDate ?? new Date(),
+      uploadedAt: cert.uploadedAt,
+    })),
+  };
+}
 }

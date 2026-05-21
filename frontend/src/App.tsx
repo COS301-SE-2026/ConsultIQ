@@ -5,7 +5,12 @@ import { AuthProvider } from './hooks/useAuth';
 function App() {
   return (
     <AuthProvider>
-      <Toaster richColors position="top-right" />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 2000,
+        }}
+      />
       <AppRoutes />
     </AuthProvider>
   );

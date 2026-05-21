@@ -53,9 +53,6 @@ export default function ProjectCard({
         {/* Footer */}
         <div className="flex items-center justify-between mt-auto pt-4">
           <div className="flex items-center gap-2">
-            <span className="text-2xl text-yellow-500">
-              $
-            </span>
 
             <p className="text-xl font-semibold">
               R{project.budget.toLocaleString()}

@@ -1,7 +1,15 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ProjectRepository } from '../repositories/project.repository';
 import { CreateProjectDto } from '../dto/create-project.dto';
-import { PaginatedProjectsResponseDto, ProjectListItemDto } from '../dto/project-list.dto';
+import {
+  PaginatedProjectsResponseDto,
+  ProjectListItemDto,
+} from '../dto/project-list.dto';
 
 @Injectable()
 export class ProjectService {
@@ -9,7 +17,9 @@ export class ProjectService {
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
-      throw new ForbiddenException('Only Project Managers can create projects.');
+      throw new ForbiddenException(
+        'Only Project Managers can create projects.',
+      );
     }
 
     if (dto.endDate) {
@@ -34,29 +44,48 @@ export class ProjectService {
     userRole: string,
     userId: string | null,
   ): Promise<PaginatedProjectsResponseDto> {
-
     let projects: any[];
     let total: number;
 
     switch (userRole) {
       case 'ADMIN':
-        ({ projects, total } = await this.projectRepository.getAllProjects(page, limit));
+        ({ projects, total } = await this.projectRepository.getAllProjects(
+          page,
+          limit,
+        ));
         break;
 
       case 'PROJECT_MANAGER':
-        ({ projects, total } = await this.projectRepository.getProjectsByProjectManager(userId!, page, limit));
+        ({ projects, total } =
+          await this.projectRepository.getProjectsByProjectManager(
+            userId!,
+            page,
+            limit,
+          ));
         break;
 
       case 'CONSULTANT_MANAGER':
-        ({ projects, total } = await this.projectRepository.getProjectsByConsultantManager(userId!, page, limit));
+        ({ projects, total } =
+          await this.projectRepository.getProjectsByConsultantManager(
+            userId!,
+            page,
+            limit,
+          ));
         break;
 
       case 'CONSULTANT':
-        ({ projects, total } = await this.projectRepository.getProjectsByConsultant(userId!, page, limit));
+        ({ projects, total } =
+          await this.projectRepository.getProjectsByConsultant(
+            userId!,
+            page,
+            limit,
+          ));
         break;
 
       default:
-        throw new ForbiddenException('You do not have permission to view projects.');
+        throw new ForbiddenException(
+          'You do not have permission to view projects.',
+        );
     }
 
     const mappedProjects: ProjectListItemDto[] = projects.map((p) => ({
@@ -75,5 +104,13 @@ export class ProjectService {
     }));
 
     return { page, limit, total, projects: mappedProjects };
+  }
+
+  async getProjectById(projectId: string) {
+    const project = await this.projectRepository.getProjectById(projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+    return project;
   }
 }

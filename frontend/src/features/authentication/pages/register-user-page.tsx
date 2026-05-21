@@ -41,6 +41,7 @@ function RegisterUserPage() {
                 <div
                     className="flex items-center gap-5">   
                     <button
+                         onClick={() => navigate(-1)}
                         className="w-[42px] h-[42px] rounded-xl flex items-center justify-center transition hover:opacity-80" bg-white
                         >
                         <ArrowLeft

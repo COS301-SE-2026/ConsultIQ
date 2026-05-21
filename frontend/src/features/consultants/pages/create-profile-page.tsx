@@ -56,11 +56,14 @@ function CreateProfileContent() {
       costToCompany: profileData.costToCompany,
       availability: profileData.availability,
       skills: profileData.skills,
-      experiences: profileData.experiences.map(({ id: _, endDate, ...exp }) => ({
-        ...exp,
-        jobType: exp.jobType as "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | "FREELANCE",
-        workModel: exp.workModel as "ONSITE" | "REMOTE" | "HYBRID",
-        ...(endDate ? { endDate } : {}),
+      experiences: profileData.experiences.map((exp) => ({
+          jobTitle: exp.jobTitle,
+          companyName: exp.companyName,
+          jobType: exp.jobType as "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | "FREELANCE",
+          workModel: exp.workModel as "ONSITE" | "REMOTE" | "HYBRID",
+          startDate: exp.startDate,
+          description: exp.description,
+          ...(exp.endDate ? { endDate: exp.endDate } : {}),
       })),
       certifications: profileData.certifications.length > 0 ? profileData.certifications : undefined,
     };

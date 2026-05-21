@@ -13,7 +13,12 @@ import {
   PendingProfileUserDto,
 } from '../dto/create-consultant.dto';
 import { ConsultantProfileDto } from '../dto/consultant-profile.dto';
-import { CompetencyLevel, ConsultantAvailability, JobType, WorkModel } from '@prisma/client';
+import {
+  CompetencyLevel,
+  ConsultantAvailability,
+  JobType,
+  WorkModel,
+} from '@prisma/client';
 
 @Injectable()
 export class ConsultantService {
@@ -53,83 +58,85 @@ export class ConsultantService {
       );
     }
 
-    return await this.prisma.$transaction(async (tx) => {
-      // Create consultant profile
-      const consultant = await tx.consultant.create({
-        data: {
-          userId: dto.consultantUserId,
-          location: dto.location,
-          phone: dto.phone,
-          idNumber: dto.idNumber,
-          nationality: dto.nationality,
-          costToCompany: dto.costToCompany,
-          availability: dto.availability as ConsultantAvailability,
-        },
-      });
-
-      // Link the CM to this consultant
-      await tx.consultantManager.create({
-        data: {
-          userId: cmUserId,
-          consultantId: consultant.id,
-        },
-      });
-
-      // Create skills
-      for (const skill of dto.skills) {
-        const normalizedName = skill.skillName.trim().toLowerCase();
-        const skillRecord = await tx.skill.upsert({
-          where: { name: normalizedName },
-          update: {},
-          create: { name: normalizedName, category: 'General' },
-        });
-        await tx.consultantSkill.create({
+    return await this.prisma
+      .$transaction(async (tx) => {
+        // Create consultant profile
+        const consultant = await tx.consultant.create({
           data: {
-            consultantId: consultant.id,
-            skillId: skillRecord.id,
-            competencyLevel: skill.competencyLevel as CompetencyLevel,
-            yearsExperience: skill.yearsExperience,
-            confidenceLevel: skill.confidenceLevel,
+            userId: dto.consultantUserId,
+            location: dto.location,
+            phone: dto.phone,
+            idNumber: dto.idNumber,
+            nationality: dto.nationality,
+            costToCompany: dto.costToCompany,
+            availability: dto.availability as ConsultantAvailability,
           },
         });
-      }
 
-      // Create experiences
-      for (const exp of dto.experiences) {
-        await tx.consultantExperience.create({
+        // Link the CM to this consultant
+        await tx.consultantManager.create({
           data: {
+            userId: cmUserId,
             consultantId: consultant.id,
-            jobTitle: exp.jobTitle,
-            companyName: exp.companyName,
-            jobType: exp.jobType as JobType,
-            workModel: exp.workModel as WorkModel,
-            startDate: new Date(exp.startDate),
-            endDate: exp.endDate ? new Date(exp.endDate) : null,
-            description: exp.description,
           },
         });
-      }
 
-      // Create certifications
-      if (dto.certifications) {
-        for (const cert of dto.certifications) {
-          await tx.certificate.create({
+        // Create skills
+        for (const skill of dto.skills) {
+          const normalizedName = skill.skillName.trim().toLowerCase();
+          const skillRecord = await tx.skill.upsert({
+            where: { name: normalizedName },
+            update: {},
+            create: { name: normalizedName, category: 'General' },
+          });
+          await tx.consultantSkill.create({
             data: {
               consultantId: consultant.id,
-              title: cert.title,
-              issuingBody: cert.issuingBody,
-              startDate: cert.startDate ? new Date(cert.startDate) : null,
-              endDate: cert.endDate ? new Date(cert.endDate) : null,
+              skillId: skillRecord.id,
+              competencyLevel: skill.competencyLevel as CompetencyLevel,
+              yearsExperience: skill.yearsExperience,
+              confidenceLevel: skill.confidenceLevel,
             },
           });
         }
-      }
 
-      return { consultantId: consultant.id };
-    }).then((result) => ({
-      message: 'Consultant profile created successfully.',
-      consultantId: result.consultantId,
-    }));
+        // Create experiences
+        for (const exp of dto.experiences) {
+          await tx.consultantExperience.create({
+            data: {
+              consultantId: consultant.id,
+              jobTitle: exp.jobTitle,
+              companyName: exp.companyName,
+              jobType: exp.jobType as JobType,
+              workModel: exp.workModel as WorkModel,
+              startDate: new Date(exp.startDate),
+              endDate: exp.endDate ? new Date(exp.endDate) : null,
+              description: exp.description,
+            },
+          });
+        }
+
+        // Create certifications
+        if (dto.certifications) {
+          for (const cert of dto.certifications) {
+            await tx.certificate.create({
+              data: {
+                consultantId: consultant.id,
+                title: cert.title,
+                issuingBody: cert.issuingBody,
+                startDate: cert.startDate ? new Date(cert.startDate) : null,
+                endDate: cert.endDate ? new Date(cert.endDate) : null,
+              },
+            });
+          }
+        }
+
+        return { consultantId: consultant.id };
+      })
+      .then((result) => ({
+        message: 'Consultant profile created successfully.',
+        consultantId: result.consultantId,
+      }));
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -181,7 +188,9 @@ export class ConsultantService {
       // Calculate total years of experience
       const experienceYears = c.consultantExperiences.reduce((total, exp) => {
         const end = exp.endDate ?? new Date();
-        const years = (end.getTime() - exp.startDate.getTime()) / (1000 * 60 * 60 * 24 * 365);
+        const years =
+          (end.getTime() - exp.startDate.getTime()) /
+          (1000 * 60 * 60 * 24 * 365);
         return total + years;
       }, 0);
 

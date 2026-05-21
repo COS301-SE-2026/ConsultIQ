@@ -42,7 +42,8 @@ export class CreateConsultantExperienceDto {
   companyName!: string;
 
   @IsEnum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE'], {
-    message: 'jobType must be FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, or FREELANCE',
+    message:
+      'jobType must be FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, or FREELANCE',
   })
   jobType!: string;
 

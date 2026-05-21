@@ -34,9 +34,7 @@ function isValidSAID(id: string): boolean {
 }
 
 @ValidatorConstraint({ name: 'isSAIdentityNumber', async: false })
-export class IsSAIdentityNumberConstraint
-  implements ValidatorConstraintInterface
-{
+export class IsSAIdentityNumberConstraint implements ValidatorConstraintInterface {
   validate(id: string): boolean {
     return isValidSAID(id);
   }

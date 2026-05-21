@@ -34,7 +34,7 @@ export class ConsultantController {
 
   @Get('pending-profiles')
   @Roles(Role.CONSULTANT_MANAGER)
-  async getPendingProfiles(@Req() _req: any) {
+  async getPendingProfiles() {
     return await this.consultantService.getPendingProfiles();
   }
 

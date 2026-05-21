@@ -86,9 +86,17 @@ export class ConsultantRepository {
       where: { id },
       include: {
         user: { select: { fullName: true, email: true } },
-        skills: { include: { skill: { select: { name: true } } } },
-        certificates: { select: { title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
-        consultantExperiences: { select: { companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
+        skills: {
+        select: {
+            id: true,                              
+            competencyLevel: true,
+            yearsExperience: true,
+            confidenceLevel: true,
+            skill: { select: { name: true } },
+          },
+        },
+       certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+        consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
       },
     });
   }
@@ -98,27 +106,17 @@ export class ConsultantRepository {
     where: { userId },          
     include: {
       user: { select: { fullName: true, email: true } },
-      skills: { include: { skill: { select: { name: true } } } },
-      certificates: {
-        select: {
-          title: true,
-          issuingBody: true,
-          startDate: true,
-          endDate: true,
-          uploadedAt: true,
+      skills: {
+      select: {
+          id: true,                              
+          competencyLevel: true,
+          yearsExperience: true,
+          confidenceLevel: true,
+          skill: { select: { name: true } },
         },
       },
-      consultantExperiences: {
-        select: {
-          companyName: true,
-          jobTitle: true,
-          jobType: true,
-          startDate: true,
-          endDate: true,
-          description: true,
-          workModel: true,
-        },
-      },
+      certificates: { select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+     consultantExperiences: { select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
     },
   });
 }

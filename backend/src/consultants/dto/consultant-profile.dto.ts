@@ -1,4 +1,5 @@
 export class ConsultantSkillsDto {
+    id!: string;
     skillName!: string;
     competencyLevel!: string;
     yearsExperience!: number;
@@ -6,6 +7,7 @@ export class ConsultantSkillsDto {
 }
 
 export class ConsultantCertificationsDto {
+  id!: string;
   title!: string; 
   issuingBody!: string; 
   startDate!: Date;
@@ -14,6 +16,7 @@ export class ConsultantCertificationsDto {
 }
 
 export class ExperienceDTO {
+  id!: string;
   companyname!: string;
   jobTitle!: string;
   jobType!: string;

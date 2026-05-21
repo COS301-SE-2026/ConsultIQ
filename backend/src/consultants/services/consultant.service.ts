@@ -57,6 +57,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     availability: consultant.availability,
     
     skills: consultant.skills.map((cs) => ({
+      id: cs.id,
       skillName: cs.skill.name,
       competencyLevel: cs.competencyLevel,
       yearsExperience: cs.yearsExperience,
@@ -64,6 +65,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     })),
 
     experience: consultant.consultantExperiences.map((exp) => ({
+      id: exp.id,
       companyname: exp.companyName,               
       jobTitle: exp.jobTitle,
       jobType: exp.jobType,
@@ -74,6 +76,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     })),
 
     certificates: consultant.certificates.map((cert) => ({
+      id: cert.id,
       title: cert.title,
       issuingBody: cert.issuingBody,
       startDate: cert.startDate ?? new Date(),
@@ -102,6 +105,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     availability: consultant.availability,
 
     skills: consultant.skills.map((cs) => ({
+      id: cs.id,
       skillName: cs.skill.name,
       competencyLevel: cs.competencyLevel,
       yearsExperience: cs.yearsExperience,
@@ -109,6 +113,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     })),
 
     experience: consultant.consultantExperiences.map((exp) => ({
+      id: exp.id,
       companyname: exp.companyName,
       jobTitle: exp.jobTitle,
       jobType: exp.jobType,
@@ -119,6 +124,7 @@ async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     })),
 
     certificates: consultant.certificates.map((cert) => ({
+      id:cert.id,
       title: cert.title,
       issuingBody: cert.issuingBody,
       startDate: cert.startDate ?? new Date(),

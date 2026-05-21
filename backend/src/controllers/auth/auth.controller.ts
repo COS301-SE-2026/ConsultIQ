@@ -81,7 +81,7 @@ export class AuthController {
     return await this.authService.acceptTerms(dto.email);
   }
 
- 
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(

@@ -13,10 +13,6 @@ import {
 import { ProjectService } from '../../projects/services/project.service';
 import { CreateProjectDto } from '../../projects/dto/create-project.dto';
 
-interface ProjectResponse {
-  message: string;
-  projectId: string;
-}
 
 @Controller('projects')
 export class ProjectController {

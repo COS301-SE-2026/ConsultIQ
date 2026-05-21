@@ -22,13 +22,25 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function registerUser(payload: RegisterUserPayload): Promise<{ message: string; userId: string }> {
+  const token = sessionStorage.getItem('ciq_access_token');
+
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json'
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
 }
+
+
 
 export async function activateAccount(payload: ActivateAccountPayload): Promise<{ message: string }> {
   const res = await fetch(`${API_BASE_URL}/auth/activate`, {

@@ -260,8 +260,8 @@ model Project {
   startDate    DateTime
   endDate      DateTime?
   teamSize     Int
-  allocation   Int // requiredAllocationPercentage
-  budget       Float // clientBillingBudget
+  allocation   Int // Renamed from requiredAllocationPercentage
+  budget       Float // Renamed from clientBillingBudget
   status       ProjectStatus @default(OPEN)
   tenantId     String?
   createdAt    DateTime      @default(now())

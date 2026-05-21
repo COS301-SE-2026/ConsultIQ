@@ -10,7 +10,6 @@ import {
   Get,
   Request,
 } from '@nestjs/common';
-
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
@@ -21,11 +20,11 @@ import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { UserAgent } from '../../common/decorators/user-agent.decorator';
 import { LoginDto } from '../../auth/dto/login.dto';
 // import { UseGuards } from '@nestjs/common';
+// import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { Role } from '../../auth/enums/role.enum';
 import { Roles } from '../../common/guards/roles.guard';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { SkipThrottle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -76,7 +75,9 @@ export class AuthController {
   @Public()
   @Post('accept-terms')
   @HttpCode(HttpStatus.OK)
-  async acceptTerms(@Body() dto: AcceptTermsDto): Promise<{ message: string }> {
+  async acceptTerms(
+    @Body() dto: AcceptTermsDto,
+  ): Promise<{ message: string }> {
     return await this.authService.acceptTerms(dto.email);
   }
 
@@ -115,7 +116,6 @@ export class AuthController {
     return { message: 'Logged out successfully.' };
   }
 
-  @SkipThrottle()
   @Get('me')
   async getProfile(@Request() req: any) {
     const user = req.user;

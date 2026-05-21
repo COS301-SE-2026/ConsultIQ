@@ -1,7 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConsultantRepository } from "../repositories/consultant.repository";
-import { CreateConsultantDto } from "../dto/create-consultant.dto";
-import { ConsultantListItemDto, PaginatedConsultantsResponseDto } from "../dto/create-consultant.dto";
+import { ConsultantListItemDto, PaginatedConsultantsResponseDto,CreateConsultantDto } from "../dto/create-consultant.dto";
 import { ConsultantProfileDto } from "../dto/consultant-profile.dto";
 
 @Injectable()

@@ -83,8 +83,7 @@ export class AuthController {
     return await this.authService.acceptTerms(dto.email);
   }
 
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ login: { limit: 5, ttl: 60000 } }) // Limit to 5 login attempts per minute per IP
+ 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(

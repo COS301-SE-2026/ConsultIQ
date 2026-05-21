@@ -5,6 +5,7 @@ import { ConsultantService } from '../../consultants/services/consultant.service
 const mockConsultantService = {
   createConsultant: jest.fn(),
   getAllConsultants: jest.fn(),
+  getConsultantById: jest.fn(),
 };
 
 describe('ConsultantController', () => {
@@ -140,5 +141,59 @@ describe('ConsultantController', () => {
       expect(result.consultants).toHaveLength(1);
       expect(result.total).toBe(1);
     });
+
+  describe('getConsultantById', () => {
+    it('should return a consultant profile DTO successfully', async () => {
+      const mockConsultantProfile = {
+        id: 'uuid-123',
+        fullName: 'jazz',
+        email: 'jazz@example.com',
+        phoneNumber: '0123456789',
+        idNumber: '9901015555081',
+        nationality: 'South African',
+        location: 'Pretoria',
+        costToCompany: 45000,
+        availability: 'AVAILABLE',
+        skills: [
+          {
+            skillName: 'NestJS',
+            competencyLevel: 'INTERMEDIATE',
+            yearsExperience: 2,
+            confidenceLevel: 9,
+          },
+        ],
+        experience: [
+          {
+            companyname: 'ConsultIQ',
+            jobTitle: 'Full-stack Developer',
+            jobType: 'CONTRACT',
+            startDate: new Date('2025-01-01'),
+            endDate: null,
+            roleDescription: 'Building out authentication services.',
+            workModel: 'HYBRID',
+          },
+        ],
+        certificates: [],
+      };
+
+      mockConsultantService.getConsultantById.mockResolvedValue(mockConsultantProfile);
+
+      const result = await controller.getConsultantById('uuid-123');
+
+      expect(result).toEqual(mockConsultantProfile);
+      expect(mockConsultantService.getConsultantById).toHaveBeenCalledWith('uuid-123');
+    });
+
+    it('should propagate a NotFoundException or other errors from service', async () => {
+      mockConsultantService.getConsultantById.mockRejectedValue(
+        new Error('Consultant with id uuid-999 not found.'),
+      );
+
+      await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(
+        'Consultant with id uuid-999 not found.',
+      );
+      expect(mockConsultantService.getConsultantById).toHaveBeenCalledWith('uuid-999');
+    });
+   });
   });
 });

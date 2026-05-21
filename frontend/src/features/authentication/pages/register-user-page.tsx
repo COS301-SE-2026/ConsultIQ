@@ -11,7 +11,7 @@ function RegisterUserPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const currentUserRole = user?.role as UserRole | undefined;
-
+    
     let allowedRoles: UserRole[] = [];
     if (currentUserRole === "ADMIN") {
         allowedRoles = [ "CONSULTANT_MANAGER", "PROJECT_MANAGER"];

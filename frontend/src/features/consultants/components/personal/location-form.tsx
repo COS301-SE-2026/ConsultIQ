@@ -1,17 +1,36 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { toast } from "sonner";
 
-export default function LocationForm() {
+interface LocationFormProps {
+    onNext?: () => void;
+}
+
+export default function LocationForm({ onNext }: LocationFormProps = {}) {
     const [addressLine1, setAddressLine1] = useState(() => sessionStorage.getItem("location_addressLine1") || "");
     const [addressLine2, setAddressLine2] = useState(() => sessionStorage.getItem("location_addressLine2") || "");
     const [suburb, setSuburb] = useState(() => sessionStorage.getItem("location_suburb") || "");
     const [city, setCity] = useState(() => sessionStorage.getItem("location_city") || "");
     const [province, setProvince] = useState(() => sessionStorage.getItem("location_province") || "");
     const [postalCode, setPostalCode] = useState(() => sessionStorage.getItem("location_postalCode") || "");
+    const [cityError, setCityError] = useState("");
+
+    const isFormValid = useMemo(() => {
+        if (!addressLine1.trim() || !suburb.trim() || !city.trim() || !province.trim() || !postalCode.trim()) return false;
+        if (/\d/.test(city)) return false;
+        return true;
+    }, [addressLine1, suburb, city, province, postalCode]);
 
     const handleDone = () => {
+        let isValid = true;
+        if (/\d/.test(city)) {
+            setCityError("City cannot contain numbers");
+            isValid = false;
+        }
+        if (!isValid) return;
+
         // Strict allowlist sanitization for plain text fields
         const sanitizeAddress = (text: string) => text.replace(/[^a-zA-Z0-9\s.,#'-]/g, "");
         const sanitizeText = (text: string) => text.replace(/[^a-zA-Z\s.,'-]/g, "");
@@ -37,6 +56,9 @@ export default function LocationForm() {
 
       
         console.log("Location Saved:", { addressLine1, addressLine2, suburb, city, province, postalCode });
+
+        toast.success("Location information saved successfully!");
+        if (onNext) onNext();
     };
 
     return (
@@ -71,7 +93,17 @@ export default function LocationForm() {
 
                         <div className="flex flex-col gap-3">
                             <label htmlFor="city" className="text-base font-semibold">City</label>
-                            <Input id="city" placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                            <Input 
+                                id="city" 
+                                placeholder="City" 
+                                value={city} 
+                                onChange={(e) => {
+                                    setCity(e.target.value);
+                                    if (cityError) setCityError("");
+                                }} 
+                                className={cityError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            />
+                            {cityError && <span className="text-red-500 text-sm mt-1">{cityError}</span>}
                         </div>
                     </div>
 
@@ -105,10 +137,10 @@ export default function LocationForm() {
                 </div>
                 <div className="h-6" />
                 <div className="mt-8 flex justify-end w-full">
-                    <Button onClick={handleDone} className="h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
+                    <Button onClick={handleDone} className={`h-16 w-48 text-lg rounded font-semibold transition ${isFormValid ? "hover:brightness-110" : "bg-gray-50 hover:bg-gray-100"}`}
                         style={{
-                            color:
-                                "var(--color-primary)",
+                            backgroundColor: isFormValid ? "var(--color-accent)" : undefined,
+                            color: isFormValid ? "white" : "var(--color-primary)",
                         }}
                     >
                         Done

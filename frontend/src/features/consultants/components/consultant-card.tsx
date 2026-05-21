@@ -1,4 +1,4 @@
-import { Mail, Phone, Briefcase, Banknote, ArrowRight } from "lucide-react";
+import { Mail, Phone, Banknote, ArrowRight } from "lucide-react";
 
 export type ConsultantStatus = "Available" | "Unavailable";
 
@@ -30,7 +30,7 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
     lastName,
     email,
     phone,
-    experienceYears,
+    // experienceYears,
     ratePerHour,
     skills,
     status,
@@ -117,18 +117,18 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
 
       {/* Experience and Rate */}
       <div className="flex items-center" style={{ gap: "32px", marginBottom: "24px" }}>
-        <div
+        {/* <div
           className="flex items-center gap-2"
           style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-h4)" }}
         >
           <Briefcase size={17} className="shrink-0" />
           <span>{experienceYears} {experienceYears === 1 ? "Year" : "Years"} Experience</span>
-        </div>
+        </div> */}
         <div
           className="flex items-center gap-2"
           style={{ color: "var(--color-accent)", fontSize: "var(--text-h4)" }}
         >
-          <Banknote size={17} className="shrink-0" />
+          <Banknote size={24} className="shrink-0" />
           <span className="font-semibold">R {ratePerHour} </span>
         </div>
       </div>

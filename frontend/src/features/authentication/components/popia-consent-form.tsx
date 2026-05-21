@@ -23,7 +23,6 @@ function PopiaConsentForm() {
     try {
       await acceptTerms(email);
       setShowWelcome(true);
-      //navigate("/login");
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -32,7 +31,7 @@ function PopiaConsentForm() {
   }
 
   function handleDecline() {
-    navigate("/login");
+    navigate("/popia-decline");
   }
 
   return (

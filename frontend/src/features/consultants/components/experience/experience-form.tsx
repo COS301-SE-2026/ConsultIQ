@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
+import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
 
 type Props = {
     onAdd: (exp: {
@@ -25,24 +26,6 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const [description, setDescription] = useState("");
     const [dateError, setDateError] = useState("");
 
-    const formatDateInput = (value: string) => {
-        const v = value.replace(/\D/g, "");
-        if (v.length >= 5) {
-            return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
-        } else if (v.length >= 3) {
-            return `${v.slice(0, 2)}/${v.slice(2)}`;
-        }
-        return v;
-    };
-
-    const parseDate = (dateStr: string) => {
-        const parts = dateStr.split("/");
-        if (parts.length === 3 && parts[2].length === 4) {
-            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-        }
-        return null;
-    };
-    
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
         setStartDate(newStart);
@@ -66,19 +49,9 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const handleAdd = () => {
         if (!jobTitle.trim() || !companyName.trim()) return;
 
-        const parsedStart = parseDate(startDate);
-        const parsedEnd = parseDate(endDate);
-        
-        if (startDate && !parsedStart) {
-            setDateError("Please enter a valid Start Date (DD/MM/YYYY)");
-            return;
-        }
-        if (endDate && !parsedEnd) {
-            setDateError("Please enter a valid End Date (DD/MM/YYYY)");
-            return;
-        }
-        if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
-            setDateError("End date cannot be before start date");
+        const validationError = validateDateRange(startDate, endDate);
+        if (validationError) {
+            setDateError(validationError);
             return;
         }
 

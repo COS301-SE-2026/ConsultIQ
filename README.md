@@ -1,43 +1,24 @@
-</div>
-<div align="center">
-  <img src="./Documents/Images/ConsultIQ logo.jpeg" alt="ConsultIQ Logo" width="350" />
-  <br>
- <img src="./Documents/Images/Troos_Logo.png" alt="TROOS Logo" width="250" />
-</div>
+
 
 # ConsultIQ
 
-**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** 
-
-### What is ConsultIQ?
+**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.** ### What is ConsultIQ?
 ConsultIQ is an intelligent matching platform designed for consultancy firms. Using a configurable fit-scoring engine that weighs skills, availability, location, and cost-to-company, the platform surfaces a ranked shortlist of the ideal candidates for any given job. This is followed by a transparent breakdown of each candidate's score, taking the guesswork out of resource allocation.
 
 <div align="center">
-  <!-- (c) Requirements Badge -->
   <a href="LINK_TO_YOUR_SRS_DOCUMENT_HERE">
     <img src="https://img.shields.io/badge/Requirements-SRS_Document-0284c7?style=for-the-badge&logo=googledocs&logoColor=white" alt="Requirements" />
   </a>
 
-  <!-- (b) Build Badge -->
   <a href="https://github.com/COS301-SE-2026/ConsultIQ/actions">
     <img src="https://img.shields.io/github/actions/workflow/status/COS301-SE-2026/ConsultIQ/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Build" alt="Build Status" />
   </a>
 
-  <!-- (a) Code Coverage Badge 
-  <a href="https://coveralls.io/github/COS301-SE-2026/ConsultIQ">
-    <img src="https://img.shields.io/coveralls/github/COS301-SE-2026/ConsultIQ?style=for-the-badge&logo=coveralls&logoColor=white" alt="Coverage Status" />
-  </a> -->
-
-  <!-- (d) Issue Tracking Badge -->
   <a href="https://github.com/COS301-SE-2026/ConsultIQ/issues">
     <img src="https://img.shields.io/github/issues/COS301-SE-2026/ConsultIQ?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Issues" />
   </a>
 
-  <!-- (e) Monitoring Badge 
-  <a href="https://stats.uptimerobot.com/YOUR_STATUS_PAGE">
-    <img src="https://img.shields.io/uptimerobot/ratio/YOUR_MONITOR_ID?style=for-the-badge&logo=uptimerobot&logoColor=white&label=Uptime" alt="Uptime Monitoring" />
-  </a>-->
-</div>
+  </div>
 
 ---
 
@@ -141,7 +122,6 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
   <h2>Tech Stack</h2>
 
-  <!-- Tech Stack Badges -->
   <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
   <img src="https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
   <img src="https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS" />
@@ -151,7 +131,6 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
   <br><br>
 
-  <!-- Tech Stack Table -->
   <table>
     <thead>
       <tr>
@@ -187,4 +166,30 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
     </tbody>
   </table>
 
+</div>
+
+
+<hr>
+<p align="center">
+  <b>PROJECT AND TEAM LOGO SECTION</b>
+</p>
+<hr>
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center" width="50%">
+        <p style="margin-bottom: 10px;">
+          <strong>PROJECT LOGO: ConsultIQ</strong>
+        </p>
+        <img src="./Documents/Images/ConsultIQ logo.jpeg" alt="ConsultIQ Logo" style="width: 250px; height: 250px; object-fit: cover; border-radius: 50%; border: 3px solid #007ACC; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);" />
+      </td>
+      <td align="center" width="50%">
+        <p style="margin-bottom: 10px;">
+          <strong>TEAM LOGO: TROOS</strong>
+        </p>
+        <img src="./Documents/Images/Troos_Logo.png" alt="TROOS Logo" style="width: 250px; height: 250px; object-fit: cover; border-radius: 50%; border: 3px solid #007ACC; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);" />
+      </td>
+    </tr>
+  </table>
 </div>

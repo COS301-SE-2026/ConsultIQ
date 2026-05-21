@@ -5,8 +5,8 @@ import { ProjectRepository } from './projects/repositories/project.repository';
 import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [ProjectController],
-    providers: [ProjectService, ProjectRepository],
+  imports: [PrismaModule],
+  controllers: [ProjectController],
+  providers: [ProjectService, ProjectRepository],
 })
-export class ProjectsModule { }
+export class ProjectsModule {}

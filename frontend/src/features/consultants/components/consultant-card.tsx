@@ -1,4 +1,4 @@
-import { Mail, Phone, Briefcase, DollarSign, ArrowRight } from "lucide-react";
+import { Mail, Phone, Briefcase, Banknote, ArrowRight } from "lucide-react";
 
 export type ConsultantStatus = "Available" | "Unavailable";
 
@@ -73,8 +73,8 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
             style={{
               marginTop: "10px",
               padding: "4px 16px",
-              backgroundColor: isAvailable ? "#FEF3C7" : "#F3F4F6",
-              color: isAvailable ? "#92400E" : "var(--color-text-secondary)",
+            backgroundColor: isAvailable ? "#DCFCE7" : "#F3F4F6",
+            color: isAvailable ? "#166534" : "var(--color-text-secondary)",
               fontSize: "var(--text-h4)",
             }}
           >
@@ -87,7 +87,7 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
           className="shrink-0 pt-1"
           style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-h4)" }}
         >
-          #{id}
+          #{id.slice(0, 8)}
         </span>
       </div>
 
@@ -128,8 +128,8 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
           className="flex items-center gap-2"
           style={{ color: "var(--color-accent)", fontSize: "var(--text-h4)" }}
         >
-          <DollarSign size={17} className="shrink-0" />
-          <span className="font-semibold">R {ratePerHour} /hr</span>
+          <Banknote size={17} className="shrink-0" />
+          <span className="font-semibold">R {ratePerHour} </span>
         </div>
       </div>
 

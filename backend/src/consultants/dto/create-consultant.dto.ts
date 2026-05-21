@@ -1,64 +1,102 @@
-import {IsEmail, IsString, IsNumber, IsArray, ValidateNested, Min, Max} from "class-validator";
-import {Type} from "class-transformer";
+import {
+  IsEmail,
+  IsString,
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateConsultantSkillDto {
-    @IsString()
-    skillName!: string;
+  @IsString()
+  skillName!: string;
 
-    @IsNumber()
-    @Min(1)
-    @Max(50)
-    yearsExperience!: number;
+  @IsString()
+  experience!: string;
 
-    @IsNumber()
-    @Min(1)
-    @Max(50)
-    confidenceLevel!: number;
+  @IsString()
+  competencyLevel!: string;
 }
 
 export class CreateCertificationDto {
-    @IsString()
-    certificationName!: string;
+  @IsString()
+  title!: string;
+}
 
-    @IsString()
-    issuingBody!: string;
-    }
+export class CreateConsultantExperienceDto {
+  @IsString()
+  jobTitle!: string;
 
-    export class CreateConsultantDto {
-    @IsString()
-    fullName!: string;
+  @IsString()
+  companyName!: string;
 
-    @IsEmail()
-    email!: string;
+  @IsString()
+  jobType!: string;
 
-    @IsString()
-    location!: string;
+  @IsString()
+  workModel!: string;
 
-    @IsNumber()
-    costToCompanyRate!: number;
+  @IsString()
+  startDate!: string;
 
-    @IsString()
-    availabilityStatus!: string;
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => CreateConsultantSkillDto)
-    skills!: CreateConsultantSkillDto[];
+  @IsString()
+  description!: string;
+}
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => CreateCertificationDto)
-    certifications!: CreateCertificationDto[];
+export class CreateConsultantDto {
+  @IsString()
+  name!: string;
+
+  @IsString()
+  surname!: string;
+
+  @IsString()
+  idNumber!: string;
+
+  @IsString()
+  phoneNumber!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  location!: string;
+
+  @IsBoolean()
+  availability!: boolean;
+
+  @IsNumber()
+  costToCompany!: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateConsultantSkillDto)
+  skills!: CreateConsultantSkillDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateCertificationDto)
+  certifications!: CreateCertificationDto[];
 }
 
 export class ConsultantListItemDto {
-    id!: string;
-    fullName!: string;
-    email!: string;
-    location!: string;
-    costToCompanyRate!: number;
-    availabilityStatus!: string;
-    primarySkills!: string[];
+  id!: string;
+  fullName!: string;
+  email!: string;
+  location!: string;
+  availabilityStatus!: string;
+  primarySkills!: string[];
+  costToCompanyRate?: number;
+  phone?: string | null;
+  idNumber?: string | null;
+  experienceYears?: number;
+  certifications?: string[];
 }
 
 export class PaginatedConsultantsResponseDto {

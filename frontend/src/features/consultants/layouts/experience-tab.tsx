@@ -1,17 +1,6 @@
-import { useState, useEffect } from "react";
 import ExperienceForm from "../components/experience/experience-form";
 import ExperienceList from "../components/experience/experience-list";
-
-export type ExperienceItem = {
-    id: string;
-    jobTitle: string;
-    companyName: string;
-    jobType: string;
-    workModel: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-};
+import { useConsultantProfile, type ExperienceItem } from "../pages/consultant-profile.context";
 
 const sanitizeText = (input: string) => {
     if (!input) return "";
@@ -19,21 +8,12 @@ const sanitizeText = (input: string) => {
 };
 
 export default function ExperienceTab() {
-    const [experiences, setExperiences] = useState<ExperienceItem[]>(() => {
-        const saved = sessionStorage.getItem("experience_list");
-        if (saved) {
-                return JSON.parse(saved);
-        }
-        return [];
-    });
+    const { profileData, updateProfileData } = useConsultantProfile();
+    const experiences = profileData.experiences || [];
 
     const handleAddExperience = (exp: Omit<ExperienceItem, "id">) => {
-        setExperiences([...experiences, { ...exp, id: crypto.randomUUID() }]);
-    };
-
-    useEffect(() => {
-        const sanitizedList = experiences.map((exp) => ({
-            ...exp,
+        const newExperience: ExperienceItem = {
+            id: crypto.randomUUID(),
             jobTitle: sanitizeText(exp.jobTitle),
             companyName: sanitizeText(exp.companyName),
             jobType: sanitizeText(exp.jobType),
@@ -41,9 +21,9 @@ export default function ExperienceTab() {
             startDate: sanitizeText(exp.startDate),
             endDate: sanitizeText(exp.endDate),
             description: sanitizeText(exp.description),
-        }));
-        sessionStorage.setItem("experience_list", JSON.stringify(sanitizedList)); //NOSONAR
-    }, [experiences]);
+        };
+        updateProfileData({ experiences: [...experiences, newExperience] });
+    };
 
     return (
         <div className="space-y-8">

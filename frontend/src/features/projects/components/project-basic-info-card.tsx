@@ -151,7 +151,7 @@ export default function ProjectBasicInfoCard({ data, onChange }: ProjectBasicInf
 
             <div className="flex flex-col gap-3">
               <label htmlFor="budget" className="text-base font-semibold">
-                Billing Budget (ZAR/hr)
+                Billing Budget
               </label>
 
               <input

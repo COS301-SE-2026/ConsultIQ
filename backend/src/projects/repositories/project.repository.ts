@@ -5,58 +5,58 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-    async createProject(dto: CreateProjectDto, creatorUserId: string) {
+  async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {
-        const project = await tx.project.create({
-            data: {
-                projectName: dto.projectName,
-                clientName: dto.clientName,
-                addressLine1: dto.addressLine1,
-                addressLine2: dto.addressLine2,
-                suburb: dto.suburb,
-                description: dto.description,
-                postalCode: dto.postalCode ?? '',
-                city: dto.city,
-                province: dto.province,
-                startDate: new Date(dto.startDate),
-                endDate: dto.endDate ? new Date(dto.endDate) : null,
-                teamSize: dto.teamSize,
-                allocation: dto.allocation,
-                budget: dto.budget,
-                status: ProjectStatus.OPEN,
-            },
-        });
-
-        await tx.projectManager.create({
+      const project = await tx.project.create({
         data: {
-            userId: creatorUserId,
-            projectId: project.id,
+          projectName: dto.projectName,
+          clientName: dto.clientName,
+          addressLine1: dto.addressLine1,
+          addressLine2: dto.addressLine2,
+          suburb: dto.suburb,
+          description: dto.description,
+          postalCode: dto.postalCode ?? '',
+          city: dto.city,
+          province: dto.province,
+          startDate: new Date(dto.startDate),
+          endDate: dto.endDate ? new Date(dto.endDate) : null,
+          teamSize: dto.teamSize,
+          allocation: dto.allocation,
+          budget: dto.budget,
+          status: ProjectStatus.OPEN,
         },
-        });
+      });
 
-        for (const skill of dto.skills) {
+      await tx.projectManager.create({
+        data: {
+          userId: creatorUserId,
+          projectId: project.id,
+        },
+      });
+
+      for (const skill of dto.skills) {
         const normalizedSkillName = skill.name.trim().toLowerCase();
         const skillRecord = await tx.skill.upsert({
-            where: { name: normalizedSkillName },
-            update: {},
-            create: { name: normalizedSkillName, category: 'General' },
+          where: { name: normalizedSkillName },
+          update: {},
+          create: { name: normalizedSkillName, category: 'General' },
         });
         await tx.projectSkill.create({
-        data: {
+          data: {
             projectId: project.id,
             skillId: skillRecord.id,
             competency: skill.competency as CompetencyLevel,
             mandatory: skill.mandatory,
             years: skill.years,
-        },
+          },
         });
-        }
+      }
 
-        return { projectId: project.id };
+      return { projectId: project.id };
     });
-    }
+  }
 
   async getAllProjects(page: number, limit: number) {
     const skip = (page - 1) * limit;
@@ -73,8 +73,8 @@ export class ProjectRepository {
             p."startDate",
             p."endDate",
             p."teamSize",
-            p."requiredAllocationPercentage",
-            p."clientBillingBudget",
+            p.allocation AS "requiredAllocationPercentage",
+            p.budget AS "clientBillingBudget",
             p.status,
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
@@ -105,8 +105,8 @@ export class ProjectRepository {
             p."startDate",
             p."endDate",
             p."teamSize",
-            p."requiredAllocationPercentage",
-            p."clientBillingBudget",
+            p.allocation AS "requiredAllocationPercentage",
+            p.budget AS "clientBillingBudget",
             p.status,
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
@@ -146,8 +146,8 @@ export class ProjectRepository {
             p."startDate",
             p."endDate",
             p."teamSize",
-            p."requiredAllocationPercentage",
-            p."clientBillingBudget",
+            p.allocation AS "requiredAllocationPercentage",
+            p.budget AS "clientBillingBudget",
             p.status,
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
@@ -189,8 +189,8 @@ export class ProjectRepository {
             p."startDate",
             p."endDate",
             p."teamSize",
-            p."requiredAllocationPercentage",
-            p."clientBillingBudget",
+            p.allocation AS "requiredAllocationPercentage",
+            p.budget AS "clientBillingBudget",
             p.status,
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
@@ -215,5 +215,18 @@ export class ProjectRepository {
     ]);
 
     return { projects, total: Number(totalResult[0]?.count ?? 0) };
+  }
+
+  async getProjectById(projectId: string) {
+    return this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        skills: {
+          include: {
+            skill: true,
+          },
+        },
+      },
+    });
   }
 }

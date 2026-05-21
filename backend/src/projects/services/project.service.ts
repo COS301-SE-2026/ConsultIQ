@@ -1,11 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ProjectRepository } from '../repositories/project.repository';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { PaginatedProjectsResponseDto, ProjectListItemDto } from '../dto/project-list.dto';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly projectRepository: ProjectRepository) {}
+  constructor(private readonly projectRepository: ProjectRepository) { }
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -75,5 +75,13 @@ export class ProjectService {
     }));
 
     return { page, limit, total, projects: mappedProjects };
+  }
+
+  async getProjectById(projectId: string) {
+    const project = await this.projectRepository.getProjectById(projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+    return project;
   }
 }

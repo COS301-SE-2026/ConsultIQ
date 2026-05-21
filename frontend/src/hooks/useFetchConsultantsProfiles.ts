@@ -88,7 +88,7 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     skills: (data.skills || []).map((s) => ({
       name: s.skillName,
-      competencyLevel: s.competencyLevel as any, 
+      competencyLevel: s.competencyLevel as "BEGINNER" | "INTERMEDIATE" | "EXPERT",
       yearsOfExperience: s.yearsExperience || 0,
     })),
 

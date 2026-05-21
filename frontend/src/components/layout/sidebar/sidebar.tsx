@@ -1,7 +1,7 @@
 import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 
 import type { SidebarItem } from "./sidebar.types";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
 
@@ -11,7 +11,7 @@ interface SidebarProps {
 
 function Sidebar({ items }: SidebarProps) {
   const [activePath, setActivePath] = useState(items[0].path);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   return (
     <aside
       style={{
@@ -95,11 +95,63 @@ function Sidebar({ items }: SidebarProps) {
         })}
       </nav>
 
+      {/* Account Section */}
+      {user && (
+        <div
+          style={{
+            padding: "20px 24px 12px 24px",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: "14px",
+            color: "white",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              backgroundColor: "rgba(255,255,255,0.15)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <User size={20} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: "16px",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {user.email}
+            </div>
+            <div
+              style={{
+                fontSize: "14px",
+                opacity: 0.7,
+                marginTop: "4px",
+                textTransform: "capitalize",
+              }}
+            >
+              {user.role?.replace(/_/g, " ").toLowerCase()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Logout - FIXED: Changed from div to button for standard accessibility */}
       <button
         onClick={logout}
         style={{
-          padding: "24px",
+          padding: user ? "12px 24px 24px 24px" : "24px",
 
           color: "white",
 
@@ -107,7 +159,7 @@ function Sidebar({ items }: SidebarProps) {
           fontWeight: 500,
 
           border: "none",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
+          borderTop: user ? "none" : "1px solid rgba(255,255,255,0.1)",
           backgroundColor: "transparent",
 
           cursor: "pointer",

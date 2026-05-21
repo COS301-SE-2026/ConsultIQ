@@ -92,4 +92,35 @@ export class ConsultantRepository {
       },
     });
   }
+
+ async getConsultantByUserId(userId: string) {
+  return await this.prisma.consultant.findUnique({
+    where: { userId },          
+    include: {
+      user: { select: { fullName: true, email: true } },
+      skills: { include: { skill: { select: { name: true } } } },
+      certificates: {
+        select: {
+          title: true,
+          issuingBody: true,
+          startDate: true,
+          endDate: true,
+          uploadedAt: true,
+        },
+      },
+      consultantExperiences: {
+        select: {
+          companyName: true,
+          jobTitle: true,
+          jobType: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          workModel: true,
+        },
+      },
+    },
+  });
+}
+
 }

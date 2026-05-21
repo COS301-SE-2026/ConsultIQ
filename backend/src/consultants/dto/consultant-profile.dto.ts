@@ -8,8 +8,8 @@ export class ConsultantSkillsDto {
 export class ConsultantCertificationsDto {
   title!: string; 
   issuingBody!: string; 
-  startDate!: Date | null;
-    endDate!: Date | null;
+  startDate!: Date;
+    endDate!: Date;
   uploadedAt!: Date;
 }
 
@@ -18,7 +18,7 @@ export class ExperienceDTO {
   jobTitle!: string;
   jobType!: string;
   startDate!: Date;
-  endDate!: Date | null;
+  endDate!: Date;
   roleDescription!: string;
   workModel! : string;
 }

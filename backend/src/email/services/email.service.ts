@@ -9,7 +9,8 @@ export class EmailService {
 
   constructor(private readonly config: ConfigService) {
     this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
-    this.fromEmail = this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
+    this.fromEmail =
+      this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
   }
 
   async sendActivationEmail(

@@ -16,7 +16,7 @@ export type CredentialCheckResult =
 
 @Injectable()
 export class CredentialService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * TASK-12b — Fetch user record by email
@@ -62,8 +62,10 @@ export class CredentialService {
       return { outcome: 'FAILED_PASSWORD', user };
     }
 
-    const passwordMatches = await bcrypt.compare(plainPassword, user.passwordHash);
-
+    const passwordMatches = await bcrypt.compare(
+      plainPassword,
+      user.passwordHash,
+    );
 
     if (!passwordMatches) {
       return { outcome: 'FAILED_PASSWORD', user };

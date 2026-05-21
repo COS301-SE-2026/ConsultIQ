@@ -14,7 +14,7 @@ interface UserInputObject {
 
 @ValidatorConstraint({ name: 'isStrongEnough', async: false })
 export class IsStrongEnoughConstraint implements ValidatorConstraintInterface {
-validate(password: string, args: ValidationArguments): boolean {
+  validate(password: string, args: ValidationArguments): boolean {
     const object = args.object as UserInputObject;
     const userInputs: string[] = [];
     const passwordLower = password.toLowerCase();
@@ -36,7 +36,8 @@ validate(password: string, args: ValidationArguments): boolean {
       userInputs.push(object.fullName, ...nameParts);
       // Explicit check — reject if password contains any part of the name
       for (const part of nameParts) {
-        if (part.length > 2 && passwordLower.includes(part.toLowerCase())) return false;
+        if (part.length > 2 && passwordLower.includes(part.toLowerCase()))
+          return false;
       }
     }
 

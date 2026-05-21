@@ -5,7 +5,7 @@ import { ConsultantRepository } from './consultants/repositories/consultant.repo
 import { PrismaService } from './prisma/prisma.service';
 
 @Module({
-    controllers: [ConsultantController],
-    providers: [ConsultantService, ConsultantRepository, PrismaService],
+  controllers: [ConsultantController],
+  providers: [ConsultantService, ConsultantRepository, PrismaService],
 })
 export class ConsultantsModule {}

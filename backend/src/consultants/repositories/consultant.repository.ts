@@ -95,7 +95,27 @@ export class ConsultantRepository {
 
         return { consultants, total };
     }
-
+    async getConsultantById(id: string) {
+        return await this.prisma.consultant.findUnique({
+            where: { id },
+            include: {
+            user: {
+                select: {
+                fullName: true,
+                email: true,
+                },
+            },
+            skills: {
+                include: {
+                skill: {
+                    select: { name: true },
+                },
+                },
+            },
+            certificates: true,
+            },
+        });
+    }
 }
 
 

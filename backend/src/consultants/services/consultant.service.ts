@@ -1,8 +1,8 @@
-import { ConflictException, Injectable } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { ConsultantRepository } from "../repositories/consultant.repository";
 import { CreateConsultantDto } from "../dto/create-consultant.dto";
 import { ConsultantListItemDto, PaginatedConsultantsResponseDto } from '../dto/consultant-list.dto';
-
+import { ConsultantProfileDto } from '../dto/consultant-profile.dto';
 @Injectable()
 export class ConsultantService {
     constructor(private readonly consultantRepository: ConsultantRepository) {}
@@ -45,6 +45,34 @@ export class ConsultantService {
             page,
             total,
             consultants: mappedConsultants,
+        };
+    }
+
+    async getConsultantById(id: string): Promise<ConsultantProfileDto> {
+        const consultant = await this.consultantRepository.getConsultantById(id);
+
+        if (!consultant) {
+            throw new NotFoundException(`Consultant with id ${id} not found.`);
+        }
+
+        return {
+            id: consultant.id,
+            fullName: consultant.user.fullName,
+            email: consultant.user.email,
+            location: consultant.location,
+            availability: consultant.availability,
+            costToCompany: consultant.costToCompany,
+            skills: consultant.skills.map((cs) => ({
+            skillName: cs.skill.name,
+            competencyLevel: cs.competencyLevel,
+            yearsExperience: cs.yearsExperience,
+            confidenceLevel: cs.confidenceLevel,
+            })),
+            certificates: consultant.certificates.map((cert) => ({
+                title: cert.title,
+                issuingBody: cert.issuingBody,
+                uploadedAt: cert.uploadedAt,
+            })),
         };
     }
 }

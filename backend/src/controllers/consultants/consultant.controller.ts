@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Req, UsePipes, ValidationPipe, Param } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
+
 @Controller('consultants')
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
@@ -24,6 +25,12 @@ export class ConsultantController {
       parseInt(limit, 10),
       userRole,
     )
+  }
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  async getConsultantById(@Param('id') id: string) {
+    return await this.consultantService.getConsultantById(id);
   }
 
 }

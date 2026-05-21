@@ -1,3 +1,4 @@
+
 export class ConsultantListItemDto {
     id!: string;
     fullName!: string;
@@ -12,3 +13,4 @@ export class PaginatedConsultantsResponseDto {
     total!:number;
     consultants!: ConsultantListItemDto[];
 }
+

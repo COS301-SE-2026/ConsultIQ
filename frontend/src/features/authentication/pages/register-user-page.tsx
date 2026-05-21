@@ -3,10 +3,11 @@ import { adminSidebarItems, consultantManagerSidebarItems, consultantSidebarItem
 import UserRegistrationForm from "../components/user-registration-form";
 import type { UserRole } from "../../../types/global.types";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
 
 function RegisterUserPage() {
-    /* for now, mock user, will be replaced with actual user data from auth context */
-    const currentUserRole: UserRole = "ADMIN";
+    const { user } = useAuth();
+    const currentUserRole = user?.role as UserRole | undefined;
     
     let allowedRoles: UserRole[] = [];
     if (currentUserRole === "ADMIN") {

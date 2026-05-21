@@ -23,17 +23,65 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [description, setDescription] = useState("");
+    const [dateError, setDateError] = useState("");
+
+    const formatDateInput = (value: string) => {
+        const v = value.replace(/\D/g, "");
+        if (v.length >= 5) {
+            return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
+        } else if (v.length >= 3) {
+            return `${v.slice(0, 2)}/${v.slice(2)}`;
+        }
+        return v;
+    };
+
+    const parseDate = (dateStr: string) => {
+        const parts = dateStr.split("/");
+        if (parts.length === 3 && parts[2].length === 4) {
+            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        }
+        return null;
+    };
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newStart = e.target.value;
+        const newStart = formatDateInput(e.target.value);
         setStartDate(newStart);
-        if (endDate && newStart > endDate) {
+        if (dateError) setDateError("");
+
+        const parsedStart = parseDate(newStart);
+        const parsedEnd = parseDate(endDate);
+
+        // Automatically clear end date if start date is pushed past it
+        if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
             setEndDate("");
         }
     };
 
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newEnd = formatDateInput(e.target.value);
+        setEndDate(newEnd);
+        if (dateError) setDateError("");
+    };
+
     const handleAdd = () => {
         if (!jobTitle.trim() || !companyName.trim()) return;
+
+        const parsedStart = parseDate(startDate);
+        const parsedEnd = parseDate(endDate);
+        
+        if (startDate && !parsedStart) {
+            setDateError("Please enter a valid Start Date (DD/MM/YYYY)");
+            return;
+        }
+        if (endDate && !parsedEnd) {
+            setDateError("Please enter a valid End Date (DD/MM/YYYY)");
+            return;
+        }
+        if (parsedStart && parsedEnd && parsedEnd < parsedStart) {
+            setDateError("End date cannot be before start date");
+            return;
+        }
+
         onAdd({
             jobTitle,
             companyName,
@@ -50,6 +98,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         setStartDate("");
         setEndDate("");
         setDescription("");
+        setDateError("");
     };
 
     return (
@@ -114,7 +163,9 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="start-date" 
-                                type="date" 
+                                type="text"
+                                placeholder="DD/MM/YYYY"
+                                maxLength={10}
                                 value={startDate}
                                 onChange={handleStartDateChange}
                             />
@@ -126,13 +177,15 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="end-date" 
-                                type="date" 
+                                type="text"
+                                placeholder="DD/MM/YYYY"
+                                maxLength={10}
                                 value={endDate}
-                                min={startDate}
-                                onChange={(e) => setEndDate(e.target.value)}
+                                onChange={handleEndDateChange}
                             />
                         </div>
                     </div>
+                    {dateError && <span className="text-red-500 text-sm">{dateError}</span>}
 
                     <div className="flex flex-col gap-3">
                         <label htmlFor="description" className="text-base font-semibold">

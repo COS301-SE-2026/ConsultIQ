@@ -15,32 +15,6 @@ import SkillsTab from "../layouts/skills-tab";
 
 type Tab = "personal" | "experience" | "skills";
 
-interface SessionSkill {
-    name?: string;
-    skillName?: string;
-    yearsOfExperience?: string | number;
-    experience?: string | number;
-    competencyLevel?: string;
-}
-
-interface SessionCert {
-    qualification?: string;
-    title?: string;
-    name?: string;
-}
-
-interface SessionExperience {
-    jobTitle?: string;
-    companyName?: string;
-    company?: string;
-    jobType?: string;
-    workModel?: string;
-    startDate?: string;
-    endDate?: string;
-    description?: string;
-    roleDescription?: string;
-}
-
 function CreateProfileContent() {
     const [activeTab, setActiveTab] = useState<Tab>("personal");
     const navigate = useNavigate();
@@ -48,6 +22,7 @@ function CreateProfileContent() {
     
     const handleSave = async () => {
         try {
+            // Gather data saved by the individual form tabs directly from sessionStorage
             const name = sessionStorage.getItem("profile_firstName") || profileData.name || "Jane";
             const surname = sessionStorage.getItem("profile_lastName") || profileData.surname || "Doe";
             const email = sessionStorage.getItem("profile_email") || profileData.email || `jane.doe.${Date.now()}@consultiq.dev`;
@@ -67,7 +42,7 @@ function CreateProfileContent() {
             // Get skills from session storage
             const rawSkills = sessionStorage.getItem("skills_list");
             const parsedSkills = rawSkills ? JSON.parse(rawSkills) : [];
-            const actualSkills = parsedSkills.length ? parsedSkills.map((s: SessionSkill) => ({
+            const actualSkills = parsedSkills.length ? parsedSkills.map((s: any) => ({
                 skillName: s.name || s.skillName,
                 experience: String(s.yearsOfExperience || s.experience || "0"),
                 competencyLevel: (s.competencyLevel || "BEGINNER").toUpperCase(),
@@ -76,14 +51,14 @@ function CreateProfileContent() {
             // Get education/certifications from session storage
             const rawCerts = sessionStorage.getItem("education_list") || sessionStorage.getItem("certifications_list");
             const parsedCerts = rawCerts ? JSON.parse(rawCerts) : [];
-            const actualCerts = parsedCerts.length ? parsedCerts.map((c: SessionCert) => ({
+            const actualCerts = parsedCerts.length ? parsedCerts.map((c: any) => ({
                 title: c.qualification || c.title || c.name || "Unknown Qualification",
             })) : profileData.certifications;
 
             // Get work experiences from session storage
             const rawExperiences = sessionStorage.getItem("experience_list");
             const parsedExperiences = rawExperiences ? JSON.parse(rawExperiences) : [];
-            const actualExperiences = parsedExperiences.length ? parsedExperiences.map((e: SessionExperience) => ({
+            const actualExperiences = parsedExperiences.length ? parsedExperiences.map((e: any) => ({
                 jobTitle: e.jobTitle || "",
                 companyName: e.companyName || e.company || "",
                 jobType: e.jobType || "Full-time",
@@ -135,8 +110,8 @@ function CreateProfileContent() {
 
             toast.success("Consultant profile created successfully!");
             navigate("/consultants-manager");
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to create consultant profile");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to create consultant profile");
         }
     };
 
@@ -202,7 +177,7 @@ function CreateProfileContent() {
 
                     {/* Scrollable Content */}
                     <div className="max-w-[1600px] mx-auto w-full pb-8 mt-8" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
-                        {activeTab === "personal" && <PersonalTab />}
+                        {activeTab === "personal" && <PersonalTab onNext={() => setActiveTab("experience")} />}
                         {activeTab === "experience" && <ExperienceTab />}
                         {activeTab === "skills" && <SkillsTab />}
                     </div>

@@ -43,17 +43,6 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         return null;
     };
 
-    const formatDateInput = (value: string) => {
-        // Remove non-digit characters
-        const v = value.replace(/\D/g, "");
-        if (v.length >= 5) {
-            return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
-        } else if (v.length >= 3) {
-            return `${v.slice(0, 2)}/${v.slice(2)}`;
-        }
-        return v;
-    };
-
     const parseDate = (dateStr: string) => {
         const parts = dateStr.split("/");
         if (parts.length === 3 && parts[2].length === 4) {

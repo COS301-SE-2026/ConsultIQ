@@ -128,11 +128,6 @@ function ConsultantProfileViewPage() {
 
             <LocationCard
               address1={profile.address1}
-              address2={profile.address2}
-              suburb={profile.suburb}
-              city={profile.city}
-              province={profile.province}
-              postalCode={profile.postalCode}
             />
 
             <ExperienceCard experiences={profile.experience} />

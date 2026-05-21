@@ -52,14 +52,20 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     id: data.id,
     firstName,
     lastName,
-    status: data.availability === "AVAILABLE" ? "Available" : "Unavailable",
+   status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
     phone: data.phoneNumber || "Not Provided",
     idNumber: data.idNumber || "Not Provided",
     nationality: data.nationality || "Not Provided",
 
     
-    location: data.location || "Not Provided",
+   
+    address1: data.location || "Not Provided",
+    address2: "",
+    suburb: "",
+    city:  "",
+    province: "",
+    postalCode: "",
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,
@@ -82,7 +88,7 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     skills: (data.skills || []).map((s) => ({
       name: s.skillName,
-      competencyLevel: s.competencyLevel, 
+      competencyLevel: s.competencyLevel as any, 
       yearsOfExperience: s.yearsExperience || 0,
     })),
 

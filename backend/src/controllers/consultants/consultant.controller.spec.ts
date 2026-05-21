@@ -134,7 +134,7 @@ describe('ConsultantController', () => {
 
       mockConsultantService.getAllConsultants.mockResolvedValue(mockResponse);
 
-      const req = { user: { role: 'ADMIN' } };
+      const req = { user: { role: 'ADMIN', sub: 'user-123' } };
       const result = await controller.getAllConsultants('1', '10', req);
 
       expect(result.consultants).toHaveLength(1);

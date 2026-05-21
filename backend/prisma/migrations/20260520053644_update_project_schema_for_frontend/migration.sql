@@ -15,7 +15,6 @@
 
 */
 -- AlterTable
-ALTER TABLE "consultants" DROP COLUMN "profileStatus";
 
 -- AlterTable
 ALTER TABLE "project_skills" DROP COLUMN "isMandatory",
@@ -36,4 +35,4 @@ ADD COLUMN     "postalCode" TEXT NOT NULL,
 ADD COLUMN     "suburb" TEXT;
 
 -- DropEnum
-DROP TYPE "ProfileStatus"; -- NOSONAR
+-- DROP TYPE "ProfileStatus"; -- NOSONAR

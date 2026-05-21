@@ -12,8 +12,36 @@ export default function ProfileInfoForm() {
     const [nationality, setNationality] = useState(() => sessionStorage.getItem("profile_nationality") || "");
     const [isAvailable, setIsAvailable] = useState(() => sessionStorage.getItem("profile_isAvailable") === "true");
     const [costToCompany, setCostToCompany] = useState(() => sessionStorage.getItem("profile_costToCompany") || "");
+    
+    const [phoneError, setPhoneError] = useState("");
+    const [idError, setIdError] = useState("");
+    const [costError, setCostError] = useState("");
+    const [emailError, setEmailError] = useState("");
 
     const handleDone = () => {
+        let isValid = true;
+
+        if (!email.trim()) {
+            setEmailError("Email address is required");
+            isValid = false;
+        } else if (!/^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]+$/.test(email)) {
+            setEmailError("Please enter a valid email address");
+            isValid = false;
+        }
+        if (!/^\d{10}$/.test(phone)) {
+            setPhoneError("Phone number must be exactly 10 digits");
+            isValid = false;
+        }
+        if (!/^\d{13}$/.test(idNumber)) {
+            setIdError("ID number must be exactly 13 digits");
+            isValid = false;
+        }
+        if (costToCompany !== "" && Number(costToCompany) < 0) {
+            setCostError("Cost to company cannot be negative");
+            isValid = false;
+        }
+        if (!isValid) return;
+
         // Strict allowlist sanitization for plain text fields
         const sanitizeName = (text: string) => text.replace(/[^a-zA-Z\s.,'-]/g, "");
         const sanitizeEmail = (text: string) => text.replace(/[^a-zA-Z0-9._@+-]/g, "");
@@ -42,6 +70,7 @@ export default function ProfileInfoForm() {
         const sanitizeCurrency = (text: string) => text.replace(/[^0-9.]/g, "");
         const sanitizedCTC = sanitizeCurrency(costToCompany);
         sessionStorage.setItem("profile_costToCompany", sanitizedCTC); //NOSONAR
+
 
         console.log("Profile Info Saved:", {
             firstName,
@@ -94,10 +123,16 @@ export default function ProfileInfoForm() {
                         <Input 
                             id="email" 
                             type="email" 
+                            required
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (emailError) setEmailError("");
+                            }}
                             placeholder="example@consultiq.com" 
+                            className={emailError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
+                        {emailError && <span className="text-red-500 text-sm mt-1">{emailError}</span>}
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -108,10 +143,15 @@ export default function ProfileInfoForm() {
                             pattern="\d{10}"
                             maxLength={10}
                             value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
+                            onChange={(e) => {
+                                setPhone(e.target.value);
+                                if (phoneError) setPhoneError("");
+                            }}
                             title="Please enter a valid 10-digit phone number"
                             placeholder="0123456789" 
+                            className={phoneError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
+                        {phoneError && <span className="text-red-500 text-sm mt-1">{phoneError}</span>}
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -121,10 +161,15 @@ export default function ProfileInfoForm() {
                             pattern="\d{13}"
                             maxLength={13}
                             value={idNumber}
-                            onChange={(e) => setIdNumber(e.target.value)}
+                            onChange={(e) => {
+                                setIdNumber(e.target.value);
+                                if (idError) setIdError("");
+                            }}
                             title="South African ID number must be exactly 13 digits"
                             placeholder="1234567890123" 
+                            className={idError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
+                        {idError && <span className="text-red-500 text-sm mt-1">{idError}</span>}
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -176,7 +221,7 @@ export default function ProfileInfoForm() {
                         <label htmlFor="cost-to-company" className="text-base font-semibold">Cost to Company (R)</label>
                         <div className="relative">
                             <span
-                                className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold select-none"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-semibold select-none z-10"
                                 style={{ color: "var(--color-primary)" }}
                             >
                                 R
@@ -185,13 +230,23 @@ export default function ProfileInfoForm() {
                                 id="cost-to-company"
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="100"
                                 placeholder="0.00"
                                 value={costToCompany}
-                                onChange={(e) => setCostToCompany(e.target.value)}
-                                className="pl-7"
+                                onChange={(e) => {
+                                    setCostToCompany(e.target.value);
+                                    if (costError) setCostError("");
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === "-") {
+                                        e.preventDefault();
+                                    }
+                                }}
+                                className={costError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                                style={{ paddingLeft: "2.5rem" }}
                             />
                         </div>
+                        {costError && <span className="text-red-500 text-sm">{costError}</span>}
                     </div>
                 </div>
                 <div className="mt-8 flex justify-end w-full">

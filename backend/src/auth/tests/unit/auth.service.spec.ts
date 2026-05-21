@@ -152,7 +152,7 @@ describe('AuthService Testing Suite', () => {
         userId: BASE_USER.id,
         email: BASE_USER.email,
         role: Role.CONSULTANT,
-        dashboardRoute: '/profile',
+        dashboardRoute: '/profile-view',
         accessToken: 'mock-jwt-token',
         refreshToken: 'mock-refresh-token',
       });

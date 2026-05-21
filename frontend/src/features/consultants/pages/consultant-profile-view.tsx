@@ -1,5 +1,9 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth"
+import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import {
   ProfileHeroCard,
   PersonalInfoCard,
@@ -17,6 +21,8 @@ interface Profile {
   status: "Available" | "Unavailable";
   email: string;
   phone: string;
+  idNumber: string;
+  nationality: string;
   address1: string;
   address2: string;
   suburb: string;
@@ -35,6 +41,8 @@ const mockProfile: Profile = {
   status: "Available",
   email: "asandablack@gmail.com",
   phone: "060 292 0109",
+  idNumber: "9001015000085",
+  nationality: "South African",
   address1: "123 duncan street",
   address2: "Apt 4b",
   suburb: "Hatfield",
@@ -50,25 +58,23 @@ const mockProfile: Profile = {
       id: "exp1",
       company: "TrendIQ.com",
       jobTitle: "Front-End Developer",
-      location: "415 Lynwood street, Hatfield, Pretoria, 0028",
       jobType: "Full-time",
       startDate: "October 2021",
       endDate: "December 2022",
-      duration: "1 year 2 months",
       roleDescription:
         "Designed, developed, and maintained responsive user interfaces using HTML, CSS, and JavaScript frameworks. Collaborated closely with backend developers and UX designers.",
+      workModel: "ONSITE",
     },
     {
       id: "exp2",
       company: "BrandStyle",
       jobTitle: "Back-end Developer",
-      location: "Sandton, Johannesburg",
       jobType: "Full-time",
       startDate: "December 2023",
       endDate: "Present",
-      duration: "1 year",
       roleDescription:
         "Built and maintained RESTful APIs and microservices. Improved database query performance and implemented automated testing pipelines.",
+      workModel: "REMOTE",
     },
   ],
   education: [
@@ -78,7 +84,7 @@ const mockProfile: Profile = {
       qualification: "Bsc Computer Science",
       startDate: "February 2017",
       endDate: "December 2020",
-      attachmentName: "Certificate.pdf",
+     
     },
     {
       id: "edu2",
@@ -91,8 +97,24 @@ const mockProfile: Profile = {
 };
 
 function ConsultantProfileViewPage() {
-  const profile = mockProfile;
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth(); // Logged in session user data
 
+  const fromDashboard = location.state?.fromDashboard || false;
+  const targetConsultantId = location.state?.selectedConsultantId;
+
+  // Execute hook logic cleanly on a single line
+  const { profile, isLoading, error } = useFetchConsultantProfile(targetConsultantId, user?.userId);
+
+  if (isLoading) {
+    return <div className="flex h-screen items-center justify-center font-medium">Loading profile content...</div>;
+  }
+
+  if (error || !profile) {
+    return <div className="flex h-screen items-center justify-center text-red-500 font-semibold">{error || "Profile error"}</div>;
+  }
+  
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
@@ -102,12 +124,30 @@ function ConsultantProfileViewPage() {
        
        
         <header
-          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
+          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center justify-between"
           style={{ borderColor: "var(--color-border)" }}
         >
-          <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)" }}>
-            My Profile
-          </h1>
+          <div className="flex items-center gap-6">
+            {fromDashboard && (
+              <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 font-semibold transition hover:opacity-70"
+                style={{
+                  color: "var(--color-primary)",
+                  fontSize: "16px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                <ArrowLeft size={20} /> Back
+              </button>
+            )}
+            <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)" }}>
+              {fromDashboard ? "Consultant Profile" : "My Profile"}
+            </h1>
+          </div>
         </header>
 
       

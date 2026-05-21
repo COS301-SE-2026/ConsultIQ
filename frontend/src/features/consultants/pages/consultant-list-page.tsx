@@ -174,7 +174,7 @@ function ConsultantsPage() {
               <ConsultantCard
                 key={consultant.id}
                 consultant={consultant}
-                onViewDetails={(id) => console.log("View details for", id)}
+                onViewDetails={(id) => navigate("/profile-view", { state: { fromDashboard: true, selectedConsultantId: id } })}
               />
             ))}
             {isLoading && (

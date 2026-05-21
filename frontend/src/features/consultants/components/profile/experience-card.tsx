@@ -94,7 +94,7 @@ function ExperienceCard({ experiences }: ExperienceCardProps) {
                           fontSize: "var(--text-h4)",
                         }}
                       >
-                        {exp.duration}
+                        {exp.workModel}
                       </span>
                     </div>
                   </div>

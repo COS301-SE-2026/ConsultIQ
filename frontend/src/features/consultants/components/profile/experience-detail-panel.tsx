@@ -5,12 +5,11 @@ export interface Experience {
   id: string;
   company: string;
   jobTitle: string;
-  location: string;
   jobType: string;
   startDate: string;
   endDate: string;
-  duration: string;
   roleDescription: string;
+  workModel: string;
 }
 
 interface ExperienceDetailPanelProps {
@@ -23,7 +22,7 @@ export default function ExperienceDetailPanel({ experience, onClose }: Experienc
     <DetailPanel title="Experience" onClose={onClose}>
       <DetailField label="Job title" value={experience.jobTitle} />
       <DetailField label="Company/organisation" value={experience.company} />
-      <DetailField label="Location" value={experience.location} />
+      <DetailField label="Work model" value={experience.workModel} />
       <DetailField label="Job type" value={experience.jobType} />
       <DetailField
         label="Start and end date"

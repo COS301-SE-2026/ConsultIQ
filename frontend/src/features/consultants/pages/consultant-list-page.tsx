@@ -39,7 +39,7 @@ function ConsultantsPage() {
           };
         });
         setConsultants(mapped);
-      } catch (error) {
+      } catch (error: unknown) {
         toast.error(error instanceof Error ? error.message : "Failed to load consultants");
       } finally {
         setIsLoading(false);
@@ -48,11 +48,6 @@ function ConsultantsPage() {
 
     fetchConsultants();
   }, []);
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
-  };
 
   const available   = consultants.filter((c) => c.status === "Available");
   const unavailable = consultants.filter((c) => c.status === "Unavailable");
@@ -96,7 +91,7 @@ function ConsultantsPage() {
         
           <div className="flex items-center gap-3">
             <button
-             onClick={() => navigate("/register")}
+              onClick={() => navigate("/register")}
               className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
               style={{
                 backgroundColor: "var(--color-accent)",
@@ -162,7 +157,10 @@ function ConsultantsPage() {
           {/* Search bar */}
           <SearchBar
             value={searchQuery}
-            onChange={handleSearchChange}
+            onChange={(val) => {
+              setSearchQuery(val);
+              setCurrentPage(1);
+            }}
             placeholder="Search consultants by name, skill, email..."
             onFilterClick={() => console.log("Open filters")}
           />

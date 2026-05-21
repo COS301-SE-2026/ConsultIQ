@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
+import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
 
 type Props = {
     onAdd: (exp: {
@@ -23,45 +24,37 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [description, setDescription] = useState("");
-
-    const formatDateInput = (value: string) => {
-        // Remove non-digit characters
-        const v = value.replace(/\D/g, "");
-        if (v.length >= 5) {
-            return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
-        } else if (v.length >= 3) {
-            return `${v.slice(0, 2)}/${v.slice(2)}`;
-        }
-        return v;
-    };
-
-    const parseDate = (dateStr: string) => {
-        const parts = dateStr.split("/");
-        if (parts.length === 3 && parts[2].length === 4) {
-            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-        }
-        return null;
-    };
+    const [dateError, setDateError] = useState("");
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
         setStartDate(newStart);
+        if (dateError) setDateError("");
 
         const parsedStart = parseDate(newStart);
         const parsedEnd = parseDate(endDate);
 
-        // Reset end date if start date is moved past the end date
+        // Automatically clear end date if start date is pushed past it
         if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
             setEndDate("");
         }
     };
 
     const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEndDate(formatDateInput(e.target.value));
+        const newEnd = formatDateInput(e.target.value);
+        setEndDate(newEnd);
+        if (dateError) setDateError("");
     };
 
     const handleAdd = () => {
         if (!jobTitle.trim() || !companyName.trim()) return;
+
+        const validationError = validateDateRange(startDate, endDate);
+        if (validationError) {
+            setDateError(validationError);
+            return;
+        }
+
         onAdd({
             jobTitle,
             companyName,
@@ -78,6 +71,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         setStartDate("");
         setEndDate("");
         setDescription("");
+        setDateError("");
     };
 
     return (
@@ -142,7 +136,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="start-date" 
-                                type="text" 
+                                type="text"
                                 placeholder="DD/MM/YYYY"
                                 maxLength={10}
                                 value={startDate}
@@ -156,7 +150,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="end-date" 
-                                type="text" 
+                                type="text"
                                 placeholder="DD/MM/YYYY"
                                 maxLength={10}
                                 value={endDate}
@@ -164,6 +158,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             />
                         </div>
                     </div>
+                    {dateError && <span className="text-red-500 text-sm">{dateError}</span>}
 
                     <div className="flex flex-col gap-3">
                         <label htmlFor="description" className="text-base font-semibold">

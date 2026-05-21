@@ -19,7 +19,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

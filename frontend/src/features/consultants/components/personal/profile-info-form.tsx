@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { toast } from "sonner";
 
 export default function ProfileInfoForm() {
     const [firstName, setFirstName] = useState(() => sessionStorage.getItem("profile_firstName") || "");
@@ -17,6 +18,59 @@ export default function ProfileInfoForm() {
     const [idError, setIdError] = useState("");
     const [costError, setCostError] = useState("");
     const [emailError, setEmailError] = useState("");
+    const [nationalityError, setNationalityError] = useState("");
+
+    const validateSouthAfricanId = (id: string): string => {
+        // Must be exactly 13 digits
+        if (!/^\d{13}$/.test(id)) {
+            return "South African ID number must be exactly 13 digits";
+        }
+
+        // Extract date components
+        const month = parseInt(id.substring(2, 4), 10);
+        const day = parseInt(id.substring(4, 6), 10);
+
+        // Basic date validation
+        if (
+            month < 1 ||
+            month > 12 ||
+            day < 1 ||
+            day > 31
+        ) {
+            return "Invalid South African ID number";
+        }
+
+        // Luhn algorithm validation
+        let sum = 0;
+
+        for (let i = 0; i < 13; i++) {
+            let digit = parseInt(id.charAt(i), 10);
+
+            if (i % 2 !== 0) {
+                digit *= 2;
+                if (digit > 9) {
+                    digit -= 9;
+                }
+            }
+            sum += digit;
+        }
+
+        if (sum % 10 !== 0) {
+            return "Invalid South African ID number";
+        }
+
+        return "";
+    };
+
+    const isFormValid = useMemo(() => {
+        if (!firstName.trim() || !lastName.trim() || !nationality.trim() || costToCompany === "") return false;
+        if (!email.trim() || !/^[^\s@]+@(?:[^\s@.]+\.)+[^\s@.]+$/.test(email)) return false;
+        if (!/^\d{10}$/.test(phone)) return false;
+        if (validateSouthAfricanId(idNumber) !== "") return false;
+        if (Number(costToCompany) < 0) return false;
+        if (/\d/.test(nationality)) return false;
+        return true;
+    }, [firstName, lastName, email, phone, idNumber, nationality, costToCompany]);
 
     const handleDone = () => {
         let isValid = true;
@@ -32,12 +86,18 @@ export default function ProfileInfoForm() {
             setPhoneError("Phone number must be exactly 10 digits");
             isValid = false;
         }
-        if (!/^\d{13}$/.test(idNumber)) {
-            setIdError("ID number must be exactly 13 digits");
+        
+        const idValidationError = validateSouthAfricanId(idNumber);
+        if (idValidationError) {
+            setIdError(idValidationError);
             isValid = false;
         }
         if (costToCompany !== "" && Number(costToCompany) < 0) {
             setCostError("Cost to company cannot be negative");
+            isValid = false;
+        }
+        if (/\d/.test(nationality)) {
+            setNationalityError("Nationality cannot contain numbers");
             isValid = false;
         }
         if (!isValid) return;
@@ -82,6 +142,8 @@ export default function ProfileInfoForm() {
             isAvailable,
             costToCompany: sanitizedCTC,
         });
+
+        toast.success("Personal information saved successfully!");
     };
 
     return (
@@ -155,31 +217,58 @@ export default function ProfileInfoForm() {
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <label htmlFor="id-number" className="text-base font-semibold">ID Number</label>
-                        <Input 
-                            id="id-number" 
+                        <label
+                            htmlFor="id-number"
+                            className="text-base font-semibold"
+                        >
+                            ID Number
+                        </label>
+
+                        <Input
+                            id="id-number"
                             pattern="\d{13}"
                             maxLength={13}
                             value={idNumber}
                             onChange={(e) => {
-                                setIdNumber(e.target.value);
-                                if (idError) setIdError("");
+                                const value = e.target.value.replace(/\D/g, "");
+
+                                setIdNumber(value);
+
+                                const validationError =
+                                    validateSouthAfricanId(value);
+
+                                setIdError(validationError);
                             }}
                             title="South African ID number must be exactly 13 digits"
-                            placeholder="1234567890123" 
-                            className={idError ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            placeholder="1234567890123"
+                            className={
+                                idError
+                                    ? "border-red-500 focus-visible:ring-red-500"
+                                    : ""
+                            }
                         />
-                        {idError && <span className="text-red-500 text-sm mt-1">{idError}</span>}
+
+                        {idError && (
+                            <span className="text-red-500 text-sm mt-1">
+                                {idError}
+                            </span>
+                        )}
                     </div>
 
                     <div className="flex flex-col gap-3">
                         <label htmlFor="nationality" className="text-base font-semibold">Nationality</label>
                         <Input 
                             id="nationality" 
+                            type="text" 
                             placeholder="South African" 
                             value={nationality}
-                            onChange={(e) => setNationality(e.target.value)}
+                            onChange={(e) => {
+                                setNationality(e.target.value);
+                                if (nationalityError) setNationalityError("");
+                            }}
+                            className={nationalityError ? "border-red-500 focus-visible:ring-red-500" : ""}
                         />
+                        {nationalityError && <span className="text-red-500 text-sm mt-1">{nationalityError}</span>}
                     </div>
                 </div>
                 <div className="h-6" />
@@ -249,11 +338,13 @@ export default function ProfileInfoForm() {
                         {costError && <span className="text-red-500 text-sm">{costError}</span>}
                     </div>
                 </div>
+                <div className="h-6" />
+
                 <div className="mt-8 flex justify-end w-full">
-                    <Button onClick={handleDone} className="h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
+                    <Button onClick={handleDone} className={`h-14 w-46 text-lg rounded font-semibold transition ${isFormValid ? "hover:brightness-110" : "bg-gray-50 hover:bg-gray-100"}`}
                         style={{
-                            color:
-                                "var(--color-primary)",
+                            backgroundColor: isFormValid ? "var(--color-accent)" : undefined,
+                            color: isFormValid ? "white" : "var(--color-primary)",
                         }}
                     >
                         Done

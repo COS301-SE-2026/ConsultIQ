@@ -5,7 +5,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {
@@ -63,7 +63,11 @@ export class ProjectRepository {
     return this.getPaginatedProjects(page, limit);
   }
 
-  async getProjectsByProjectManager(userId: string, page: number, limit: number) {
+  async getProjectsByProjectManager(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
     return this.getPaginatedProjects(
       page,
       limit,
@@ -72,7 +76,11 @@ export class ProjectRepository {
     );
   }
 
-  async getProjectsByConsultantManager(userId: string, page: number, limit: number) {
+  async getProjectsByConsultantManager(
+    userId: string,
+    page: number,
+    limit: number,
+  ) {
     return this.getPaginatedProjects(
       page,
       limit,

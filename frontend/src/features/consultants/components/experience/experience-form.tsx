@@ -24,12 +24,40 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     const [endDate, setEndDate] = useState("");
     const [description, setDescription] = useState("");
 
+    const formatDateInput = (value: string) => {
+        // Remove non-digit characters
+        const v = value.replace(/\D/g, "");
+        if (v.length >= 5) {
+            return `${v.slice(0, 2)}/${v.slice(2, 4)}/${v.slice(4, 8)}`;
+        } else if (v.length >= 3) {
+            return `${v.slice(0, 2)}/${v.slice(2)}`;
+        }
+        return v;
+    };
+
+    const parseDate = (dateStr: string) => {
+        const parts = dateStr.split("/");
+        if (parts.length === 3 && parts[2].length === 4) {
+            return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        }
+        return null;
+    };
+
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newStart = e.target.value;
+        const newStart = formatDateInput(e.target.value);
         setStartDate(newStart);
-        if (endDate && newStart > endDate) {
+
+        const parsedStart = parseDate(newStart);
+        const parsedEnd = parseDate(endDate);
+
+        // Reset end date if start date is moved past the end date
+        if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
             setEndDate("");
         }
+    };
+
+    const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEndDate(formatDateInput(e.target.value));
     };
 
     const handleAdd = () => {
@@ -114,7 +142,9 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="start-date" 
-                                type="date" 
+                                type="text" 
+                                placeholder="DD/MM/YYYY"
+                                maxLength={10}
                                 value={startDate}
                                 onChange={handleStartDateChange}
                             />
@@ -126,10 +156,11 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
                             </label>
                             <Input 
                                 id="end-date" 
-                                type="date" 
+                                type="text" 
+                                placeholder="DD/MM/YYYY"
+                                maxLength={10}
                                 value={endDate}
-                                min={startDate}
-                                onChange={(e) => setEndDate(e.target.value)}
+                                onChange={handleEndDateChange}
                             />
                         </div>
                     </div>

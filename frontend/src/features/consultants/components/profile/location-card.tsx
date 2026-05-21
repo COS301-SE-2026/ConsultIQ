@@ -3,11 +3,6 @@ import { DetailField } from "../../../../components/shared/detail-field";
 
 interface LocationCardProps {
   readonly address1?: string;
-  readonly address2?: string;
-  readonly suburb?: string;
-  readonly city?: string;
-  readonly province?: string;
-  readonly postalCode?: string;
 }
 
 export default function LocationCard({

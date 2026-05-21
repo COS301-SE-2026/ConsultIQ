@@ -7,7 +7,7 @@ interface PersonalInfoCardProps {
   readonly email: string;
   readonly phone: string;
   readonly idNumber?: string;
-  nationality?: string;
+  readonly nationality?: string;
 }
 
 export default function PersonalInfoCard({

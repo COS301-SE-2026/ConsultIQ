@@ -2,8 +2,48 @@ import { useState, useEffect } from "react";
 import { getConsultantProfileById, getConsultantProfileByUserId } from "../api/consultants.api";
 
 
+interface ExperienceDto {
+  id?: string;
+  companyname: string;
+  jobTitle: string;
+  jobType: string;
+  startDate: string;
+  endDate?: string;
+  roleDescription?: string;
+  workModel?: string;
+}
 
-const mapDtoToProfile = (data: any) => {
+interface SkillDto {
+  skillName: string;
+  competencyLevel: string;
+  yearsExperience?: number;
+}
+
+interface CertificateDto {
+  id?: string;
+  issuingBody: string;
+  title: string;
+  startDate?: string;
+  endDate?: string;
+  uploadedAt: string;
+}
+
+export interface ConsultantProfileDto {
+  id: string;
+  fullName?: string;
+  availability?: string;
+  email: string;
+  phoneNumber?: string;
+  idNumber?: string;
+  nationality?: string;
+  location?: string;
+  experience?: ExperienceDto[];
+  skills?: SkillDto[];
+  certificates?: CertificateDto[];
+}
+
+
+const mapDtoToProfile = (data: ConsultantProfileDto) => {
   const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
   const firstName = nameParts[0] || "";
   const lastName = nameParts.slice(1).join(" ") || "";
@@ -18,16 +58,10 @@ const mapDtoToProfile = (data: any) => {
     idNumber: data.idNumber || "Not Provided",
     nationality: data.nationality || "Not Provided",
 
-   
-    address1: data.location || "Not Provided",
-    address2: "",
-    suburb: "",
-    city: data.location || "",
-    province: "",
-    postalCode: "",
-
     
-    experience: (data.experience || []).map((exp: any, index: number) => ({
+    location: data.location || "Not Provided",
+
+    experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,
       company: exp.companyname,
       jobTitle: exp.jobTitle,
@@ -35,26 +69,24 @@ const mapDtoToProfile = (data: any) => {
       startDate: new Date(exp.startDate).toLocaleDateString("en-ZA", { 
         month: "long", 
         year: "numeric" 
-        }),
+      }),
       endDate: exp.endDate 
         ? new Date(exp.endDate).toLocaleDateString("en-ZA", { 
             month: "long", 
             year: "numeric" 
-            }) 
+          }) 
         : "Present",
       roleDescription: exp.roleDescription || "No description provided.",
       workModel: exp.workModel || "ONSITE",
     })),
 
-    
-    skills: (data.skills || []).map((s: any) => ({
+    skills: (data.skills || []).map((s) => ({
       name: s.skillName,
       competencyLevel: s.competencyLevel, 
       yearsOfExperience: s.yearsExperience || 0,
     })),
 
-    
-    education: (data.certificates || []).map((cert: any, index: number) => ({
+    education: (data.certificates || []).map((cert, index: number) => ({
       id: cert.id || `edu-${index}`,
       institution: cert.issuingBody,
       qualification: cert.title,
@@ -68,8 +100,14 @@ const mapDtoToProfile = (data: any) => {
   };
 };
 
-export function useFetchConsultantProfile(targetConsultantId: string | undefined, loggedInUserId: string | undefined) {
-  const [profile, setProfile] = useState<any>(null);
+export type MappedConsultantProfile = ReturnType<typeof mapDtoToProfile>;
+
+export function useFetchConsultantProfile(
+  targetConsultantId: string | undefined, 
+  loggedInUserId: string | undefined
+) {
+  // Use the inferred map type instead of "any"
+  const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,23 +115,26 @@ export function useFetchConsultantProfile(targetConsultantId: string | undefined
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        let rawData = null;
+      
+        let rawData: ConsultantProfileDto | null = null;
 
         if (targetConsultantId) {
-          
           rawData = await getConsultantProfileById(targetConsultantId);
         } else if (loggedInUserId) {
-          
           rawData = await getConsultantProfileByUserId(loggedInUserId);
         } else {
           throw new Error("No usable identifier found to load profile.");
         }
 
-        setProfile(mapDtoToProfile(rawData));
+        if (rawData) {
+          setProfile(mapDtoToProfile(rawData));
+        }
         setError(null);
-      } catch (err: any) {
+      } catch (err) {
         console.error("Profile Fetch Hook Error:", err);
-        setError(err.message || "Could not load profile details.");
+        
+        const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }

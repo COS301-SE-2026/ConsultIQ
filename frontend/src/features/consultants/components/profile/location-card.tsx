@@ -12,24 +12,9 @@ interface LocationCardProps {
 
 export default function LocationCard({
   address1,
-  address2,
-  suburb,
-  city,
-  province,
-  postalCode,
+ 
 }: LocationCardProps) {
   
-  const fullAddressString = [
-    address1,
-    address2,
-    suburb,
-    city,
-    province,
-    postalCode,
-  ]
-    .map((field) => field?.trim())
-    .filter(Boolean)
-    .join(", ");
 
   return (
     <SectionCard title="Location">

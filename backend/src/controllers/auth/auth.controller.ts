@@ -75,9 +75,7 @@ export class AuthController {
   @Public()
   @Post('accept-terms')
   @HttpCode(HttpStatus.OK)
-  async acceptTerms(
-    @Body() dto: AcceptTermsDto,
-  ): Promise<{ message: string }> {
+  async acceptTerms(@Body() dto: AcceptTermsDto): Promise<{ message: string }> {
     return await this.authService.acceptTerms(dto.email);
   }
 

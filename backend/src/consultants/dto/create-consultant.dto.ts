@@ -83,6 +83,12 @@ export class CreateConsultantDto {
   @ValidateNested({ each: true })
   @Type(() => CreateCertificationDto)
   certifications!: CreateCertificationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateConsultantExperienceDto)
+  experiences?: CreateConsultantExperienceDto[];
 }
 
 export class ConsultantListItemDto {

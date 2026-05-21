@@ -3,11 +3,15 @@ import { adminSidebarItems, consultantManagerSidebarItems, consultantSidebarItem
 import UserRegistrationForm from "../components/user-registration-form";
 import type { UserRole } from "../../../types/global.types";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+
 
 function RegisterUserPage() {
-    /* for now, mock user, will be replaced with actual user data from auth context */
-    const currentUserRole: UserRole = "ADMIN";
-    
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const currentUserRole = user?.role as UserRole | undefined;
+
     let allowedRoles: UserRole[] = [];
     if (currentUserRole === "ADMIN") {
         allowedRoles = [ "CONSULTANT_MANAGER", "PROJECT_MANAGER"];
@@ -40,6 +44,7 @@ function RegisterUserPage() {
                 <div
                     className="flex items-center gap-5">   
                     <button
+                         onClick={() => navigate(-1)}
                         className="w-[42px] h-[42px] rounded-xl flex items-center justify-center transition hover:opacity-80" bg-white
                         >
                         <ArrowLeft

@@ -37,8 +37,8 @@ export interface LoginResult {
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
   ADMIN: '/register',
   PROJECT_MANAGER: '/projects',
-  CONSULTANT_MANAGER: '/consultant-manager',
-  CONSULTANT: '/profile',
+  CONSULTANT_MANAGER: '/consultants-manager',
+  CONSULTANT: '/profile-view',
 };
 
 class TooManyRequestsException extends HttpException {

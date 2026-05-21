@@ -27,16 +27,13 @@ export class ConsultantService {
 
         const mappedConsultants: ConsultantListItemDto[] = consultants.map((consultant) => {
             const dto: ConsultantListItemDto = {
-                id: consultant.id,
+                id: consultant.id.toString(),
                 fullName: consultant.user.fullName,
+                email: consultant.user.email,
                 location: consultant.location,
-                availabilityStatus: consultant.availability,
+                availabilityStatus: consultant.availability === 'AVAILABLE' ? 'Available' : 'Unavailable',
                 primarySkills: consultant.skills.map((cs) => cs.skill.name),
             };
-
-            if (userRole !== 'PROJECT_MANAGER') {
-                dto.costToCompanyRate = consultant.costToCompany;
-            }
 
             return dto;
         });

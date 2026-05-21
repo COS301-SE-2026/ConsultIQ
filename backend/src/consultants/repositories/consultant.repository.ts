@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateConsultantDto } from '../dto/create-consultant.dto';
-import { CompetencyLevel, ConsultantAvailability, Role } from '@prisma/client';
+import { Role, ConsultantAvailability, CompetencyLevel } from '@prisma/client';
 
 @Injectable()
 export class ConsultantRepository {
@@ -15,11 +15,14 @@ export class ConsultantRepository {
 
     async createConsultant(dto: CreateConsultantDto){
         return await this.prisma.$transaction(async (tx) => {
+            const roleRecord = await tx.roleDefinition.findUnique({ where: { name: Role.CONSULTANT } });
+
             const user = await tx.user.create({
                 data: {
                     email: dto.email,
-                    fullName: dto.fullName,
+                    fullName: `${dto.name} ${dto.surname}`,
                     role: Role.CONSULTANT,
+                    roleId: roleRecord ? roleRecord.id : null,
             },
         });
 
@@ -27,27 +30,41 @@ export class ConsultantRepository {
             data: {
                 userId: user.id,
                 location: dto.location,
-                costToCompany: dto.costToCompanyRate,
-                availability: ConsultantAvailability.AVAILABLE,
+                availability: dto.availability ? ConsultantAvailability.AVAILABLE : ConsultantAvailability.UNAVAILABLE,
+                phone: dto.phoneNumber,
+                idNumber: dto.idNumber,
+                costToCompany: 0,
             },
         });
 
         for (const skill of dto.skills) {
             const normalizedSkillName = skill.skillName.trim().toLowerCase();
             
-            const skillRecord = await tx.skill.upsert({
-                where: { name: normalizedSkillName },
-                update: {},
-                create: { name: normalizedSkillName, category: 'General' },
+            let skillRecord = await tx.skill.findUnique({
+                where: { name: normalizedSkillName }
             });
+            if (!skillRecord) {
+                skillRecord = await tx.skill.create({
+                    data: { 
+                        name: normalizedSkillName,
+                        category: 'General'
+                    }
+                });
+            }
+
+            let compLevel: CompetencyLevel = CompetencyLevel.BEGINNER;
+            const upperLevel = skill.competencyLevel.toUpperCase();
+            if (Object.values(CompetencyLevel).includes(upperLevel as CompetencyLevel)) {
+                compLevel = upperLevel as CompetencyLevel;
+            }
 
             await tx.consultantSkill.create({
                 data: {
                     consultantId: consultant.id,   
                     skillId: skillRecord.id,
-                    competencyLevel: CompetencyLevel.BEGINNER,
-                    yearsExperience: skill.yearsExperience,
-                    confidenceLevel: skill.confidenceLevel,
+                    competencyLevel: compLevel,
+                    yearsExperience: parseInt(skill.experience, 10) || 0,
+                    confidenceLevel: 5,
                 },
             });
         }
@@ -56,8 +73,8 @@ export class ConsultantRepository {
             await tx.certificate.create({
                 data: {
                     consultantId: consultant.id,
-                    title: cert.certificationName,
-                    issuingBody: cert.issuingBody,
+                    title: cert.title,
+                    issuingBody: 'Unknown',
                 },
             });
         }

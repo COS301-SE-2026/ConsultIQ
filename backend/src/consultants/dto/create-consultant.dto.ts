@@ -1,32 +1,34 @@
-import {IsEmail, IsString, IsNumber, IsArray, ValidateNested, Min, Max} from "class-validator";
+import {IsEmail, IsString, IsNumber, IsArray, ValidateNested, Min, Max, IsBoolean} from "class-validator";
 import {Type} from "class-transformer";
 
 export class CreateConsultantSkillDto {
     @IsString()
     skillName!: string;
 
-    @IsNumber()
-    @Min(1)
-    @Max(50)
-    yearsExperience!: number;
+    @IsString()
+    experience!: string;
 
-    @IsNumber()
-    @Min(1)
-    @Max(50)
-    confidenceLevel!: number;
+    @IsString()
+    competencyLevel!: string;
 }
 
 export class CreateCertificationDto {
     @IsString()
-    certificationName!: string;
-
-    @IsString()
-    issuingBody!: string;
+    title!: string;
     }
 
     export class CreateConsultantDto {
     @IsString()
-    fullName!: string;
+    name!: string;
+
+    @IsString()
+    surname!: string;
+
+    @IsString()
+    idNumber!: string;
+
+    @IsString()
+    phoneNumber!: string;
 
     @IsEmail()
     email!: string;
@@ -34,11 +36,8 @@ export class CreateCertificationDto {
     @IsString()
     location!: string;
 
-    @IsNumber()
-    costToCompanyRate!: number;
-
-    @IsString()
-    availabilityStatus!: string;
+    @IsBoolean()
+    availability!: boolean;
 
     @IsArray()
     @ValidateNested({ each: true })
@@ -56,7 +55,6 @@ export class ConsultantListItemDto {
     fullName!: string;
     email!: string;
     location!: string;
-    costToCompanyRate!: number;
     availabilityStatus!: string;
     primarySkills!: string[];
 }

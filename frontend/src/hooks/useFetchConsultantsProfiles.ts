@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { getConsultantProfileById, getConsultantProfileByUserId } from "../api/consultants.api";
 
 
-// Maps backend DTO structures to the precise types required by your sub-cards
+
 const mapDtoToProfile = (data: any) => {
   const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
   const firstName = nameParts[0] || "";
@@ -18,7 +18,7 @@ const mapDtoToProfile = (data: any) => {
     idNumber: data.idNumber || "Not Provided",
     nationality: data.nationality || "Not Provided",
 
-    // Location sub-card mappings
+   
     address1: data.location || "Not Provided",
     address2: "",
     suburb: "",
@@ -26,7 +26,7 @@ const mapDtoToProfile = (data: any) => {
     province: "",
     postalCode: "",
 
-    // Experience Card mapping (matches Experience interface requirements)
+    
     experience: (data.experience || []).map((exp: any, index: number) => ({
       id: exp.id || `exp-${index}`,
       company: exp.companyname,
@@ -46,14 +46,14 @@ const mapDtoToProfile = (data: any) => {
       workModel: exp.workModel || "ONSITE",
     })),
 
-    // Skills Card mapping (translates yearsExperience to yearsOfExperience)
+    
     skills: (data.skills || []).map((s: any) => ({
       name: s.skillName,
-      competencyLevel: s.competencyLevel, // BEGINNER | INTERMEDIATE | EXPERT
+      competencyLevel: s.competencyLevel, 
       yearsOfExperience: s.yearsExperience || 0,
     })),
 
-    // Education Card mapping (translates backend certificates to education tracking UI blocks)
+    
     education: (data.certificates || []).map((cert: any, index: number) => ({
       id: cert.id || `edu-${index}`,
       institution: cert.issuingBody,
@@ -80,10 +80,10 @@ export function useFetchConsultantProfile(targetConsultantId: string | undefined
         let rawData = null;
 
         if (targetConsultantId) {
-          // Path A: A manager clicked "View Details" on a ConsultantCard
+          
           rawData = await getConsultantProfileById(targetConsultantId);
         } else if (loggedInUserId) {
-          // Path B: A consultant logged in directly, request profile via their userID
+          
           rawData = await getConsultantProfileByUserId(loggedInUserId);
         } else {
           throw new Error("No usable identifier found to load profile.");

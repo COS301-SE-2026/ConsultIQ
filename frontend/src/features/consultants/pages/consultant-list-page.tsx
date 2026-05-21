@@ -9,7 +9,7 @@ import { getConsultants } from "../services/consultant.service";
 import { toast } from "sonner";
 
 function ConsultantsPage() {
-  // role must first be determined from context
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [consultants, setConsultants] = useState<Consultant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +23,7 @@ function ConsultantsPage() {
         setIsLoading(true);
         const response = await getConsultants(1, 50);
         console.log(response);
-        // Map the backend structure to what ConsultantCard expects
+        
         const mapped = response.consultants.map((dto) => {
           const parts = dto.fullName.split(" ");
           return {
@@ -83,7 +83,7 @@ function ConsultantsPage() {
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
         >
        
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6 px-4">
             <h1
               className="font-bold"
               style={{ color: "var(--color-primary)", fontSize: "32px" }}

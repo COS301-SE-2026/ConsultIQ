@@ -40,7 +40,7 @@ export interface Profile {
 function ConsultantProfileViewPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth(); // Logged in session user data
+  const { user } = useAuth(); 
 
 
   const fromDashboard = location.state?.fromDashboard || false;
@@ -51,6 +51,8 @@ function ConsultantProfileViewPage() {
     targetConsultantId,
     user?.userId
   );
+
+  console.log("Loaded profile data:", profile);
 
   if (isLoading) {
     return (
@@ -71,6 +73,7 @@ function ConsultantProfileViewPage() {
     );
   }
 
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
@@ -79,9 +82,9 @@ function ConsultantProfileViewPage() {
 
         <header
           className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center justify-between"
-          style={{ borderColor: "var(--color-border)" }}
+          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
         >
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 px-4">
             {fromDashboard && (
               <button
                 onClick={() => navigate(-1)}
@@ -98,7 +101,7 @@ function ConsultantProfileViewPage() {
                 <ArrowLeft size={20} /> Back
               </button>
             )}
-            <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)" }}>
+            <h1 className="font-bold text-4xl mx-auto" style={{ color: "var(--color-primary)" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
           </div>
@@ -119,6 +122,8 @@ function ConsultantProfileViewPage() {
               lastName={profile.lastName}
               email={profile.email}
               phone={profile.phone}
+              idNumber={profile.idNumber}
+              nationality={profile.nationality}
             />
 
             <LocationCard

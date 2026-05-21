@@ -96,6 +96,7 @@ function ConsultantsPage() {
         
           <div className="flex items-center gap-3">
             <button
+             onClick={() => navigate("/register")}
               className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
               style={{
                 backgroundColor: "var(--color-accent)",

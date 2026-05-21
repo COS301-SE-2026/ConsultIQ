@@ -87,7 +87,8 @@ export class ConsultantRepository {
       include: {
         user: { select: { fullName: true, email: true } },
         skills: { include: { skill: { select: { name: true } } } },
-        certificates: { select: { title: true, issuingBody: true, uploadedAt: true } },
+        certificates: { select: { title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true } },
+        consultantExperiences: { select: { companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true } },
       },
     });
   }

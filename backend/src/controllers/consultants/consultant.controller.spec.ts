@@ -59,14 +59,14 @@ describe('ConsultantController', () => {
       ];
       mockConsultantService.getPendingProfiles.mockResolvedValue(mockPending);
 
-      const result = await controller.getPendingProfiles({} as any);
+      const result = await controller.getPendingProfiles();
       expect(result).toHaveLength(1);
       expect(result[0].userId).toBe('user-1');
     });
 
     it('should return empty array when no pending profiles', async () => {
       mockConsultantService.getPendingProfiles.mockResolvedValue([]);
-      const result = await controller.getPendingProfiles({} as any);
+      const result = await controller.getPendingProfiles();
       expect(result).toHaveLength(0);
     });
   });

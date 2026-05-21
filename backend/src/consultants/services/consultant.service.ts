@@ -30,6 +30,7 @@ export class ConsultantService {
   async getAllConsultants(
     page: number,
     limit: number,
+    role?: string,
   ): Promise<PaginatedConsultantsResponseDto> {
     const { consultants, total } =
       await this.consultantRepository.getAllConsultants(page, limit);
@@ -46,7 +47,7 @@ export class ConsultantService {
               ? 'Available'
               : 'Unavailable',
           primarySkills: consultant.skills.map((cs) => cs.skill.name),
-          costToCompanyRate: consultant.costToCompany,
+          costToCompanyRate: role === 'PROJECT_MANAGER' ? undefined : consultant.costToCompany,
           phone: consultant.phone,
           idNumber: consultant.idNumber,
           experienceYears: consultant.skills.reduce(
@@ -66,5 +67,9 @@ export class ConsultantService {
       total,
       consultants: mappedConsultants,
     };
+  }
+
+  async getConsultantById(id: string) {
+    return await (this.consultantRepository as any).getConsultantById(id);
   }
 }

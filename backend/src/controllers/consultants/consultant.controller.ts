@@ -6,8 +6,10 @@ import {
   HttpStatus,
   Post,
   Query,
+  Req,
   UsePipes,
   ValidationPipe,
+  Param,
 } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
@@ -26,10 +28,18 @@ export class ConsultantController {
   async getAllConsultants(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
+    @Req() req: any = {},
   ) {
+    const role = req.user?.role || 'PROJECT_MANAGER';
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),
+      role,
     );
+  }
+
+  @Get(':id')
+  async getConsultantById(@Param('id') id: string) {
+    return await this.consultantService.getConsultantById(id);
   }
 }

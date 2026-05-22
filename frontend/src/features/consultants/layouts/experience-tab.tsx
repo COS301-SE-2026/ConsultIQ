@@ -2,7 +2,6 @@ import ExperienceForm from "../components/experience/experience-form";
 import ExperienceList from "../components/experience/experience-list";
 import { useConsultantProfile, type ExperienceItem } from "../pages/consultant-profile.context";
 import { toast } from "sonner";
-import { ArrowRight } from "lucide-react";
 
 const sanitizeText = (input: string) => {
   if (!input) return "";
@@ -44,19 +43,8 @@ export default function ExperienceTab({ onComplete }: Props) {
       <ExperienceList
         experiences={experiences}
         onRemove={handleRemoveExperience}
+        onComplete={onComplete}
       />
-      {experiences.length > 0 && (
-        <div className="flex justify-end mt-4">
-          <button
-            onClick={onComplete}
-            className="flex items-center gap-2 h-12 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            Next: Skills
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

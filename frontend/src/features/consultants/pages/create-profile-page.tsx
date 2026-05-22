@@ -106,7 +106,7 @@ function CreateProfileContent() {
           <div className="flex gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center h-12 px-6 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
+              className="flex items-center justify-center h-12 w-30 px-6 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
               style={{ color: "var(--color-primary)" }}
             >
               <ArrowLeft className="mr-2" />

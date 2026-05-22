@@ -15,12 +15,13 @@ export default function SkillsTab({ onComplete }: Props) {
       <SkillsForm />
       <div className="h-6" />
       <EducationForm />
+      <div className="h-6" />
 
       {profileData.skills.length > 0 && (
         <div className="flex justify-end mt-4">
           <button
             onClick={onComplete}
-            className="flex items-center gap-2 h-12 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
+              className="flex items-center justify-center gap-2 h-10 w-30 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             Next: Review

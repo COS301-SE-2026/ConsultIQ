@@ -1,13 +1,15 @@
 import { Card } from "../../../../components/ui/card";
 import ExperienceCard from "./experience-card";
 import type { ExperienceItem } from "../../pages/consultant-profile.context";
+import { ArrowRight } from "lucide-react";
 
 type Props = {
   experiences?: ExperienceItem[];
   onRemove?: (id: string) => void;
+  onComplete?: () => void;
 };
 
-export default function ExperienceList({ experiences = [], onRemove }: Props) {
+export default function ExperienceList({ experiences = [], onRemove, onComplete }: Props) {
   return (
     <Card className="p-12 h-full w-full flex items-start justify-center">
       <div className="w-full max-w-[800px] flex flex-col h-full">
@@ -30,6 +32,18 @@ export default function ExperienceList({ experiences = [], onRemove }: Props) {
           )}
         </div>
         <div className="h-6" />
+        {experiences.length > 0 && onComplete && (
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={onComplete}
+              className="flex items-center justify-center gap-2 h-10 w-30 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
+              style={{ backgroundColor: "var(--color-primary)" }}
+            >
+              Next: Skills
+              <ArrowRight size={18} />
+            </button>
+          </div>
+        )}
       </div>
     </Card>
   );

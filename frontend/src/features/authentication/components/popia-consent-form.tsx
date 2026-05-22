@@ -2,11 +2,15 @@ import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { acceptTerms } from "../../../api/auth.api";
 import WelcomeModal from "../../../components/ui/welcome-modal";
+import { useAuth } from "../../../hooks/useAuth";
 
 function PopiaConsentForm() {
   const [searchParams] = useSearchParams();
-  const email = searchParams.get("email") ?? "";
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Try URL param first (coming from activation link), fall back to logged-in user email
+  const email = searchParams.get("email") || user?.email || "";
 
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,6 +20,11 @@ function PopiaConsentForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!accepted) return;
+
+    if (!email) {
+      setError("Unable to identify your account. Please use the activation link from your email.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -53,11 +62,15 @@ function PopiaConsentForm() {
           <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
             Before we proceed, please read and accept our POPIA consent policy.
           </p>
+          {email && (
+            <p className="text-sm mt-2" style={{ color: "var(--color-text-secondary)" }}>
+              Accepting on behalf of: <strong>{email}</strong>
+            </p>
+          )}
         </div>
 
         {/* Scrollable Content */}
         <div className="w-full max-h-[420px] overflow-y-auto px-6 flex flex-col items-center gap-6">
-          {/* User Rights Section */}
           <div className="w-full max-w-[760px]">
             <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
               User Rights
@@ -69,7 +82,6 @@ function PopiaConsentForm() {
             </p>
           </div>
 
-          {/* Information Usage Section */}
           <div className="w-full max-w-[760px]">
             <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
               Information Usage
@@ -81,7 +93,6 @@ function PopiaConsentForm() {
             </p>
           </div>
 
-          {/* Data Security Section */}
           <div className="w-full max-w-[760px]">
             <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
               Data Security
@@ -93,7 +104,6 @@ function PopiaConsentForm() {
             </p>
           </div>
 
-          {/* Consent Agreement Section */}
           <div className="w-full max-w-[760px]">
             <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
               Consent Agreement
@@ -106,7 +116,6 @@ function PopiaConsentForm() {
         </div>
 
         <div className="w-full mt-0 px-6 flex flex-col items-center gap-6">
-          {/* Checkbox + Label */}
           <div className="flex items-start justify-center gap-4 max-w-[760px]">
             <input
               type="checkbox"
@@ -130,7 +139,6 @@ function PopiaConsentForm() {
             <p className="text-red-500 text-sm text-center">{error}</p>
           )}
 
-          {/* Buttons */}
           <div className="flex justify-center gap-6 mt-6">
             <button
               type="submit"
@@ -155,6 +163,7 @@ function PopiaConsentForm() {
           </div>
         </div>
       </div>
+
       <WelcomeModal
         show={showWelcome}
         onContinue={() => {

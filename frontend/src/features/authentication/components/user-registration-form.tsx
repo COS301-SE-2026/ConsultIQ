@@ -1,5 +1,5 @@
 import type { UserRole } from "../../../types/global.types";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { registerUser } from "../../../api/auth.api";
 
 interface UserRegistrationFormProps {
@@ -17,12 +17,6 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Sync role when allowedRoles changes (auth context loads asynchronously)
-  useEffect(() => {
-    if (allowedRoles.length > 0) {
-      setRole(allowedRoles[0]);
-    }
-  }, [allowedRoles]);
 
   function validate() {
     const newErrors: { fullName?: string; email?: string; role?: string } = {};

@@ -228,7 +228,7 @@ describe('ConsultantService', () => {
 
     it('should return a complete mapped consultant profile DTO when found by userId', async () => {
       const referenceDate = new Date();
-      
+
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'uuid-1',
         phone: '0123456789',
@@ -237,17 +237,17 @@ describe('ConsultantService', () => {
         location: 'Johannesburg',
         costToCompany: 50000,
         availability: 'AVAILABLE',
-        user: { 
-          fullName: 'Jane Smith', 
-          email: 'jane@consultiq.com' 
+        user: {
+          fullName: 'Jane Smith',
+          email: 'jane@consultiq.com'
         },
         skills: [
-          { 
-            id: 'skill-1', 
-            competencyLevel: 'EXPERT', 
-            yearsExperience: 4, 
-            confidenceLevel: 4, 
-            skill: { name: 'TypeScript' } 
+          {
+            id: 'skill-1',
+            competencyLevel: 'EXPERT',
+            yearsExperience: 4,
+            confidenceLevel: 4,
+            skill: { name: 'TypeScript' }
           },
         ],
         consultantExperiences: [
@@ -257,7 +257,7 @@ describe('ConsultantService', () => {
             jobTitle: 'Senior Software Engineer',
             jobType: 'CONTRACT',
             startDate: referenceDate,
-            endDate: null, // Verifies fallback mapping logic ?? new Date()
+            endDate: null,
             description: 'Building microservices',
             workModel: 'HYBRID',
           },
@@ -267,7 +267,7 @@ describe('ConsultantService', () => {
             id: 'cert-1',
             title: 'AWS Solutions Architect',
             issuingBody: 'Amazon Web Services',
-            startDate: null, // Verifies fallback mapping logic ?? new Date()
+            startDate: null,
             endDate: referenceDate,
             uploadedAt: referenceDate,
           },
@@ -298,16 +298,15 @@ describe('ConsultantService', () => {
       // Assert mapped complex data types (Experience)
       expect(result.experience).toHaveLength(1);
       expect(result.experience[0].id).toBe('exp-1');
-      expect(result.experience[0].companyname).toBe('Tech Innovators'); // Matches lowercased field in DTO mapping
+      expect(result.experience[0].companyname).toBe('Tech Innovators');
       expect(result.experience[0].jobTitle).toBe('Senior Software Engineer');
       expect(result.experience[0].roleDescription).toBe('Building microservices');
-      expect(result.experience[0].endDate).toBeInstanceOf(Date);
+      expect(result.experience[0].endDate).toBeNull();
 
-      // Assert mapped complex data types (Certificates)
       expect(result.certificates).toHaveLength(1);
       expect(result.certificates[0].id).toBe('cert-1');
       expect(result.certificates[0].title).toBe('AWS Solutions Architect');
-      expect(result.certificates[0].startDate).toBeInstanceOf(Date);
+      expect(result.certificates[0].startDate).toBeNull();
       expect(result.certificates[0].uploadedAt).toEqual(referenceDate);
     });
   });

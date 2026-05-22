@@ -64,7 +64,7 @@ function PopiaDeclineForm() {
         <div className="flex justify-center gap-6 mt-2">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/popia-consent")}
             className="flex items-center gap-2 min-w-[220px] h-[56px] rounded-lg border font-bold text-lg transition bg-gray-50 hover:bg-gray-100"
             style={{
               borderColor: "var(--color-border)",

@@ -8,6 +8,7 @@ import RegisterUserPage from "../features/authentication/pages/register-user-pag
 import LoginForm from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
+import PopiaDeclinePage from "../features/authentication/pages/popia-decline-page";
 
 // Consultants
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
@@ -35,6 +36,7 @@ function AnimatedRoutes() {
                 <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
+                <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

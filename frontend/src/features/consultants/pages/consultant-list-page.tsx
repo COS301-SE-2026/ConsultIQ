@@ -122,31 +122,37 @@ function ConsultantsPage() {
             <div className="h-6" />
 
             {/* Section tabs */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-6 mb-8">
               <button
                 onClick={() => { setActiveSection("active"); setCurrentPage(1); }}
-                className="px-6 py-2.5 rounded-xl font-semibold text-base transition"
+                className="rounded-4xl font-semibold text-base transition flex items-center gap-3"
                 style={{
+                  padding: "18px 40px",
                   backgroundColor: activeSection === "active" ? "var(--color-primary)" : "var(--color-surface)",
                   color: activeSection === "active" ? "white" : "var(--color-text-secondary)",
                   border: "2px solid var(--color-border)",
                 }}
               >
-                Active Consultants ({consultants.length})
+                <span>Active Consultants</span>
+                <span className={activeSection === "active" ? "opacity-90" : "opacity-60"}>({consultants.length})</span>
               </button>
 
               <button
                 onClick={() => { setActiveSection("pending"); setCurrentPage(1); }}
-                className="px-6 py-2.5 rounded-xl font-semibold text-base transition"
+                className="rounded-4xl font-semibold text-base transition flex items-center gap-3"
                 style={{
+                  padding: "18px 40px",
                   backgroundColor: activeSection === "pending" ? "var(--color-primary)" : "var(--color-surface)",
                   color: activeSection === "pending" ? "white" : "var(--color-text-secondary)",
                   border: "2px solid var(--color-border)",
                 }}
               >
-                Awaiting Profile ({pendingProfiles.length})
+                <span>Awaiting Profile</span>
+                <span className={activeSection === "pending" ? "opacity-90" : "opacity-60"}>({pendingProfiles.length})</span>
               </button>
             </div>
+            <div className="h-6" />
+
 
             {/* Availability summary — active section only */}
             {activeSection === "active" && (
@@ -161,6 +167,8 @@ function ConsultantsPage() {
                 </span>
               </div>
             )}
+            <div className="h-6" />
+            
 
             {/* Search bar */}
             <SearchBar
@@ -212,8 +220,8 @@ function ConsultantsPage() {
                 {!isLoading && (currentItems as PendingProfileUserDto[]).map((user) => (
                   <div
                     key={user.userId}
-                    className="bg-white rounded-xl border flex items-center justify-between px-8 py-5"
-                    style={{ borderColor: "var(--color-border)" }}
+                    className="bg-white rounded-xl border flex items-center justify-between"
+                    style={{ borderColor: "var(--color-border)", padding: "28px 32px" }}
                   >
                     <div>
                       <p className="font-semibold text-lg" style={{ color: "var(--color-primary)" }}>

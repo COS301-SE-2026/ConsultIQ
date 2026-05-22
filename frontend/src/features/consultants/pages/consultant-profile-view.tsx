@@ -2,7 +2,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
+import {
+  consultantSidebarItems,
+  consultantManagerSidebarItems
+} from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
@@ -40,17 +43,20 @@ export interface Profile {
 function ConsultantProfileViewPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth(); 
-
+  const { user } = useAuth();
 
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
-
 
   const { profile, isLoading, error } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
   );
+
+  // Dynamically select the sidebar based on the user's role
+  const sidebarItems = user?.role === "CONSULTANT_MANAGER"
+    ? consultantManagerSidebarItems
+    : consultantSidebarItems;
 
   console.log("Loaded profile data:", profile);
 
@@ -73,18 +79,17 @@ function ConsultantProfileViewPage() {
     );
   }
 
-
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantSidebarItems} />
+      {/* Inject the dynamic sidebar here */}
+      <Sidebar items={sidebarItems} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-
         <header
-          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center justify-between"
+          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
         >
-          <div className="flex items-center gap-6 px-4">
+          <div className="flex items-center gap-6 px-4 w-full">
             {fromDashboard && (
               <button
                 onClick={() => navigate(-1)}
@@ -101,9 +106,11 @@ function ConsultantProfileViewPage() {
                 <ArrowLeft size={20} /> Back
               </button>
             )}
-            <h1 className="font-bold text-4xl mx-auto" style={{ color: "var(--color-primary)" }}>
+            <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
+            {/* Empty div to balance the flexbox if the back button is present */}
+            {fromDashboard && <div style={{ width: "70px" }}></div>}
           </div>
         </header>
 

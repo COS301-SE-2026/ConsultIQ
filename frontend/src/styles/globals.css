@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* Global Reset */
+
+
+
+@theme {
+   
+  /*login theme*/
+  --color-brand-blue: #002D62;
+  --color-brand-navy: #092352;
+  --color-brand-muted: #6B7280;
+  --color-brand-gold: #C9A84C;
+  --color-brand-slate: #E2E8F0;
+  --color-brand-bg: #F4F6FA;
+  --color-white: #FFFFFF;
+
+  --font-calibri: "Calibri", "Candara", "Segoe UI", "Optima", "Arial", sans-serif;
+  
+  --text-h1: var(--text-h1);
+  --text-h2: var(--text-h2);
+  --text-h3: var(--text-h3);
+  --text-body: var(--text-body);
+
+  --radius-sm: var(--radius-sm);
+
+
+
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Body Styling */
+
+body {
+  min-height: 100vh;
+
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+
+  font-family: var(--font-primary);
+  font-size: var(--text-body);
+
+  line-height: 1.5;
+}
+
+/* Typography */
+
+h1 {
+  font-size: var(--text-h1);
+  font-weight: bold;
+  color: var(--color-primary);
+}
+
+h2 {
+  font-size: var(--text-h2);
+  font-weight: bold;
+  color: var(--color-primary);
+}
+
+h3 {
+  font-size: var(--text-h3);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+label,
+input,
+textarea,
+select {
+  font-size: var(--text-h3);
+  color: var(--color-text-primary);
+}
+
+/* Links */
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Buttons */
+
+button {
+  font-family: var(--font-primary);
+  cursor: pointer;
+  border: none;
+}
+
+/* Inputs */
+
+input,
+textarea,
+select {
+  font-family: var(--font-primary);
+
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  padding: 8px 12px;
+
+  outline: none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--color-secondary);
+}
+
+/* Images */
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+.input {
+    @apply w-full rounded-xl border border-slate-300 px-4 py-4 outline-none focus:ring-2 focus:ring-blue-500;
+}

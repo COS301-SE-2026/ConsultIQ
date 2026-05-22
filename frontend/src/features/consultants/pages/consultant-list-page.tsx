@@ -40,7 +40,8 @@ function ConsultantsPage() {
             experienceYears: dto.experienceYears || 0,
             ratePerHour: dto.costToCompanyRate || 0,
             skills: dto.primarySkills,
-            status: dto.availabilityStatus === "AVAILABLE" ? "Available" : "Unavailable" as ConsultantStatus,          };
+            status: dto.availabilityStatus === "AVAILABLE" ? "Available" : "Unavailable" as ConsultantStatus,
+          };
         });
 
         setConsultants(mapped);
@@ -174,6 +175,7 @@ function ConsultantsPage() {
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder={activeSection === "active" ? "Search by name, skill, email..." : "Search by name or email..."}
+              onFilterClick={() => { }}
             />
             <div className="h-6" />
 
@@ -189,7 +191,14 @@ function ConsultantsPage() {
                   <ConsultantCard
                     key={consultant.id}
                     consultant={consultant}
-                    onViewDetails={(id) => console.log("View details for", id)}
+                    onViewDetails={(id) => {
+                      navigate("/profile-view", {
+                        state: {
+                          selectedConsultantId: id,
+                          fromDashboard: true
+                        }
+                      });
+                    }}
                   />
                 ))}
                 {!isLoading && filteredConsultants.length === 0 && (

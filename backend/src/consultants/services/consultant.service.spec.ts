@@ -217,4 +217,97 @@ describe('ConsultantService', () => {
       expect(result.skills[0].competencyLevel).toBe('EXPERT');
     });
   });
+
+  // ─── getConsultantByUserId ──────────────────────────────────────────────────
+
+  describe('getConsultantByUserId', () => {
+    it('should throw NotFoundException if consultant does not exist for the given userId', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+      await expect(service.getConsultantByUserId('non-existent-user-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return a complete mapped consultant profile DTO when found by userId', async () => {
+      const referenceDate = new Date();
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'uuid-1',
+        phone: '0123456789',
+        idNumber: '9901015555081',
+        nationality: 'South African',
+        location: 'Johannesburg',
+        costToCompany: 50000,
+        availability: 'AVAILABLE',
+        user: {
+          fullName: 'Jane Smith',
+          email: 'jane@consultiq.com'
+        },
+        skills: [
+          {
+            id: 'skill-1',
+            competencyLevel: 'EXPERT',
+            yearsExperience: 4,
+            confidenceLevel: 4,
+            skill: { name: 'TypeScript' }
+          },
+        ],
+        consultantExperiences: [
+          {
+            id: 'exp-1',
+            companyName: 'Tech Innovators',
+            jobTitle: 'Senior Software Engineer',
+            jobType: 'CONTRACT',
+            startDate: referenceDate,
+            endDate: null,
+            description: 'Building microservices',
+            workModel: 'HYBRID',
+          },
+        ],
+        certificates: [
+          {
+            id: 'cert-1',
+            title: 'AWS Solutions Architect',
+            issuingBody: 'Amazon Web Services',
+            startDate: null,
+            endDate: referenceDate,
+            uploadedAt: referenceDate,
+          },
+        ],
+      });
+
+      const result = await service.getConsultantByUserId('user-uuid-123');
+
+      // Assert core profiles
+      expect(result.id).toBe('uuid-1');
+      expect(result.fullName).toBe('Jane Smith');
+      expect(result.email).toBe('jane@consultiq.com');
+      expect(result.phoneNumber).toBe('0123456789');
+      expect(result.idNumber).toBe('9901015555081');
+      expect(result.nationality).toBe('South African');
+      expect(result.location).toBe('Johannesburg');
+      expect(result.costToCompany).toBe(50000);
+      expect(result.availability).toBe('AVAILABLE');
+
+      // Assert mapped complex data types (Skills)
+      expect(result.skills).toHaveLength(1);
+      expect(result.skills[0].id).toBe('skill-1');
+      expect(result.skills[0].skillName).toBe('TypeScript');
+      expect(result.skills[0].competencyLevel).toBe('EXPERT');
+      expect(result.skills[0].yearsExperience).toBe(4);
+      expect(result.skills[0].confidenceLevel).toBe(4);
+
+      // Assert mapped complex data types (Experience)
+      expect(result.experience).toHaveLength(1);
+      expect(result.experience[0].id).toBe('exp-1');
+      expect(result.experience[0].companyname).toBe('Tech Innovators');
+      expect(result.experience[0].jobTitle).toBe('Senior Software Engineer');
+      expect(result.experience[0].roleDescription).toBe('Building microservices');
+      expect(result.experience[0].endDate).toBeNull();
+
+      expect(result.certificates).toHaveLength(1);
+      expect(result.certificates[0].id).toBe('cert-1');
+      expect(result.certificates[0].title).toBe('AWS Solutions Architect');
+      expect(result.certificates[0].startDate).toBeNull();
+      expect(result.certificates[0].uploadedAt).toEqual(referenceDate);
+    });
+  });
 });

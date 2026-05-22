@@ -57,4 +57,9 @@ export class ConsultantController {
   async getConsultantById(@Param('id') id: string) {
     return await this.consultantService.getConsultantById(id);
   }
+
+  @Get('user/:userId')
+  getConsultantByUserId(@Param('userId') userId: string) {
+    return this.consultantService.getConsultantByUserId(userId);
+  }
 }

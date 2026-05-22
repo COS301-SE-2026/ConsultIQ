@@ -6,7 +6,7 @@ function App() {
   return (
     <AuthProvider>
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 2000,
         }}

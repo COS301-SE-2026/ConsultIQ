@@ -6,6 +6,8 @@ interface PersonalInfoCardProps {
   readonly lastName: string;
   readonly email: string;
   readonly phone: string;
+  readonly idNumber?: string;
+  readonly nationality?: string;
 }
 
 export default function PersonalInfoCard({
@@ -13,6 +15,8 @@ export default function PersonalInfoCard({
   lastName,
   email,
   phone,
+ idNumber,
+  nationality
 }: PersonalInfoCardProps) {
   return (
     <SectionCard title="Personal Information">
@@ -21,6 +25,8 @@ export default function PersonalInfoCard({
         <DetailField label="Last Name" value={lastName} variant="compact" />
         <DetailField label="Email Address" value={email} variant="compact" />
         <DetailField label="Phone Number" value={phone} variant="compact" />
+        <DetailField label="ID Number" value={idNumber ?? "N/A"} variant="compact" />
+        <DetailField label="Nationality" value={nationality ?? "N/A"} variant="compact" />
       </div>
     </SectionCard>
   );

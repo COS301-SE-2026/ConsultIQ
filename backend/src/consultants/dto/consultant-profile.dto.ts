@@ -1,24 +1,27 @@
 export class ConsultantSkillsDto {
-  skillName!: string;
-  competencyLevel!: string;
-  yearsExperience!: number;
-  confidenceLevel!: number;
+    id!: string;
+    skillName!: string;
+    competencyLevel!: string;
+    yearsExperience!: number;
+    confidenceLevel!: number;
 }
 
 export class ConsultantCertificationsDto {
-  title!: string;
-  issuingBody!: string;
-  startDate!: Date | null;
-  endDate!: Date | null;
+  id!: string;
+  title!: string; 
+  issuingBody!: string; 
+  startDate!: Date;
+    endDate!: Date;
   uploadedAt!: Date;
 }
 
 export class ExperienceDTO {
+  id!: string;
   companyname!: string;
   jobTitle!: string;
   jobType!: string;
   startDate!: Date;
-  endDate!: Date | null;
+  endDate!: Date;
   roleDescription!: string;
   workModel!: string;
 }

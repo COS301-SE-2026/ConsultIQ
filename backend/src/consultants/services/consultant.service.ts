@@ -22,7 +22,7 @@ import {
 
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -220,18 +220,53 @@ export class ConsultantService {
   async getConsultantById(id: string): Promise<ConsultantProfileDto> {
     const consultant = await this.prisma.consultant.findUnique({
       where: { id },
-      include: {
-        user: { select: { fullName: true, email: true } },
-        skills: { include: { skill: { select: { name: true } } } },
-        certificates: true,
-        consultantExperiences: true,
-      },
+      include: this.getProfileIncludes(),
     });
 
     if (!consultant) {
       throw new NotFoundException(`Consultant with id ${id} not found.`);
     }
 
+    return this.mapToProfileDto(consultant);
+  }
+
+  async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },
+      include: this.getProfileIncludes(),
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+    }
+
+    return this.mapToProfileDto(consultant);
+  }
+
+  // --- PRIVATE HELPER METHODS FOR DRY CODE ---
+
+  private getProfileIncludes() {
+    return {
+      user: { select: { fullName: true, email: true } },
+      skills: {
+        select: {
+          id: true,
+          competencyLevel: true,
+          yearsExperience: true,
+          confidenceLevel: true,
+          skill: { select: { name: true } },
+        },
+      },
+      certificates: {
+        select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true }
+      },
+      consultantExperiences: {
+        select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true }
+      },
+    };
+  }
+
+  private mapToProfileDto(consultant: any): ConsultantProfileDto {
     return {
       id: consultant.id,
       fullName: consultant.user.fullName,
@@ -242,26 +277,29 @@ export class ConsultantService {
       location: consultant.location,
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
-      skills: consultant.skills.map((cs) => ({
+      skills: consultant.skills.map((cs: any) => ({
+        id: cs.id,
         skillName: cs.skill.name,
         competencyLevel: cs.competencyLevel,
         yearsExperience: cs.yearsExperience,
         confidenceLevel: cs.confidenceLevel,
       })),
-      experience: consultant.consultantExperiences.map((exp) => ({
+      experience: consultant.consultantExperiences.map((exp: any) => ({
+        id: exp.id,
         companyname: exp.companyName,
         jobTitle: exp.jobTitle,
         jobType: exp.jobType,
         startDate: exp.startDate,
-        endDate: exp.endDate ?? new Date(),
+        endDate: exp.endDate,
         roleDescription: exp.description,
         workModel: exp.workModel,
       })),
-      certificates: consultant.certificates.map((cert) => ({
+      certificates: consultant.certificates.map((cert: any) => ({
+        id: cert.id,
         title: cert.title,
         issuingBody: cert.issuingBody,
-        startDate: cert.startDate ?? new Date(),
-        endDate: cert.endDate ?? new Date(),
+        startDate: cert.startDate,
+        endDate: cert.endDate,
         uploadedAt: cert.uploadedAt,
       })),
     };

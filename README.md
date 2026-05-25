@@ -8,7 +8,7 @@
 ConsultIQ is an intelligent matching platform designed for consultancy firms. Using a configurable fit-scoring engine that weighs skills, availability, location, and cost-to-company, the platform surfaces a ranked shortlist of the ideal candidates for any given job. This is followed by a transparent breakdown of each candidate's score, taking the guesswork out of resource allocation.
 
 <div align="center">
-  <a href="LINK_TO_YOUR_SRS_DOCUMENT_HERE">
+  <a href="https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/SRS.pdf">
     <img src="https://img.shields.io/badge/Requirements-SRS_Document-0284c7?style=for-the-badge&logo=googledocs&logoColor=white" alt="Requirements" />
   </a>
 
@@ -54,7 +54,7 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
     </thead>
     <tbody>
       <tr>
-        <td align="center"><a href="...">Functional Requirements (SRS)</a></td>
+        <td align="center"><a href="https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/SRS.pdf">Functional Requirements (SRS)</a></td>
       </tr>
       <tr>
         <td align="center"><a href="https://github.com/orgs/COS301-SE-2026/projects/66">TROOS Project Board</a></td>

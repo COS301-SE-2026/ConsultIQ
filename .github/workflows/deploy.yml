@@ -22,8 +22,7 @@ jobs:
             cd /home/ubuntu/consultiq
             git pull origin main
             cd backend
-            npm ci --omit=dev
+            npm ci
             npm run build
-            npm run migration:run
-            pm2 restart consultiq-api || pm2 start dist/main.js --name consultiq-api
+            pm2 restart consultiq-api --update-env || pm2 start dist/main.js --name consultiq-api
             pm2 save

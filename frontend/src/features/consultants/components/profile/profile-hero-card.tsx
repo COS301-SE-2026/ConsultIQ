@@ -1,19 +1,40 @@
+import {useState} from "react";
+import {Button} from "../../../../components/ui/button";
+import {Pencil} from "lucide-react"
+
 interface ProfileHeroCardProps {
   readonly firstName: string;
   readonly lastName: string;
-  readonly status: "Available" | "Unavailable";
+  readonly status: "Available" | "Unavailable" | "On leave";
+  readonly canEdit?: boolean;
 }
 
 function getInitials(first: string, last: string) {
   return `${first[0]}${last[0]}`.toUpperCase();
 }
 
-function ProfileHeroCard({ firstName, lastName, status }: ProfileHeroCardProps) {
+function ProfileHeroCard({ firstName, lastName, status, canEdit }: ProfileHeroCardProps) {
   const isAvailable = status === "Available";
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(status);
+  
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setCurrentStatus(status);
+  };
+
+  const handleSave = () => {
+    // Api call to change status goes here 
+
+  };
 
   return (
     <div
-      className="bg-white rounded-2xl w-full flex items-center"
+      className="bg-white rounded-2xl w-full flex items-center "
       style={{
         padding: "28px 28px 28px 28px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
@@ -40,20 +61,95 @@ function ProfileHeroCard({ firstName, lastName, status }: ProfileHeroCardProps) 
         >
           {firstName} {lastName}
         </p>
-        <span
-          className="inline-block self-start rounded-md font-medium"
-          style={{
-            padding: "4px 16px",
-            fontSize: "var(--text-h4)",
-            backgroundColor: isAvailable ? "#FEF3C7" : "#F3F4F6",
-            color: isAvailable ? "#92400E" : "var(--color-text-secondary)",
-          }}
-        >
-          {status}
-        </span>
+
+        { !isEditing ? (
+          <span
+            className="inline-block self-start rounded-md font-medium"
+            style={{
+              padding: "4px 16px",
+              fontSize: "var(--text-h4)",
+              backgroundColor: isAvailable ? "#FEF3C7" : "#F3F4F6",
+              color: isAvailable ? "#92400E" : "var(--color-text-secondary)",
+            }}
+          >
+            {currentStatus}
+          </span>
+        ) : (
+          <select 
+                name="availabilityStatus" 
+                id="status" 
+                value={currentStatus} 
+                onChange={(e) => setCurrentStatus(e.target.value as any)}
+                className="inline-block self-start rounded-md font-medium"
+                style={{
+                  padding: "4px 16px",
+                  fontSize: "var(--text-h4)",
+                  backgroundColor: "#F3F4F6",
+                  color: "var(--color-text-secondary)",
+                }}
+
+              >
+                <option value="Available">Available</option>
+                <option value="Unavailable">Unavailable</option>
+                <option value="On leave">On leave</option>
+              </select>
+          
+           
+        )}
       </div>
-    </div>
-  );
+
+       {canEdit && (
+          <div className = " flex-1 flex justify-end gap-2">
+           {!isEditing ?(
+             <Button 
+              onClick={handleEditClick} 
+              variant="secondary" 
+              className="gap-2 font-bold px-4 py-2 border-b"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+              }}
+             >
+                <Pencil size={16}/>
+                Edit
+             </Button>
+           ):(
+            <>
+            <Button 
+              onClick={handleSave} 
+              variant="default" 
+              className ="font-bold px-4 py-2"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+
+              }}
+            >
+              Save
+            </Button>
+            <Button 
+              onClick={handleCancel} 
+              variant="outline" 
+              className="font-bold px-4 py-2"
+                style ={{
+                  fontSize: "14px",
+                  padding: "6px 12px",
+                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+
+                }}
+            >
+              Cancel
+            </Button>
+
+            </>
+           )}
+          </div>
+        )}
+  </div>
+);
 }
+
 
 export default ProfileHeroCard;

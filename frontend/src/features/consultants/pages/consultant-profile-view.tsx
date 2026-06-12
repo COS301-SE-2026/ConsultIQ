@@ -60,6 +60,8 @@ function ConsultantProfileViewPage() {
 
   console.log("Loaded profile data:", profile);
 
+  const canEdit = fromDashboard && Boolean(targetConsultantId);
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
@@ -69,9 +71,15 @@ function ConsultantProfileViewPage() {
   }
 
   if (error || !profile) {
+    let errorMessage = "profile not found";
+
+    if (error){
+      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
+    }
+
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{error || "Profile error"}</div>
+        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
         <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
           Go Back
         </button>
@@ -122,6 +130,7 @@ function ConsultantProfileViewPage() {
               firstName={profile.firstName}
               lastName={profile.lastName}
               status={profile.status}
+              canEdit={canEdit}
             />
 
             <PersonalInfoCard
@@ -131,17 +140,26 @@ function ConsultantProfileViewPage() {
               phone={profile.phone}
               idNumber={profile.idNumber}
               nationality={profile.nationality}
+             
             />
 
             <LocationCard
               address1={profile.address1}
+             
             />
 
             <ExperienceCard experiences={profile.experience} />
 
-            <SkillsCard skills={profile.skills} />
+            <SkillsCard 
+              skills={profile.skills}
+           
+             />
 
-            <EducationCard educationList={profile.education} />
+            <EducationCard 
+            educationList={profile.education} 
+            />
+
+
           </div>
         </main>
       </div>

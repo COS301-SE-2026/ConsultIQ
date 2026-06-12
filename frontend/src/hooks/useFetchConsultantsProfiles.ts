@@ -115,7 +115,7 @@ export function useFetchConsultantProfile(
   // Use the inferred map type instead of "any"
   const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {

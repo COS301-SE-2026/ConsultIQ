@@ -30,7 +30,7 @@ interface CertificateDto {
 
 export interface ConsultantProfileDto {
   id: string;
-  fullName?: string;
+  fullName: string;
   availability?: string;
   email: string;
   phoneNumber?: string;
@@ -44,14 +44,14 @@ export interface ConsultantProfileDto {
 
 
 const mapDtoToProfile = (data: ConsultantProfileDto) => {
-  const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
-  const firstName = nameParts[0] || "";
-  const lastName = nameParts.slice(1).join(" ") || "";
+  // const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
+  // const firstName = nameParts[0] || "";
+  // const lastName = nameParts.slice(1).join(" ") || "";
 
   return {
     id: data.id,
-    firstName,
-    lastName,
+    fullName:data.fullName,
+    //lastName,
    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
     phone: data.phoneNumber || "Not Provided",

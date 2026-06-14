@@ -22,8 +22,7 @@ import type { Skill, Experience, Education } from "../components/profile";
 
 export interface Profile {
   id: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   status: "Available" | "Unavailable";
   email: string;
   phone: string;
@@ -127,19 +126,18 @@ function ConsultantProfileViewPage() {
             <div className="h-1" />
 
             <ProfileHeroCard
-              firstName={profile.firstName}
-              lastName={profile.lastName}
+              fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
             />
 
             <PersonalInfoCard
-              firstName={profile.firstName}
-              lastName={profile.lastName}
+              fullName={profile.fullName}
               email={profile.email}
               phone={profile.phone}
               idNumber={profile.idNumber}
               nationality={profile.nationality}
+              canEdit={canEdit}
              
             />
 

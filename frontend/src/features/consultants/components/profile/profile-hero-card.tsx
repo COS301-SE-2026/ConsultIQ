@@ -3,17 +3,19 @@ import {Button} from "../../../../components/ui/button";
 import {Pencil} from "lucide-react"
 
 interface ProfileHeroCardProps {
-  readonly firstName: string;
-  readonly lastName: string;
+  readonly fullName: string;
   readonly status: "Available" | "Unavailable" | "On leave";
   readonly canEdit?: boolean;
 }
 
-function getInitials(first: string, last: string) {
-  return `${first[0]}${last[0]}`.toUpperCase();
+function getInitials(fullName: string) {
+    const nameParts = fullName ? fullName.split(" ") : ["", ""];
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
+  return `${firstName[0]}${lastName[0]}`.toUpperCase();
 }
 
-function ProfileHeroCard({ firstName, lastName, status, canEdit }: ProfileHeroCardProps) {
+function ProfileHeroCard({ fullName, status, canEdit }: ProfileHeroCardProps) {
   const isAvailable = status === "Available";
   const [isEditing, setIsEditing] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
@@ -50,7 +52,7 @@ function ProfileHeroCard({ firstName, lastName, status, canEdit }: ProfileHeroCa
           fontSize: "24px",
         }}
       >
-        {getInitials(firstName, lastName)}
+        {getInitials(fullName)}
       </div>
 
       {/* Name + badge */}
@@ -59,7 +61,7 @@ function ProfileHeroCard({ firstName, lastName, status, canEdit }: ProfileHeroCa
           className="font-bold"
           style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1.25" }}
         >
-          {firstName} {lastName}
+          {fullName}
         </p>
 
         { !isEditing ? (

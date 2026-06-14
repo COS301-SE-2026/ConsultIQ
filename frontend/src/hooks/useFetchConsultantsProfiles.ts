@@ -44,14 +44,11 @@ export interface ConsultantProfileDto {
 
 
 const mapDtoToProfile = (data: ConsultantProfileDto) => {
-  // const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
-  // const firstName = nameParts[0] || "";
-  // const lastName = nameParts.slice(1).join(" ") || "";
+
 
   return {
     id: data.id,
     fullName:data.fullName,
-    //lastName,
    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
     phone: data.phoneNumber || "Not Provided",

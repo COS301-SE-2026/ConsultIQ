@@ -1,16 +1,52 @@
+import {useState, useEffect} from "react";
+import {Button} from "../../../../components/ui/button";
+import {Pencil} from "lucide-react"
+
 export type CompetencyLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
  
 export interface Skill {
   name: string;
+  confidenceLevel: number;
   competencyLevel: CompetencyLevel;
   yearsOfExperience: number;
 }
  
 interface SkillsCardProps {
   readonly skills: readonly Skill[];
+  readonly canEdit?:boolean;
 }
  
-function SkillsCard({ skills }: SkillsCardProps) {
+function SkillsCard({ skills, canEdit }: SkillsCardProps) {
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [localSkills, setLocalSkills] = useState(skills);
+  const [skillError, setSkillError] = useState("");
+
+    useEffect(() =>{
+      setLocalSkills(skills);
+     },[skills]);
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setLocalSkills(skills);
+
+  }
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+
+  }
+
+  const handleSave = () => {
+
+    setIsEditing(false);
+
+  }
+
+
+
+
+
   return (
     <div
       className="bg-white rounded-2xl w-full flex flex-col"
@@ -21,14 +57,70 @@ function SkillsCard({ skills }: SkillsCardProps) {
       }}
     >
 
-      <h2
-        className="font-bold"
-        style={{ color: "var(--color-primary)", fontSize: "22px" }}
-      >
-        Skills
-      </h2>
+
+      <div className = "flex justify-between items-center w-full">
+
+        <h2
+          className="font-bold"
+          style={{ color: "var(--color-primary)", fontSize: "22px" }}
+        >
+          Skills
+       </h2>
+
+         {canEdit && (
+          <div className = " flex-1 flex justify-end gap-2">
+           {!isEditing ?(
+             <Button 
+              onClick={handleEditClick} 
+              variant="secondary" 
+              className="gap-2 font-bold px-4 py-2 border-b"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+              }}
+             >
+                <Pencil size={16}/>
+                Edit
+             </Button>
+           ):(
+            <>
+            <Button 
+              onClick={handleSave} 
+              variant="default" 
+              className ="font-bold px-4 py-2"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+
+              }}
+            >
+              Save
+            </Button>
+            <Button 
+              onClick={handleCancel} 
+              variant="outline" 
+              className="font-bold px-4 py-2"
+                style ={{
+                  fontSize: "14px",
+                  padding: "6px 12px",
+                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+
+                }}
+            >
+              Cancel
+            </Button>
+
+            </>
+           )}
+          </div>
+        )}
+      </div>
  
       <hr style={{ borderColor: "var(--color-border)" }} />
+
+
  
       {/* Table header */}
       <div

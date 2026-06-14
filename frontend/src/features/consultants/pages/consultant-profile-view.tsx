@@ -57,7 +57,7 @@ function ConsultantProfileViewPage() {
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-  console.log("Loaded profile data:", profile);
+
 
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
@@ -68,6 +68,8 @@ function ConsultantProfileViewPage() {
       </div>
     );
   }
+
+  console.log("profile data: ", profile);
 
   if (error || !profile) {
     let errorMessage = "profile not found";
@@ -150,6 +152,7 @@ function ConsultantProfileViewPage() {
 
             <SkillsCard 
               skills={profile.skills}
+              canEdit={canEdit}
            
              />
 

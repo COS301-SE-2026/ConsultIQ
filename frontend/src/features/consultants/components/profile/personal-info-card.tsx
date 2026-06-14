@@ -37,7 +37,7 @@ export default function PersonalInfoCard({
    const [emailError,setEmailError] = useState("");
    const [nameError,setNameError]= useState("");
 
-   console.log("full name: ",fullName);
+  
 
    useEffect(() =>{
     setFullName(fullName);

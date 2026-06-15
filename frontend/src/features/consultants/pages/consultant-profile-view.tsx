@@ -131,6 +131,9 @@ function ConsultantProfileViewPage() {
               fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
+                onSave={(status) => {
+                  // API call goes here
+                }}
             />
 
             <PersonalInfoCard
@@ -140,6 +143,9 @@ function ConsultantProfileViewPage() {
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
+               onSave={(data) => {
+                // API call goes here
+              }}
              
             />
 
@@ -153,7 +159,9 @@ function ConsultantProfileViewPage() {
             <SkillsCard 
               skills={profile.skills}
               canEdit={canEdit}
-           
+              onSave={(updatedSkills) => {
+                // call your API here, then update state
+              }}
              />
 
             <EducationCard 

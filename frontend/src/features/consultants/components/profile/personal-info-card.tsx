@@ -13,6 +13,7 @@ interface PersonalInfoCardProps {
   readonly idNumber?: string;
   readonly nationality?: string;
   readonly canEdit?:boolean;
+  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => void;
 }
 
 export default function PersonalInfoCard({
@@ -22,6 +23,7 @@ export default function PersonalInfoCard({
   idNumber,
   nationality,
   canEdit,
+  onSave,
 }: PersonalInfoCardProps) {
 
    const [isEditing, setIsEditing] = useState(false);
@@ -138,8 +140,10 @@ export default function PersonalInfoCard({
    
 
      if(!isValid) return;
-
-     //API call to update info
+    
+     //callback to api function in parent
+     onSave?.({ fullName: fullname, email: emailAddress, phone: phoneNumber, idNumber: localIdnumber, nationality: nationalityStatus });
+     
 
 
      setIsEditing(false);

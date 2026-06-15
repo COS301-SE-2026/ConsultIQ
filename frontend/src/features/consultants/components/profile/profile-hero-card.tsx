@@ -6,6 +6,7 @@ interface ProfileHeroCardProps {
   readonly fullName: string;
   readonly status: "Available" | "Unavailable" | "On leave";
   readonly canEdit?: boolean;
+  readonly onSave?: (status: "Available" | "Unavailable" | "On leave") => void;
 }
 
 function getInitials(fullName: string) {
@@ -15,7 +16,7 @@ function getInitials(fullName: string) {
   return `${firstName[0]}${lastName[0]}`.toUpperCase();
 }
 
-function ProfileHeroCard({ fullName, status, canEdit }: ProfileHeroCardProps) {
+function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardProps) {
   const isAvailable = status === "Available";
   const [isEditing, setIsEditing] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
@@ -30,7 +31,11 @@ function ProfileHeroCard({ fullName, status, canEdit }: ProfileHeroCardProps) {
   };
 
   const handleSave = () => {
-    // Api call to change status goes here 
+
+    //callback to parent 
+    onSave?.(currentStatus);
+    setIsEditing(false);
+    
 
   };
 

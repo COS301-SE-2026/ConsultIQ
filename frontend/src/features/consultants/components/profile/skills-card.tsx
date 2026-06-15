@@ -1,6 +1,8 @@
 import {useState, useEffect} from "react";
 import {Button} from "../../../../components/ui/button";
-import {Pencil} from "lucide-react"
+import {Pencil,Trash2,Plus} from "lucide-react"
+import { Input } from "../../../../components/ui/input";
+import { toast } from "sonner";
 
 export type CompetencyLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
  
@@ -14,9 +16,10 @@ export interface Skill {
 interface SkillsCardProps {
   readonly skills: readonly Skill[];
   readonly canEdit?:boolean;
+  readonly onSave?: (updatedSkills: Skill[]) => void;
 }
  
-function SkillsCard({ skills, canEdit }: SkillsCardProps) {
+function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [localSkills, setLocalSkills] = useState(skills);
@@ -29,21 +32,87 @@ function SkillsCard({ skills, canEdit }: SkillsCardProps) {
   const handleCancel = () => {
     setIsEditing(false);
     setLocalSkills(skills);
+    setSkillError("");
 
   }
 
   const handleEditClick = () => {
     setIsEditing(true);
+    setLocalSkills(skills);
 
   }
 
   const handleSave = () => {
 
+    const isEmpty = localSkills.some((skill) => !skill.name.trim());
+
+    if(isEmpty){
+      setSkillError("All skill names must be filled in");
+      return;
+    }
+
+    setSkillError("");
+
+     onSave?.([...localSkills]); //Callback to parent where api call is made
+
+    
+
     setIsEditing(false);
+    toast.success(" your skills have been updated successfully");
 
   }
 
+  const competencyLevel = (years: number, confidence: number) : "BEGINNER" | "INTERMEDIATE" | "EXPERT" =>{
+    if (confidence >= 4 && years >= 5) return "EXPERT";
+    if (confidence >= 3 && years>= 3) return "INTERMEDIATE";
+    return "BEGINNER";
+  }
 
+  const addSkill = () =>{
+    const newSkill={
+      name: "",
+      confidenceLevel: 1,
+      competencyLevel: "BEGINNER" as const,
+      yearsOfExperience: 0
+    };
+
+    setLocalSkills([...localSkills,newSkill]);
+  }
+
+  const removeSkill = (index: number) =>{
+    setLocalSkills(localSkills.filter((_,pos)=> pos !== index));
+  }
+
+  const updateSkill = (index: number, field: keyof Skill, value: any) =>{
+
+    const updatedSkills = [...localSkills];
+
+    const currentSkill = {...updatedSkills[index]};
+
+    if(field === "name"){
+      currentSkill.name = value;
+    }else if(field == "confidenceLevel" || field == "yearsOfExperience"){
+      let exp= currentSkill.yearsOfExperience;
+      let conf = currentSkill.confidenceLevel;
+      
+      if(field == "yearsOfExperience"){
+        exp = parseFloat(value) || 0;
+        currentSkill.yearsOfExperience= exp;
+      }
+
+      if(field === "confidenceLevel"){
+        conf= parseInt(value,10) || 1;
+        currentSkill.confidenceLevel= conf;
+
+      }
+
+    }
+
+    currentSkill.competencyLevel = competencyLevel(currentSkill.yearsOfExperience,currentSkill.confidenceLevel);
+    updatedSkills[index] = currentSkill;
+
+    setLocalSkills(updatedSkills);
+  }
 
 
 
@@ -124,7 +193,7 @@ function SkillsCard({ skills, canEdit }: SkillsCardProps) {
  
       {/* Table header */}
       <div
-        className="grid grid-cols-3 font-semibold"
+        className={`grid ${isEditing ? "grid-cols-[2fr_1.5fr_1.5fr_2fr_auto]":"grid-cols-3"} font-semibold`}
         style={{
           fontSize: "var(--text-h4)",
           color: "var(--color-text-secondary)",
@@ -133,32 +202,115 @@ function SkillsCard({ skills, canEdit }: SkillsCardProps) {
         }}
       >
         <span>Skill Name</span>
+        {isEditing && <span>Confidence (1-4)</span>}
         <span>Competency Level</span>
         <span>Years of Experience</span>
+        {isEditing && <span className="w-5"></span>}
       </div>
  
       {/* Rows */}
       <div className="flex flex-col">
-        {skills.map((skill, index) => (
+        {(!isEditing ? skills: localSkills).map((skill, index) => (
           <div
-            key={skill.name}
-            className="grid grid-cols-3 font-medium"
+            key={index}
+            className={`grid ${isEditing ? "grid-cols-[2fr_1.5fr_1.5fr_2fr_auto] gap-4 items-center":"grid-cols-3"} font-medium`}
             style={{
               fontSize: "var(--text-h3)",
               color: "var(--color-text-primary)",
               padding: "18px 0",
               borderBottom:
-                index < skills.length - 1
+                index < (!isEditing ? skills.length : localSkills.length) - 1
                   ? "1px solid var(--color-border)"
                   : "none",
             }}
           >
-            <span>{skill.name}</span>
-            <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
-            <span>{skill.yearsOfExperience}</span>
+            {!isEditing ? (
+              <>
+               <span>{skill.name}</span>
+               <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
+               <span>{skill.yearsOfExperience}</span>
+              </>
+            ):(
+              <>
+                <div>
+                  <Input
+                  placeholder="React"
+                  value={skill.name}
+                  onChange={(e) => updateSkill(index,"name",e.target.value)}
+                />
+                 {skillError && <span>{skillError}</span>}
+                </div>
+                 
+
+                 <select
+                  id="confidence"
+                  value={skill.confidenceLevel || 1}
+                  onChange={(e) => updateSkill(index,"confidenceLevel",e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+                >
+          
+                  <option value="1">1 - Low</option>
+                  <option value="2">2 - Moderate</option>
+                  <option value="3">3 - High</option>
+                  <option value="4">4 - Expert</option>
+
+                  
+                </select>
+                
+                <Input
+                  type="text"
+                  placeholder="Auto-calculated"
+                  value={skill.competencyLevel}
+                  readOnly
+                  className="bg-slate-50 text-slate-500 cursor-not-allowed"
+                />
+
+                <Input
+                  type="number"
+                  placeholder="5"
+                  min="0"
+                  value={skill.yearsOfExperience}
+                  onChange={(e) => updateSkill(index,"yearsOfExperience",e.target.value)}
+                />
+
+                <Button
+                 variant="secondary"
+                 onClick={() => removeSkill(index)}
+                   style ={{
+                  fontSize: "14px",
+                  padding: "6px 12px",
+
+                }}
+                 
+                >
+                  <Trash2 size={18} />
+                </Button>
+              </>
+            )}
+           
           </div>
         ))}
       </div>
+
+      {isEditing && (
+        <Button
+          variant = "outline"
+          onClick= {addSkill}
+         className="w-full flex items-center justify-center gap-2 py-8 rounded-lg"
+          style={{
+            borderColor: "var(--color-border)",
+             border: "2px dashed #002D62",
+             fontWeight: 600,
+             paddingTop: "8px",
+             paddingBottom: "8px",
+             
+           
+          }}
+        >
+          <Plus size= {18}/>
+          Add Skill
+        </Button>
+      )}
     </div>
   );
 }

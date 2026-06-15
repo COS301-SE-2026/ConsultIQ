@@ -17,6 +17,7 @@ interface SkillDto {
   skillName: string;
   competencyLevel: string;
   yearsExperience?: number;
+  confidenceLevel: number;
 }
 
 interface CertificateDto {
@@ -87,6 +88,7 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       name: s.skillName,
       competencyLevel: s.competencyLevel as "BEGINNER" | "INTERMEDIATE" | "EXPERT",
       yearsOfExperience: s.yearsExperience || 0,
+      confidenceLevel: s.confidenceLevel || 1,
     })),
 
     education: (data.certificates || []).map((cert, index: number) => ({

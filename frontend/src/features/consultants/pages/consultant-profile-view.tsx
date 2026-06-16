@@ -154,7 +154,13 @@ function ConsultantProfileViewPage() {
              
             />
 
-            <ExperienceCard experiences={profile.experience} />
+            <ExperienceCard 
+              experiences={profile.experience} 
+              canEdit={canEdit}
+              onSave={(updatedExperience)=>{
+                // API call goes here
+              }}
+            />
 
             <SkillsCard 
               skills={profile.skills}

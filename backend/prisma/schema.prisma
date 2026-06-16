@@ -76,6 +76,22 @@ enum WorkModel {
   HYBRID
 }
 
+enum UploadStatus {
+  PENDING
+  UPLOADING
+  UPLOADED
+  FAILED
+  DELETED
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVIEW_REQUIRED
+}
+
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -234,14 +250,20 @@ model Certificate {
 }
 
 model CvFile {
-  id           String     @id @default(uuid())
-  consultantId String
-  fileName     String
-  mimeType     String
-  fileData     Bytes
-  status       String     @default("PENDING")
-  uploadedAt   DateTime   @default(now())
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
+  id               String           @id @default(uuid())
+  consultantId     String
+  fileName         String
+  mimeType         String
+  fileSize         Int
+  s3Key            String
+  s3Url            String
+  uploadStatus     UploadStatus     @default(UPLOADED)
+  extractionStatus ExtractionStatus @default(PENDING)
+  rawText          String?
+  parsedData       Json?
+  uploadedAt       DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  consultant       Consultant       @relation(fields: [consultantId], references: [id])
 
   @@map("cv_files")
 }

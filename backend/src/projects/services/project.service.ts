@@ -116,7 +116,7 @@ export class ProjectService {
   }
 
   /** Get Project Status By Id */
-  async  validateProjectIsOpen(projectId: string): Promise<void> {
+  async validateProjectIsOpen(projectId: string): Promise<void> {
     const status = await this.projectRepository.getProjectStatusById(projectId);
 
     if (!status) {

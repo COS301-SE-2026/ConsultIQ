@@ -118,11 +118,11 @@ export class ProjectRepository {
   }
 
   /** Get Project Status By Id*/
-  async getProjectStatusById(projectId: string){
+  async getProjectStatusById(projectId: string) {
     const project = await this.prisma.project.findUnique({
-      where: { id: projectId},
-      select: { status: true }
-      });
+      where: { id: projectId },
+      select: { status: true },
+    });
     return project?.status;
   }
 

@@ -1,18 +1,80 @@
 import { Card } from "../../../components/ui/card";
-import type { Project } from "../types/project.types";
-import { Edit } from "lucide-react";
+import type { Project, ProjectLocation } from "../types/project.types";
+import { Edit, X, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import ProjectLocationCard from "./project-location-card"
+
+type LocationPayload={
+  location: ProjectLocation;
+};
 interface ProjectLocationSectionProps {
   project: Project;
   isEditing?: boolean
   isDisabled?: boolean;
   onEdit: ()=> void;
   onCancel: ()=> void;
-  onSave: (fields: Partial<Project>)=> void;
+  onSave: (fields: LocationPayload)=> void;
 }
 
 export default function ProjectLocationSection({
-  project,
+  project,isEditing, isDisabled, onEdit, onCancel, onSave
 }: ProjectLocationSectionProps) {
+
+  const[currentlocation, setLocation]= useState({
+    addressLine1: project.location.addressLine1,
+    addressLine2: project.location.addressLine2,
+    suburb: project.location.suburb,
+    city: project.location.city,
+    province: project.location.province,
+    postalCode: project.location.postalCode,
+});
+  useEffect(() => {
+    setLocation({
+      addressLine1: project.location.addressLine1,
+      addressLine2: project.location.addressLine2,
+      suburb: project.location.suburb,
+      city:project.location.city,
+      province: project.location.province,
+      postalCode:project.location.postalCode,
+    })
+  }, [project])
+
+  const handleSaveField=(field: keyof ProjectLocation, changedVal: ProjectLocation[keyof ProjectLocation])=>{
+    setLocation(prev => ({...prev, [field]: changedVal}));
+  } 
+
+  const handleSaveLocation = ()=>{
+    onSave({
+      location: currentlocation
+    });
+  };
+  let locationSection;
+
+  if(isEditing){
+    locationSection= (
+      <div className="w-full">
+        <ProjectLocationCard
+        data={currentlocation}
+        onChange={handleSaveField}
+        errors={{}}
+        />
+      </div>
+
+    );
+  }else{
+    locationSection= (
+      <div className=" text-lg grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Info label="Address Line 1" value={project.location.addressLine1} />
+        <Info label="Address Line 2" value={project.location.addressLine2} />
+        <Info label="Suburb" value={project.location.suburb} />
+        <Info label="City" value={project.location.city} />
+        <Info label="Province" value={project.location.province} />
+        <Info label="Postal Code" value={project.location.postalCode} />
+      </div>
+    )
+  }
+
+
   return (
     <Card style={{ padding: "20px", border: "none" }}>
       <div className= "flex flex-center gap-3 mb-8">
@@ -22,18 +84,32 @@ export default function ProjectLocationSection({
         >
           Location
         </h3>
-      <span><Edit className="h-5 w-5" /></span>
+        <div>
+          {isEditing ? (
+            <div className="flex gap-4">
+              <button 
+              onClick={handleSaveLocation} 
+              className="flex items-center text-green-400 font-medium ">
+              <Check className="h-5 w-5"/> Save
+              </button>
+              <button 
+              onClick={onCancel} 
+              className="flex items-center text-red-400 font-medium ">
+              <X className="h-5 w-5"/> Cancel
+              </button>
+              </div>):(
+                <button 
+                onClick={onEdit} 
+                disabled={isDisabled}
+                className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
+                <Edit className="h-5 w-5"/> 
+                </button>
+              )}
+            </div>
+
       </div>
       <div className="h-2" />
-
-      <div className=" text-lg grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Info label="Address Line 1" value={project.location.addressLine1} />
-        <Info label="Address Line 2" value={project.location.addressLine2} />
-        <Info label="Suburb" value={project.location.suburb} />
-        <Info label="City" value={project.location.city} />
-        <Info label="Province" value={project.location.province} />
-        <Info label="Postal Code" value={project.location.postalCode} />
-      </div>
+      {locationSection}   
     </Card>
   );
 }

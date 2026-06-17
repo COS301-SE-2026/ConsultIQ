@@ -1,7 +1,6 @@
 import { Card } from "../../../components/ui/card";
-import { parseDate } from "../../consultants/utils/date.utils";
 import type { Project } from "../types/project.types";
-import { Edit, X, Check, Split } from "lucide-react";
+import { Edit, X, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 interface ProjectOverviewSectionProps {
   project: Project;

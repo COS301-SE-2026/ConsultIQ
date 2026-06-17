@@ -10,7 +10,12 @@ interface TableSkill {
 
 
 interface ProjectSkillsTableProps {
-  readonly skills: TableSkill[];
+   skills: TableSkill[];
+   isEditing: boolean;
+   isDisabled: boolean;
+   onEdit: ()=> void;
+   onCancel: ()=> void;
+   onSave: (fields: Partial<TableSkill>)=> void;
 }
 
 export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) {

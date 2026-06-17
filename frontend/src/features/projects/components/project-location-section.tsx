@@ -1,8 +1,13 @@
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
-
+import { Edit } from "lucide-react";
 interface ProjectLocationSectionProps {
-  readonly project: Project;
+  project: Project;
+  isEditing?: boolean
+  isDisabled?: boolean;
+  onEdit: ()=> void;
+  onCancel: ()=> void;
+  onSave: (fields: Partial<Project>)=> void;
 }
 
 export default function ProjectLocationSection({
@@ -10,12 +15,15 @@ export default function ProjectLocationSection({
 }: ProjectLocationSectionProps) {
   return (
     <Card style={{ padding: "20px", border: "none" }}>
-      <h3
-        className="text-3xl font-bold mb-8"
-        style={{ color: "var(--color-primary)" }}
-      >
-        Location
-      </h3>
+      <div className= "flex flex-center gap-3 mb-8">
+        <h3
+          className="text-3xl font-bold mb-8"
+          style={{ color: "var(--color-primary)" }}
+        >
+          Location
+        </h3>
+      <span><Edit className="h-5 w-5" /></span>
+      </div>
       <div className="h-2" />
 
       <div className=" text-lg grid grid-cols-1 md:grid-cols-2 gap-4">

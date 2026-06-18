@@ -32,13 +32,31 @@ export class AdminUserService {
 
     }
 
-    async getAllUsers() {
+    async getAllUsers(page: number = 1, limit: number = 10) {
 
         try {
-            const consultants = await this.prisma.user.findMany({
-                where: { deletedAt: null }
-            });
-            return consultants;
+            const [consultants, total] = await this.prisma.$transaction([
+
+                this.prisma.user.findMany({
+                    where: { deletedAt: null },
+                    skip: (page - 1) * limit,
+                    take: limit
+                }),
+
+                this.prisma.user.count({
+                    where: { deletedAt: null }
+                })
+            ]);
+
+
+            return {
+                data: consultants,
+                meta: {
+                    totalRecords: total,
+                    currentPage: page,
+                    totalPages: Math.ceil(total / limit),
+                }
+            };
         }
         catch (error) {
             if (error instanceof Object && 'code' in error && error.code === 'P2025') {

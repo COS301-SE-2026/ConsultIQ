@@ -4,6 +4,7 @@ import { projectManagerSidebarItems } from "../../../components/layout/sidebar/s
 import ProjectBasicInfoCard from "../components/project-basic-info-card";
 import ProjectLocationCard from "../components/project-location-card";
 import ProjectSkillsCard from "../components/project-skills-card";
+import type {ProjectLocation} from "../types/project.types"
 import { useState } from "react";
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
@@ -60,6 +61,10 @@ function ProjectSpecificationPage() {
   });
 
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };  
+
+  const updateLocation= <K extends keyof ProjectLocation>(field: K, value: ProjectLocation[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -138,8 +143,7 @@ function ProjectSpecificationPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-              <ProjectLocationCard data={formData} onChange={updateForm} />
-
+              <ProjectLocationCard data={formData} onChange={updateLocation} />
 
               <ProjectSkillsCard
                 skills={formData.skills}

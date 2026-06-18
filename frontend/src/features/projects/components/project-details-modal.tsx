@@ -92,6 +92,7 @@ export default function ProjectDetailsModal({
             budget: data.budget,
             startDate: data.startDate,
             endDate: data.endDate,
+            status: data.status,
 
             // Add these missing root-level fields to satisfy TypeScript
             addressLine1: data.addressLine1,
@@ -184,7 +185,7 @@ export default function ProjectDetailsModal({
             />
         </div>
         <div className="h-6" />
-        <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Delete Project </button>
+        <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
       </div>
     </div>
   );

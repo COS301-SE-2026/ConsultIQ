@@ -28,6 +28,7 @@ export interface Project {
   readonly budget: number;
   readonly startDate: string;
   readonly endDate: string;
+  readonly status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "INACTIVE";
 
   readonly addressLine1: string;
   readonly addressLine2?: string;

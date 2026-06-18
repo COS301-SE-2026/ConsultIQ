@@ -39,7 +39,15 @@ export class AdminUserService {
             this.prisma.user.findMany({
                 where: { deletedAt: null },
                 skip: (page - 1) * limit,
-                take: limit
+                take: limit,
+                select: {
+                    id: true,
+                    fullName: true,
+                    email: true,
+                    role: true,
+                    status: true,
+                    createdAt: true,
+                }
             }),
 
             this.prisma.user.count({

@@ -174,6 +174,11 @@ export class ConsultantService {
       this.prisma.consultant.findMany({
         skip,
         take: limit,
+        where: {
+          user: {
+            deletedAt: null,
+          },
+        },
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },

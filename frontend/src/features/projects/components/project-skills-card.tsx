@@ -117,7 +117,13 @@ export default function ProjectSkillsCard({ skills, onSkillsChange }: ProjectSki
           </button>
 
 
-          <ProjectSkillsTable skills={skills} />
+          <ProjectSkillsTable skills={skills}
+          isEditing={false}
+          isDisabled={true}
+          onEdit={()=>{}} 
+          onCancel={()=>{}}
+          onSave={()=>{}}
+          />
         </div>
 
         <div className="h-6" />

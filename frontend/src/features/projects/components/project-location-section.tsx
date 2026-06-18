@@ -20,7 +20,7 @@ export default function ProjectLocationSection({
   project,isEditing, isDisabled, onEdit, onCancel, onSave
 }: ProjectLocationSectionProps) {
 
-  const[currentlocation, setLocation]= useState({
+  const[currentLocation, setLocation]= useState({
     addressLine1: project.location.addressLine1,
     addressLine2: project.location.addressLine2,
     suburb: project.location.suburb,
@@ -45,7 +45,7 @@ export default function ProjectLocationSection({
 
   const handleSaveLocation = ()=>{
     onSave({
-      location: currentlocation
+      location: currentLocation
     });
   };
   let locationSection;
@@ -54,7 +54,7 @@ export default function ProjectLocationSection({
     locationSection= (
       <div className="w-full">
         <ProjectLocationCard
-        data={currentlocation}
+        data={currentLocation}
         onChange={handleSaveField}
         errors={{}}
         />

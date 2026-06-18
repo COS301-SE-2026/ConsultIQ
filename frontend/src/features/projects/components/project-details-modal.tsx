@@ -1,11 +1,9 @@
-import { X, Loader2, Edit, Save } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Project } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
-import ProjectSkillsTable from "./project-skills-table";
-import { Card } from "../../../components/ui/card";
-
+import ProjectSkillsSection from "./project-skills-section";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
@@ -33,7 +31,7 @@ export default function ProjectDetailsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   
-  const handleSaveSection = async (currentSectionId: string, updatedFields:Partial<Project>) =>{
+  const handleSaveSection = async (_: string, updatedFields:Partial<Project>) =>{
   if (!fullProject) return;
     
   let updatedProject = {
@@ -177,34 +175,13 @@ export default function ProjectDetailsModal({
           onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
           />
 
-          <Card style={{ padding: "20px", border: "none" }}>
-            
-          <div className=" flex flex-center gap-3 mb-8">
-            <h3
-                className="text-3xl font-bold mb-8"
-                style={{ color: "var(--color-primary)" }}
-              >
-                Skills
-              </h3>
-            <span><Edit className="h-5 w-5" /></span>
-            </div>
-            <div className="h-4" />
-
-            <ProjectSkillsTable
-              skills={displayData.skills.map((skill) => ({
-                id: String(skill.id),
-                name: skill.name,
-                competency: skill.competency,
-                years: skill.years,
-                mandatory: skill.mandatory,
-              }))}
+            <ProjectSkillsSection skills={[...(displayData.skills ?? [])]}
               isEditing = {activeEditSection === "project-skills"}
               isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
               onEdit = {() => setActiveEditSection("project-skills") }
               onCancel = { () => setActiveEditSection(null) }
-              onSave = { (fields) => handleSaveSection("project-skills", fields) }
+              onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
             />
-          </Card>
         </div>
         <div className="h-6" />
         <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Delete Project </button>

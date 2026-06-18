@@ -16,7 +16,7 @@ export class AdminUserService {
                 where: { id: userId },
                 data: {
                     deletedAt: new Date(),
-                    status: 'SUSPENDED'
+                    status: 'ARCHIVED',
                 }
             });
 
@@ -37,7 +37,7 @@ export class AdminUserService {
         const [consultants, total] = await this.prisma.$transaction([
 
             this.prisma.user.findMany({
-                where: { deletedAt: null },
+                where: { deletedAt: null, status: { not: 'ARCHIVED' } },
                 skip: (page - 1) * limit,
                 take: limit,
                 select: {
@@ -51,7 +51,7 @@ export class AdminUserService {
             }),
 
             this.prisma.user.count({
-                where: { deletedAt: null }
+                where: { deletedAt: null, status: { not: 'ARCHIVED' } }
             })
         ]);
 

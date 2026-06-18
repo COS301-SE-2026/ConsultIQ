@@ -79,7 +79,7 @@ describe('AdminUserService', () => {
             const mockUpdatedUser = {
                 id: '1',
                 name: 'User 1',
-                status: 'SUSPENDED',
+                status: 'ACTIVE',
                 deletedAt: new Date()
             };
 
@@ -91,7 +91,7 @@ describe('AdminUserService', () => {
                 where: { id: '1' },
                 data: {
                     deletedAt: expect.any(Date),
-                    status: 'SUSPENDED'
+                    status: 'ARCHIVED'
                 },
             });
 
@@ -111,7 +111,7 @@ describe('AdminUserService', () => {
                 where: { id: '2' },
                 data: {
                     deletedAt: expect.any(Date),
-                    status: 'SUSPENDED'
+                    status: 'ARCHIVED'
                 },
             });
 

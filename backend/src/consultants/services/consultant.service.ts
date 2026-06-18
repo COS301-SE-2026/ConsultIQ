@@ -177,6 +177,7 @@ export class ConsultantService {
         where: {
           user: {
             deletedAt: null,
+            status: { not: 'ARCHIVED' },
           },
         },
         include: {

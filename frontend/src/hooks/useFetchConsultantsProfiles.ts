@@ -96,11 +96,11 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       institution: cert.issuingBody,
       qualification: cert.title,
       startDate: cert.startDate 
-        ? new Date(cert.startDate).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }) 
-        : new Date(cert.uploadedAt).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        ? new Date(cert.startDate).toISOString().split("T")[0]
+        : new Date(cert.uploadedAt).toISOString().split("T")[0],
       endDate: cert.endDate 
-        ? new Date(cert.endDate).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }) 
-        : new Date(cert.uploadedAt).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        ? new Date(cert.endDate).toISOString().split("T")[0]
+        : new Date(cert.uploadedAt).toISOString().split("T")[0],
     })),
   };
 };

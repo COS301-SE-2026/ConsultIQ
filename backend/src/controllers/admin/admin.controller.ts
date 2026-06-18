@@ -11,8 +11,8 @@ export class AdminController {
 
     @Get('users')
     @Roles(Role.ADMIN)
-    async getAllUsers() {
-        return await this.adminUserService.getAllUsers();
+    async getAllUsers(@Param('page') page: number = 1, @Param('limit') limit: number = 10) {
+        return await this.adminUserService.getAllUsers(page, limit);
     }
 
     @Delete('users/:userId')

@@ -8,6 +8,7 @@ import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants/consultants.module';
 import { ProjectsModule } from './projects/projects.module';
+import { AdminModule } from './admin/admin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
@@ -26,8 +27,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     ConsultantsModule,
     ProjectsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -3,6 +3,9 @@ import { DetailField } from "../../../../components/shared/detail-field";
 import { useState, useEffect } from "react";
 import { Input } from "../../../../components/ui/input";
 import {Button} from "../../../../components/ui/button";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import TextareaAutosize from "react-textarea-autosize";
 
 
 export interface Experience {
@@ -28,28 +31,26 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   const [company, setCompany] = useState(experience.company);
   const [jobTitle, setJobTitle] = useState(experience.jobTitle);
   const [jobType, setJobType]= useState(experience.jobType);
-  const [startDate, setStartDate] = useState(experience.startDate);
-  const [endDate, setEndDate] = useState(experience.endDate);
+ const [startDate, setStartDate]= useState<Date | null>(experience.startDate ? new Date(experience.startDate) : null);
+  const [endDate, setEndDate]= useState<Date | null>(experience.endDate ? new Date(experience.endDate) : null);
   const [roleDesc, setRoleDesc]= useState(experience.roleDescription);
   const [workModel, setWorkModel] = useState(experience.workModel);
   
 
   const [companyError, setCompaneyError] = useState("");
   const [jobTitleError, setjobTitleError] = useState("");
-  const [jobTypeError, setjobTypeError] = useState("");
   const [startDateError, setstartDateError] = useState("");
   const [endDateError,setEndDateError]= useState("");
   const [roleDescError,setroleDescError]= useState("");
-  const [workModelError,setworkModelError]= useState("");
-  const [isEditing,setIsEditing]= useState(false);
+ 
 
   useEffect(() => {
     setCompany(experience.company);
     setJobTitle(experience.jobTitle);
     setJobType(experience.jobType);
     setRoleDesc(experience.roleDescription);
-    setStartDate(experience.startDate);
-    setEndDate(experience.endDate);
+    setStartDate(experience.startDate ? new Date(experience.startDate) : null);
+    setEndDate(experience.endDate ? new Date(experience.endDate) : null); 
     setWorkModel(experience.workModel);
   },[experience]);
 
@@ -72,6 +73,29 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
       setjobTitleError("");
     }
 
+    if(!roleDesc.trim()){
+      setroleDescError("Role description is required");
+      isValid= false;
+    }else{
+      setroleDescError("");
+    }
+
+    if(!startDate){
+      setstartDateError("Start date is required");
+      isValid = false;
+
+    }else{
+      setstartDateError("");
+    }
+
+    if(!endDate){
+      setEndDateError("End date is required");
+      isValid = false;
+
+    }else{
+      setEndDateError("");
+    }
+
     if (!isValid){
       return;
     }
@@ -81,14 +105,14 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
       company,
       jobTitle,
       jobType,
-      startDate,
-      endDate,
+      startDate: startDate!.toISOString().split("T")[0],
+      endDate:  endDate!.toISOString().split("T")[0],
       roleDescription: roleDesc,
       workModel,
     });
 
 
-    setIsEditing(false);
+   onClose();
   }
 
   const handleCancel = () =>{
@@ -96,8 +120,8 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
     setJobTitle(experience.jobTitle);
     setJobType(experience.jobType);
     setRoleDesc(experience.roleDescription);
-    setStartDate(experience.startDate);
-    setEndDate(experience.endDate);
+    setStartDate(experience.startDate ? new Date(experience.startDate) : null);
+    setEndDate(experience.endDate ? new Date(experience.endDate) : null); 
     setWorkModel(experience.workModel);
     onClose();
 
@@ -114,7 +138,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
             <DetailField label="Job type" value={experience.jobType} />
             <DetailField
               label="Start and end date"
-              value={`${experience.startDate}, ${experience.endDate}`}
+              value={`${experience.startDate} - ${experience.endDate}`}
             />
             <DetailField label="Role description" value={experience.roleDescription} />
           </div>   
@@ -131,7 +155,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          <div className="flex flex-col gap-1">
             <label>Job title</label>
             <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value) } />
-            {jobTitleError && <span>{jobTitleError}</span>}
+             {jobTitleError && <span className="text-red-500 text-xs">{jobTitleError}</span>}
          </div>
 
          <div className="flex flex-col gap-1">
@@ -147,7 +171,6 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
                 <option value="INTERNSHIP">Internship</option>
                 <option value="FREELANCE">Freelance</option>
             </select>
-            {jobTypeError && <span>{jobTypeError}</span>}
          </div>
 
          <div className="flex flex-col gap-1">
@@ -167,33 +190,53 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
 
           <div className="flex flex-col gap-1">
             <label>Start date</label>
-            <Input value={startDate} onChange={(e) => setStartDate(e.target.value) } />
-            {startDateError && <span>{startDateError}</span>}
+          <DatePicker
+            selected={startDate} 
+            onChange={(date: Date | null) => setStartDate(date) }
+            dateFormat={"dd/MM/yyyy"}
+            placeholderText="DD/MM/YYYY"
+            maxDate={new Date()}
+            showMonthDropdown
+            showYearDropdown
+            scrollableYearDropdown
+            scrollableMonthYearDropdown
+            yearDropdownItemNumber={100}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[#002D72]/20"
+            />
+            {startDateError && <span className="text-red-500 text-sm">{startDateError}</span>}
          </div>
 
           <div className="flex flex-col gap-1">
             <label>End date</label>
-            <Input 
-            value={endDate} 
-            onChange={(e) => setEndDate(e.target.value)} 
-            type="date"
-            placeholder="dd/mm/yyyy" 
-            />
-            {endDateError && <span>{endDateError}</span>}
+             <DatePicker
+              selected={endDate} 
+              onChange={(date : Date | null) => setEndDate(date)}
+              dateFormat={"dd/MM/yyyy"}
+              placeholderText="DD/MM/YYYY"
+              maxDate={new Date()}
+              showMonthDropdown
+              showYearDropdown
+              scrollableYearDropdown
+              scrollableMonthYearDropdown
+              yearDropdownItemNumber={100}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm  focus:ring-2 focus:ring-[#002D72]/20"
+           />
+            {endDateError && <span className="text-red-500 text-sm">{endDateError}</span>}
          </div>
 
 
         <div className="flex flex-col gap-1">
             <label htmlFor="description" className="text-base font-semibold">Role description </label>
-            <textarea  
+            <TextareaAutosize  
             id="description"
             value={roleDesc} 
             onChange={(e) => setRoleDesc(e.target.value) }
             placeholder="Describe your role and responsibilties"
-            >
+            minRows={3} // Sets the initial minimum height
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[#002D72]/20"
             
-            </textarea>
-            {roleDescError && <span>{roleDescError}</span>}
+            />
+            {roleDescError && <span className="text-red-500 text-xs">{roleDescError}</span>}
          </div>
 
         <div className="flex items-center gap-2 shrink-0 ml-4">

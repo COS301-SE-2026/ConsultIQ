@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import ExperienceDetailPanel, { type Experience } from "./experience-detail-panel";
 import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"
-import { Input } from "../../../../components/ui/input";
 import { toast } from "sonner";
 
 export type { Experience };
@@ -15,11 +14,13 @@ interface ExperienceCardProps {
 
 function formatDateRange(startDate: string, endDate: string) {
   const fmt = (d: string) => {
-    const parts = d.split(" ");
-    return parts.length >= 2 ? `${parts[0].slice(0, 3)} ${parts[1]}` : d;
+   if (!d || d.toLowerCase() === "present") return d;
+    const date = new Date(d);
+    return isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
   };
-  return `${fmt(startDate)}, ${fmt(endDate)}`;
+  return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
+
 
 function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
   const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
@@ -55,7 +56,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
   const addExperience = () => {
 
     const newExperience={
-      id: `temp-${Date.now()}`,
+      id: `exp-${Date.now()}`,
       company: "",
       jobTitle: "",
       jobType: "Full-time",
@@ -330,7 +331,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
 
               </div>
-
+                {/* end of education row */}
             </div>
           ))}
         </div>

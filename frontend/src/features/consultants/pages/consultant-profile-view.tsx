@@ -171,7 +171,11 @@ function ConsultantProfileViewPage() {
              />
 
             <EducationCard 
-            educationList={profile.education} 
+              educationList={profile.education} 
+              canEdit={canEdit}
+              onSave={(updatedEducation)=>{
+                // API call goes here
+              }}
             />
 
 

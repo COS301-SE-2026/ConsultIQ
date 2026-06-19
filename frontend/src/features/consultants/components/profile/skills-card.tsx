@@ -23,7 +23,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [localSkills, setLocalSkills] = useState(skills);
-  const [skillError, setSkillError] = useState("");
+  const [showValidation, setShowValidation] = useState(false);
 
     useEffect(() =>{
       setLocalSkills(skills);
@@ -32,26 +32,27 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
   const handleCancel = () => {
     setIsEditing(false);
     setLocalSkills(skills);
-    setSkillError("");
+    setShowValidation(false);
 
   }
 
   const handleEditClick = () => {
     setIsEditing(true);
     setLocalSkills(skills);
+    setShowValidation(false);
 
   }
 
   const handleSave = () => {
 
-    const isEmpty = localSkills.some((skill) => !skill.name.trim());
+    const hasEmptyFields = localSkills.some((skill) => !skill.name.trim());
 
-    if(isEmpty){
-      setSkillError("All skill names must be filled in");
+    if (hasEmptyFields) {
+      setShowValidation(true); 
       return;
     }
 
-    setSkillError("");
+    setShowValidation(false);
 
      onSave?.([...localSkills]); //Callback to parent where api call is made
 
@@ -238,7 +239,11 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                   value={skill.name}
                   onChange={(e) => updateSkill(index,"name",e.target.value)}
                 />
-                 {skillError && <span>{skillError}</span>}
+                {showValidation && !skill.name.trim() && (
+                    <span className="text-red-500 text-xs mt-1 block">
+                      Skill name must be filled in
+                    </span>
+                  )}
                 </div>
                  
 

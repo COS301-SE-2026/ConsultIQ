@@ -155,10 +155,11 @@ export default function PersonalInfoCard({
    
 
   return (
-    <SectionCard title="Personal Information">
+    <div className="relative">
+       <SectionCard title="Personal Information" >
 
        {canEdit && (
-          <div className = " flex-1 flex justify-end gap-2">
+          <div className = " absolute top-[26px] right-6 flex items-center gap-2">
            {!isEditing ?(
              <Button 
               onClick={handleEditClick} 
@@ -254,5 +255,7 @@ export default function PersonalInfoCard({
        
       </div>
     </SectionCard>
+    </div>
+   
   );
 }

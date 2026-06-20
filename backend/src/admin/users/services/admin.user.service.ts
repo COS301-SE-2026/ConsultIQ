@@ -67,7 +67,7 @@ export class AdminUserService {
 
     }
 
-    async activeUser(userId: string) {
+    async activateUser(userId: string) {
         try {
             await this.prisma.user.update({
                 where: { id: userId },

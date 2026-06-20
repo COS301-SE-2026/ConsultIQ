@@ -1,8 +1,8 @@
 import { Controller, Delete, Patch, Get, Param, Request, UnauthorizedException, Query } from "@nestjs/common";
-import { AdminUserService } from "src/admin/users/services/admin.user.service";
+import { AdminUserService } from "../../admin/users/services/admin.user.service";
 import { Role } from '../../auth/enums/role.enum';
-import { Roles } from "src/common/guards/roles.guard";
-import { AdminProjectService } from "src/admin/projects/services/admin.projects.service";
+import { Roles } from "../../common/guards/roles.guard";
+import { AdminProjectService } from "../../admin/projects/services/admin.projects.service";
 
 @Controller('admin')
 export class AdminController {
@@ -25,7 +25,7 @@ export class AdminController {
     @Patch('users/:userId/activate')
     @Roles(Role.ADMIN)
     async activateUser(@Param('userId') userId: string) {
-        return await this.adminUserService.activeUser(userId);
+        return await this.adminUserService.activateUser(userId);
     }
 
     @Patch('users/:userId/suspend')

@@ -186,7 +186,7 @@ describe('AdminUserService', () => {
 
 
 
-    describe('activeUser', () => {
+    describe('activateUser', () => {
 
         it('should successfully activate a user', async () => {
             const mockUpdatedUser = {
@@ -198,7 +198,7 @@ describe('AdminUserService', () => {
 
             (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser);
 
-            const result = await service.activeUser('1');
+            const result = await service.activateUser('1');
 
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: '1' },
@@ -217,7 +217,7 @@ describe('AdminUserService', () => {
 
             (prisma.user.update as jest.Mock).mockRejectedValue(prismaError);
 
-            await expect(service.activeUser('2')).rejects.toThrow('User does not exist');
+            await expect(service.activateUser('2')).rejects.toThrow('User does not exist');
 
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: '2' },
@@ -233,7 +233,7 @@ describe('AdminUserService', () => {
             const genericError = new Error('Database connection lost');
             (prisma.user.update as jest.Mock).mockRejectedValue(genericError);
 
-            await expect(service.activeUser('1')).rejects.toThrow(genericError);
+            await expect(service.activateUser('1')).rejects.toThrow(genericError);
         });
 
 

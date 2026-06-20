@@ -16,6 +16,7 @@ import UnderConstructionPage from "../features/consultants/pages/under-construct
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 import ProfileCreationEntryFlow from "../features/cv-parsing/pages/profile-creation-entry-flow"
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
@@ -50,6 +51,7 @@ function AnimatedRoutes() {
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />                </Route>
                     <Route path="/profile-creation-entry-flow" element={<PageTransition><ProfileCreationEntryFlow /></PageTransition>} />
+                    <Route path="/cv-upload" element={<PageTransition><CVUpload /></PageTransition>} />
 
                 {/* Catch-all: Redirect unknown URLs to login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />

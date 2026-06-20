@@ -7,6 +7,7 @@ describe('AdminProjectService', () => {
     let prisma: PrismaService;
 
     beforeEach(async () => {
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AdminProjectService,
@@ -18,14 +19,26 @@ describe('AdminProjectService', () => {
                             findMany: jest.fn(),
                             count: jest.fn(),
                         },
+                        projectAuditLog: {
+                            create: jest.fn(),
+                        },
                         $transaction: jest.fn(),
                     },
                 },
             ],
+
+
         }).compile();
 
         service = module.get<AdminProjectService>(AdminProjectService);
         prisma = module.get<PrismaService>(PrismaService);
+
+        (prisma.$transaction as jest.Mock).mockImplementation((callback) => {
+            if (typeof callback === 'function') {
+                return callback(prisma);
+            }
+            return Promise.resolve(callback);
+        });
     });
 
     // Getting all projects with pagination
@@ -99,7 +112,7 @@ describe('AdminProjectService', () => {
 
         });
 
-        it('Deleting a non-existent project', async () => {
+        it('Archiving a non-existent project', async () => {
             const prismaError = { code: 'P2025' };
 
             (prisma.project.update as jest.Mock).mockRejectedValue(prismaError);
@@ -117,7 +130,7 @@ describe('AdminProjectService', () => {
 
         });
 
-        it('Database error when trying to delete a project', async () => {
+        it('Database error when trying to archive a project', async () => {
             const genericError = new Error('Database connection lost');
             (prisma.project.update as jest.Mock).mockRejectedValue(genericError);
 
@@ -126,5 +139,62 @@ describe('AdminProjectService', () => {
 
 
     })
+
+
+    describe('unarchiveProject', () => {
+
+        it('should successfully unarchive a project', async () => {
+            const mockUpdatedProject = {
+                id: '1',
+                name: 'Project 1',
+                status: 'ARCHIVED',
+                archivedAt: new Date()
+            };
+
+            (prisma.project.update as jest.Mock).mockResolvedValue(mockUpdatedProject);
+
+            const result = await service.unarchiveProject('1', 'admin-user-id');
+
+            expect(prisma.project.update).toHaveBeenCalledWith({
+                where: { id: '1' },
+                data: {
+                    archivedAt: null,
+                    status: 'OPEN'
+                },
+            });
+
+            expect(result).toEqual({ message: 'Project unarchived successfully' });
+
+
+        });
+
+        it('Unarchiving a non-existent project', async () => {
+            const prismaError = { code: 'P2025' };
+
+            (prisma.project.update as jest.Mock).mockRejectedValue(prismaError);
+
+            await expect(service.unarchiveProject('2', 'admin-user-id')).rejects.toThrow('Project does not exist');
+
+            expect(prisma.project.update).toHaveBeenCalledWith({
+                where: { id: '2' },
+                data: {
+                    archivedAt: null,
+                    status: 'OPEN'
+                },
+            });
+
+
+        });
+
+        it('Database error when trying to unarchive non existent project', async () => {
+            const genericError = new Error('Database connection lost');
+            (prisma.project.update as jest.Mock).mockRejectedValue(genericError);
+
+            await expect(service.unarchiveProject('1', 'admin-user-id')).rejects.toThrow(genericError);
+        });
+
+
+    })
+
 
 })

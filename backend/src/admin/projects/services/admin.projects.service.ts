@@ -27,9 +27,12 @@ export class AdminProjectService {
                         userId: adminUserId,
                         createdAt: new Date(),
                     }
+
+
                 });
-                return { message: 'Project archived successfully' };
+
             });
+            return { message: 'Project archived successfully' };
         }
         catch (error) {
             if (error instanceof Object && 'code' in error && error.code === 'P2025') {
@@ -61,8 +64,10 @@ export class AdminProjectService {
                         createdAt: new Date(),
                     }
                 });
-                return { message: 'Project unarchived successfully' };
+
             });
+
+            return { message: 'Project unarchived successfully' };
         }
         catch (error) {
             if (error instanceof Object && 'code' in error && error.code === 'P2025') {

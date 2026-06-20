@@ -5,7 +5,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectRepository {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async createProject(dto: CreateProjectDto, creatorUserId: string) {
     return await this.prisma.$transaction(async (tx) => {

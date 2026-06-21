@@ -1,5 +1,5 @@
 import {UploadCloud, ArrowLeft, CheckCircle2} from "lucide-react";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {consultantManagerSidebarItems} from "../../../components/layout/sidebar/sidebar.config";
 import {Card}  from "../../../components/ui/card";
@@ -10,9 +10,10 @@ import { toast } from "sonner";
 
 export default function CVUpload (){
     const navigate = useNavigate();
+    const {userId}= useParams<{userId: string}>();
     const [_isDragging,setDragging]= useState(false);
-    const [isFileUploaded, setIsFileUploaded]= useState(false);
-    const [fileName, setFileName]= useState("");
+    const [isFileUploaded, _setIsFileUploaded]= useState(false);
+    const [fileName, _setFileName]= useState("");
 
     const handleFileChange= (e: React.ChangeEvent<HTMLInputElement>)=> {
       const filSelected= e.target.files?.[0];
@@ -20,6 +21,7 @@ export default function CVUpload (){
       toast.success("File successfully uploaded",{description: filSelected.name, duration: 3500,});
       e.target.value= "";
       setTimeout(()=> {alert("Navigating to the CV Extraction Preview page...");}, 2000)
+      navigate(`/cv-extraction-preview-page/${userId}`)
       };
     return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -43,7 +45,7 @@ export default function CVUpload (){
         </header>
         <div className="h-6"/>
         <main className="flex-1 flex items-center justify-center overflow-y-auto">
-        <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto relative border-none rounded-xl" style={{ padding: "45px" }}>
+        <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto relative border-none rounded-xl" style={{ padding: "60px" }}>
             <div className="w-full max-w-[800px] flex flex-col gap-12 mx-auto">          
                 <div className="text-left mb-2">
                     <h2>Upload CV</h2>

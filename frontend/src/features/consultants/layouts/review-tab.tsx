@@ -1,11 +1,13 @@
-import { useConsultantProfile } from "../pages/consultant-profile.context";
+import { useContext } from "react";
+import {  type ProfileState, ConsultantProfileContext } from "../pages/consultant-profile.context";
 import type { Tab } from "../pages/create-profile-page";
 import { Pencil, CheckCircle } from "lucide-react";
-
 interface Props {
   onEdit: (tab: Tab) => void;
   onSave: () => void;
   isSaving: boolean;
+  customData?: ProfileState;
+  submitText?: string;
 }
 
 function formatDate(iso: string) {
@@ -29,9 +31,12 @@ function SectionHeader({ title, tab, onEdit }: { title: string; tab: Tab; onEdit
   );
 }
 
-export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
-  const { profileData } = useConsultantProfile();
-  const location = sessionStorage.getItem("location_addressLine1")
+export default function ReviewTab({ onEdit, onSave, isSaving, customData }: Props) {
+    
+    const wContext= useContext(ConsultantProfileContext);
+    const profileData= customData || wContext?.profileData;
+    if(!profileData){throw new Error("Pass either Custom data or Consultant Provider");}
+       const location = sessionStorage.getItem("location_addressLine1")
     ? [
         sessionStorage.getItem("location_addressLine1"),
         sessionStorage.getItem("location_suburb"),
@@ -55,6 +60,24 @@ export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
       <div className="bg-white rounded-2xl border" style={{ borderColor: "var(--color-border)", padding: "40px" }}>
         <SectionHeader title="Personal Information" tab="personal" onEdit={onEdit} />
         <div className="grid grid-cols-2 text-sm" style={{ rowGap: "24px", columnGap: "32px" }}>
+          {profileData.firstName &&(
+            <div>
+              <p className="font-medium text-slate-500">First Name</p>
+              <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.firstName}</p>
+            </div>
+          )}
+          {profileData.lastName &&(
+            <div>
+              <p className="font-medium text-slate-500">First Name</p>
+              <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.lastName}</p>
+            </div>
+          )}
+          {profileData.email &&(
+            <div>
+              <p className="font-medium text-slate-500">First Name</p>
+              <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.email}</p>
+            </div>
+          )}          
           <div>
             <p className="font-medium text-slate-500">Phone</p>
             <p className="font-semibold mt-1" style={{ color: "var(--color-primary)" }}>{profileData.phone || "—"}</p>
@@ -114,6 +137,28 @@ export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
                 {exp.description && (
                   <p className="text-sm text-slate-600 mt-2 leading-relaxed">{exp.description}</p>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+        <div className="bg-white rounded-2xl border" style={{ borderColor: "var(--color-border)", padding: "40px" }}>
+        <SectionHeader title={`Education (${profileData.certifications.length})`} tab="skills" onEdit={onEdit} />
+        {profileData.certifications.length === 0 ? (
+          <p className="text-slate-400 text-sm">No education added.</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {profileData.certifications.map((edu, i) => (
+              <div key={i} className="border rounded-xl" style={{ borderColor: "var(--color-border)", padding: "28px" }}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-bold text-base" style={{ color: "var(--color-primary)" }}>{edu.title}</p>
+                    <p className="font-medium text-slate-600" style={{ marginTop: "4px" }}>{edu.issuingBody}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-500 mt-2">
+                  {(edu.startDate)} — {edu.endDate ? formatDate(edu.endDate) : "Present"}
+                </p>
               </div>
             ))}
           </div>

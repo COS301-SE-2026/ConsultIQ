@@ -5,8 +5,12 @@ import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
+import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import type { CreateCertificationPayload } from "../../services/consultant.service";
 
 export default function EducationForm() {
+    const { profileData, updateProfileData } = useConsultantProfile();
+    const certifications= profileData.certifications;
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
         if (saved) {
@@ -60,7 +64,13 @@ export default function EducationForm() {
                 endYear: parsedEnd ? parsedEnd.getFullYear() : new Date().getFullYear(),
             },
         ]);
-
+        const newCertification: CreateCertificationPayload={
+            title: qualification, 
+            issuingBody: institutionName, 
+            startDate, 
+            endDate
+        }
+        updateProfileData({ certifications: [...certifications, newCertification]})
         setInstitutionName("");
         setQualification("");
         setStartDate("");

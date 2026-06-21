@@ -19,6 +19,9 @@ export interface ExperienceItem {
 
 export interface ProfileState {
   consultantUserId: string;
+  firstName?: string;
+  lastName?:string;
+  email?:string;
   idNumber: string;
   phone: string;
   nationality: string;
@@ -30,7 +33,7 @@ export interface ProfileState {
   certifications: CreateCertificationPayload[];
 }
 
-interface ConsultantProfileContextValue {
+export interface ConsultantProfileContextValue {
   profileData: ProfileState;
   updateProfileData: (data: Partial<ProfileState>) => void;
 }
@@ -48,7 +51,7 @@ const defaultState: ProfileState = {
   certifications: [],
 };
 
-const ConsultantProfileContext = createContext<ConsultantProfileContextValue | undefined>(undefined);
+export const ConsultantProfileContext = createContext<ConsultantProfileContextValue | undefined>(undefined);
 
 export const ConsultantProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profileData, setProfileData] = useState<ProfileState>(() => {

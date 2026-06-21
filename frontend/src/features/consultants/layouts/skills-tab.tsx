@@ -29,6 +29,18 @@ export default function SkillsTab({ onComplete }: Props) {
           </button>
         </div>
       )}
+      {profileData.certifications.length > 0 && (
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={onComplete}
+              className="flex items-center justify-center gap-2 h-10 w-30 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          >
+            Next: Review
+            <ArrowRight size={18} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import {Edit, UploadCloud, ArrowLeft} from "lucide-react";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {consultantManagerSidebarItems} from "../../../components/layout/sidebar/sidebar.config";
 import {Card}  from "../../../components/ui/card"
@@ -7,6 +7,7 @@ import {Card}  from "../../../components/ui/card"
 
 export default function ProfileCreationEntryFlow (){
     const navigate = useNavigate();
+    const {userId}= useParams<{userId: string}>();
     return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantManagerSidebarItems} />
@@ -48,7 +49,7 @@ export default function ProfileCreationEntryFlow (){
                     </div>
                     <div className="w-full flex flex-col items-center gap-3 mt-6">
                       <button className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] rounded-lg text-white font-semi-bold text-lg shadow-md" style={{ backgroundColor: "var(--color-primary)" }}
-                      onClick={()=> navigate("/cv-upload")}>
+                      onClick={()=> navigate(`/cv-upload/${userId}`)}>
                         <UploadCloud className="h-8 w-8" />
                         Upload CV
                       </button>
@@ -68,7 +69,7 @@ export default function ProfileCreationEntryFlow (){
                       <button className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] rounded-lg border font-semi-bold text-lg bg-gray-50 shadow-md " style={{
                         border: "1.5px solid var(--color-primary)",
                         color: "var(--color-primary)",}}
-                        onClick={()=> navigate("//create-profile/:userId")}>
+                        onClick={()=> navigate(`/create-profile/${userId}`)}>
                         <Edit className="h-8 w-8" />
                         Enter Manually 
                       </button>

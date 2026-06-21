@@ -235,7 +235,7 @@ function ConsultantsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate(`/create-profile/${user.userId}`)}
+                      onClick={() => navigate(`/profile-creation-entry-flow/${user.userId}`)}
                       className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
                       style={{
                         backgroundColor: "var(--color-accent)",

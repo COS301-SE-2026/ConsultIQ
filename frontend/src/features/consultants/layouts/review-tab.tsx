@@ -38,8 +38,15 @@ export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
         sessionStorage.getItem("location_city"),
         sessionStorage.getItem("location_province"),
         sessionStorage.getItem("location_postalCode"),
-      ].filter(Boolean).join(", ")
-    : profileData.location;
+      ].filter((loc)=> typeof loc === "string" && loc.trim() !== "").join(", ")
+    :[
+      profileData.addressLine1,
+      profileData.addressLine2,
+      profileData.suburb,
+      profileData.city,
+      profileData.province,
+      profileData.postalCode
+    ].filter((loc)=> typeof loc === "string" && loc.trim() !== "").join(", ");
 
   const jobTypeLabel: Record<string, string> = {
     FULL_TIME: "Full-time", PART_TIME: "Part-time", CONTRACT: "Contract",

@@ -21,6 +21,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   LOCKED
+  ARCHIVED
 }
 
 enum TokenType {
@@ -54,6 +55,7 @@ enum ProjectStatus {
   OPEN
   IN_PROGRESS
   CLOSED
+  ARCHIVED
 }
 
 enum ConsultantAvailability {
@@ -140,6 +142,7 @@ model User {
   consultant         Consultant?
   managedProjects    ProjectManager[]
   managedConsultants ConsultantManager[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -344,4 +347,19 @@ model ConsultantExperience {
   updatedAt    DateTime   @updatedAt
 
   @@map("consultant_experience")
+}
+
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  link      String?  
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

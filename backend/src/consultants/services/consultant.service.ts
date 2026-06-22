@@ -19,10 +19,12 @@ import {
   JobType,
   WorkModel,
 } from '@prisma/client';
-
+import { NotificationService } from 'src/notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) { }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -133,10 +135,20 @@ export class ConsultantService {
 
         return { consultantId: consultant.id };
       })
-      .then((result) => ({
-        message: 'Consultant profile created successfully.',
-        consultantId: result.consultantId,
-      }));
+      .then(async (result) => {
+        //send notification to consultant
+        await this.notificationService.sendPushNotification(
+          dto.consultantUserId,
+          'Profile creation! 🎉',
+          'Your consultant profile has been completed.'
+        );
+
+        // Return the final response to the controller
+        return {
+          message: 'Consultant profile created successfully.',
+          consultantId: result.consultantId,
+        };
+      });
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {

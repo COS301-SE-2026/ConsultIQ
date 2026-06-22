@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import { useConsultantProfile, type ProfileState } from "../../pages/consultant-profile.context";
 
 interface Props {
   onComplete?: () => void;
+  data?: ProfileState;
+  onChange?: (data: Partial<ProfileState>)=>void;
 }
 
-export default function LocationForm({ onComplete }: Props) {  const { updateProfileData } = useConsultantProfile();
-
+export default function LocationForm({data, onChange, onComplete }: Props) {  const { updateProfileData } = useConsultantProfile();
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [suburb, setSuburb] = useState("");
@@ -18,6 +19,16 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(()=> {
+    if(!data?.location) return;
+    const partsOfLocation= data.location.split(",").map((part)=> part.trim());
+    setAddressLine1(partsOfLocation[0] ?? "");
+    setSuburb(partsOfLocation[1]?? "");
+    setCity(partsOfLocation[2] ?? "");
+    setProvince(partsOfLocation[3] ?? "");
+    setPostalCode(partsOfLocation[4] ?? "");
+  },[data?.location]);
 
   const handleDone = () => {
     if (!addressLine1.trim() || !city.trim() || !province.trim()) {
@@ -38,13 +49,14 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
     sessionStorage.setItem("location_province", province.trim());
     sessionStorage.setItem("location_postalCode", postalCode.trim());
 
+
     updateProfileData({ location });
     toast.success("Location saved!");
     onComplete?.();
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full max-5-xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>

@@ -11,7 +11,7 @@ type Props = {
 
 export default function ExperienceList({ experiences = [], onRemove, onComplete }: Props) {
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>

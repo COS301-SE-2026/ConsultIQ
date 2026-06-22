@@ -2,17 +2,21 @@ import { useState, useMemo } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
-import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import { useConsultantProfile, type ProfileState } from "../../pages/consultant-profile.context";
 import type { CreateConsultantSkillPayload } from "../../services/consultant.service";
 
+interface SkillsProps{
+  data?: ProfileState;
+  onChange?: (data: Partial<ProfileState>)=> void;
+}
 const sanitizeText = (input: string) => {
   if (!input) return "";
   return input.replace(/[^a-zA-Z0-9\s.,&'\-@_+/#()!]/g, "");
 };
 
-export default function SkillsForm() {
+export default function SkillsForm({data, onChange}: SkillsProps) {
   const { profileData, updateProfileData } = useConsultantProfile();
-  const skills = profileData.skills;
+  const skills =data?.skills ?? profileData.skills;
 
   const [skillName, setSkillName] = useState("");
   const [confidence, setConfidence] = useState("");
@@ -26,6 +30,11 @@ export default function SkillsForm() {
     return "BEGINNER";
   }, [confidence, years]);
 
+  const updateSkill=(skillPayload: Partial<ProfileState>) =>{
+    if(onChange) onChange(skillPayload);
+    else updateProfileData(skillPayload);
+  };
+
   const handleAddSkill = () => {
     if (!skillName.trim() || !years || !confidence) return;
 
@@ -36,14 +45,14 @@ export default function SkillsForm() {
       confidenceLevel: parseInt(confidence, 10) || 1,
     };
 
-    updateProfileData({ skills: [...skills, newSkill] });
+    updateSkill({ skills: [...skills, newSkill] });
     setSkillName("");
     setConfidence("");
     setYears("");
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
@@ -134,7 +143,7 @@ export default function SkillsForm() {
                   </span>
                 </div>
                 <button
-                  onClick={() => updateProfileData({ skills: skills.filter((_, i) => i !== index) })}
+                  onClick={() => updateSkill({ skills: skills.filter((_, i) => i !== index) })}
                   className="text-red-400 hover:text-red-600 text-sm font-medium"
                 >
                   Remove

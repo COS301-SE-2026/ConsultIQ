@@ -1,23 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import { useConsultantProfile, type ProfileState } from "../../pages/consultant-profile.context";
 
-export default function ProfileInfoForm() {
+type ProfileInfoFormProps={
+  data?: ProfileState;
+  onChange?: (data: Partial<ProfileState>)=>void;
+}
+export default function ProfileInfoForm({data, onChange}: ProfileInfoFormProps) {
   const { updateProfileData } = useConsultantProfile();
 
-  const [phone, setPhone] = useState("");
-  const [idNumber, setIdNumber] = useState("");
-  const [nationality, setNationality] = useState("");
+  const [phone, setPhone] = useState(data?.phone ?? "");
+  const [idNumber, setIdNumber] = useState(data?.idNumber ?? "");
+  const [nationality, setNationality] = useState(data?.nationality ?? "");
   const [isAvailable, setIsAvailable] = useState(true);
-  const [costToCompany, setCostToCompany] = useState("");
+  const [costToCompany, setCostToCompany] = useState(data?.costToCompany!=null ? String(data.costToCompany) : "");
 
   const [phoneError, setPhoneError] = useState("");
   const [idError, setIdError] = useState("");
   const [nationalityError, setNationalityError] = useState("");
   const [costError, setCostError] = useState("");
+
+  useEffect(()=> {
+    if(!data) return;
+    setPhone(data.phone ?? "");
+    setIdNumber(data.idNumber ?? "");
+    setNationality(data.nationality ?? "");
+    setCostToCompany(data.costToCompany!=null ? String(data.costToCompany): "");
+  }, [data]);
 
   function validateSAID(id: string): boolean {
     if (!/^\d{13}$/.test(id)) return false;
@@ -82,12 +94,22 @@ export default function ProfileInfoForm() {
       costToCompany: costToCompany ? parseFloat(costToCompany) : 0,
       availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
     });
+    const UpdatedProfile: Partial<ProfileState>= {
+      phone: phone.replace(/\D/g, ""),
+      idNumber,
+      nationality: nationality.trim(),
+      costToCompany: costToCompany ? parseFloat(costToCompany) : 0,
+      availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
+    }
+    if(onChange){
+      onChange(UpdatedProfile)}
+    else{updateProfileData(UpdatedProfile)}
 
     toast.success("Personal information saved!");
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>

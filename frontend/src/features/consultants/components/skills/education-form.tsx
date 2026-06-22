@@ -5,10 +5,14 @@ import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
-import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import { useConsultantProfile, type ProfileState } from "../../pages/consultant-profile.context";
 import type { CreateCertificationPayload } from "../../services/consultant.service";
 
-export default function EducationForm() {
+interface Props{
+    data?: ProfileState;
+    onChange?: (data: Partial<ProfileState>)=> void;
+}
+export default function EducationForm({data, onChange}: Props) {
     const { profileData, updateProfileData } = useConsultantProfile();
     const certifications= profileData.certifications;
     const [educationList, setEducationList] = useState<Education[]>(() => {
@@ -105,8 +109,21 @@ export default function EducationForm() {
         sessionStorage.setItem("education_list", JSON.stringify(sanitizedList));  //NOSONAR
     }, [educationList]);
 
+    useEffect(()=> {
+        if(!data?.certifications?.length) return;
+        const educations= data.certifications.map((c)=>({
+            id: crypto.randomUUID(),
+            institution: c.issuingBody ?? "",
+            qualification: c.title ?? "",
+            endYear: c.endDate ? parseDate(c.endDate)?.getFullYear() ?? new Date().getFullYear() : new Date().getFullYear(),
+            }) );
+            setEducationList(educations);
+
+           
+    }, [data]);
+
     return (
-        <Card className="p-12 h-full w-full flex items-start justify-center">
+        <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
             <div className="w-full max-w-[800px] flex flex-col h-full">
                 <div className="h-6" />
                 <h2 className="text-3xl font-bold mb-8"

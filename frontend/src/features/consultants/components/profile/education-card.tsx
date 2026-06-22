@@ -70,6 +70,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
   
     const removeEducation = (index: number) =>{
       setLocalEdu(prev => prev.filter((_,pos) => pos !== index));
+  
     }
   
     const savePanelChanges = (edu: Education) =>{
@@ -155,7 +156,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
 
         {/* Education rows */}
         <div className="flex flex-col">
-          {localEducation.map((edu, index) => (
+          { localEducation.map((edu, index) => (
             <div key={edu.id}>
               {index > 0 && (
                 <hr
@@ -172,7 +173,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
                     onClick={() => setSelected({edu,index})}
                     className="w-full text-left hover:opacity-70 transition cursor-pointer"
                   >
-                    <div className="flex items-start justify-between gap-6">
+                    <div className="flex items-start justify-between gap-6 flex-1">
                       {/* institution info */}
                       <div className="flex flex-col" style={{ gap: "8px" }}>
                         <p
@@ -209,7 +210,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
                   </button>
                 ):(
                   <>
-                     <div className="flex items-start justify-between gap-6 flex-1">
+                     <div className="flex items-start justify-between gap-6">
                       {/* institution info */}
                       <div className="flex flex-col" style={{ gap: "8px" }}>
                         <p

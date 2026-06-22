@@ -5,6 +5,7 @@ import { Input } from "../../../../components/ui/input";
 import {Button} from "../../../../components/ui/button";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { isBefore, isAfter, startOfDay } from 'date-fns';
  
 
 
@@ -75,6 +76,25 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
     }else{
       setEndDateError("");
     }
+
+    if(startDate && endDate){
+      if(isAfter(startOfDay(startDate),startOfDay(endDate))){
+        setstartDateError("Start day must be before end date");
+        isValid= false;
+      }else{
+        setstartDateError("");
+      }
+
+      if(isBefore(startOfDay(endDate),startOfDay(startDate))){
+        setstartDateError("End date must be after start date");
+        isValid= false;
+      }else{
+        setstartDateError("");
+      }
+
+    }
+
+    
 
     if (!isValid){
       return;

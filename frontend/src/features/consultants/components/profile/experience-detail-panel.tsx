@@ -6,6 +6,7 @@ import {Button} from "../../../../components/ui/button";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import TextareaAutosize from "react-textarea-autosize";
+import { isBefore, isAfter, startOfDay } from 'date-fns';
 
 
 export interface Experience {
@@ -95,6 +96,23 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
     }else{
       setEndDateError("");
     }
+
+    if(startDate && endDate){
+          if(isAfter(startOfDay(startDate),startOfDay(endDate))){
+            setstartDateError("Start day must be before end date");
+            isValid= false;
+          }else{
+            setstartDateError("");
+          }
+    
+          if(isBefore(startOfDay(endDate),startOfDay(startDate))){
+            setstartDateError("End date must be after start date");
+            isValid= false;
+          }else{
+            setstartDateError("");
+          }
+    
+        }
 
     if (!isValid){
       return;

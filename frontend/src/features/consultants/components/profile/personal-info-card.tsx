@@ -220,34 +220,34 @@ export default function PersonalInfoCard({
         </>):(
         <>
              <div>
-              <label>Full name</label>
+              <label className="text-sm font-medium ">Full name</label>
               <Input value={fullname} onChange={(e) => setFullName(e.target.value) } />
-              {nameError && <span>{nameError}</span>}
+              {nameError && <span className="text-red-500 text-xs mt-1 block">{nameError}</span>}
             </div>
 
              <div>
-              <label>Email Address</label>
+              <label className="text-sm font-medium ">Email Address</label>
               <Input value={emailAddress} onChange={(e) => setEmail(e.target.value) } />
-              {emailError && <span>{emailError}</span>}
+              {emailError && <span className="text-red-500 text-xs mt-1 block">{emailError}</span>}
             </div>
 
             <div>
-              <label>Phone Number</label>
+              <label className="text-sm font-medium " >Phone Number</label>
               <Input value={phoneNumber} onChange={(e) => setPhone(e.target.value) } />
-              {phoneError && <span>{phoneError}</span>}
+              {phoneError && <span className="text-red-500 text-xs mt-1 block">{phoneError}</span>}
             </div>
 
             
             <div>
-              <label>ID number</label>
+              <label className="text-sm font-medium ">ID number</label>
               <Input value={localIdnumber} onChange={(e) => setLocalIdNumber(e.target.value) } />
-              {idError && <span>{idError}</span>}
+              {idError && <span className="text-red-500 text-xs mt-1 block">{idError}</span>}
             </div>
 
               <div>
-              <label>Nationality</label>
+              <label className="text-sm font-medium ">Nationality</label>
               <Input value={nationalityStatus} onChange={(e) => setNationality(e.target.value) } />
-              {nationalityError && <span>{nationalityError}</span>}
+              {nationalityError && <span className="text-red-500 text-xs mt-1 block">{nationalityError}</span>}
             </div>
 
         </>)}

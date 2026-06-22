@@ -28,8 +28,8 @@ export interface Profile {
   phone: string;
   idNumber: string;
   nationality: string;
-  address1: string;
-  address2: string;
+  addressLine1: string;
+  addressLine2: string;
   suburb: string;
   city: string;
   province: string;
@@ -150,7 +150,16 @@ function ConsultantProfileViewPage() {
             />
 
             <LocationCard
-              address1={profile.address1}
+              addressLine1={profile.address1}
+              addressLine2={profile.address2}
+              suburb= {profile.suburb}
+              city= {profile.city}
+              province={profile.province}
+              postalCode={profile.postalCode}
+              canEdit={canEdit}
+              onSave={(updatedLocation) =>{
+                
+              }}
              
             />
 

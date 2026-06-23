@@ -20,6 +20,9 @@ import CreateProfilePage from "../features/consultants/pages/create-profile-page
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 
+//Admin pages
+import AdminPage from "../features/admin/pages/admin-dashboard-page";
+
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
 
@@ -43,6 +46,7 @@ function AnimatedRoutes() {
                 {/* ------------------------------------------- */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
+                    <Route path="/admin-dashboard" element={<PageTransition><AdminPage/></PageTransition>}/>
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />

@@ -116,14 +116,14 @@ export class ProjectService {
   }
 
   /** Get Project Status By Id */
-  async validateProjectIsOpen(projectId: string): Promise<void> {
+  async validateProjectIsComplete(projectId: string): Promise<void> {
     const status = await this.projectRepository.getProjectStatusById(projectId);
 
     if (!status) {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
 
-    if (status !== ProjectStatus.OPEN) {
+    if (status === ProjectStatus.CLOSED || status === ProjectStatus.COMPLETED) {
       throw new BadRequestException(
         `Cannot run match: project status is ${status}`,
       );

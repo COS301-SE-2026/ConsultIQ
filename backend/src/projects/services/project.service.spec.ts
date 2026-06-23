@@ -281,11 +281,11 @@ describe('ProjectService', () => {
 
   /** Get Project Status By Id */
 
-  describe('ProjectService - validateProjectIsOpen', () => {
+  describe('ProjectService - validateProjectIsNotClosed', () => {
     let service: ProjectService;
     let projectRepository: { getProjectStatusById: jest.Mock };
 
-    beforeEach( () => {
+    beforeEach(() => {
       projectRepository = {
         getProjectStatusById: jest.fn(),
       };
@@ -294,30 +294,36 @@ describe('ProjectService', () => {
 
     it('resolves without throwing when project status is OPEN', async () => {
       projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.OPEN);
-      await expect(service.validateProjectIsOpen('project-1')).resolves.toBeUndefined();
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined();
     });
 
     it('throws BadRequestException when project status is CLOSED', async () => {
       projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.CLOSED);
-      await expect(service.validateProjectIsOpen('project-1')).rejects.toThrow(
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.validateProjectIsOpen('project-1')).rejects.toThrow(
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
         /CLOSED/);
     });
 
-    it('throws BadRequestException when project status is IN_PROGRESS', async () => {
-      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.IN_PROGRESS);
-      await expect(service.validateProjectIsOpen('project-1')).rejects.toThrow(
+    it('throws BadRequestException when project status is COMPLETED', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.COMPLETED);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.validateProjectIsOpen('project-1')).rejects.toThrow(
-        /IN_PROGRESS/);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /COMPLETED/,
+      );
+    })
+
+    it('resolves without throwing when project status is IN_PROGRESS', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.IN_PROGRESS);
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined()
     });
 
     it('throws NotFoundException when project does not exist', async () => {
       projectRepository.getProjectStatusById.mockResolvedValue(null);
-      await expect(service.validateProjectIsOpen('project-1')).rejects.toThrow(
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
         /Project with ID project-1 not found/,
       );
     });

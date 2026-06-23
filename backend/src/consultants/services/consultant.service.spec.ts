@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
-
+import { NotificationService } from '../../notification/service/notification.service';
 const mockPrismaService = {
   user: {
     findUnique: jest.fn(),
@@ -21,6 +21,12 @@ const mockPrismaService = {
   $transaction: jest.fn(),
 };
 
+
+const mockNotificationService = {
+  sendPushNotification: jest.fn(),
+};
+
+
 describe('ConsultantService', () => {
   let service: ConsultantService;
 
@@ -29,6 +35,7 @@ describe('ConsultantService', () => {
       providers: [
         ConsultantService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 

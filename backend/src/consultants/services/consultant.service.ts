@@ -22,7 +22,7 @@ import {
 
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createConsultantProfile(
     cmUserId: string,
@@ -237,7 +237,9 @@ export class ConsultantService {
     });
 
     if (!consultant) {
-      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+      throw new NotFoundException(
+        `Consultant with userId ${userId} not found.`,
+      );
     }
 
     return this.mapToProfileDto(consultant);
@@ -258,10 +260,26 @@ export class ConsultantService {
         },
       },
       certificates: {
-        select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true }
+        select: {
+          id: true,
+          title: true,
+          issuingBody: true,
+          startDate: true,
+          endDate: true,
+          uploadedAt: true,
+        },
       },
       consultantExperiences: {
-        select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true }
+        select: {
+          id: true,
+          companyName: true,
+          jobTitle: true,
+          jobType: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          workModel: true,
+        },
       },
     };
   }

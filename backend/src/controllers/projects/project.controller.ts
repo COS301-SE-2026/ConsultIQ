@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Patch,
   Query,
   Req,
   UsePipes,
@@ -15,6 +16,7 @@ import {
 import { ProjectService } from '../../projects/services/project.service';
 import { CreateProjectDto } from '../../projects/dto/create-project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { UpdateProjectDto } from 'src/projects/dto/update-project.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -56,5 +58,19 @@ export class ProjectController {
   @HttpCode(HttpStatus.OK)
   async getProjectById(@Param('id') id: string) {
     return await this.projectService.getProjectById(id);
+  }
+
+  //------------Update Project-----------------
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateProject(
+    @Param('id') id: string,
+    @Body() dto: UpdateProjectDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.userId;
+
+    return await this.projectService.updateProject(id, dto, userId);
   }
 }

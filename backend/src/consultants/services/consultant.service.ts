@@ -19,7 +19,7 @@ import {
   JobType,
   WorkModel,
 } from '@prisma/client';
-import { NotificationService } from 'src/notification/service/notification.service';
+import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
   constructor(private readonly prisma: PrismaService,

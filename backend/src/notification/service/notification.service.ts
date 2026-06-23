@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import PushNotifications from '@pusher/push-notifications-server';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 @Injectable()
 export class NotificationService {
     private beamsClient: PushNotifications;
@@ -57,7 +57,7 @@ export class NotificationService {
     }
 
     async markAsRead(notificationId: string, userId: string) {
-        await this.prisma.notification.update({
+        return await this.prisma.notification.update({
             where: {
                 id: notificationId,
                 userId: userId
@@ -67,7 +67,7 @@ export class NotificationService {
     }
 
     async markAllAsRead(userId: string) {
-        await this.prisma.notification.updateMany({
+        return await this.prisma.notification.updateMany({
             where: { userId: userId },
             data: { isRead: true }
         })

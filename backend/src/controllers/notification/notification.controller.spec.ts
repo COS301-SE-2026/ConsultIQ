@@ -8,7 +8,7 @@ const mockNotificationService = {
     sendPushNotification: jest.fn(),
     getNotifications: jest.fn(),
     markAsRead: jest.fn(),
-    MarkAllAsRead: jest.fn(),
+    markAllAsRead: jest.fn(),
 };
 
 describe('NotificationCotroller', () => {
@@ -42,6 +42,39 @@ describe('NotificationCotroller', () => {
 
             expect(result).toEqual(notification);
             expect(mockNotificationService.getNotifications).toHaveBeenCalledWith('user-123');
+        });
+    });
+
+    describe('markAsRead', () => {
+        it('should mark notification as read', async () => {
+
+            const notification = { id: '1', userId: 'user-123', title: 'Project complete', body: 'Successfully completed a project', isRead: true };
+            const req = {
+                userId: 'user-123'
+            };
+            mockNotificationService.markAsRead.mockResolvedValue(notification);
+
+            const result = await controller.markAsRead('1', req);
+
+            expect(result).toEqual(notification);
+            expect(mockNotificationService.markAsRead).toHaveBeenCalledWith('1', 'user-123');
+        });
+    });
+
+
+    describe('markAllAsRead', () => {
+        it('should mark all notifications as read', async () => {
+
+            const resultCount = { count: 5 };
+            const req = {
+                userId: 'user-123'
+            };
+            mockNotificationService.markAllAsRead.mockResolvedValue(resultCount);
+
+            const result = await controller.markAllAsRead(req);
+
+            expect(result).toEqual(resultCount);
+            expect(mockNotificationService.markAllAsRead).toHaveBeenCalledWith('user-123');
         });
     });
 

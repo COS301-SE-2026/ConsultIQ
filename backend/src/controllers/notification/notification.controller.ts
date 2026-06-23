@@ -17,12 +17,11 @@ export class NotificationController {
 
         return await this.notificationService.getNotifications(userId);
     }
-    @Patch('id:/read')
+    @Patch(':id/read')
     async markAsRead(@Param('id') id: string, @Req() req: any) {
         const userId = req.userId;
-        const notificationId = req.id;
 
-        return await this.notificationService.markAsRead(notificationId, userId);
+        return await this.notificationService.markAsRead(id, userId);
     }
 
     @Patch('read-all')

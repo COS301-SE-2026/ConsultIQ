@@ -20,7 +20,6 @@ export default function CVUpload (){
       if(!filSelected) return;
       toast.success("File successfully uploaded",{description: filSelected.name, duration: 3500,});
       e.target.value= "";
-      setTimeout(()=> {alert("Navigating to the CV Extraction Preview page...");}, 2000)
       navigate(`/cv-extraction-preview-page/${userId}`)
       };
     return (

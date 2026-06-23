@@ -7,9 +7,10 @@ type Props = {
   experiences?: ExperienceItem[];
   onRemove?: (id: string) => void;
   onComplete?: () => void;
+  onEdit?:(id: string) =>void;
 };
 
-export default function ExperienceList({ experiences = [], onRemove, onComplete }: Props) {
+export default function ExperienceList({ experiences = [], onRemove, onComplete, onEdit }: Props) {
   return (
     <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
       <div className="w-full max-w-[800px] flex flex-col h-full">
@@ -25,6 +26,7 @@ export default function ExperienceList({ experiences = [], onRemove, onComplete 
                 key={exp.id}
                 experience={exp}
                 onRemove={onRemove ? () => onRemove(exp.id) : undefined}
+                onEdit={onEdit ? () => onEdit(exp.id) : undefined}
               />
             ))
           ) : (

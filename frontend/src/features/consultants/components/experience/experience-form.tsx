@@ -1,21 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
+import type { ExperienceItem } from "../../pages/consultant-profile.context";
 
 type Props = {
-  onAdd: (exp: {
-    jobTitle: string;
-    companyName: string;
-    jobType: string;
-    workModel: string;
-    startDate: string;
-    endDate: string;
-    description: string;
-  }) => void;
+  onAdd: (exp: ExperienceItem) => void;
+  editExperience?: ExperienceItem | null;
+  onSave?: (exp: ExperienceItem)=> void;
+  onCancelEdit?: ()=>void;
 };
 
-export default function ExperienceForm({ onAdd }: Readonly<Props>) {
+export default function ExperienceForm({ onAdd, editExperience,onSave }: Readonly<Props>) {
   const [jobTitle, setJobTitle] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [jobType, setJobType] = useState("");
@@ -24,6 +20,8 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   const [endDate, setEndDate] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [editId, setEditId]= useState<string | null>(null);
+
 
   const handleAdd = () => {
     const newErrors: Record<string, string> = {};
@@ -40,16 +38,28 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     }
 
     setErrors({});
-    onAdd({
+    if(editId){onSave?.({
+      id: editId, 
       jobTitle: jobTitle.trim(),
       companyName: companyName.trim(),
       jobType,
       workModel,
       startDate: new Date(startDate).toISOString(),
       endDate: endDate ? new Date(endDate).toISOString() : "",
-      description: description.trim(),
-    });
-
+      description: description.trim(), });
+    }else{
+      onAdd({
+      id: editId ?? crypto.randomUUID(), 
+      jobTitle: jobTitle.trim(),
+      companyName: companyName.trim(),
+      jobType,
+      workModel,
+      startDate: new Date(startDate).toISOString(),
+      endDate: endDate ? new Date(endDate).toISOString() : "",
+      description: description.trim()
+       });}
+    
+  
     setJobTitle("");
     setCompanyName("");
     setJobType("");
@@ -58,6 +68,19 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
     setEndDate("");
     setDescription("");
   };
+  useEffect(()=> {
+    if(!editExperience){
+      setEditId(null);
+      return;}
+      setEditId(editExperience.id);
+      setJobTitle(editExperience.jobTitle);
+      setCompanyName(editExperience.companyName);
+      setJobType(editExperience.jobType);
+      setWorkModel(editExperience.workModel);
+      setStartDate(editExperience.startDate);
+      setEndDate(editExperience.endDate);
+      setDescription(editExperience.description);
+  },[editExperience])
 
   return (
     <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
@@ -176,7 +199,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
           className="self-end h-8 w-30 px-6 text-sm font-medium rounded"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          Add Experience
+          {editId ? "Save Experience" : "Add Experience"}
         </Button>
         <div className="h-6" />
       </div>

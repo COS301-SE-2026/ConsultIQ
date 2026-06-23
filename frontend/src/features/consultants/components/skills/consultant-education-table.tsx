@@ -5,14 +5,17 @@ export interface Education {
   institution: string;
   qualification: string;
   endYear: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface EducationTableProps {
   readonly education: Education[];
+  onEdit?: (id:string)=> void;
 }
 
 export default function EducationTable({
-  education,
+  education,onEdit,
 }: EducationTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -62,9 +65,13 @@ export default function EducationTable({
               <span className="truncate pr-2">
                 {item.qualification}
               </span>
-
-              <span>
-                {item.endYear}
+            <span className="flex items-center justify-between gap-4">
+              <span>{item.endYear}</span>
+              {onEdit&& (
+                <button type="button" 
+                onClick={()=> onEdit(item.id)}
+                className="text-sm font-medium text-blue-600">Edit</button>
+              )}
               </span>
             </div>
           ))

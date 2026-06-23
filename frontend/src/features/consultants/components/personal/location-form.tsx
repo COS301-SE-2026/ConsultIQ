@@ -11,7 +11,7 @@ interface Props {
   onChange?: (data: Partial<ProfileState>)=>void;
 }
 
-export default function LocationForm({data, onChange, onComplete }: Props) {  const { updateProfileData } = useConsultantProfile();
+export default function LocationForm({data, onComplete }: Props) {  const { updateProfileData } = useConsultantProfile();
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [suburb, setSuburb] = useState("");

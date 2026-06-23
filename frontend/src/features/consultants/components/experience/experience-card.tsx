@@ -20,9 +20,10 @@ function formatDate(iso: string) {
 type Props = {
   experience: ExperienceItem;
   onRemove?: () => void;
+  onEdit?: ()=>void;
 };
 
-export default function ExperienceCard({ experience, onRemove }: Props) {
+export default function ExperienceCard({ experience, onRemove, onEdit }: Props) {
   return (
     <Card className="border border-slate-200 shadow-sm" style={{ padding: "28px 32px" }}>
       <div className="flex items-start justify-between gap-4">
@@ -52,6 +53,15 @@ export default function ExperienceCard({ experience, onRemove }: Props) {
             </p>
           )}
         </div>
+        <div className="flex gap-2">
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition hover:bg-blue-50 text-blue-600 shrink-0">
+            Edit
+          </button>
+        )}
         {onRemove && (
           <button
             onClick={onRemove}
@@ -61,6 +71,7 @@ export default function ExperienceCard({ experience, onRemove }: Props) {
             Remove
           </button>
         )}
+        </div>
       </div>
     </Card>
   );

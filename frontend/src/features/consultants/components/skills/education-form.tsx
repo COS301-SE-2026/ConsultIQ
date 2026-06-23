@@ -28,6 +28,8 @@ export default function EducationForm({data, onChange}: Props) {
     const [startDate, setStartDate] = useState(() => sessionStorage.getItem("education_startDate") || "");
     const [endDate, setEndDate] = useState(() => sessionStorage.getItem("education_endDate") || "");
     const [dateError, setDateError] = useState("");
+    const [editId, setEditId]= useState<string | null>(null);
+
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
@@ -47,6 +49,16 @@ export default function EducationForm({data, onChange}: Props) {
         setEndDate(newEnd);
         if (dateError) setDateError("");
     };
+    const handleEditEducation= (id: string)=>{
+        const education= educationList.find(e=> e.id ===id);
+        if(!education) return;
+
+            setInstitutionName(education.institution);
+            setQualification(education.qualification);
+            setStartDate(education.startDate ?? "");
+            setEndDate(education.endDate ?? "");
+            setEditId(id);
+        };
 
     const handleAddEducation = () => {
         if (!institutionName.trim() || !qualification.trim() || !endDate) return;
@@ -56,30 +68,37 @@ export default function EducationForm({data, onChange}: Props) {
             setDateError(validationError);
             return;
         }
-
+        
         const parsedEnd = parseDate(endDate);
+        const updatedEducation: Education={
+            id: editId?? crypto.randomUUID(),
+            institution: institutionName,
+            qualification: qualification,
+            endYear:parsedEnd ? parsedEnd.getFullYear(): new Date().getFullYear(),
+            startDate,
+            endDate,
+        };
+        const newEducationList= editId? educationList.map((item)=> 
+        item.id===editId ? updatedEducation : item): [...educationList, updatedEducation];
 
-        setEducationList((prev) => [
-            ...prev,
-            {
-                id: crypto.randomUUID(),
-                institution: institutionName,
-                qualification: qualification,
-                endYear: parsedEnd ? parsedEnd.getFullYear() : new Date().getFullYear(),
-            },
-        ]);
+        setEducationList(newEducationList);
         const newCertification: CreateCertificationPayload={
             title: qualification, 
             issuingBody: institutionName, 
             startDate, 
             endDate
         }
-        updateProfileData({ certifications: [...certifications, newCertification]})
+        const nextCertifications= editId ? certifications.map((c, idx)=> 
+        idx===educationList.findIndex((item)=> item.id ===editId) ? newCertification : c) : [...certifications, newCertification];
+
+        updateProfileData({ certifications: nextCertifications});
+        onChange?.({certifications: nextCertifications});
         setInstitutionName("");
         setQualification("");
         setStartDate("");
         setEndDate("");
         setDateError("");
+        setEditId(null);
     };
 
     useEffect(() => {
@@ -116,10 +135,10 @@ export default function EducationForm({data, onChange}: Props) {
             institution: c.issuingBody ?? "",
             qualification: c.title ?? "",
             endYear: c.endDate ? parseDate(c.endDate)?.getFullYear() ?? new Date().getFullYear() : new Date().getFullYear(),
-            }) );
-            setEducationList(educations);
-
-           
+            startDate: c.startDate ?? "",
+            endDate: c.endDate ?? "",
+            }) ); 
+            setEducationList(educations);    
     }, [data]);
 
     return (
@@ -200,11 +219,11 @@ export default function EducationForm({data, onChange}: Props) {
                         "var(--color-primary)",
                     }}
                 >
-                    Add Education
+                    {editId ? "Save Education" : "Add Education"}
                 </Button>
                 <div className="h-6" />
                 <div className="mt-8 w-full">
-                    <EducationTable education={educationList} />
+                    <EducationTable education={educationList} onEdit={handleEditEducation} />
                 </div>
                 <div className="h-6" />
             </div>

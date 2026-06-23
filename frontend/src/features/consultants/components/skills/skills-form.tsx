@@ -21,7 +21,7 @@ export default function SkillsForm({data, onChange}: SkillsProps) {
   const [skillName, setSkillName] = useState("");
   const [confidence, setConfidence] = useState("");
   const [years, setYears] = useState("");
-
+  const [editIdx, setEditIdx]= useState<number |null>(null);
   const competencyLevel = useMemo((): "BEGINNER" | "INTERMEDIATE" | "EXPERT" => {
     const c = parseInt(confidence, 10);
     const y = parseInt(years, 10);
@@ -44,12 +44,21 @@ export default function SkillsForm({data, onChange}: SkillsProps) {
       yearsExperience: parseInt(years, 10) || 0,
       confidenceLevel: parseInt(confidence, 10) || 1,
     };
+    const next= editIdx!== null ? skills.map((skills, idx)=> (idx===editIdx ? newSkill : skills)) : [...skills, newSkill];
 
-    updateSkill({ skills: [...skills, newSkill] });
+    updateSkill({ skills: next});
     setSkillName("");
     setConfidence("");
     setYears("");
+    setEditIdx(null);
   };
+
+  const handleEditSkill= (idx: number)=> {
+     const skill= skills[idx];
+     setSkillName(skill.skillName);
+     setConfidence(String(skill.confidenceLevel));
+     setYears(String(skill.yearsExperience));
+     setEditIdx(idx);};
 
   return (
     <Card className="p-12 h-full max-w-5xl flex items-start justify-center border-none rounded-2xl" style={{ padding: "20px" }}>
@@ -119,7 +128,7 @@ export default function SkillsForm({data, onChange}: SkillsProps) {
           className="self-end h-8 w-20 px-6 text-sm font-medium rounded transition disabled:opacity-50"
           style={{ backgroundColor: "var(--color-primary)" }}
         >
-          Add Skill
+          {editIdx !== null ? "Save Skill" : "Add Skill"}
         </Button>
 
         <div className="h-6" />
@@ -142,6 +151,13 @@ export default function SkillsForm({data, onChange}: SkillsProps) {
                     {skill.competencyLevel} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => handleEditSkill(index)}
+                  className="text-blue-600 hover:text-blue-80 text-sm font-medium"
+                >
+                  Edit
+                </button>
                 <button
                   onClick={() => updateSkill({ skills: skills.filter((_, i) => i !== index) })}
                   className="text-red-400 hover:text-red-600 text-sm font-medium"

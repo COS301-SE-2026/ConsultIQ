@@ -3,6 +3,7 @@ import { ProjectService } from './project.service';
 import { ProjectRepository } from '../repositories/project.repository';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateProjectDto } from '../dto/create-project.dto';
+import { ProjectStatus } from '@prisma/client';
 
 const mockProjectRepository = {
   createProject: jest.fn(),
@@ -275,6 +276,56 @@ describe('ProjectService', () => {
       mockProjectRepository.createProject.mockResolvedValue({ projectId: 'uuid-123' });
       const result = await service.createProject(baseDto, 'user-123', 'ADMIN');
       expect(result.projectId).toBe('uuid-123');
+    });
+  });
+
+  /** Get Project Status By Id */
+
+  describe('ProjectService - validateProjectIsNotClosed', () => {
+    let service: ProjectService;
+    let projectRepository: { getProjectStatusById: jest.Mock };
+
+    beforeEach(() => {
+      projectRepository = {
+        getProjectStatusById: jest.fn(),
+      };
+      service = new ProjectService(projectRepository as unknown as ProjectRepository);
+    });
+
+    it('resolves without throwing when project status is OPEN', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.OPEN);
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined();
+    });
+
+    it('throws BadRequestException when project status is CLOSED', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.CLOSED);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /CLOSED/);
+    });
+
+    it('throws BadRequestException when project status is COMPLETED', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.COMPLETED);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /COMPLETED/,
+      );
+    })
+
+    it('resolves without throwing when project status is IN_PROGRESS', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.IN_PROGRESS);
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined()
+    });
+
+    it('throws NotFoundException when project does not exist', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(null);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /Project with ID project-1 not found/,
+      );
     });
   });
 });

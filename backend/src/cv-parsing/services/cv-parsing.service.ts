@@ -33,6 +33,36 @@ export class CvParsingService {
   private readonly logger = new Logger(CvParsingService.name);
 
   /**
+   * Splits the raw CV text into labelled sections based on heading
+   * Assuming contact info is on top: Everything before first heading is considered to be contact info
+   */
+   private identifySections(text: string): RawSections {
+       const lines = text.split('\n');
+       const sections: RawSections = {
+         contact: '',
+         experience: '',
+         skills: '',
+         certifications: '',
+         education: '',
+       };
+
+       let currentSection: keyof RawSections = 'contact';
+
+       for (const line of lines) {
+         const trimmedLine = line.trim();
+         const matchedSection = this.matchSectionHeading(trimmedLine);
+
+         if (matchedSection) {
+           currentSection = matchedSection;
+           continue;
+         }
+         sections[currentSection] += line + '\n';
+       }
+
+       return sections;
+   }
+
+  /**
    * Checks if a single line is a section heading, and if so, which section
    * it belongs to. Headings are typically short.
    */
@@ -40,7 +70,7 @@ export class CvParsingService {
       // We assume the heading is short
       if (line.length > 60) return null;
 
-      // Doesb't include contact section because that's usually at the top of the CV (catering for that type of template).
+      // Doesn't include contact section because that's usually at the top of the CV (catering for that type of template).
       // When a line matches the word,we treat that as the start of a new section. Everything between that heading and the next heading belongs to that section.
       if (SECTION_PATTERNS.experience.test(line)) return 'experience';
       if (SECTION_PATTERNS.skills.test(line)) return 'skills';

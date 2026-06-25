@@ -3,6 +3,7 @@ import { ProjectService } from './project.service';
 import { ProjectRepository } from '../repositories/project.repository';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto } from '../dto/create-project.dto';
+import { ProjectStatus } from '@prisma/client';
 
 const mockProjectRepository = {
   createProject: jest.fn(),
@@ -278,14 +279,14 @@ describe('ProjectService', () => {
       expect(result.projectId).toBe('uuid-123');
     });
   });
-
-  describe('ProjectService - updateProject', () => {
+  
+describe('ProjectService - updateProject', () => {
     let service: ProjectService;
     let projectRepository: {
       getProjectById: jest.Mock;
       isProjectManagerForProject: jest.Mock;
       updateProject: jest.Mock;
-    }
+    };
 
     const existingProject = {
       id: 'project-123',
@@ -327,7 +328,7 @@ describe('ProjectService', () => {
       await expect(
         service.updateProject(
           'project-123',
-          {endDate: '2026-01-01'} as any,
+          { endDate: '2026-01-01' } as any,
           'user-1',
         ),
       ).rejects.toThrow(BadRequestException);
@@ -343,7 +344,7 @@ describe('ProjectService', () => {
 
       const result = await service.updateProject(
         'project-123',
-        {budget: 1000000} as any,
+        { budget: 1000000 } as any,
         'user-1',
       );
       expect(result).toEqual({
@@ -353,7 +354,58 @@ describe('ProjectService', () => {
 
       expect(projectRepository.updateProject).toHaveBeenCalledWith(
         'project-123',
-        {budget: 1000000},
+        { budget: 1000000 },
+      );
+    });
+  });
+
+  /** Get Project Status By Id */
+
+  describe('ProjectService - validateProjectIsComplete', () => {
+    let service: ProjectService;
+    let projectRepository: { getProjectStatusById: jest.Mock };
+
+    beforeEach(() => {
+      projectRepository = {
+        getProjectStatusById: jest.fn(),
+      };
+      service = new ProjectService(projectRepository as unknown as ProjectRepository);
+    });
+
+    it('resolves without throwing when project status is OPEN', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.OPEN);
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined();
+    });
+
+    it('throws BadRequestException when project status is CLOSED', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.CLOSED);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /CLOSED/,
+      );
+    });
+
+    it('throws BadRequestException when project status is COMPLETED', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.COMPLETED);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        BadRequestException,
+      );
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /COMPLETED/,
+      );
+    });
+
+    it('resolves without throwing when project status is IN_PROGRESS', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(ProjectStatus.IN_PROGRESS);
+      await expect(service.validateProjectIsComplete('project-1')).resolves.toBeUndefined();
+    });
+
+    it('throws NotFoundException when project does not exist', async () => {
+      projectRepository.getProjectStatusById.mockResolvedValue(null);
+      await expect(service.validateProjectIsComplete('project-1')).rejects.toThrow(
+        /Project with ID project-1 not found/,
       );
     });
   });

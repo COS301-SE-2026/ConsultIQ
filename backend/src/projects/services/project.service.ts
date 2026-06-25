@@ -11,6 +11,7 @@ import {
   PaginatedProjectsResponseDto,
   ProjectListItemDto,
 } from '../dto/project-list.dto';
+import { ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
@@ -144,5 +145,20 @@ export class ProjectService {
       }
     }
     return this.projectRepository.updateProject(projectId, dto);
+   }
+  
+  /** Get Project Status By Id */
+  async validateProjectIsComplete(projectId: string): Promise<void> {
+    const status = await this.projectRepository.getProjectStatusById(projectId);
+
+    if (!status) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    if (status === ProjectStatus.CLOSED || status === ProjectStatus.COMPLETED) {
+      throw new BadRequestException(
+        `Cannot run match: project status is ${status}`,
+      );
+    }
   }
 }

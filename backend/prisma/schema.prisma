@@ -54,6 +54,7 @@ enum ProjectStatus {
   OPEN
   IN_PROGRESS
   CLOSED
+  COMPLETED
 }
 
 enum ConsultantAvailability {

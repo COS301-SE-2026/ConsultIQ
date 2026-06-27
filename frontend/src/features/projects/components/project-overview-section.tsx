@@ -131,13 +131,13 @@ export default function ProjectOverviewSection({
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Project Status</label>
         <select id="status" value={status || "OPEN"}
-        onChange={e => setStatus( e.target.value as "OPEN" |"IN_PROGRESS" | "CLOSED" | "INACTIVE")}
+        onChange={e => setStatus( e.target.value as "OPEN" |"IN_PROGRESS" | "CLOSED" | "COMPLETED")}
         className= "text-base text-white rounded border"
         >
           <option value="OPEN">Open</option>
           <option value="IN_PROGRESS">In Progress</option>
           <option value="CLOSED">Closed</option>
-          <option value="INACTIVE">Inactive</option>
+          <option value="COMPLETED">Completed</option>
         </select>
         </div>
       <div className="flex flex-col gap-1 col-span-2">

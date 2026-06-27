@@ -12,7 +12,8 @@ interface ProjectDetailsModalProps {
 
 
 interface ApiProjectSkill {
-  skillId: string | number;
+  id: String;
+  skillId?: string | number;
   skill: {
     name: string;
   };
@@ -31,27 +32,78 @@ export default function ProjectDetailsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   
-  const handleSaveSection = async (_: string, updatedFields:Partial<Project>) =>{
+  const handleSaveSection = async (section: string, updatedFields:Partial<Project>) =>{
   if (!fullProject) return;
-    
-  let updatedProject = {
-      ...fullProject,
-      ...updatedFields,   
+  let payload: Record<string, unknown> = {};
+  if(section ==="project-overview"){
+    payload={
+      ...(updatedFields.projectName !==undefined ? {projectName: updatedFields.projectName} : {}),
+      ...(updatedFields.clientName !==undefined ? {clientName: updatedFields.clientName} : {}),
+      ...(updatedFields.description !==undefined ? {description: updatedFields.description} : {}),
+      ...(updatedFields.teamSize !==undefined ? {teamSize: updatedFields.teamSize} : {}),
+      ...(updatedFields.budget !==undefined ? {budget: updatedFields.budget} : {}),
+      ...(updatedFields.startDate !==undefined ? {startDate: updatedFields.startDate} : {}),
+      ...(updatedFields.endDate !==undefined ? {endDate: updatedFields.endDate} : {}),
+      ...(updatedFields.status !==undefined ? {status: updatedFields.status}: {})};
   }
-  if (updatedFields.location){
-    updatedProject.location = { ...fullProject.location, ...updatedFields.location}
+  if(section ==="project-location"){
+    payload={
+      ...(updatedFields.location?.addressLine1 !==undefined ? {addressLine1: updatedFields.location.addressLine1} : {}),
+      ...(updatedFields.location?.addressLine2 !==undefined ? {addressLine2: updatedFields.location.addressLine2} : {}),
+      ...(updatedFields.location?.suburb !==undefined ? {suburb: updatedFields.location.suburb} : {}),
+      ...(updatedFields.location?.city !==undefined ? {city: updatedFields.location.city} : {}),
+      ...(updatedFields.location?.province !==undefined ? {province: updatedFields.location.province} : {}),
+      ...(updatedFields.location?.postalCode !==undefined ? {postalCode: updatedFields.location.postalCode} : {}),};
   }
+  if(section=== "project-skills"){
+    payload= {
+      skills: (updatedFields.skills ?? []).map((skill)=> ({
+        id: skill.id,
+        name: skill.name,
+        competency: skill.competency, 
+        years: skill.years, 
+        mandatory: skill.mandatory,})),
+      };
+  }
+  if(Object.keys(payload).length===0){ 
+    setActiveEditSection(null);
+    return;}
+
+  const updatedProject= {
+    ...fullProject, 
+    ...(section=== "project-overview" ? {
+      projectName: updatedFields.projectName ?? fullProject.projectName,
+      clientName: updatedFields.clientName ?? fullProject.clientName,
+      description: updatedFields.description ?? fullProject.description,
+      teamSize: updatedFields.teamSize ?? fullProject.teamSize,
+      budget: updatedFields.budget ?? fullProject.budget,
+      startDate: updatedFields.startDate ?? fullProject.startDate,
+      endDate: updatedFields.endDate ?? fullProject.endDate,
+      status: updatedFields.status ?? fullProject.status}: {}),
+
+    ...(section=== "project-location" ? {
+      addressLine1: updatedFields.location?.addressLine1 ?? fullProject.addressLine1,
+      addressLine2: updatedFields.location?.addressLine2 ?? fullProject.addressLine2,
+      suburb: updatedFields.location?.suburb ?? fullProject.suburb,
+      city: updatedFields.location?.city ?? fullProject.city,
+      province: updatedFields.location?.province ?? fullProject.province,
+      postalCode: updatedFields.location?.postalCode ?? fullProject.postalCode,
+      location: {...fullProject.location, ...updatedFields.location},
+     }: {}),
+
+     ...(section ==="project-skills" ? {skills: updatedFields.skills ?? fullProject.skills, }:{}),
+  };
+
   try {
     const token = sessionStorage.getItem("ciq_access_token");
-    setFullProject(updatedProject);
-    setActiveEditSection(null);
+    
     const resp = await fetch(`http://localhost:3000/projects/${fullProject.id}`,
       {
         method: "PATCH", 
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",},
-          body: JSON.stringify(updatedProject),
+          body: JSON.stringify(payload),
         });
         if(!resp.ok){
           throw new Error ("Failed to update project");
@@ -61,6 +113,8 @@ export default function ProjectDetailsModal({
           console.error("Failed to update project section: " + error);
           setFullProject(fullProject);
         }
+        setFullProject(updatedProject);
+        setActiveEditSection(null);
       };
 
   useEffect(() => {
@@ -114,7 +168,7 @@ export default function ProjectDetailsModal({
 
 
             skills: data.skills.map((ps: ApiProjectSkill) => ({
-              id: String(ps.skillId),
+              id: ps.id,
               name: ps.skill.name,
               competency: ps.competency,
               years: ps.years,

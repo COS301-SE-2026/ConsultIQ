@@ -9,7 +9,7 @@ import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants/consultants.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-
+import {CVParsingModule} from './cv-parsing.module'
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -26,6 +26,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     ConsultantsModule,
     ProjectsModule,
+    CVParsingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -13,6 +13,7 @@ import axios from 'axios';
 
 
 export interface ProjectSkillData {
+  id?: string;
   name: string;
   competency: string;
   years: number;
@@ -41,7 +42,7 @@ export interface ProjectFormData {
 function ProjectSpecificationPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [editingIndex, setEditingIndex]= useState<number | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>({
     projectName: "",
     clientName: "",
@@ -63,11 +64,19 @@ function ProjectSpecificationPage() {
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };  
+  const handleEditSkill= (_skill: ProjectSkillData, idx: number)=>{setEditingIndex(idx);}
+  
+  const handleCancelEditSkill=() =>{setEditingIndex(null);}
+
+  const handleSaveSkill= (updatedSkill: ProjectSkillData)=> {
+    if(editingIndex ===null) return;
+    const skillUpdated= [...formData.skills];
+    skillUpdated[editingIndex]=updatedSkill;
+    updateForm("skills" , skillUpdated);};
 
   const updateLocation= <K extends keyof ProjectLocation>(field: K, value: ProjectLocation[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
 
   const handleSave = async () => {
     try {
@@ -148,6 +157,11 @@ function ProjectSpecificationPage() {
               <ProjectSkillsCard
                 skills={formData.skills}
                 onSkillsChange={(newSkills) => updateForm("skills", newSkills)}
+                editingSkill= {editingIndex !== null ? formData.skills[editingIndex] :null}
+                onCancelEdit= {handleCancelEditSkill}
+                editingIndex = {editingIndex}
+                onSkillSave ={handleSaveSkill}
+                onEditSkill= { handleEditSkill}
               />
             </div>
           </div>

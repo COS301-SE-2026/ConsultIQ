@@ -5,7 +5,7 @@ interface TableSkill {
   name: string;
   competency: string;
   years: number;
-  mandatory?: boolean;
+  mandatory: boolean;
 }
 
 
@@ -16,9 +16,10 @@ interface ProjectSkillsTableProps {
    onEdit: ()=> void;
    onCancel: ()=> void;
    onSave: (fields: Partial<TableSkill>)=> void;
+   onEditSkill: (skill: TableSkill, idx: number)=> void;
 }
 
-export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) {
+export default function ProjectSkillsTable({ skills, onEditSkill }: ProjectSkillsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 4;
 
@@ -29,7 +30,7 @@ export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) 
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
 
-      <div className="grid grid-cols-4 text-sm font-semibold mb-4 px-2">
+      <div className="grid grid-cols-5 text-sm font-semibold mb-4 px-2">
         <span>Skill</span>
         <span>Competency</span>
         <span>Years</span>
@@ -41,13 +42,15 @@ export default function ProjectSkillsTable({ skills }: ProjectSkillsTableProps) 
           currentSkills.map((skill, index) => (
             <div
               key={index}
-              className="grid grid-cols-4 py-3 border-t text-base px-2 shrink-0"
+              className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
             >
               <span className="truncate pr-2">{skill.name}</span>
               <span className="truncate pr-2">{skill.competency}</span>
               <span>{skill.years}</span>
-              {/* Show a clear Yes/No instead of a raw boolean */}
               <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
+              <button type="button"
+              onClick={()=> onEditSkill(skill, startIndex+index)}
+              className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
             </div>
           ))
         ) : (

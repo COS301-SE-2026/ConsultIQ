@@ -20,11 +20,24 @@ export default function ProjectSkillsSection({
     skills, isEditing, isDisabled, onEdit, onCancel, onSave
 }: ProjectSkillsSectionProps) {
     const[currentSkills, setCurrentSkills]= useState<ProjectSkillData[]>(skills);
-
+    const [editingIndex, setEditingIndex]= useState<number | null>(null);
     useEffect(()=> {setCurrentSkills(skills);}, [skills]);
 
     const handleSaveSkill=() => {
         onSave(currentSkills);  }
+
+    const startEditing = (_skill: ProjectSkillData, idx: number)=> {
+      setEditingIndex(idx);}
+    
+    const cancelEditing = ()=> {setEditingIndex(null);}
+
+    const updateSkill = (updatedSkill: ProjectSkillData) =>{
+      if(editingIndex !==null){
+      const newSkills= currentSkills.map((skill, idx)=> idx === editingIndex ? updatedSkill :skill);
+      setCurrentSkills(newSkills);
+      setEditingIndex(null);};
+      };
+    
     let skillsSection;
 
     if(isEditing){
@@ -34,7 +47,11 @@ export default function ProjectSkillsSection({
             <ProjectSkillsCard
             skills={currentSkills}
             onSkillsChange={setCurrentSkills}
-            
+            editingSkill= {editingIndex !==null ? currentSkills[editingIndex]: null}
+            onCancelEdit= {cancelEditing}
+            editingIndex ={editingIndex}
+            onSkillSave={updateSkill} 
+            isEditing = {isEditing}
             />
             <div  className="h-6"/>
             <ProjectSkillsTable
@@ -47,6 +64,7 @@ export default function ProjectSkillsSection({
               }))}
               isEditing={true}
               isDisabled={false}
+              onEditSkill= {startEditing}
               onEdit={() => {}} 
               onCancel={() => {}}
               onSave={() => {}}
@@ -67,6 +85,7 @@ export default function ProjectSkillsSection({
               }))}
               isEditing = {false}
               isDisabled = { true}
+              onEditSkill= {()=> {}}
               onEdit = {() =>{} }
               onCancel = { () => {} }
               onSave = { () => {} }

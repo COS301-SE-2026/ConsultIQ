@@ -357,6 +357,34 @@ describe('ProjectService - updateProject', () => {
         { budget: 1000000 },
       );
     });
+
+    it('allows any staus trabsition with bi restrictions', async () => {
+      projectRepository.getProjectById.mockResolvedValue({
+        ...existingProject,
+        status: ProjectStatus.OPEN,
+      });
+      projectRepository.isProjectManagerForProject.mockResolvedValue(true);
+      projectRepository.updateProject.mockResolvedValue({
+        ...existingProject,
+        status: ProjectStatus.COMPLETED,
+      });
+
+      const result = await service.updateProject(
+          'project-123',
+          { status: ProjectStatus.COMPLETED } as any,
+          'user-1',
+        );
+        
+      expect(result).toEqual({
+        ...existingProject,
+        status: ProjectStatus.COMPLETED,
+      });
+
+      expect(projectRepository.updateProject).toHaveBeenCalledWith(
+        'project-123',
+        { status: ProjectStatus.COMPLETED },
+      );
+    });
   });
 
   /** Get Project Status By Id */

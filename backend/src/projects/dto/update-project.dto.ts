@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
+  IsEnum,
   ValidateNested,
   IsDateString,
   IsUUID,
@@ -12,6 +13,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ProjectStatus } from '@prisma/client';
 
 export class UpdateProjectSkillDto {
   @IsOptional()
@@ -103,4 +105,8 @@ export class UpdateProjectDto {
   @IsArray()
   @IsUUID('4', { each: true })
   removeSkillIds?: string[];
+
+  @IsOptional()
+  @IsEnum(ProjectStatus)
+  status?: ProjectStatus;
 }

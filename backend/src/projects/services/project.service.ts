@@ -145,8 +145,8 @@ export class ProjectService {
       }
     }
     return this.projectRepository.updateProject(projectId, dto);
-   }
-  
+  }
+
   /** Get Project Status By Id */
   async validateProjectIsComplete(projectId: string): Promise<void> {
     const status = await this.projectRepository.getProjectStatusById(projectId);

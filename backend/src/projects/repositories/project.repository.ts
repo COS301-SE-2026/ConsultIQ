@@ -245,6 +245,10 @@ export class ProjectRepository {
         updateData.budget = coreFields.budget;
       }
 
+      if (coreFields.status !== undefined) {
+        updateData.status = coreFields.status;
+      }
+
       if (Object.keys(updateData).length > 0) {
         await tx.project.update({
           where: { id: projectId },

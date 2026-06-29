@@ -13,7 +13,7 @@ export class RawConsultantDto {
 
     @IsNumber()
     @Min(0)
-    costToCompanyRate!: number;
+    costToCompany!: number;
 
 
     @IsString()

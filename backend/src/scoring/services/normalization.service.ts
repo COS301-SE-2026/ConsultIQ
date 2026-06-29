@@ -52,7 +52,7 @@ export class NormalizationService {
             if (index === entries.length - 1) {
                 normalized[key] = Math.round((1 - totalSum) * decimalPoint) / decimalPoint;
             } else {
-                const share = Math.round((value / total) * decimalPoint) * decimalPoint;
+                const share = Math.round((value / total) * decimalPoint) / decimalPoint;
                 normalized[key] = share;
                 totalSum += share;
 

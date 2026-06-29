@@ -12,7 +12,7 @@ interface ProjectDetailsModalProps {
 
 
 interface ApiProjectSkill {
-  id: String;
+  id: string;
   skillId?: string | number;
   skill: {
     name: string;

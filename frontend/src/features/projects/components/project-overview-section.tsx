@@ -1,7 +1,7 @@
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
 import { Edit, X, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 interface ProjectOverviewSectionProps {
   project: Project;
   isEditing: boolean;
@@ -42,17 +42,6 @@ export default function ProjectOverviewSection({
   const [description, setDescription] = useState(project.description);
   let section;
 
-  useEffect(() => {
-    setProjectName(project.name);
-    setClientName(project.clientName);
-    setTeamSize(project.teamSize);
-    setBudget(project.budget);
-    setStartDate(project.startDate);
-    setEndDate(project.endDate);
-    setStatus(project.status);
-    setDescription(project.description);
-  }, [project]);
-
   const handleSave= ()=>{
     onSave({
       name: projectName,
@@ -86,28 +75,28 @@ export default function ProjectOverviewSection({
     <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Project Name</label>
-        <input type="text" value={projectName}
+        <input type="text" value={isEditing ? projectName : project.name}
         onChange={e => setProjectName(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Client Name</label>
-        <input type="text" value={clientName}
+        <input type="text" value={isEditing ? clientName : project.clientName}
         onChange={e => setClientName(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Team Size</label>
-        <input type="number" value={teamSize}
+        <input type="number" value={isEditing? teamSize : project.teamSize}
         onChange={e => setTeamSize(Number(e.target.value))}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Budget</label>
-        <input type="number" value={budget}
+        <input type="number" value={isEditing ? budget : project.budget }
         onChange={e => setBudget(Number(e.target.value))}
         className= "text-base text-white rounded border"
         />
@@ -115,14 +104,14 @@ export default function ProjectOverviewSection({
      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
        <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Start Date</label>
-        <input type="date" value={convertDate(startDate)}
+        <input type="date" value={convertDate(isEditing ? startDate : project.startDate)}
         onChange={e => setStartDate(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div> 
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">End Date</label>
-        <input type="date" value={convertDate(endDate)}
+        <input type="date" value={convertDate(isEditing ?endDate : project.endDate)}
         onChange={e => setEndDate(e.target.value)}
         className= "text-base text-white rounded border"
         />
@@ -130,7 +119,7 @@ export default function ProjectOverviewSection({
      </div>
       <div className = "flex flex-col gap-1">
         <label className="text-base font-semibold">Project Status</label>
-        <select id="status" value={status || "OPEN"}
+        <select id="status" value={isEditing ? status : project.status || "OPEN"}
         onChange={e => setStatus( e.target.value as "OPEN" |"IN_PROGRESS" | "CLOSED" | "COMPLETED")}
         className= "text-base text-white rounded border"
         >
@@ -142,7 +131,7 @@ export default function ProjectOverviewSection({
         </div>
       <div className="flex flex-col gap-1 col-span-2">
         <label className= "text-base font-semibold mb-2">Description</label>
-        <textarea value={description} 
+        <textarea value={isEditing ? description : project.description} 
         onChange={e => setDescription(e.target.value)}
         className="text-base text-white rounded border"/>
 

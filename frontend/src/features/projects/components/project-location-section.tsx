@@ -1,7 +1,7 @@
 import { Card } from "../../../components/ui/card";
 import type { Project, ProjectLocation } from "../types/project.types";
 import { Edit, X, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ProjectLocationCard from "./project-location-card"
 
 type LocationPayload={
@@ -20,30 +20,14 @@ export default function ProjectLocationSection({
   project,isEditing, isDisabled, onEdit, onCancel, onSave
 }: ProjectLocationSectionProps) {
 
-  const[currentLocation, setLocation]= useState({
-    addressLine1: project.location.addressLine1,
-    addressLine2: project.location.addressLine2,
-    suburb: project.location.suburb,
-    city: project.location.city,
-    province: project.location.province,
-    postalCode: project.location.postalCode,
-});
-  useEffect(() => {
-    setLocation({
-      addressLine1: project.location.addressLine1,
-      addressLine2: project.location.addressLine2,
-      suburb: project.location.suburb,
-      city:project.location.city,
-      province: project.location.province,
-      postalCode:project.location.postalCode,
-    })
-  }, [project])
+  const[currentLocation, setLocation]= useState<ProjectLocation>(project.location);
 
   const handleSaveField=(field: keyof ProjectLocation, changedVal: ProjectLocation[keyof ProjectLocation])=>{
     setLocation(prev => ({...prev, [field]: changedVal}));
   } 
 
   const handleSaveLocation = ()=>{
+    if(!isEditing) return;
     onSave({
       location: currentLocation
     });
@@ -54,7 +38,7 @@ export default function ProjectLocationSection({
     locationSection= (
       <div className="w-full">
         <ProjectLocationCard
-        data={currentLocation}
+        data={isEditing ? currentLocation: project.location}
         onChange={handleSaveField}
         errors={{}}
         />

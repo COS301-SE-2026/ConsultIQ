@@ -1,5 +1,5 @@
 import {Edit, X, Check} from "lucide-react";
-import {useState, useEffect} from "react";  
+import {useState} from "react";  
 import ProjectSkillsTable from "./project-skills-table";
 import ProjectSkillsCard from "./project-skills-card";
 import type { ProjectSkillData } from "../pages/project-specification-page";
@@ -21,7 +21,6 @@ export default function ProjectSkillsSection({
 }: ProjectSkillsSectionProps) {
     const[currentSkills, setCurrentSkills]= useState<ProjectSkillData[]>(skills);
     const [editingIndex, setEditingIndex]= useState<number | null>(null);
-    useEffect(()=> {setCurrentSkills(skills);}, [skills]);
 
     const handleSaveSkill=() => {
         onSave(currentSkills);  }
@@ -45,6 +44,7 @@ export default function ProjectSkillsSection({
             <>
             <div className="h-6"/>
             <ProjectSkillsCard
+            key= {editingIndex ?? "new-skill"}
             skills={currentSkills}
             onSkillsChange={setCurrentSkills}
             editingSkill= {editingIndex !==null ? currentSkills[editingIndex]: null}

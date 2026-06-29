@@ -155,6 +155,7 @@ function ProjectSpecificationPage() {
               <ProjectLocationCard data={formData} onChange={updateLocation} />
 
               <ProjectSkillsCard
+                key={editingIndex ?? "new-skill"}
                 skills={formData.skills}
                 onSkillsChange={(newSkills) => updateForm("skills", newSkills)}
                 editingSkill= {editingIndex !== null ? formData.skills[editingIndex] :null}

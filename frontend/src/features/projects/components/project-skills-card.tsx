@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "../../../components/ui/card";
 import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
@@ -17,24 +17,11 @@ interface ProjectSkillsCardProps {
 export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkill,
     onCancelEdit, editingIndex, onSkillSave,onEditSkill, isEditing,}: ProjectSkillsCardProps) {
 
-  const [skillName, setSkillName] = useState("");
-  const [competency, setCompetency] = useState("INTERMEDIATE");
-  const [years, setYears] = useState("");
-  const [isMandatory, setIsMandatory] = useState(false);
-
-  useEffect(()=> {
-    if(editingSkill){
-      setSkillName(editingSkill.name ?? "");
-      setCompetency(editingSkill.competency ?? "INTERMEDIATE");
-      setYears(String(editingSkill.years ?? ""));
-      setIsMandatory(Boolean(editingSkill.mandatory ?? false));
-    }else{
-      setSkillName("");
-      setCompetency("INTERMEDIATE");
-      setYears("");
-      setIsMandatory(false);}}, [editingSkill]);
-    
-  
+  const [skillName, setSkillName] = useState(editingSkill?.name ?? "");
+  const [competency, setCompetency] = useState(editingSkill?.competency ?? "INTERMEDIATE");
+  const [years, setYears] = useState(String(editingSkill?.years ?? ""));
+  const [isMandatory, setIsMandatory] = useState(Boolean(editingSkill?.mandatory ?? false));
+ 
   const handleAddUpdate = () => {
     if (!skillName.trim() || !years) return;
 

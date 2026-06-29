@@ -72,6 +72,7 @@ export default function ProjectDetailsModal({
   const updatedProject= {
     ...fullProject, 
     ...(section=== "project-overview" ? {
+      name: updatedFields.name ?? fullProject.name,
       projectName: updatedFields.projectName ?? fullProject.projectName,
       clientName: updatedFields.clientName ?? fullProject.clientName,
       description: updatedFields.description ?? fullProject.description,

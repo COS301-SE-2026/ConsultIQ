@@ -6,10 +6,12 @@ import {
 } from '@nestjs/common';
 import { ProjectRepository } from '../repositories/project.repository';
 import { CreateProjectDto } from '../dto/create-project.dto';
+import { UpdateProjectDto } from '../dto/update-project.dto';
 import {
   PaginatedProjectsResponseDto,
   ProjectListItemDto,
 } from '../dto/project-list.dto';
+import { ProjectStatus } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
@@ -112,5 +114,51 @@ export class ProjectService {
       throw new NotFoundException(`Project with ID ${projectId} not found`);
     }
     return project;
+  }
+
+  async updateProject(
+    projectId: string,
+    dto: UpdateProjectDto,
+    userId: string,
+  ) {
+    const project = await this.projectRepository.getProjectById(projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    const isAssignedManager =
+      await this.projectRepository.isProjectManagerForProject(
+        userId,
+        projectId,
+      );
+    if (!isAssignedManager) {
+      throw new ForbiddenException(
+        'Only the assigned Project Manager or an Admin can update this project.',
+      );
+    }
+
+    if (dto.startDate || dto.endDate) {
+      const start = new Date(dto.startDate ?? project.startDate);
+      const end = dto.endDate ? new Date(dto.endDate) : project.endDate;
+      if (end && end <= start) {
+        throw new BadRequestException('End date must be after start date.');
+      }
+    }
+    return this.projectRepository.updateProject(projectId, dto);
+  }
+
+  /** Get Project Status By Id */
+  async validateProjectIsComplete(projectId: string): Promise<void> {
+    const status = await this.projectRepository.getProjectStatusById(projectId);
+
+    if (!status) {
+      throw new NotFoundException(`Project with ID ${projectId} not found`);
+    }
+
+    if (status === ProjectStatus.CLOSED || status === ProjectStatus.COMPLETED) {
+      throw new BadRequestException(
+        `Cannot run match: project status is ${status}`,
+      );
+    }
   }
 }

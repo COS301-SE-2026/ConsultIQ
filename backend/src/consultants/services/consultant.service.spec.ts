@@ -23,7 +23,7 @@ const mockPrismaService = {
 
 
 const mockNotificationService = {
-  sendPushNotification: jest.fn(),
+  createAndSendNotification: jest.fn(),
 };
 
 

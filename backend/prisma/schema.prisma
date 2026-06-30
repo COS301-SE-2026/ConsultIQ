@@ -137,7 +137,7 @@ model User {
   tenantId        String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-
+  deletedAt       DateTime?        @map("delete_at")
   tokens             Token[]
   auditLogs          authAuditLog[]
   consultant         Consultant?
@@ -270,11 +270,12 @@ model Project {
   tenantId     String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
+  archivedAt   DateTime?      @map("archived_at")
   skills     ProjectSkill[]
   managers   ProjectManager[]
   placements ProjectPlacement[]
 
+ auditLogs ProjectAuditLog[]
   @@map("projects")
 }
 
@@ -317,6 +318,19 @@ model ProjectPlacement {
   consultant   Consultant      @relation(fields: [consultantId], references: [id])
 
   @@map("project_placements")
+}
+
+// Currently used to track archiving and unarchiving projects (can be used to track project status changes)
+model ProjectAuditLog {
+  id          String   @id @default(uuid())
+  projectId   String
+  action      String   // "ARCHIVED", "UNARCHIVED"
+  userId      String   // Admin or PM 
+  createdAt   DateTime @default(now()) 
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  @@map("project_audit_logs")
 }
 
 model authAuditLog {

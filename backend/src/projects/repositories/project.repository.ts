@@ -76,7 +76,7 @@ export class ProjectRepository {
       page,
       limit,
       Prisma.sql`INNER JOIN project_managers pm ON pm."projectId" = p.id`,
-      Prisma.sql`WHERE pm."userId" = ${userId}`,
+      Prisma.sql`AND pm."userId" = ${userId}`,
     );
   }
 
@@ -92,7 +92,7 @@ export class ProjectRepository {
         INNER JOIN project_placements pp ON pp."projectId" = p.id
         INNER JOIN consultant_managers cm ON cm."consultantId" = pp."consultantId"
       `,
-      Prisma.sql`WHERE cm."userId" = ${userId}`,
+      Prisma.sql`AND cm."userId" = ${userId}`,
     );
   }
 
@@ -104,13 +104,13 @@ export class ProjectRepository {
         INNER JOIN project_placements pp ON pp."projectId" = p.id
         INNER JOIN consultants c ON c.id = pp."consultantId"
       `,
-      Prisma.sql`WHERE c."userId" = ${userId}`,
+      Prisma.sql`AND c."userId" = ${userId}`,
     );
   }
 
   async getProjectById(projectId: string) {
     return this.prisma.project.findUnique({
-      where: { id: projectId },
+      where: { id: projectId, status: { not: ProjectStatus.ARCHIVED } },
       include: {
         skills: {
           include: {
@@ -171,6 +171,7 @@ export class ProjectRepository {
           SELECT COUNT(DISTINCT p.id)
           FROM projects p
           ${joins}
+          WHERE p.status != 'ARCHIVED'
           ${whereClause}
         `,
       ),

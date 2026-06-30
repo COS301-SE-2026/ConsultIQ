@@ -1,20 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import PushNotifications from '@pusher/push-notifications-server';
+import { NotificationGateway } from './notification.gateway-service';
 import { PrismaService } from '../../prisma/prisma.service';
 @Injectable()
 export class NotificationService {
-    private beamsClient: PushNotifications;
     private readonly logger = new Logger(NotificationService.name);
 
 
-    constructor(private readonly prisma: PrismaService) {
-        this.beamsClient = new PushNotifications({
-            instanceId: process.env.PUSHER_BEAMS_INSTANCE_ID as string,
-            secretKey: process.env.PUSHER_BEAMS_SECRET_KEY as string,
-        });
+    constructor(private readonly prisma: PrismaService, private readonly notificationGateway: NotificationGateway) {
     }
 
-    async sendPushNotification(userId: string, title: string, body: string, link?: string) {
+    async createAndSendNotification(userId: string, title: string, body: string, link?: string) {
 
         try {
 
@@ -27,16 +22,15 @@ export class NotificationService {
                 }
             })
 
-            const response = await this.beamsClient.publishToInterests(
-                [`user-${userId}`], {
-                web: {
-                    notification: {
-                        title,
-                        body,
-                    },
-                },
-            },)
-            this.logger.log(`Push Notification Sent Successfully, ID: ${response.publishId}`);
+            this.notificationGateway.sendPushNotification(userId, {
+                id: notification.id,
+                title: notification.title,
+                body: notification.body,
+                link: notification.link,
+                isRead: false,
+                createdAt: notification.createdAt,
+            })
+            this.logger.log(`Notification Sent Successfully to user: ${userId}`);
             return notification;
         } catch (error) {
             this.logger.error('Error Pushing Notifications', error)

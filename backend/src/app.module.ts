@@ -10,7 +10,7 @@ import { ConsultantsModule } from './consultants/consultants.module';
 import { ProjectsModule } from './projects/projects.module';
 import { AdminModule } from './admin/admin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
-
+import { NotificationModule } from './notification/notification.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -27,9 +27,10 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     ConsultantsModule,
     ProjectsModule,
+    NotificationModule,
     AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
+import {
+  UpdateProjectDto,
+  UpdateProjectSkillDto,
+} from '../dto/update-project.dto';
 
 @Injectable()
 export class ProjectRepository {
@@ -174,5 +178,161 @@ export class ProjectRepository {
     ]);
 
     return { projects, total: Number(totalResult[0]?.count ?? 0) };
+  }
+
+  async isProjectManagerForProject(
+    userId: string,
+    projectId: string,
+  ): Promise<boolean> {
+    const record = await this.prisma.projectManager.findUnique({
+      where: { userId_projectId: { userId, projectId } },
+    });
+    return record !== null;
+  }
+
+  async updateProject(projectId: string, dto: UpdateProjectDto) {
+    return this.prisma.$transaction(async (tx) => {
+      const { skills, removeSkillIds, ...coreFields } = dto;
+
+      const updateData = this.buildProjectUpdateData(coreFields);
+      if (Object.keys(updateData).length > 0) {
+        await tx.project.update({ where: { id: projectId }, data: updateData });
+      }
+
+      await this.removeProjectSkills(tx, projectId, removeSkillIds);
+      await this.upsertProjectSkills(tx, projectId, skills);
+
+      return tx.project.findUnique({
+        where: { id: projectId },
+        include: { skills: { include: { skill: true } } },
+      });
+    });
+  }
+
+  private buildProjectUpdateData(
+    coreFields: Omit<UpdateProjectDto, 'skills' | 'removeSkillIds'>,
+  ): Prisma.ProjectUpdateInput {
+    const updateData: Prisma.ProjectUpdateInput = {};
+    if (coreFields.projectName !== undefined) {
+      updateData.projectName = coreFields.projectName;
+    }
+
+    if (coreFields.clientName !== undefined) {
+      updateData.clientName = coreFields.clientName;
+    }
+
+    if (coreFields.description !== undefined) {
+      updateData.description = coreFields.description;
+    }
+
+    if (coreFields.addressLine1 !== undefined) {
+      updateData.addressLine1 = coreFields.addressLine1;
+    }
+
+    if (coreFields.addressLine2 !== undefined) {
+      updateData.addressLine2 = coreFields.addressLine2;
+    }
+
+    if (coreFields.suburb !== undefined) {
+      updateData.suburb = coreFields.suburb;
+    }
+
+    if (coreFields.city !== undefined) {
+      updateData.city = coreFields.city;
+    }
+
+    if (coreFields.province !== undefined) {
+      updateData.province = coreFields.province;
+    }
+    if (coreFields.postalCode !== undefined) {
+      updateData.postalCode = coreFields.postalCode;
+    }
+
+    if (coreFields.startDate !== undefined) {
+      updateData.startDate = new Date(coreFields.startDate);
+    }
+
+    if (coreFields.endDate !== undefined) {
+      updateData.endDate = new Date(coreFields.endDate);
+    }
+
+    if (coreFields.teamSize !== undefined) {
+      updateData.teamSize = coreFields.teamSize;
+    }
+
+    if (coreFields.allocation !== undefined) {
+      updateData.allocation = coreFields.allocation;
+    }
+
+    if (coreFields.budget !== undefined) {
+      updateData.budget = coreFields.budget;
+    }
+
+    if (coreFields.status !== undefined) {
+      updateData.status = coreFields.status;
+    }
+
+    return updateData;
+  }
+
+  private async removeProjectSkills(
+    tx: Prisma.TransactionClient,
+    projectId: string,
+    removeSkillIds: string[] | undefined,
+  ) {
+    if (!removeSkillIds || removeSkillIds.length === 0) return;
+
+    await tx.projectSkill.deleteMany({
+      where: { id: { in: removeSkillIds }, projectId },
+    });
+  }
+
+  private async upsertProjectSkills(
+    tx: Prisma.TransactionClient,
+    projectId: string,
+    skills: UpdateProjectSkillDto[] | undefined,
+  ) {
+    if (!skills || skills.length === 0) return;
+
+    for (const skillInput of skills) {
+      const skillRecord = await this.upsertSkillCatalogEntry(
+        tx,
+        skillInput.name,
+      );
+
+      if (skillInput.id) {
+        await tx.projectSkill.update({
+          where: { id: skillInput.id },
+          data: {
+            skillId: skillRecord.id,
+            competency: skillInput.competency as CompetencyLevel,
+            years: skillInput.years,
+            mandatory: skillInput.mandatory,
+          },
+        });
+      } else {
+        await tx.projectSkill.create({
+          data: {
+            projectId,
+            skillId: skillRecord.id,
+            competency: skillInput.competency as CompetencyLevel,
+            years: skillInput.years,
+            mandatory: skillInput.mandatory,
+          },
+        });
+      }
+    }
+  }
+
+  private async upsertSkillCatalogEntry(
+    tx: Prisma.TransactionClient,
+    name: string,
+  ) {
+    const normalizedSkillName = name.trim().toLowerCase();
+    return tx.skill.upsert({
+      where: { name: normalizedSkillName },
+      update: {},
+      create: { name: normalizedSkillName, category: 'General' },
+    });
   }
 }

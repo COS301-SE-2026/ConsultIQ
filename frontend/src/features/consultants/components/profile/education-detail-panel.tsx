@@ -6,6 +6,8 @@ import {Button} from "../../../../components/ui/button";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { isBefore, isAfter, startOfDay } from 'date-fns';
+import { Upload,Trash2 } from "lucide-react";
+import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
  
 
 
@@ -15,13 +17,15 @@ export interface Education {
   qualification: string;
   startDate: string;
   endDate: string;
+  fileName?:string;
 }
 
 interface EducationDetailPanelProps {
   readonly education: Education;
   readonly onClose: () => void;
-    readonly onSave: (education: Education) => void;
-    readonly editMode?: boolean;
+  readonly onSave: (education: Education) => void;
+  readonly editMode?: boolean;
+  
 }
 
 export default function EducationDetailPanel({ education, onClose,onSave,editMode }: EducationDetailPanelProps) {
@@ -30,6 +34,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
   const [qualification,setQualification]= useState(education.qualification);
   const [startDate, setStartDate]= useState<Date | null>(education.startDate ? new Date(education.startDate) : null);
   const [endDate, setEndDate]= useState<Date | null>(education.endDate ? new Date(education.endDate) : null);
+   const [uploadedFile, setUploadedFile] = useState<File | undefined>();
 
  const [startDateError, setstartDateError] = useState("");
  const [endDateError,setEndDateError]= useState("");
@@ -42,6 +47,12 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
     setStartDate(education.startDate ? new Date(education.startDate) : null);
     setEndDate(education.endDate ? new Date(education.endDate) : null); 
   },[education]);
+
+   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) =>{
+        const file = (e.target as HTMLInputElement).files?.[0];
+        setUploadedFile(file);
+    };
+
 
   const handleSave = () =>{
 
@@ -106,7 +117,12 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
       qualification,
       startDate: startDate!.toISOString().split("T")[0],
       endDate:  endDate!.toISOString().split("T")[0],
+      fileName: uploadedFile?.name,
     });
+
+       setUploadedFile(undefined);
+        const input= document.getElementById("cert-upload") as HTMLInputElement;
+        if (input) input.value="";
 
     onClose();
   }
@@ -188,6 +204,70 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
             
             {endDateError && <span className="text-red-500 text-sm">{endDateError}</span>}
          </div>
+
+            <div className="flex flex-col gap-3">
+                    <span className="text-xl font-medium">Certificate upload</span>
+                    <label  
+                        htmlFor="cert-upload" 
+                        className="flex flex-col items-center justify-center gap-3 p-8 px-6 py-2 h-28 rounded-lg border border-dashed cursor-pointer transition-colors duration-200"
+                        style={{
+                            borderColor:"var(--color-border)"
+                        }}
+
+                    >
+                        <Upload size={24} className="text-gray-400"/>
+
+                       <span 
+                        className="inline-flex items-center  justify-center px-4 py-2 w-20 rounded text-white text-sm font-medium shadow-sm "
+                        style = {{
+                            backgroundColor:"var(--color-primary)"
+                        }}
+                       >
+                        Choose file
+                       </span>
+                       <span
+                        className="text-sm text-gray-500"
+                       >
+                         {uploadedFile ? uploadedFile.name : "no file chosen"}
+                        </span>
+
+                       <Input 
+                            id="cert-upload" 
+                            type="file" 
+                            accept=".pdf,.jpg,.png"
+                            className="hidden"
+                            onChange={handleFileUpload}
+                        />
+                    </label>
+                    
+                   {uploadedFile && (
+                    <div className="flex items-end gap-2 mt-2">
+                    <div className="flex-1">
+                        <AttachmentDisplay attachmentName={uploadedFile.name}/>
+                    </div>
+                     
+                     
+                      <Button
+                          variant= "secondary"
+                         onClick={()=> { 
+                            setUploadedFile(undefined);
+                            const input= document.getElementById("cert-upload") as HTMLInputElement;
+                            if (input) input.value="";}}
+                         className="p-3 h-[62px] w-15 rounded-xl border flex items-center"
+                         style={{
+                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                           fontSize: "14px",
+                           padding: "6px 12px",
+                         }}
+                         title="Remove attachment"
+                       >
+                        <Trash2 size={18}/>
+                       </Button>
+                    </div>
+                    
+                   )}
+                  
+                </div>
 
          
           <div className="flex items-center gap-2 shrink-0 ml-4">

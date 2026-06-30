@@ -137,7 +137,7 @@ export class ConsultantService {
       })
       .then(async (result) => {
         //send notification to consultant
-        await this.notificationService.sendPushNotification(
+        await this.notificationService.createAndSendNotification(
           dto.consultantUserId,
           'Profile creation! 🎉',
           'Your consultant profile has been completed.'

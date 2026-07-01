@@ -32,68 +32,72 @@ export default function ProjectDetailsModal({
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   
-  const handleSaveSection = async (section: string, updatedFields:Partial<Project>) =>{
-  if (!fullProject) return;
-  let payload: Record<string, unknown> = {};
-  if(section ==="project-overview"){
-    payload={
-      ...(updatedFields.projectName !==undefined ? {projectName: updatedFields.projectName} : {}),
-      ...(updatedFields.clientName !==undefined ? {clientName: updatedFields.clientName} : {}),
-      ...(updatedFields.description !==undefined ? {description: updatedFields.description} : {}),
-      ...(updatedFields.teamSize !==undefined ? {teamSize: updatedFields.teamSize} : {}),
-      ...(updatedFields.budget !==undefined ? {budget: updatedFields.budget} : {}),
-      ...(updatedFields.startDate !==undefined ? {startDate: updatedFields.startDate} : {}),
-      ...(updatedFields.endDate !==undefined ? {endDate: updatedFields.endDate} : {}),
-      ...(updatedFields.status !==undefined ? {status: updatedFields.status}: {})};
-  }
-  if(section ==="project-location"){
-    payload={
-      ...(updatedFields.location?.addressLine1 !==undefined ? {addressLine1: updatedFields.location.addressLine1} : {}),
-      ...(updatedFields.location?.addressLine2 !==undefined ? {addressLine2: updatedFields.location.addressLine2} : {}),
-      ...(updatedFields.location?.suburb !==undefined ? {suburb: updatedFields.location.suburb} : {}),
-      ...(updatedFields.location?.city !==undefined ? {city: updatedFields.location.city} : {}),
-      ...(updatedFields.location?.province !==undefined ? {province: updatedFields.location.province} : {}),
-      ...(updatedFields.location?.postalCode !==undefined ? {postalCode: updatedFields.location.postalCode} : {}),};
-  }
-  if(section=== "project-skills"){
-    payload= {
-      skills: (updatedFields.skills ?? []).map((skill)=> ({
+  const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
+      "project-overview": (fields) =>({
+      ...(fields.projectName !==undefined && {projectName: fields.projectName}),
+      ...(fields.clientName !==undefined && {clientName: fields.clientName}),
+      ...(fields.description !==undefined && {description: fields.description}),
+      ...(fields.teamSize !==undefined && {teamSize: fields.teamSize}),
+      ...(fields.budget !==undefined && {budget: fields.budget}),
+      ...(fields.startDate !==undefined && {startDate: fields.startDate}),
+      ...(fields.endDate !==undefined && {endDate: fields.endDate}),
+      ...(fields.status !==undefined && {status: fields.status}),
+  }),
+  "project-location": (fields) => ({
+      ...(fields.location?.addressLine1 !==undefined && {addressLine1: fields.location.addressLine1}),
+      ...(fields.location?.addressLine2 !==undefined && {addressLine2: fields.location.addressLine2}),
+      ...(fields.location?.suburb !==undefined && {suburb: fields.location.suburb}),
+      ...(fields.location?.city !==undefined && {city: fields.location.city}),
+      ...(fields.location?.province !==undefined && {province: fields.location.province}),
+      ...(fields.location?.postalCode !==undefined && {postalCode: fields.location.postalCode}),
+    }),
+  "project-skills": (fields) =>({
+      skills: (fields.skills ?? []).map((skill)=> ({
         id: skill.id,
         name: skill.name,
         competency: skill.competency, 
         years: skill.years, 
         mandatory: skill.mandatory,})),
-      };
-  }
+      }),
+    };  
+  const mapStates: Record<string, (currProject :Project ,fields: Partial<Project>)=> Project> ={
+      "project-overview": (currProject, fields) =>({...currProject,
+      name: fields.name ?? currProject.name,
+      projectName: fields.projectName ?? currProject.projectName,     
+      clientName: fields.clientName ?? currProject.clientName,
+      description: fields.description ?? currProject.description,
+      teamSize: fields.teamSize ?? currProject.teamSize,
+      budget: fields.budget ?? currProject.budget,
+      startDate: fields.startDate ?? currProject.startDate,
+      endDate: fields.endDate ??  currProject.endDate,
+      status : fields.status ?? currProject.status,
+  }),
+  "project-location": (currProject,fields) => ({...currProject,
+      addressLine1: fields.location?.addressLine1 ?? currProject.addressLine1,
+      addressLine2 : fields.location?.addressLine2 ?? currProject.addressLine2,
+      suburb: fields.location?.suburb?? currProject.suburb,
+      city: fields.location?.city ?? currProject.city,
+      province: fields.location?.province ?? currProject.province,
+      postalCode: fields.location?.postalCode ?? currProject.postalCode,
+      location: {...currProject.location, ...fields.location},
+    }),
+  "project-skills": (currProject, fields) =>({...currProject,
+      skills: fields.skills ?? currProject.skills,
+      }),
+    }; 
+
+  const handleSaveSection = async (section: string, updatedFields:Partial<Project>) =>{
+  if (!fullProject) return;
+
+  const pMapper= mapPayload[section];
+  const payload= pMapper ? pMapper(updatedFields) : {};
+
+  
   if(Object.keys(payload).length===0){ 
     setActiveEditSection(null);
     return;}
-
-  const updatedProject= {
-    ...fullProject, 
-    ...(section=== "project-overview" ? {
-      name: updatedFields.name ?? fullProject.name,
-      projectName: updatedFields.projectName ?? fullProject.projectName,
-      clientName: updatedFields.clientName ?? fullProject.clientName,
-      description: updatedFields.description ?? fullProject.description,
-      teamSize: updatedFields.teamSize ?? fullProject.teamSize,
-      budget: updatedFields.budget ?? fullProject.budget,
-      startDate: updatedFields.startDate ?? fullProject.startDate,
-      endDate: updatedFields.endDate ?? fullProject.endDate,
-      status: updatedFields.status ?? fullProject.status}: {}),
-
-    ...(section=== "project-location" ? {
-      addressLine1: updatedFields.location?.addressLine1 ?? fullProject.addressLine1,
-      addressLine2: updatedFields.location?.addressLine2 ?? fullProject.addressLine2,
-      suburb: updatedFields.location?.suburb ?? fullProject.suburb,
-      city: updatedFields.location?.city ?? fullProject.city,
-      province: updatedFields.location?.province ?? fullProject.province,
-      postalCode: updatedFields.location?.postalCode ?? fullProject.postalCode,
-      location: {...fullProject.location, ...updatedFields.location},
-     }: {}),
-
-     ...(section ==="project-skills" ? {skills: updatedFields.skills ?? fullProject.skills, }:{}),
-  };
+    const formatState= mapStates[section];
+    const updatedProject= formatState ? formatState(fullProject, updatedFields) : fullProject;
 
   try {
     const token = sessionStorage.getItem("ciq_access_token");
@@ -109,12 +113,12 @@ export default function ProjectDetailsModal({
         if(!resp.ok){
           throw new Error ("Failed to update project");
         }
+          setFullProject(updatedProject);
 
         }catch (error){
           console.error("Failed to update project section: " + error);
           setFullProject(fullProject);
         }
-        setFullProject(updatedProject);
         setActiveEditSection(null);
       };
 

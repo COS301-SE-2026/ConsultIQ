@@ -3,6 +3,7 @@ import ExperienceDetailPanel, { type Experience } from "./experience-detail-pane
 import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"
 import { toast } from "sonner";
+import EditControls from "./edit-controls";
 
 export type { Experience };
 
@@ -21,6 +22,66 @@ function formatDateRange(startDate: string, endDate: string) {
   return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
 
+
+function ExperienceInfo({exp}:{readonly exp: Experience}){
+  return(
+        <div className="flex items-start justify-between gap-6 w-full">
+                      <div className="flex flex-col" style={{ gap: "8px" }}>
+                        <p
+                          className="font-bold"
+                          style={{
+                            color: "var(--color-text-primary)",
+                            fontSize: "var(--text-h3)",
+                          }}
+                        >
+                          {exp.company}
+                        </p>
+                        <p
+                          className="font-medium"
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            fontSize: "var(--text-h4)",
+                          }}
+                        >
+                          {exp.jobTitle}
+                        </p>
+                        <div
+                          className="flex items-center"
+                          style={{ gap: "24px", marginTop: "4px" }}
+                        >
+                          <span
+                            style={{
+                              color: "var(--color-text-secondary)",
+                              fontSize: "var(--text-h4)",
+                            }}
+                          >
+                            {exp.jobType}
+                          </span>
+                          <span
+                            style={{
+                              color: "var(--color-text-secondary)",
+                              fontSize: "var(--text-h4)",
+                            }}
+                          >
+                            {exp.workModel}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* date range */}
+                      <span
+                        className="shrink-0"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--text-h4)",
+                        }}
+                      >
+                        {formatDateRange(exp.startDate, exp.endDate)}
+                      </span>
+                    </div>
+
+  );
+}
 
 function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
   const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
@@ -104,63 +165,15 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
             </h2>
 
             {canEdit && (
-            <div className = " flex-1 flex justify-end gap-2">
-            {isEditing ?(
-               <>
-              <Button 
-                onClick={handleSave} 
-                variant="default" 
-                className ="font-bold px-4 py-2"
-                style ={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-                }}
-              >
-                Save
-              </Button>
-              <Button 
-                onClick={handleCancel} 
-                variant="outline" 
-                className="font-bold px-4 py-2"
-                  style ={{
-                    fontSize: "14px",
-                    padding: "6px 12px",
-                    boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-                  }}
-              >
-                Cancel
-              </Button>
-
-              </>
-            ):(
-
-              <Button 
-                onClick={handleEditClick} 
-                variant="secondary" 
-                className="gap-2 font-bold px-4 py-2 border-b"
-                style ={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-                }}
-              >
-                  <Pencil size={16}/>
-                  Edit
-              </Button>
-             
-            )}
-            </div>
+                <EditControls
+                  isEditing={isEditing}
+                  onEdit={handleEditClick}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
           )}
        </div>
- 
-
-        
-
         <hr style={{ borderColor: "var(--color-border)" }} />
-
         
         <div className="flex flex-col">
           {(isEditing ? localExperience: experiences).map((exp, index) => (
@@ -176,64 +189,8 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
               <div className="flex items-start justify-between gap-6 w-full">
                 {isEditing ? (
-                        
-                  
-<>
-
-                  <div className="flex items-start justify-between gap-6 w-full">
-                      <div className="flex flex-col" style={{ gap: "8px" }}>
-                        <p
-                          className="font-bold"
-                          style={{
-                            color: "var(--color-text-primary)",
-                            fontSize: "var(--text-h3)",
-                          }}
-                        >
-                          {exp.company}
-                        </p>
-                        <p
-                          className="font-medium"
-                          style={{
-                            color: "var(--color-text-secondary)",
-                            fontSize: "var(--text-h4)",
-                          }}
-                        >
-                          {exp.jobTitle}
-                        </p>
-                        <div
-                          className="flex items-center"
-                          style={{ gap: "24px", marginTop: "4px" }}
-                        >
-                          <span
-                            style={{
-                              color: "var(--color-text-secondary)",
-                              fontSize: "var(--text-h4)",
-                            }}
-                          >
-                            {exp.jobType}
-                          </span>
-                          <span
-                            style={{
-                              color: "var(--color-text-secondary)",
-                              fontSize: "var(--text-h4)",
-                            }}
-                          >
-                            {exp.workModel}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* date range */}
-                      <span
-                        className="shrink-0"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--text-h4)",
-                        }}
-                      >
-                        {formatDateRange(exp.startDate, exp.endDate)}
-                      </span>
-                    </div>
+                  <>
+                    <ExperienceInfo exp={exp}/>
 
                     <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
@@ -271,61 +228,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
                     onClick={() => setSelected({exp,index})}
                     className="w-full text-left hover:opacity-70 transition cursor-pointer"
                   >
-                    <div className="flex items-start justify-between gap-6">
-                      {/* company info */}
-                      <div className="flex flex-col" style={{ gap: "8px" }}>
-                        <p
-                          className="font-bold"
-                          style={{
-                            color: "var(--color-text-primary)",
-                            fontSize: "var(--text-h3)",
-                          }}
-                        >
-                          {exp.company}
-                        </p>
-                        <p
-                          className="font-medium"
-                          style={{
-                            color: "var(--color-text-secondary)",
-                            fontSize: "var(--text-h4)",
-                          }}
-                        >
-                          {exp.jobTitle}
-                        </p>
-                        <div
-                          className="flex items-center"
-                          style={{ gap: "24px", marginTop: "4px" }}
-                        >
-                          <span
-                            style={{
-                              color: "var(--color-text-secondary)",
-                              fontSize: "var(--text-h4)",
-                            }}
-                          >
-                            {exp.jobType}
-                          </span>
-                          <span
-                            style={{
-                              color: "var(--color-text-secondary)",
-                              fontSize: "var(--text-h4)",
-                            }}
-                          >
-                            {exp.workModel}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* date range */}
-                      <span
-                        className="shrink-0"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--text-h4)",
-                        }}
-                      >
-                        {formatDateRange(exp.startDate, exp.endDate)}
-                      </span>
-                    </div>
+                    <ExperienceInfo exp={exp}/>
                   </button>
                   
 

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {Button} from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import {Pencil} from "lucide-react"
+import EditControls from "./edit-controls";
 
 interface PersonalInfoCardProps {
   readonly fullName: string;
@@ -158,54 +159,12 @@ export default function PersonalInfoCard({
        <SectionCard title="Personal Information" >
 
        {canEdit && (
-          <div className = " absolute top-[26px] right-6 flex items-center gap-2">
-           {isEditing ?(
-               <>
-            <Button 
-              onClick={handleSave} 
-              variant="default" 
-              className ="font-bold px-4 py-2"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-              }}
-            >
-              Save
-            </Button>
-            <Button 
-              onClick={handleCancel} 
-              variant="outline" 
-              className="font-bold px-4 py-2"
-                style ={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-                }}
-            >
-              Cancel
-            </Button>
-
-            </>
-           ):(
-            <Button 
-              onClick={handleEditClick} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-              }}
-             >
-                <Pencil size={16}/>
-                Edit
-             </Button>
-          
-           )}
-          </div>
+           <EditControls
+                  isEditing={isEditing}
+                  onEdit={handleEditClick}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
         )}
 
       <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>

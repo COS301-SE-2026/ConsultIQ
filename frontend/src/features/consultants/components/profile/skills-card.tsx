@@ -3,6 +3,7 @@ import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"
 import { Input } from "../../../../components/ui/input";
 import { toast } from "sonner";
+import EditControls from "./edit-controls";
 
 export type CompetencyLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
  
@@ -127,54 +128,12 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
        </h2>
 
          {canEdit && (
-          <div className = " flex-1 flex justify-end gap-2">
-           {isEditing ?(
-             <>
-            <Button 
-              onClick={handleSave} 
-              variant="default" 
-              className ="font-bold px-4 py-2"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-              }}
-            >
-              Save
-            </Button>
-            <Button 
-              onClick={handleCancel} 
-              variant="outline" 
-              className="font-bold px-4 py-2"
-                style ={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-
-                }}
-            >
-              Cancel
-            </Button>
-
-            </>
-           ):(
-            <Button 
-              onClick={handleEditClick} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-              }}
-             >
-                <Pencil size={16}/>
-                Edit
-             </Button>
-            
-           )}
-          </div>
+             <EditControls
+                  isEditing={isEditing}
+                  onEdit={handleEditClick}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
         )}
       </div>
  

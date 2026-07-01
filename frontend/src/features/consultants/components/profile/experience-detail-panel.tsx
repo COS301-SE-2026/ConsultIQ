@@ -153,23 +153,8 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
 
   return (
       <DetailPanel title={editMode ? "Edit Experience" : "Experience"} onClose={onClose}>
-        {!editMode ? (
-          <div className="flex flex-col gap-4">
-            <DetailField label="Job title" value={experience.jobTitle} />
-            <DetailField label="Company/organisation" value={experience.company} />
-            <DetailField label="Work model" value={experience.workModel} />
-            <DetailField label="Job type" value={experience.jobType} />
-            <DetailField
-              label="Start and end date"
-              value={`${experience.startDate ? new Date(experience.startDate).toLocaleDateString("en-GB") : ""} 
-            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : ""}`}
-            />
-            <DetailField label="Role description" value={experience.roleDescription} />
-          </div>   
-      
-    ):(
-      
-      <div className="flex flex-col gap-4">
+        {editMode ? (
+           <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
               <label className="text-sm font-semibold" htmlFor="form-company-name">Company name</label>
               <Input value={company} onChange={(e) => setCompany(e.target.value) } />
@@ -291,7 +276,23 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
         </div>
         
 
-      </div>
+      </div> 
+      
+    ):(
+       <div className="flex flex-col gap-4">
+            <DetailField label="Job title" value={experience.jobTitle} />
+            <DetailField label="Company/organisation" value={experience.company} />
+            <DetailField label="Work model" value={experience.workModel} />
+            <DetailField label="Job type" value={experience.jobType} />
+            <DetailField
+              label="Start and end date"
+              value={`${experience.startDate ? new Date(experience.startDate).toLocaleDateString("en-GB") : ""} 
+            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : ""}`}
+            />
+            <DetailField label="Role description" value={experience.roleDescription} />
+          </div>
+      
+      
         
      
     )}

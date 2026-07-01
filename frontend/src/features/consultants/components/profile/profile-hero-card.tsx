@@ -69,20 +69,8 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
           {fullName}
         </p>
 
-        { !isEditing ? (
-          <span
-            className="inline-block self-start rounded-md font-medium"
-            style={{
-              padding: "4px 16px",
-              fontSize: "var(--text-h4)",
-              backgroundColor: isAvailable ? "#FEF3C7" : "#F3F4F6",
-              color: isAvailable ? "#92400E" : "var(--color-text-secondary)",
-            }}
-          >
-            {currentStatus}
-          </span>
-        ) : (
-          <select 
+        { isEditing ? (
+           <select 
                 name="availabilityStatus" 
                 id="status" 
                 value={currentStatus} 
@@ -101,6 +89,19 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
                 
               </select>
           
+        ) : (
+            <span
+            className="inline-block self-start rounded-md font-medium"
+            style={{
+              padding: "4px 16px",
+              fontSize: "var(--text-h4)",
+              backgroundColor: isAvailable ? "#FEF3C7" : "#F3F4F6",
+              color: isAvailable ? "#92400E" : "var(--color-text-secondary)",
+            }}
+          >
+            {currentStatus}
+          </span>
+       
            
         )}
       </div>

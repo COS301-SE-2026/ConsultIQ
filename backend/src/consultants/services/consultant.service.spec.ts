@@ -305,7 +305,7 @@ describe('ConsultantService', () => {
       expect(result.idNumber).toBe('9901015555081');
       expect(result.nationality).toBe('South African');
       expect(result.addressLine1).toBe('123 South road');
-      expect(result.addressLine2).toBe(null);
+      expect(result.addressLine2).toBeNull;
       expect(result.suburb).toBe('Hillbrow');
       expect(result.city).toBe('Johannesburg');
       expect(result.province).toBe('Gauteng');

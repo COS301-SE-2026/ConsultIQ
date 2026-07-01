@@ -154,7 +154,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
 
       {editMode ? (
         
-         <>
+         
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="form-institution">Institution </label>
@@ -303,7 +303,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
 
 
           </div>
-           </>
+           
       ):(
          <div className="flex flex-col gap-4">
           <DetailField label="Institution name" value={education.institution} />

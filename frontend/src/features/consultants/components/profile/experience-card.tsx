@@ -27,9 +27,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
   const [isEditing,setIsEditing]= useState(false);
   const [localExperience,setLocalExp]= useState(experiences);
   
-  useEffect(() =>{
-      setLocalExp(experiences);
-     },[experiences]);
+  
 
 
   const handleEditClick = () => {
@@ -360,6 +358,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
       {/* Detail panel */}
       {selected && (
         <ExperienceDetailPanel
+          key={selected.exp.id}
           experience={selected.exp}
           onClose={() => setSelected(null)}
           onSave={savePanelChanges}

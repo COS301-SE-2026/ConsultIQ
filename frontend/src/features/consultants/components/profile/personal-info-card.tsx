@@ -39,18 +39,15 @@ export default function PersonalInfoCard({
    const [emailError,setEmailError] = useState("");
    const [nameError,setNameError]= useState("");
 
-  
 
-   useEffect(() =>{
+
+   const handleEditClick = () => {
+    setIsEditing(true);
     setFullName(fullName);
     setEmail(email);
     setPhone(phone);
     setLocalIdNumber(idNumber);
     setNationality(nationality);
-   },[fullName,email,phone,idNumber,nationality]);
-
-   const handleEditClick = () => {
-    setIsEditing(true);
   };
 
    const handleCancel = () => {
@@ -88,7 +85,7 @@ export default function PersonalInfoCard({
 
      let isValid = true;
 
-     let normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
+     const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
 
     if (!/^\d{10}$/.test(normalizedPhone)) {
       setPhoneError("Phone number must be exactly 10 digits.");

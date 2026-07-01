@@ -26,12 +26,6 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
    const [isEditing,setIsEditing]= useState(false);
   const [localEducation,setLocalEdu]= useState(educationList);
 
-
-  useEffect(() =>{
-      setLocalEdu(educationList);
-     },[educationList]);
-
-
   const handleEditClick = () => {
     setIsEditing(true);
     setLocalEdu(educationList);
@@ -311,6 +305,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
 
       {selected && (
         <EducationDetailPanel
+          key={selected.edu.id}
           education={selected.edu}
           onClose={() => setSelected(null)}
           onSave={savePanelChanges}

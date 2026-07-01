@@ -92,21 +92,11 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
     if(field === "name"){
       currentSkill.name = value;
-    }else if(field == "confidenceLevel" || field == "yearsOfExperience"){
-      let exp= currentSkill.yearsOfExperience;
-      let conf = currentSkill.confidenceLevel;
-      
-      if(field == "yearsOfExperience"){
-        exp = parseFloat(value) || 0;
-        currentSkill.yearsOfExperience= exp;
-      }
+    }else if(field === "yearsOfExperience"){
+      currentSkill.yearsOfExperience = parseFloat(value) || 0;
 
-      if(field === "confidenceLevel"){
-        conf= parseInt(value,10) || 1;
-        currentSkill.confidenceLevel= conf;
-
-      }
-
+    }else if(field === "confidenceLevel"){
+        currentSkill.confidenceLevel = parseInt(value,10) || 1;
     }
 
     currentSkill.competencyLevel = competencyLevel(currentSkill.yearsOfExperience,currentSkill.confidenceLevel);

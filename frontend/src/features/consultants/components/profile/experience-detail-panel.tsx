@@ -45,15 +45,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   const [roleDescError,setroleDescError]= useState("");
  
 
-  useEffect(() => {
-    setCompany(experience.company);
-    setJobTitle(experience.jobTitle);
-    setJobType(experience.jobType);
-    setRoleDesc(experience.roleDescription);
-    setStartDate(experience.startDate ? new Date(experience.startDate) : null);
-    setEndDate(experience.endDate ? new Date(experience.endDate) : null); 
-    setWorkModel(experience.workModel);
-  },[experience]);
+
 
   const handleSave = () =>{
 
@@ -134,13 +126,6 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   }
 
   const handleCancel = () =>{
-    setCompany(experience.company);
-    setJobTitle(experience.jobTitle);
-    setJobType(experience.jobType);
-    setRoleDesc(experience.roleDescription);
-    setStartDate(experience.startDate ? new Date(experience.startDate) : null);
-    setEndDate(experience.endDate ? new Date(experience.endDate) : null); 
-    setWorkModel(experience.workModel);
     onClose();
 
   }
@@ -156,7 +141,8 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
             <DetailField label="Job type" value={experience.jobType} />
             <DetailField
               label="Start and end date"
-              value={`${experience.startDate} - ${experience.endDate}`}
+              value={`${experience.startDate ? new Date(experience.startDate).toLocaleDateString("en-GB") : ""} 
+            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : ""}`}
             />
             <DetailField label="Role description" value={experience.roleDescription} />
           </div>   

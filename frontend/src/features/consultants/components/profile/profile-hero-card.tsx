@@ -4,9 +4,9 @@ import {Pencil} from "lucide-react"
 
 interface ProfileHeroCardProps {
   readonly fullName: string;
-  readonly status: "Available" | "Unavailable" | "On leave";
+  readonly status: "Available" | "Unavailable" ;
   readonly canEdit?: boolean;
-  readonly onSave?: (status: "Available" | "Unavailable" | "On leave") => void;
+  readonly onSave?: (status: "Available" | "Unavailable") => void;
 }
 
 function getInitials(fullName: string) {
@@ -86,7 +86,7 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
                 name="availabilityStatus" 
                 id="status" 
                 value={currentStatus} 
-                onChange={(e) => setCurrentStatus(e.target.value as any)}
+                onChange={(e) => setCurrentStatus(e.target.value as "Available" | "Unavailable")}
                 className="inline-block self-start rounded-md font-medium"
                 style={{
                   padding: "4px 16px",

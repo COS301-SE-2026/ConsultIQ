@@ -41,12 +41,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
   const [institutionError,setInstitutionError] = useState("");
   const [qualificationError,setQualificationError]= useState("");
 
-  useEffect(() => {
-    setInstitution(education.institution);
-    setQualification(education.qualification);
-    setStartDate(education.startDate ? new Date(education.startDate) : null);
-    setEndDate(education.endDate ? new Date(education.endDate) : null); 
-  },[education]);
+ 
 
    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) =>{
         const file = (e.target as HTMLInputElement).files?.[0];
@@ -129,10 +124,6 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
 
   const handleCancel = () =>{
 
-    setInstitution(education.institution);
-    setQualification(education.qualification);
-    setStartDate(education.startDate ? new Date(education.startDate) : null);
-    setEndDate(education.endDate ? new Date(education.endDate) : null); 
     onClose();
 
   }
@@ -146,7 +137,8 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
           <DetailField label="Qualification" value={education.qualification} />
           <DetailField
             label="Start and end date"
-            value={`${education.startDate} - ${education.endDate}`}
+            value={`${education.startDate ? new Date(education.startDate).toLocaleDateString("en-GB") : ""} 
+            - ${education.endDate ? new Date(education.endDate).toLocaleDateString("en-GB") : ""}`}
           />
          </div>
         

@@ -131,7 +131,7 @@ function ConsultantProfileViewPage() {
               fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
-                onSave={(status) => {
+                onSave={(_status) => {
                   // API call goes here
                 }}
             />
@@ -143,7 +143,7 @@ function ConsultantProfileViewPage() {
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
-               onSave={(data) => {
+               onSave={(_data) => {
                 // API call goes here
               }}
              
@@ -157,7 +157,7 @@ function ConsultantProfileViewPage() {
               province={profile.province}
               postalCode={profile.postalCode}
               canEdit={canEdit}
-              onSave={(updatedLocation) =>{
+              onSave={(_updatedLocation) =>{
                 
               }}
              
@@ -166,7 +166,7 @@ function ConsultantProfileViewPage() {
             <ExperienceCard 
               experiences={profile.experience} 
               canEdit={canEdit}
-              onSave={(updatedExperience)=>{
+              onSave={(_updatedExperience)=>{
                 // API call goes here
               }}
             />
@@ -174,7 +174,7 @@ function ConsultantProfileViewPage() {
             <SkillsCard 
               skills={profile.skills}
               canEdit={canEdit}
-              onSave={(updatedSkills) => {
+              onSave={(_updatedSkills) => {
                 // call your API here, then update state
               }}
              />
@@ -182,7 +182,7 @@ function ConsultantProfileViewPage() {
             <EducationCard 
               educationList={profile.education} 
               canEdit={canEdit}
-              onSave={(updatedEducation)=>{
+              onSave={(_updatedEducation)=>{
                 // API call goes here
               }}
             />

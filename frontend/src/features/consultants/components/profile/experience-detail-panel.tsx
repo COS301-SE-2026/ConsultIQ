@@ -38,7 +38,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   const [workModel, setWorkModel] = useState(experience.workModel);
   
 
-  const [companyError, setCompaneyError] = useState("");
+  const [companyError, setCompanyError] = useState("");
   const [jobTitleError, setjobTitleError] = useState("");
   const [startDateError, setstartDateError] = useState("");
   const [endDateError,setEndDateError]= useState("");
@@ -51,42 +51,41 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
 
     let isValid = true;
 
-    if(!company.trim()){
-      setCompaneyError("Company name is required");
-      isValid= false;
+    if(company.trim()){
+      setCompanyError("");
     }else{
-      setCompaneyError("");
+      setCompanyError("Company name is required");
+      isValid= false;
     }
 
-    if(!jobTitle.trim()){
+    if(jobTitle.trim()){
+      setjobTitleError("");
+    }else{
       setjobTitleError("Job title is required");
       isValid = false;
-
-    }else{
-      setjobTitleError("");
     }
 
-    if(!roleDesc.trim()){
+    if(roleDesc.trim()){
+      setroleDescError("");
+    }else{
       setroleDescError("Role description is required");
       isValid= false;
-    }else{
-      setroleDescError("");
     }
 
-    if(!startDate){
+    if(startDate){
+     setstartDateError("");
+
+    }else{
       setstartDateError("Start date is required");
       isValid = false;
-
-    }else{
-      setstartDateError("");
     }
 
-    if(!endDate){
-      setEndDateError("End date is required");
-      isValid = false;
+    if(endDate){
+      setEndDateError("");
 
     }else{
-      setEndDateError("");
+      setEndDateError("End date is required");
+      isValid = false;
     }
 
     if(startDate && endDate){
@@ -151,19 +150,19 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
       
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-              <label className="text-sm font-semibold">Company name</label>
+              <label className="text-sm font-semibold" htmlFor="form-company-name">Company name</label>
               <Input value={company} onChange={(e) => setCompany(e.target.value) } />
               {companyError && <span className="text-red-500 text-xs">{companyError}</span>}
         </div>
 
          <div className="flex flex-col gap-1">
-            <label>Job title</label>
+            <label htmlFor="form-job=title">Job title</label>
             <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value) } />
              {jobTitleError && <span className="text-red-500 text-xs">{jobTitleError}</span>}
          </div>
 
          <div className="flex flex-col gap-1">
-            <label>Job type</label>
+            <label htmlFor="form-job-type">Job type</label>
              <select
               value= {jobType}
               onChange={(e)=> setJobType(e.target.value)}
@@ -178,7 +177,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          </div>
 
          <div className="flex flex-col gap-1">
-             <label>Work Model</label>
+             <label htmlFor="form-work-model">Work Model</label>
              <select
               value= {workModel}
               onChange={(e)=> setWorkModel(e.target.value)}
@@ -193,7 +192,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          </div>
 
           <div className="flex flex-col gap-1">
-            <label>Start date</label>
+            <label htmlFor="form-exp-start-date">Start date</label>
           <DatePicker
             selected={startDate} 
             onChange={(date: Date | null) => setStartDate(date) }
@@ -211,7 +210,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          </div>
 
           <div className="flex flex-col gap-1">
-            <label>End date</label>
+            <label htmlFor="form-exp-end-date">End date</label>
              <DatePicker
               selected={endDate} 
               onChange={(date : Date | null) => setEndDate(date)}

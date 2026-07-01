@@ -16,50 +16,6 @@ interface PersonalInfoCardProps {
   readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => void;
 }
 
-export default function PersonalInfoCard({
-  fullName,
-  email,
-  phone,
-  idNumber,
-  nationality,
-  canEdit,
-  onSave,
-}: PersonalInfoCardProps) {
-
-   const [isEditing, setIsEditing] = useState(false);
-   const [fullname, setFullName] = useState(fullName);
-   const [emailAddress, setEmail] = useState(email);
-   const [phoneNumber, setPhone] = useState(phone);
-   const [localIdnumber, setLocalIdNumber] = useState(idNumber);
-   const [nationalityStatus, setNationality] = useState(nationality);
-
-   const [phoneError, setPhoneError] = useState("");
-   const [idError, setIdError] = useState("");
-   const [nationalityError, setNationalityError] = useState("");
-   const [emailError,setEmailError] = useState("");
-   const [nameError,setNameError]= useState("");
-
-
-
-   const handleEditClick = () => {
-    setIsEditing(true);
-    setFullName(fullName);
-    setEmail(email);
-    setPhone(phone);
-    setLocalIdNumber(idNumber);
-    setNationality(nationality);
-  };
-
-   const handleCancel = () => {
-    setIsEditing(false);
-    setFullName(fullName);
-    setEmail(email);
-    setPhone(phone);
-    setLocalIdNumber(idNumber);
-    setNationality(nationality);
-
-   }
-
     function validateSAID(id: string): boolean {
     if (!/^\d{13}$/.test(id)) return false;
     const month = parseInt(id.substring(2, 4));
@@ -81,6 +37,51 @@ export default function PersonalInfoCard({
   }
 
 
+export default function PersonalInfoCard({
+  fullName,
+  email,
+  phone,
+  idNumber,
+  nationality,
+  canEdit,
+  onSave,
+}: PersonalInfoCardProps) {
+
+   const [isEditing, setIsEditing] = useState(false);
+   const [fullNameState, setFullNameState] = useState(fullName);
+   const [emailState, setEmailState] = useState(email);
+   const [phoneNumber, setPhone] = useState(phone);
+   const [localIdnumber, setLocalIdNumber] = useState(idNumber);
+   const [nationalityStatus, setNationality] = useState(nationality);
+
+   const [phoneError, setPhoneError] = useState("");
+   const [idError, setIdError] = useState("");
+   const [nationalityError, setNationalityError] = useState("");
+   const [emailError,setEmailError] = useState("");
+   const [nameError,setNameError]= useState("");
+
+
+
+   const handleEditClick = () => {
+    setIsEditing(true);
+    setFullNameState(fullName);
+    setEmailState(email);
+    setPhone(phone);
+    setLocalIdNumber(idNumber);
+    setNationality(nationality);
+  };
+
+   const handleCancel = () => {
+    setIsEditing(false);
+    setFullNameState(fullName);
+    setEmailState(email);
+    setPhone(phone);
+    setLocalIdNumber(idNumber);
+    setNationality(nationality);
+
+   }
+
+
    const handleSave = () => {
 
      let isValid = true;
@@ -94,11 +95,11 @@ export default function PersonalInfoCard({
       setPhoneError("");
     }
 
-    if (!validateSAID(localIdnumber ?? "")) {
+    if (validateSAID(localIdnumber ?? "")) {
+      setIdError("");
+    } else {
       setIdError("Please enter a valid South African ID number.");
       isValid = false;
-    } else {
-      setIdError("");
     }
 
     const currentNationality= nationalityStatus ?? "";
@@ -114,10 +115,10 @@ export default function PersonalInfoCard({
     }
 
 
-    if (!emailAddress){
+    if (!emailState){
        setEmailError( "Email is required.");
        isValid = false;
-    } else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(emailAddress)){
+    } else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(emailState)){
        setEmailError("Invalid email format.");
        isValid= false;
     }else{
@@ -125,21 +126,21 @@ export default function PersonalInfoCard({
     }
 
 
-     if(!fullname || !fullname.trim()){
+     if(!fullNameState?.trim()){
       setNameError("full name is required");
       isValid = false;
-     }else if(!/^[a-zA-Z\s'-]+$/.test(fullname.trim())){
+     }else if(/^[a-zA-Z\s'-]+$/.test(fullNameState.trim())){
+      setNameError("");
+     }else{
       setNameError("Full name must contain letters and spaces only");
       isValid = false;
-     }else{
-        setNameError("");
      }
    
 
      if(!isValid) return;
     
      //callback to api function in parent
-     onSave?.({ fullName: fullname, email: emailAddress, phone: phoneNumber, idNumber: localIdnumber, nationality: nationalityStatus });
+     onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdnumber, nationality: nationalityStatus });
      
 
 
@@ -207,47 +208,49 @@ export default function PersonalInfoCard({
 
       <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>
 
-        {!isEditing ? (
-        <>
-            <DetailField label="Full Name" value={fullname} variant="compact" />
-            <DetailField label="Email Address" value={emailAddress} variant="compact" />
-            <DetailField label="Phone Number" value={phoneNumber} variant="compact" />
-            <DetailField label="ID Number" value={localIdnumber ?? "N/A"} variant="compact" />
-            <DetailField label="Nationality" value={nationalityStatus ?? "N/A"} variant="compact" />
-        </>):(
-        <>
+        {isEditing ? (
+          <>
              <div>
-              <label className="text-sm font-medium ">Full name</label>
-              <Input value={fullname} onChange={(e) => setFullName(e.target.value) } />
+              <label className="text-sm font-medium " htmlFor="form-full-name">Full name</label>
+              <Input value={fullNameState} onChange={(e) => setFullNameState(e.target.value) } />
               {nameError && <span className="text-red-500 text-xs mt-1 block">{nameError}</span>}
             </div>
 
              <div>
-              <label className="text-sm font-medium ">Email Address</label>
-              <Input value={emailAddress} onChange={(e) => setEmail(e.target.value) } />
+              <label className="text-sm font-medium " htmlFor="form-email-address">Email Address</label>
+              <Input value={emailState} onChange={(e) => setEmailState(e.target.value) } />
               {emailError && <span className="text-red-500 text-xs mt-1 block">{emailError}</span>}
             </div>
 
             <div>
-              <label className="text-sm font-medium " >Phone Number</label>
+              <label className="text-sm font-medium " htmlFor="form-phone-number">Phone Number</label>
               <Input value={phoneNumber} onChange={(e) => setPhone(e.target.value) } />
               {phoneError && <span className="text-red-500 text-xs mt-1 block">{phoneError}</span>}
             </div>
 
             
             <div>
-              <label className="text-sm font-medium ">ID number</label>
+              <label className="text-sm font-medium " htmlFor="form-id-number">ID number</label>
               <Input value={localIdnumber} onChange={(e) => setLocalIdNumber(e.target.value) } />
               {idError && <span className="text-red-500 text-xs mt-1 block">{idError}</span>}
             </div>
 
               <div>
-              <label className="text-sm font-medium ">Nationality</label>
+              <label className="text-sm font-medium " htmlFor="form-nationality">Nationality</label>
               <Input value={nationalityStatus} onChange={(e) => setNationality(e.target.value) } />
               {nationalityError && <span className="text-red-500 text-xs mt-1 block">{nationalityError}</span>}
             </div>
 
-        </>)}
+        </>
+        ):(
+          <>
+            <DetailField label="Full Name" value={fullNameState} variant="compact" />
+            <DetailField label="Email Address" value={emailState} variant="compact" />
+            <DetailField label="Phone Number" value={phoneNumber} variant="compact" />
+            <DetailField label="ID Number" value={localIdnumber ?? "N/A"} variant="compact" />
+            <DetailField label="Nationality" value={nationalityStatus ?? "N/A"} variant="compact" />
+        </>
+       )}
 
        
       </div>

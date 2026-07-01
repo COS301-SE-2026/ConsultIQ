@@ -53,34 +53,32 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
 
     let isValid = true;
 
-    if(!institution.trim()){
+    if(institution.trim()){
+     setInstitutionError("");
+    }else{
       setInstitutionError("Institution is required");
       isValid= false;
-    }else{
-      setInstitutionError("");
     }
 
-    if(!qualification.trim()){
+    if(qualification.trim()){
+      setQualificationError("");
+    }else{
       setQualificationError("Role description is required");
       isValid= false;
-    }else{
-      setQualificationError("");
     }
 
-    if(!startDate){
+    if(startDate){
+      setstartDateError("");
+    }else{
       setstartDateError("Start date is required");
       isValid = false;
-
-    }else{
-      setstartDateError("");
     }
 
-    if(!endDate){
-      setEndDateError("End date is required");
-      isValid = false;
-
-    }else{
+    if(endDate){
       setEndDateError("");
+    }else{
+       setEndDateError("End date is required");
+      isValid = false;
     }
 
     if(startDate && endDate){
@@ -145,19 +143,19 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
       ):(
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label>Institution </label>
+              <label htmlFor="form-institution">Institution </label>
               <Input value={institution} onChange={(e) => setInstitution(e.target.value) } />
               {institutionError && <span className="text-red-500 text-sm">{institutionError}</span>}
            </div>
 
             <div className="flex flex-col gap-1">
-              <label>Qualification </label>
+              <label htmlFor="form-qualification">Qualification </label>
               <Input value={qualification} onChange={(e) => setQualification(e.target.value) } />
               {qualificationError && <span className="text-red-500 text-sm">{qualificationError}</span>}
            </div>
 
            <div className="flex flex-col gap-1">
-            <label>Start date</label>
+            <label htmlFor="form-start-date">Start date</label>
             <DatePicker
              selected={startDate} 
              onChange={(date: Date | null) => setStartDate(date) }
@@ -176,7 +174,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
          </div>
 
           <div className="flex flex-col gap-1">
-            <label>End date</label>
+            <label htmlFor="form-end-date">End date</label>
             <DatePicker
              selected={endDate} 
              onChange={(date : Date | null) => setEndDate(date)}

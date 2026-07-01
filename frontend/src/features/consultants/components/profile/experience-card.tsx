@@ -14,9 +14,9 @@ interface ExperienceCardProps {
 
 function formatDateRange(startDate: string, endDate: string) {
   const fmt = (d: string) => {
-   if (!d || d.toLowerCase() === "present") return d;
+   if (!d || d.toLowerCase() === "present") {return d};
     const date = new Date(d);
-    return isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+    return Number.isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
   };
   return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
@@ -25,7 +25,7 @@ function formatDateRange(startDate: string, endDate: string) {
 function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
   const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
   const [isEditing,setIsEditing]= useState(false);
-  const [localExperience,setLocalExp]= useState(experiences);
+  const [localExperience, setLocalExp] = useState(experiences);
   
   
 
@@ -105,21 +105,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
             {canEdit && (
             <div className = " flex-1 flex justify-end gap-2">
-            {!isEditing ?(
-              <Button 
-                onClick={handleEditClick} 
-                variant="secondary" 
-                className="gap-2 font-bold px-4 py-2 border-b"
-                style ={{
-                  fontSize: "14px",
-                  padding: "6px 12px",
-                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-                }}
-              >
-                  <Pencil size={16}/>
-                  Edit
-              </Button>
-            ):(
+            {isEditing ?(
               <>
               <Button 
                 onClick={handleSave} 
@@ -149,6 +135,21 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
               </Button>
 
               </>
+            ):(
+               <Button 
+                onClick={handleEditClick} 
+                variant="secondary" 
+                className="gap-2 font-bold px-4 py-2 border-b"
+                style ={{
+                  fontSize: "14px",
+                  padding: "6px 12px",
+                  boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+                }}
+              >
+                  <Pencil size={16}/>
+                  Edit
+              </Button>
+             
             )}
             </div>
           )}

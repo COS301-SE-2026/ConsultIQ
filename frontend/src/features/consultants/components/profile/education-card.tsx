@@ -14,17 +14,17 @@ interface EducationCardProps {
 
 function formatDateRange(startDate: string, endDate: string) {
   const fmt = (d: string) => {
-   if (!d || d.toLowerCase() === "present") return d;
+   if (!d || d.toLowerCase() === "present") {return d};
     const date = new Date(d);
-    return isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
+    return Number.isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
   };
   return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
 
 function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
   const [selected, setSelected] = useState<{edu: Education; index:number}| null>(null);
-   const [isEditing,setIsEditing]= useState(false);
-  const [localEducation,setLocalEdu]= useState(educationList);
+  const [isEditing,setIsEditing]= useState(false);
+  const [localEducation, setLocalEdu] = useState(educationList);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -51,8 +51,8 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
   
       const newEducation={
         id: `edu-${Date.now()}`,
-        institution: "",
-        qualification: "",
+        institution: "Institution Name",
+        qualification: "Qualification Name",
         startDate: "",
         endDate: "",
       };
@@ -94,7 +94,7 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
             Education
           </h2>
 
-                     {canEdit && (
+          {canEdit && (
             <div className = " flex-1 flex justify-end gap-2">
             {!isEditing ?(
               <Button 
@@ -162,48 +162,8 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
               )}
 
               <div className="flex items-start justify-between gap-6 w-full">
-                {!isEditing ? (
-                 <button
-                    onClick={() => setSelected({edu,index})}
-                    className="w-full text-left hover:opacity-70 transition cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-6 flex-1">
-                      {/* institution info */}
-                      <div className="flex flex-col" style={{ gap: "8px" }}>
-                        <p
-                          className="font-bold"
-                          style={{
-                            color: "var(--color-text-primary)",
-                            fontSize: "var(--text-h3)",
-                          }}
-                        >
-                          {edu.institution}
-                        </p>
-                        <p
-                          className="font-medium"
-                          style={{
-                            color: "var(--color-text-secondary)",
-                            fontSize: "var(--text-h4)",
-                          }}
-                        >
-                          {edu.qualification}
-                        </p>
-                      </div>
-
-                      {/* date range */}
-                      <span
-                        className="shrink-0"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--text-h4)",
-                        }}
-                      >
-                        {formatDateRange(edu.startDate, edu.endDate)}
-                      </span>
-                    </div>
-                  </button>
-                ):(
-                  <>
+                {isEditing ? (
+                 <>
                      <div className="flex items-start justify-between gap-6">
                       {/* institution info */}
                       <div className="flex flex-col" style={{ gap: "8px" }}>
@@ -268,6 +228,48 @@ function EducationCard({ educationList,canEdit,onSave }: EducationCardProps) {
                        </Button>
                     </div>
                   </>
+                ):(
+
+                  <button
+                    onClick={() => setSelected({edu,index})}
+                    className="w-full text-left hover:opacity-70 transition cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-6 flex-1">
+                      {/* institution info */}
+                      <div className="flex flex-col" style={{ gap: "8px" }}>
+                        <p
+                          className="font-bold"
+                          style={{
+                            color: "var(--color-text-primary)",
+                            fontSize: "var(--text-h3)",
+                          }}
+                        >
+                          {edu.institution}
+                        </p>
+                        <p
+                          className="font-medium"
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            fontSize: "var(--text-h4)",
+                          }}
+                        >
+                          {edu.qualification}
+                        </p>
+                      </div>
+
+                      {/* date range */}
+                      <span
+                        className="shrink-0"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--text-h4)",
+                        }}
+                      >
+                        {formatDateRange(edu.startDate, edu.endDate)}
+                      </span>
+                    </div>
+                  </button>
+                  
                 )}
 
               </div>

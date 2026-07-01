@@ -23,7 +23,7 @@ export default function LocationCard({
   suburb,
   city,
   province,
-  postalCode,
+  postalCode: initialPostalCode,
   canEdit,
   onSave,
  
@@ -36,7 +36,7 @@ export default function LocationCard({
      const [Suburb,setSuburb]= useState(suburb ?? "");
      const [City,setCity]= useState(city);
      const [Province,setProvince]= useState(province);
-     const [postalcode,setPostalCode]= useState(postalCode ?? "");
+     const [postalCode,setPostalCode]= useState(initialPostalCode ?? "");
 
      const [address1Error, setAddress1Error] = useState("");
      const [cityError,setCityError] = useState("");
@@ -48,18 +48,18 @@ export default function LocationCard({
  const handleSave = () =>{
 
     let isValid= true;
-    if(!address1.trim()){
-      setAddress1Error("Address line 1 is required");
-      isValid= false;
+    if(address1.trim()){
+     setAddress1Error("");
     }else{
-      setAddress1Error("");
+       setAddress1Error("Address line 1 is required");
+      isValid= false;
     }
 
-    if(!City.trim()){
+    if(City.trim()){
+      setCityError("");
+    }else{
       setCityError("city is required");
       isValid= false;
-    }else{
-      setCityError("");
     }
 
     onSave?.({
@@ -68,7 +68,7 @@ export default function LocationCard({
       suburb: Suburb || undefined,
       city: City.trim(),
       province : Province,
-      postalCode: postalcode.trim() || undefined,
+      postalCode: postalCode.trim() || undefined,
     });
 
     if(!isValid){
@@ -157,42 +157,33 @@ export default function LocationCard({
         )}
 
          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>
-          {!isEditing ? (
-            <>
-              <DetailField label="Address line 1" value={addressLine1} variant="compact" />
-              <DetailField label="Address line 2" value={addressLine2 ?? "Address line 2 not provided"} variant="compact" />
-              <DetailField label="Suburb" value={suburb ?? "Suburb not provided"} variant="compact" />
-              <DetailField label="City" value={city } variant="compact" />
-              <DetailField label="Province" value={province } variant="compact" />
-              <DetailField label="Postal code" value={postalCode ?? "Postal code not provided"} variant="compact" />
-            </>
-
-          ):(
+          {isEditing ? (
+           
             <>
               <div>
-                <label className="text-sm font-medium " >Address line 1</label>
+                <label className="text-sm font-medium " htmlFor="form-address-line-one">Address line 1</label>
                 <Input value={address1} onChange={(e) => setAddress1(e.target.value) } />
                 {address1Error && <span className="text-red-500 text-xs mt-1 block">{address1Error}</span>}
               </div>
 
                <div>
-                <label className="text-sm font-medium">Address line 2</label>
+                <label className="text-sm font-medium" htmlFor="from-address-line-two">Address line 2</label>
                 <Input value={address2} onChange={(e) => setAddress2(e.target.value) } />
               </div>
 
                <div>
-                <label className="text-sm font-medium">Suburb</label>
+                <label className="text-sm font-medium" htmlFor="form-suburb">Suburb</label>
                 <Input value={Suburb} onChange={(e) => setSuburb(e.target.value) } />
               </div>
 
               <div>
-                <label className="text-sm font-medium">City</label>
+                <label className="text-sm font-medium" htmlFor="form-city">City</label>
                 <Input value={City} onChange={(e) => setCity(e.target.value) } />
                 {cityError && <span className="text-red-500 text-xs mt-1 block">{cityError}</span>}
               </div>
 
               <div>
-                <label className="text-sm font-medium">Province</label>
+                <label className="text-sm font-medium" htmlFor="form-province">Province</label>
                <select
                 id="province"
                 className="flex h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#002D72]"
@@ -213,10 +204,19 @@ export default function LocationCard({
               </div>
 
                <div>
-                <label className="text-sm font-medium ">Postal code</label>
-                <Input value={postalcode} onChange={(e) => setPostalCode(e.target.value) } />
+                <label className="text-sm font-medium " htmlFor="form-postal-code">Postal code</label>
+                <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value) } />
               </div>
 
+            </>
+          ):(
+            <>
+              <DetailField label="Address line 1" value={addressLine1} variant="compact" />
+              <DetailField label="Address line 2" value={addressLine2 ?? "Address line 2 not provided"} variant="compact" />
+              <DetailField label="Suburb" value={suburb ?? "Suburb not provided"} variant="compact" />
+              <DetailField label="City" value={city } variant="compact" />
+              <DetailField label="Province" value={province } variant="compact" />
+              <DetailField label="Postal code" value={postalCode ?? "Postal code not provided"} variant="compact" />
             </>
           )}
           

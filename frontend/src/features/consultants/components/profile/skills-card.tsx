@@ -91,10 +91,10 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
     if(field === "name"){
       currentSkill.name = value;
     }else if(field === "yearsOfExperience"){
-      currentSkill.yearsOfExperience = parseFloat(value) || 0;
+      currentSkill.yearsOfExperience = Number.parseFloat(value) || 0;
 
     }else if(field === "confidenceLevel"){
-        currentSkill.confidenceLevel = parseInt(value,10) || 1;
+        currentSkill.confidenceLevel = Number.parseInt(value,10) || 1;
     }
 
     currentSkill.competencyLevel = competencyLevel(currentSkill.yearsOfExperience,currentSkill.confidenceLevel);
@@ -104,10 +104,11 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
   }
 
 
-
+  const activeSkills= isEditing ? localSkills : skills;
+  const lastIndex= activeSkills.length-1;
   return (
     <div
-      className="bg-white rounded-2xl w-full flex flex-col"
+      className="bg-white rounded-2xl w-full flex flex-col "
       style={{
         padding: "28px 28px 28px 28px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
@@ -199,27 +200,21 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
  
       {/* Rows */}
       <div className="flex flex-col">
-        {(!isEditing ? skills: localSkills).map((skill, index) => (
+        {activeSkills.map((skill, index) => (
           <div
-            key={index}
+            key={`${skill.name}-${index}`}
             className={`grid ${isEditing ? "grid-cols-[2fr_1.5fr_1.5fr_2fr_auto] gap-4 items-center":"grid-cols-3"} font-medium`}
             style={{
               fontSize: "var(--text-h3)",
               color: "var(--color-text-primary)",
               padding: "18px 0",
               borderBottom:
-                index < (!isEditing ? skills.length : localSkills.length) - 1
+                index < lastIndex
                   ? "1px solid var(--color-border)"
                   : "none",
             }}
           >
-            {!isEditing ? (
-              <>
-               <span>{skill.name}</span>
-               <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
-               <span>{skill.yearsOfExperience}</span>
-              </>
-            ):(
+            {isEditing ? (
               <>
                 <div>
                   <Input
@@ -279,6 +274,14 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                   <Trash2 size={18} />
                 </Button>
               </>
+            ):(
+
+              <>
+               <span>{skill.name}</span>
+               <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
+               <span>{skill.yearsOfExperience}</span>
+              </>
+              
             )}
            
           </div>

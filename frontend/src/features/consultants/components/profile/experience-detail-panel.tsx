@@ -76,6 +76,28 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
 
   }
 
+  const validateStartDate = () => {
+    if(startDate){
+      setstartDateError("");
+      return true;
+    }
+
+      setstartDateError("Start date is required");
+      return false;
+    
+
+  }
+
+  const validateEndDate = () => {
+    if(endDate){
+      setEndDateError("");
+      return true;
+    }
+       setEndDateError("End date is required");
+      return false;
+  }
+
+
   const validateDateRange = () => {
      if(!startDate || !endDate) return true;
 
@@ -95,28 +117,12 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
 
   const handleSave = () =>{
 
-    let isValid = false;
-
-    if(startDate){
-     setstartDateError("");
-
-    }else{
-      setstartDateError("Start date is required");
-      isValid = false;
-    }
-
-    if(endDate){
-      setEndDateError("");
-
-    }else{
-      setEndDateError("End date is required");
-      isValid = false;
-    }
-
-   isValid= validateCompany() &&
+   const isValid= validateCompany() &&
       validateJobTitle() &&
       validateRoleDesc() &&
-      validateDateRange();
+      validateDateRange() &&
+      validateStartDate() &&
+      validateEndDate();
 
   
 

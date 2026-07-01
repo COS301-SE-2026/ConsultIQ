@@ -82,7 +82,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
     setLocalSkills(localSkills.filter((_,pos)=> pos !== index));
   }
 
-  const updateSkill = (index: number, field: keyof Skill, value: any) =>{
+  const updateSkill = (index: number, field: keyof Skill, value: string) =>{
 
     const updatedSkills = [...localSkills];
 

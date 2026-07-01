@@ -42,21 +42,12 @@ export default function LocationCard({
      const [cityError,setCityError] = useState("");
      
 
-    useEffect(() =>{
-    setAddress1(addressLine1);
-    setAddress2(addressLine2 ?? "");
-    setSuburb(suburb ?? "");
-    setCity(city);
-    setProvince(province);
-    setPostalCode(postalCode ?? "");
-   },[addressLine1,addressLine2,suburb,city,province,postalCode]);
 
 
 
  const handleSave = () =>{
 
-    let isValid = true;
-
+    let isValid= true;
     if(!address1.trim()){
       setAddress1Error("Address line 1 is required");
       isValid= false;
@@ -99,6 +90,12 @@ export default function LocationCard({
 
   const handleEditClick = () =>{
     setIsEditing(true);
+    setAddress1(addressLine1);
+    setAddress2(addressLine2 ?? "");
+    setSuburb(suburb ?? "");
+    setCity(city);
+    setProvince(province);
+    setPostalCode(postalCode ?? "");
   }
 
   return (

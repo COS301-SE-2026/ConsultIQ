@@ -49,54 +49,77 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
     };
 
 
-  const handleSave = () =>{
-
-    let isValid = true;
-
+  const validateInstitution = () =>{
     if(institution.trim()){
      setInstitutionError("");
-    }else{
+     return true;
+    }
       setInstitutionError("Institution is required");
-      isValid= false;
-    }
+      return false;
+    
+  
+  }
 
-    if(qualification.trim()){
+  const validateQualification = () =>{
+
+     if(qualification.trim()){
       setQualificationError("");
-    }else{
+      return true;
+    }
       setQualificationError("Role description is required");
-      isValid= false;
-    }
+      return false;
+    
 
-    if(startDate){
-      setstartDateError("");
-    }else{
-      setstartDateError("Start date is required");
-      isValid = false;
-    }
+  }
 
-    if(endDate){
-      setEndDateError("");
-    }else{
-       setEndDateError("End date is required");
-      isValid = false;
-    }
+  const validateDateRange = () => {
+    if(!startDate || !endDate) return true;
 
-    if(startDate && endDate){
-      if(isAfter(startOfDay(startDate),startOfDay(endDate))){
+    if(isAfter(startOfDay(startDate),startOfDay(endDate))){
         setstartDateError("Start day must be before end date");
-        isValid= false;
-      }else{
-        setstartDateError("");
+        return false;
       }
 
       if(isBefore(startOfDay(endDate),startOfDay(startDate))){
         setstartDateError("End date must be after start date");
-        isValid= false;
-      }else{
-        setstartDateError("");
+        return false;
       }
+      
+      setstartDateError("");
+      return true;
+      
 
+  }
+
+  const validateStartDate = () => {
+    if(startDate){
+      setstartDateError("");
+      return true;
     }
+
+      setstartDateError("Start date is required");
+      return false;
+    
+
+  }
+
+  const validateEndDate = () => {
+    if(endDate){
+      setEndDateError("");
+      return true;
+    }
+       setEndDateError("End date is required");
+      return false;
+  }
+
+  const handleSave = () =>{
+
+   const isValid =
+      validateInstitution() &&
+      validateQualification() &&
+      validateStartDate() &&
+      validateEndDate() &&
+      validateDateRange();
 
     
 
@@ -129,18 +152,9 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
   return (
     <DetailPanel title="Education" onClose={onClose}>
 
-      {!editMode ? (
-         <div className="flex flex-col gap-4">
-          <DetailField label="Institution name" value={education.institution} />
-          <DetailField label="Qualification" value={education.qualification} />
-          <DetailField
-            label="Start and end date"
-            value={`${education.startDate ? new Date(education.startDate).toLocaleDateString("en-GB") : ""} 
-            - ${education.endDate ? new Date(education.endDate).toLocaleDateString("en-GB") : ""}`}
-          />
-         </div>
+      {editMode ? (
         
-      ):(
+         <>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
               <label htmlFor="form-institution">Institution </label>
@@ -289,7 +303,20 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
 
 
           </div>
+           </>
+      ):(
+         <div className="flex flex-col gap-4">
+          <DetailField label="Institution name" value={education.institution} />
+          <DetailField label="Qualification" value={education.qualification} />
+          <DetailField
+            label="Start and end date"
+            value={`${education.startDate ? new Date(education.startDate).toLocaleDateString("en-GB") : ""} 
+            - ${education.endDate ? new Date(education.endDate).toLocaleDateString("en-GB") : ""}`}
+          />
+         </div>
+       
       )}
+     
       
     </DetailPanel>
   );

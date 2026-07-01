@@ -98,7 +98,7 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
               >
                 <option value="Available">Available</option>
                 <option value="Unavailable">Unavailable</option>
-                <option value="On leave">On leave</option>
+                
               </select>
           
            
@@ -107,22 +107,8 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
 
        {canEdit && (
           <div className = " flex-1 flex justify-end gap-2">
-           {!isEditing ?(
-             <Button 
-              onClick={handleEditClick} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-              }}
-             >
-                <Pencil size={16}/>
-                Edit
-             </Button>
-           ):(
-            <>
+           {isEditing ?(
+              <>
             <Button 
               onClick={handleSave} 
               variant="default" 
@@ -151,6 +137,21 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
             </Button>
 
             </>
+           ):(
+            <Button 
+              onClick={handleEditClick} 
+              variant="secondary" 
+              className="gap-2 font-bold px-4 py-2 border-b"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+              }}
+             >
+                <Pencil size={16}/>
+                Edit
+             </Button>
+           
            )}
           </div>
         )}

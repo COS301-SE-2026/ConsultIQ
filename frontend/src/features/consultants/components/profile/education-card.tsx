@@ -24,18 +24,18 @@ function formatDateRange(startDate: string, endDate: string) {
 function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   const [selected, setSelected] = useState<{ edu: Education; index: number } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [localEducation, setLocalEdu] = useState(educationList);
+  const [localEducation, setLocalEducation] = useState(educationList);
 
   const handleEditClick = () => {
     setIsEditing(true);
-    setLocalEdu(educationList);
+    setLocalEducation(educationList);
 
   }
 
   
   const handleCancel = () =>{
     setIsEditing(false);
-    setLocalEdu(educationList);
+    setLocalEducation(educationList);
 
   }
 
@@ -57,20 +57,20 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
         endDate: "",
       };
   
-      setLocalEdu([...localEducation,newEducation]);
+      setLocalEducation([...localEducation,newEducation]);
       setSelected(null);
   
     }
   
     const removeEducation = (index: number) =>{
-      setLocalEdu(prev => prev.filter((_,pos) => pos !== index));
+      setLocalEducation(prev => prev.filter((_,pos) => pos !== index));
   
     }
   
     const savePanelChanges = (edu: Education) =>{
       const updated = [...localEducation];
       updated[selected!.index]= edu;
-      setLocalEdu(updated);
+      setLocalEducation(updated);
       setSelected(null);
   
     }
@@ -313,7 +313,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
           education={selected.edu}
           onClose={() => setSelected(null)}
           onSave={savePanelChanges}
-          editMode={isEditing}
+          editMode={true}
         />
       )}
     </>

@@ -128,22 +128,8 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
          {canEdit && (
           <div className = " flex-1 flex justify-end gap-2">
-           {!isEditing ?(
-             <Button 
-              onClick={handleEditClick} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-              }}
-             >
-                <Pencil size={16}/>
-                Edit
-             </Button>
-           ):(
-            <>
+           {isEditing ?(
+             <>
             <Button 
               onClick={handleSave} 
               variant="default" 
@@ -172,6 +158,21 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
             </Button>
 
             </>
+           ):(
+            <Button 
+              onClick={handleEditClick} 
+              variant="secondary" 
+              className="gap-2 font-bold px-4 py-2 border-b"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+              }}
+             >
+                <Pencil size={16}/>
+                Edit
+             </Button>
+            
            )}
           </div>
         )}
@@ -257,6 +258,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                   type="number"
                   placeholder="5"
                   min="0"
+                  max="70"
                   value={skill.yearsOfExperience}
                   onChange={(e) => updateSkill(index,"yearsOfExperience",e.target.value)}
                 />

@@ -45,32 +45,57 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   const [roleDescError,setroleDescError]= useState("");
  
 
+  const validateCompany = () => {
+     if(company.trim()){
+      setCompanyError("");
+      return true;
+    }
+      setCompanyError("Company name is required");
+      return false;
+    
 
+  }
+
+  const validateJobTitle = () => {
+    if(jobTitle.trim()){
+      setjobTitleError("");
+      return true;
+    }
+      setjobTitleError("Job title is required");
+      return false;
+    
+  }
+
+  const validateRoleDesc = () => {
+     if(roleDesc.trim()){
+      setroleDescError("");
+      return true;
+    }
+      setroleDescError("Role description is required");
+      return false;
+
+  }
+
+  const validateDateRange = () => {
+     if(!startDate || !endDate) return true;
+
+    if(isAfter(startOfDay(startDate),startOfDay(endDate))){
+        setstartDateError("Start day must be before end date");
+        return false;
+      }
+
+      if(isBefore(startOfDay(endDate),startOfDay(startDate))){
+        setstartDateError("End date must be after start date");
+        return false;
+      }
+      
+      setstartDateError("");
+      return true;
+  }
 
   const handleSave = () =>{
 
-    let isValid = true;
-
-    if(company.trim()){
-      setCompanyError("");
-    }else{
-      setCompanyError("Company name is required");
-      isValid= false;
-    }
-
-    if(jobTitle.trim()){
-      setjobTitleError("");
-    }else{
-      setjobTitleError("Job title is required");
-      isValid = false;
-    }
-
-    if(roleDesc.trim()){
-      setroleDescError("");
-    }else{
-      setroleDescError("Role description is required");
-      isValid= false;
-    }
+    let isValid = false;
 
     if(startDate){
      setstartDateError("");
@@ -88,22 +113,12 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
       isValid = false;
     }
 
-    if(startDate && endDate){
-          if(isAfter(startOfDay(startDate),startOfDay(endDate))){
-            setstartDateError("Start day must be before end date");
-            isValid= false;
-          }else{
-            setstartDateError("");
-          }
-    
-          if(isBefore(startOfDay(endDate),startOfDay(startDate))){
-            setstartDateError("End date must be after start date");
-            isValid= false;
-          }else{
-            setstartDateError("");
-          }
-    
-        }
+   isValid= validateCompany() &&
+      validateJobTitle() &&
+      validateRoleDesc() &&
+      validateDateRange();
+
+  
 
     if (!isValid){
       return;

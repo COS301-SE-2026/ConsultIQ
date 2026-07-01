@@ -108,22 +108,8 @@ export default function LocationCard({
 
         {canEdit && (
           <div className = " absolute top-[26px] right-6 flex items-center gap-2">
-           {!isEditing ?(
-             <Button 
-              onClick={handleEditClick} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
-              style ={{
-                fontSize: "14px",
-                padding: "6px 12px",
-                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
-              }}
-             >
-                <Pencil size={16}/>
-                Edit
-             </Button>
-           ):(
-            <>
+           {isEditing ?(
+               <>
             <Button 
               onClick={handleSave} 
               variant="default" 
@@ -152,6 +138,22 @@ export default function LocationCard({
             </Button>
 
             </>
+           ):(
+
+            <Button 
+              onClick={handleEditClick} 
+              variant="secondary" 
+              className="gap-2 font-bold px-4 py-2 border-b"
+              style ={{
+                fontSize: "14px",
+                padding: "6px 12px",
+                boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+              }}
+             >
+                <Pencil size={16}/>
+                Edit
+             </Button>
+          
            )}
           </div>
         )}

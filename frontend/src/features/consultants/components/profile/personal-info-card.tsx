@@ -18,14 +18,14 @@ interface PersonalInfoCardProps {
 
     function validateSAID(id: string): boolean {
     if (!/^\d{13}$/.test(id)) return false;
-    const month = parseInt(id.substring(2, 4));
-    const day = parseInt(id.substring(4, 6));
+    const month = Number.parseInt(id.substring(2, 4));
+    const day = Number.parseInt(id.substring(4, 6));
     if (month < 1 || month > 12) return false;
     if (day < 1 || day > 31) return false;
     let sum = 0;
     let isEven = false;
     for (let i = id.length - 1; i >= 0; i--) {
-      let digit = parseInt(id[i]);
+      let digit = Number.parseInt(id[i]);
       if (isEven) {
         digit *= 2;
         if (digit > 9) digit -= 9;
@@ -50,9 +50,9 @@ export default function PersonalInfoCard({
    const [isEditing, setIsEditing] = useState(false);
    const [fullNameState, setFullNameState] = useState(fullName);
    const [emailState, setEmailState] = useState(email);
-   const [phoneNumber, setPhone] = useState(phone);
-   const [localIdnumber, setLocalIdNumber] = useState(idNumber);
-   const [nationalityStatus, setNationality] = useState(nationality);
+   const [phoneNumber, setPhoneNumber] = useState(phone);
+   const [localIdNumber, setLocalIdNumber] = useState(idNumber);
+   const [nationalityStatus, setNationalityStatus] = useState(nationality);
 
    const [phoneError, setPhoneError] = useState("");
    const [idError, setIdError] = useState("");
@@ -66,18 +66,18 @@ export default function PersonalInfoCard({
     setIsEditing(true);
     setFullNameState(fullName);
     setEmailState(email);
-    setPhone(phone);
+    setPhoneNumber(phone);
     setLocalIdNumber(idNumber);
-    setNationality(nationality);
+    setNationalityStatus(nationality);
   };
 
    const handleCancel = () => {
     setIsEditing(false);
     setFullNameState(fullName);
     setEmailState(email);
-    setPhone(phone);
+    setPhoneNumber(phone);
     setLocalIdNumber(idNumber);
-    setNationality(nationality);
+    setNationalityStatus(nationality);
 
    }
 
@@ -88,14 +88,14 @@ export default function PersonalInfoCard({
 
      const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
 
-    if (!/^\d{10}$/.test(normalizedPhone)) {
-      setPhoneError("Phone number must be exactly 10 digits.");
-      isValid = false;
+    if (/^\d{10}$/.test(normalizedPhone)) {
+     setPhoneError("");
     } else {
-      setPhoneError("");
+       setPhoneError("Phone number must be exactly 10 digits.");
+      isValid = false;
     }
 
-    if (validateSAID(localIdnumber ?? "")) {
+    if (validateSAID(localIdNumber ?? "")) {
       setIdError("");
     } else {
       setIdError("Please enter a valid South African ID number.");
@@ -107,22 +107,23 @@ export default function PersonalInfoCard({
     if (!currentNationality.trim()) {
       setNationalityError("Nationality is required.");
       isValid = false;
-    } else if (!/^[a-zA-Z\s'-]+$/.test(currentNationality.trim())) {
-      setNationalityError("Nationality must contain letters only.");
-      isValid = false;
+    } else if (/^[a-zA-Z\s'-]+$/.test(currentNationality.trim())) {
+     setNationalityError("");
     } else {
-      setNationalityError("");
+       setNationalityError("Nationality must contain letters only.");
+      isValid = false;
+      
     }
 
 
     if (!emailState){
        setEmailError( "Email is required.");
        isValid = false;
-    } else if (!/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(emailState)){
+    } else if (/^[\w.-]+@([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/.test(emailState)){
+      setEmailError("");
+    }else{
        setEmailError("Invalid email format.");
        isValid= false;
-    }else{
-      setEmailError("");
     }
 
 
@@ -140,7 +141,7 @@ export default function PersonalInfoCard({
      if(!isValid) return;
     
      //callback to api function in parent
-     onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdnumber, nationality: nationalityStatus });
+     onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdNumber, nationality: nationalityStatus });
      
 
 
@@ -224,20 +225,20 @@ export default function PersonalInfoCard({
 
             <div>
               <label className="text-sm font-medium " htmlFor="form-phone-number">Phone Number</label>
-              <Input value={phoneNumber} onChange={(e) => setPhone(e.target.value) } />
+              <Input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value) } />
               {phoneError && <span className="text-red-500 text-xs mt-1 block">{phoneError}</span>}
             </div>
 
             
             <div>
               <label className="text-sm font-medium " htmlFor="form-id-number">ID number</label>
-              <Input value={localIdnumber} onChange={(e) => setLocalIdNumber(e.target.value) } />
+              <Input value={localIdNumber} onChange={(e) => setLocalIdNumber(e.target.value) } />
               {idError && <span className="text-red-500 text-xs mt-1 block">{idError}</span>}
             </div>
 
               <div>
               <label className="text-sm font-medium " htmlFor="form-nationality">Nationality</label>
-              <Input value={nationalityStatus} onChange={(e) => setNationality(e.target.value) } />
+              <Input value={nationalityStatus} onChange={(e) => setNationalityStatus(e.target.value) } />
               {nationalityError && <span className="text-red-500 text-xs mt-1 block">{nationalityError}</span>}
             </div>
 
@@ -247,7 +248,7 @@ export default function PersonalInfoCard({
             <DetailField label="Full Name" value={fullNameState} variant="compact" />
             <DetailField label="Email Address" value={emailState} variant="compact" />
             <DetailField label="Phone Number" value={phoneNumber} variant="compact" />
-            <DetailField label="ID Number" value={localIdnumber ?? "N/A"} variant="compact" />
+            <DetailField label="ID Number" value={localIdNumber ?? "N/A"} variant="compact" />
             <DetailField label="Nationality" value={nationalityStatus ?? "N/A"} variant="compact" />
         </>
        )}

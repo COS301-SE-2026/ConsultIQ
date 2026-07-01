@@ -3,7 +3,7 @@ import { DetailField } from "../../../../components/shared/detail-field";
 import {Button} from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
 import {Pencil} from "lucide-react"
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import { toast } from "sonner";
 
 interface LocationCardProps {
@@ -70,6 +70,10 @@ export default function LocationCard({
       province : Province,
       postalCode: postalcode.trim() || undefined,
     });
+
+    if(!isValid){
+      return;
+    }
 
     setIsEditing(false);
 

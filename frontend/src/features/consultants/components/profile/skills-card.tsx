@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"
 import { Input } from "../../../../components/ui/input";
@@ -25,9 +25,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
   const [localSkills, setLocalSkills] = useState(skills);
   const [showValidation, setShowValidation] = useState(false);
 
-    useEffect(() =>{
-      setLocalSkills(skills);
-     },[skills]);
+   
 
   const handleCancel = () => {
     setIsEditing(false);

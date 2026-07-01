@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState } from "react";
 import EducationDetailPanel, { type Education } from "./education-detail-panel";
 import { toast } from "sonner";
 import {Button} from "../../../../components/ui/button";

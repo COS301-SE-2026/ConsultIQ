@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ExperienceDetailPanel, { type Experience } from "./experience-detail-panel";
 import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"

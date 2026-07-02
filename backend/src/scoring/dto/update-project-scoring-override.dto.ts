@@ -10,22 +10,27 @@ import {
 import { Type } from 'class-transformer';
 import { ScoringFactorName } from '@prisma/client';
 
-export class ScoringFactorDto {
+export class ProjectScoringFactorDto {
   @IsEnum(ScoringFactorName)
   factorName!: ScoringFactorName;
 
   @IsNumber()
   @Min(0)
   @Max(100)
-  weight!: number;
+  overrideWeight!: number;
 
   @IsBoolean()
   active!: boolean;
 }
 
-export class UpdateScoringConfigDto {
+export class UpdateProjectScoringOverrideDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ScoringFactorDto)
-  scoringFactors!: ScoringFactorDto[];
+  @Type(() => ProjectScoringFactorDto)
+  factors!: ProjectScoringFactorDto[];
+}
+
+export class DeleteProjectScoringOverrideDto {
+  @IsBoolean()
+  confirm!: boolean;
 }

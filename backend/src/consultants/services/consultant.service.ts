@@ -22,9 +22,10 @@ import {
 import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService
-  ) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async createConsultantProfile(
     cmUserId: string,
@@ -140,7 +141,7 @@ export class ConsultantService {
         await this.notificationService.createAndSendNotification(
           dto.consultantUserId,
           'Profile creation! 🎉',
-          'Your consultant profile has been completed.'
+          'Your consultant profile has been completed.',
         );
 
         // Return the final response to the controller

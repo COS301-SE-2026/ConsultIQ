@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
 
 function App() {
+
   return (
     <AuthProvider>
       <Toaster

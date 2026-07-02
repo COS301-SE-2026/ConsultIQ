@@ -8,9 +8,10 @@ import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants/consultants.module';
 import { ProjectsModule } from './projects/projects.module';
+import { AdminModule } from './admin/admin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScoringModule } from './scoring/scoring.module';
-
+import { NotificationModule } from './notification/notification.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -28,8 +29,10 @@ import { ScoringModule } from './scoring/scoring.module';
     ConsultantsModule,
     ProjectsModule,
     ScoringModule,
+    NotificationModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

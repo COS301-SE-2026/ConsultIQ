@@ -19,10 +19,12 @@ import {
   JobType,
   WorkModel,
 } from '@prisma/client';
-
+import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService
+  ) { }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -133,10 +135,20 @@ export class ConsultantService {
 
         return { consultantId: consultant.id };
       })
-      .then((result) => ({
-        message: 'Consultant profile created successfully.',
-        consultantId: result.consultantId,
-      }));
+      .then(async (result) => {
+        //send notification to consultant
+        await this.notificationService.createAndSendNotification(
+          dto.consultantUserId,
+          'Profile creation! 🎉',
+          'Your consultant profile has been completed.'
+        );
+
+        // Return the final response to the controller
+        return {
+          message: 'Consultant profile created successfully.',
+          consultantId: result.consultantId,
+        };
+      });
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -174,6 +186,12 @@ export class ConsultantService {
       this.prisma.consultant.findMany({
         skip,
         take: limit,
+        where: {
+          user: {
+            deletedAt: null,
+            status: { not: 'ARCHIVED' },
+          },
+        },
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },
@@ -237,7 +255,9 @@ export class ConsultantService {
     });
 
     if (!consultant) {
-      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+      throw new NotFoundException(
+        `Consultant with userId ${userId} not found.`,
+      );
     }
 
     return this.mapToProfileDto(consultant);
@@ -258,10 +278,26 @@ export class ConsultantService {
         },
       },
       certificates: {
-        select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true }
+        select: {
+          id: true,
+          title: true,
+          issuingBody: true,
+          startDate: true,
+          endDate: true,
+          uploadedAt: true,
+        },
       },
       consultantExperiences: {
-        select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true }
+        select: {
+          id: true,
+          companyName: true,
+          jobTitle: true,
+          jobType: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          workModel: true,
+        },
       },
     };
   }

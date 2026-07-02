@@ -1,15 +1,15 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck } from "lucide-react";
+import { Users, Briefcase, UserCheck,House,Cog } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
-        label: "Consultants",
-        path: "/consultants",
-        icon: Users
+        label: "Dashboard",
+        path: "/admin-dashboard",
+        icon: House
     },
     {
-        label: "Projects",
+        label: "Configurations",
         path: "/projects",
-        icon: Briefcase
+        icon: Cog
     },
 ]
 

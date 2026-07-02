@@ -1,7 +1,8 @@
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import {UserPlus} from "lucide-react";
-import { useState } from "react";
+import { usePagination } from "../../../hooks/use-pagination";
+import { Pagination } from "../../../components/shared/pagination";
 
 export type UserStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "LOCKED";
 
@@ -65,12 +66,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
     return searchMatch && roleMatch && statusMatch;
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE= 5;
-
-  const totalPages= Math.ceil(filtered.length/ITEMS_PER_PAGE);
-  const startIndex= (currentPage -1) * ITEMS_PER_PAGE;
-  const currentItems = filtered.slice(startIndex,startIndex+ITEMS_PER_PAGE);
+  const {currentPage,setCurrentPage,totalPages,currentItems} = usePagination(filtered);
   return (
     <Card 
       className="w-full bg-white overflow-hidden "
@@ -202,32 +198,12 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
 
           </table>
       </div>
-        {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-6 mt-10 pb-8">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="px-5 py-2.5 rounded-lg border-2 border-solid font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
-                >
-                  Previous
-                </button>
-                <span className="text-lg font-medium" style={{ color: "var(--color-text-secondary)" }}>
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-5 py-2.5 rounded-lg border-2 border-solid font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                  style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
-                >
-                  Next
-                </button>
-              </div>
-            )}
+        
+             <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+             />
     
     </Card>
  

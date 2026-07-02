@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants/consultants.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScoringModule } from './scoring/scoring.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     ConsultantsModule,
     ProjectsModule,
+    ScoringModule,
   ],
   controllers: [AppController],
   providers: [AppService],

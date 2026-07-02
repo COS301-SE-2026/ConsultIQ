@@ -1,8 +1,6 @@
 import { SectionCard } from "../../../../components/shared/section-card";
 import { DetailField } from "../../../../components/shared/detail-field";
-import {Button} from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
-import {Pencil} from "lucide-react"
 import {useState} from "react";
 import { toast } from "sonner";
 import EditControls from "./edit-controls";

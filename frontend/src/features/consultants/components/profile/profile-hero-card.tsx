@@ -1,6 +1,4 @@
 import {useState} from "react";
-import {Button} from "../../../../components/ui/button";
-import {Pencil} from "lucide-react"
 import EditControls from "./edit-controls";
 
 interface ProfileHeroCardProps {

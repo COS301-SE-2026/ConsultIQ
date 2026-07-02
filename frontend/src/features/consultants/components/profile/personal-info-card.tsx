@@ -2,9 +2,7 @@ import { SectionCard } from "../../../../components/shared/section-card";
 import { DetailField } from "../../../../components/shared/detail-field";
 import {useState} from "react";
 import { toast } from "sonner";
-import {Button} from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
-import {Pencil} from "lucide-react"
 import EditControls from "./edit-controls";
 
 interface PersonalInfoCardProps {

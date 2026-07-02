@@ -8,9 +8,9 @@ export const adminSidebarItems: SidebarItem[] = [
     },
     {
         label: "Configurations",
-        path: "/projects",
-        icon: Cog
-    },
+        path:"/admin-scoring-config",
+        icon:Cog
+    }
 ]
 
 export const consultantManagerSidebarItems: SidebarItem[] = [

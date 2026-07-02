@@ -2,13 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
-
+import { NotificationService } from '../../notification/service/notification.service';
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
 };
+
+const mockNotificationService = {
+  sendPushNotification: jest.fn(),
+};
+
 
 describe('ConsultantController', () => {
   let controller: ConsultantController;
@@ -18,6 +23,7 @@ describe('ConsultantController', () => {
       controllers: [ConsultantController],
       providers: [
         { provide: ConsultantService, useValue: mockConsultantService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 

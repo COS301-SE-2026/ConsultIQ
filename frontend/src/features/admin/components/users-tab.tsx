@@ -41,9 +41,9 @@ const MockData: User[]=[
 ];
 
 interface UserTabProps {
-  searchQuery?: string;
-  roleFilter?: string;
-  statusFilter?: string;
+  readonly searchQuery?: string;
+  readonly roleFilter?: string;
+  readonly statusFilter?: string;
 }
 
 const getIntials = (name :string) =>{

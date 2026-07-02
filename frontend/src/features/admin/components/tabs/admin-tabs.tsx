@@ -2,8 +2,8 @@ import TabButton from "../../../consultants/components/tabs/tab-button";
 import type { adminTab } from "../../pages/admin-dashboard-page";
 
 type Props = {
-  activeTab: adminTab;
-  setActiveTab: (tab: adminTab) => void;
+  readonly activeTab: adminTab;
+  readonly setActiveTab: (tab: adminTab) => void;
 };
 
 export default function AdminTabs({ activeTab, setActiveTab }: Props) {

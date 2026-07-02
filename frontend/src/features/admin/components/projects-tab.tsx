@@ -57,8 +57,8 @@ const MockData: Project[]=[
 ];
 
 interface ProjectTabProps {
-  searchQuery?: string;
-  budgetSort?: "asc" | "desc" | "";
+  readonly searchQuery?: string;
+  readonly budgetSort?: "asc" | "desc" | "";
 }
 
 

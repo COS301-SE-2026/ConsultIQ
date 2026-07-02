@@ -1,5 +1,6 @@
 import {useState} from "react";
 import {Button} from "../../../../components/ui/button";
+import {Trash2,Plus} from "lucide-react"
 import { Input } from "../../../../components/ui/input";
 import { toast } from "sonner";
 import EditControls from "./edit-controls";

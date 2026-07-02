@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScoringModule } from './scoring/scoring.module';
 import { NotificationModule } from './notification/notification.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),

@@ -34,30 +34,36 @@ describe('AdminUserService', () => {
     describe('getAllusers with pagination', () => {
         it('Should get all users successfully with pagination', async () => {
             const mockUsers = [
-                { id: '1', name: 'User 1', deletedAt: null },
-                { id: '2', name: 'User 2', deletedAt: null },
-                { id: '3', name: 'User 3', deletedAt: null },
-                { id: '4', name: 'User 4', deletedAt: null },
-                { id: '5', name: 'User 5', deletedAt: null },
-                { id: '6', name: 'User 6', deletedAt: null },
-                { id: '7', name: 'User 7', deletedAt: null },
-                { id: '8', name: 'User 8', deletedAt: null },
-                { id: '9', name: 'User 9', deletedAt: null },
-                { id: '10', name: 'User 10', deletedAt: null },
+                { id: '1', name: 'User 1', deletedAt: null, status: 'ACTIVE' },
+                { id: '2', name: 'User 2', deletedAt: null, status: 'ACTIVE' },
+                { id: '3', name: 'User 3', deletedAt: null, status: 'SUSPENDED' },
+                { id: '4', name: 'User 4', deletedAt: null, status: 'SUSPENDED' },
+                { id: '5', name: 'User 5', deletedAt: null, status: 'ACTIVE' },
+                { id: '6', name: 'User 6', deletedAt: null, status: 'SUSPENDED' },
+                { id: '7', name: 'User 7', deletedAt: null, status: 'ACTIVE' },
+                { id: '8', name: 'User 8', deletedAt: null, status: 'SUSPENDED' },
+                { id: '9', name: 'User 9', deletedAt: null, status: 'ACTIVE' },
+                { id: '10', name: 'User 10', deletedAt: null, status: 'SUSPENDED' },
             ];
             const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockUsers, totalUsers]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockUsers, totalUsers, totalUsers, 5, 5]);
             const result = await service.getAllUsers(1, 10);
 
             expect(prisma.$transaction).toHaveBeenCalledWith([
                 prisma.user.findMany({
-                    where: { deletedAt: null },
+                    where: { deletedAt: undefined, status: { not: 'ARCHIVED' } },
                     skip: 0,
                     take: 10,
                 }),
                 prisma.user.count({
-                    where: { deletedAt: null },
+                    where: { deletedAt: undefined, status: { not: 'ARCHIVED' } },
+                }),
+                prisma.user.count({
+                    where: { deletedAt: undefined, status: 'ACTIVE' },
+                }),
+                prisma.user.count({
+                    where: { deletedAt: undefined, status: 'SUSPENDED' },
                 }),
             ]);
 
@@ -65,6 +71,9 @@ describe('AdminUserService', () => {
                 data: mockUsers,
                 meta: {
                     totalRecords: totalUsers,
+                    absoluteTotalRecords: 10,
+                    activeUsers: 5,
+                    suspendedUsers: 5,
                     currentPage: 1,
                     totalPages: 1,
                 },

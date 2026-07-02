@@ -59,7 +59,7 @@ describe('AdminProjectService', () => {
             ];
             const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, totalUsers]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, totalUsers, 10]);
             const result = await service.getAllProjects(1, 10);
 
             expect(prisma.$transaction).toHaveBeenCalledWith([
@@ -71,12 +71,14 @@ describe('AdminProjectService', () => {
                 prisma.project.count({
                     where: { archivedAt: null, status: { not: 'ARCHIVED' } },
                 }),
+                prisma.project.count(),
             ]);
 
             expect(result).toEqual({
                 data: mockProjects,
                 meta: {
                     totalRecords: totalUsers,
+                    absoluteTotalRecords: mockProjects.length,
                     currentPage: 1,
                     totalPages: 1,
                 },

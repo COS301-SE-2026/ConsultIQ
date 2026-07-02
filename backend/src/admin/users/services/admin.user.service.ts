@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AdminUserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async deleteUser(userId: string) {
     try {
@@ -30,7 +30,7 @@ export class AdminUserService {
   }
 
   async getAllUsers(page: number = 1, limit: number = 10) {
-    const [consultants, total] = await this.prisma.$transaction([
+    const [consultants, filteredTotal, total, activeUsers, suspendedUsers] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where: { deletedAt: null, status: { not: 'ARCHIVED' } },
         skip: (page - 1) * limit,
@@ -48,14 +48,27 @@ export class AdminUserService {
       this.prisma.user.count({
         where: { deletedAt: null, status: { not: 'ARCHIVED' } },
       }),
+
+      this.prisma.user.count(),
+
+      this.prisma.user.count({
+        where: { deletedAt: null, status: 'ACTIVE' },
+      }),
+
+      this.prisma.user.count({
+        where: { deletedAt: null, status: 'SUSPENDED' },
+      }),
     ]);
 
     return {
       data: consultants,
       meta: {
-        totalRecords: total,
+        totalRecords: filteredTotal,
+        absoluteTotalRecords: total,
+        activeUsers: activeUsers,
+        suspendedUsers: suspendedUsers,
         currentPage: page,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(filteredTotal / limit),
       },
     };
   }

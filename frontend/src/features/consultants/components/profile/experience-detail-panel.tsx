@@ -3,7 +3,7 @@ import { DetailField } from "../../../../components/shared/detail-field";
 import { useState } from "react";
 import { Input } from "../../../../components/ui/input";
 import {Button} from "../../../../components/ui/button";
-import DatePicker from "react-datepicker";
+import DateField from "../../../../components/shared/date-picker";
 import "react-datepicker/dist/react-datepicker.css";
 import TextareaAutosize from "react-textarea-autosize";
 import { isBefore, isAfter, startOfDay } from 'date-fns';
@@ -198,39 +198,11 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="form-exp-start-date">Start date</label>
-          <DatePicker
-            selected={startDate} 
-            onChange={(date: Date | null) => setStartDate(date) }
-            dateFormat={"dd/MM/yyyy"}
-            placeholderText="DD/MM/YYYY"
-            maxDate={new Date()}
-            showMonthDropdown
-            showYearDropdown
-            scrollableYearDropdown
-            scrollableMonthYearDropdown
-            yearDropdownItemNumber={100}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[#002D72]/20"
-            />
-            {startDateError && <span className="text-red-500 text-sm">{startDateError}</span>}
+            <DateField id="form-start-date" label="Start date" selected={startDate} onChange={setStartDate} error={startDateError}/>
          </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="form-exp-end-date">End date</label>
-             <DatePicker
-              selected={endDate} 
-              onChange={(date : Date | null) => setEndDate(date)}
-              dateFormat={"dd/MM/yyyy"}
-              placeholderText="DD/MM/YYYY"
-              maxDate={new Date()}
-              showMonthDropdown
-              showYearDropdown
-              scrollableYearDropdown
-              scrollableMonthYearDropdown
-              yearDropdownItemNumber={100}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm  focus:ring-2 focus:ring-[#002D72]/20"
-           />
-            {endDateError && <span className="text-red-500 text-sm">{endDateError}</span>}
+          <DateField id="form-end-date" label="End date" selected={endDate} onChange={setEndDate} error={endDateError}/>
          </div>
 
 

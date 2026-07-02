@@ -22,6 +22,51 @@ function formatDateRange(startDate: string, endDate: string) {
   return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
 
+function EducationInfo({edu} : {readonly edu: Education}){
+  return(
+     <div className="flex items-start justify-between gap-6">
+                      {/* institution info */}
+                      <div className="flex flex-col" style={{ gap: "8px" }}>
+                        <p
+                          className="font-bold"
+                          style={{
+                            color: "var(--color-text-primary)",
+                            fontSize: "var(--text-h3)",
+                          }}
+                        >
+                          {edu.institution}
+                        </p>
+                        <p
+                          className="font-medium"
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            fontSize: "var(--text-h4)",
+                          }}
+                        >
+                          {edu.qualification}
+                        </p>
+                      </div>
+
+                      {/* date range */}
+                      <span
+                        className="shrink-0"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--text-h4)",
+                        }}
+                      >
+                        {formatDateRange(edu.startDate, edu.endDate)}
+                      </span>
+                    </div>
+  );
+}
+
+const actionButtonStyle ={
+   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+   fontSize: "14px",
+   padding: "6px 12px",
+}
+
 function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   const [selected, setSelected] = useState<{ edu: Education; index: number } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -76,6 +121,8 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   
     }
 
+
+
   return (
     <>
       <div
@@ -124,51 +171,14 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
               <div className="flex items-start justify-between gap-6 w-full">
                 {isEditing ? (
                  <>
-                     <div className="flex items-start justify-between gap-6">
-                      {/* institution info */}
-                      <div className="flex flex-col" style={{ gap: "8px" }}>
-                        <p
-                          className="font-bold"
-                          style={{
-                            color: "var(--color-text-primary)",
-                            fontSize: "var(--text-h3)",
-                          }}
-                        >
-                          {edu.institution}
-                        </p>
-                        <p
-                          className="font-medium"
-                          style={{
-                            color: "var(--color-text-secondary)",
-                            fontSize: "var(--text-h4)",
-                          }}
-                        >
-                          {edu.qualification}
-                        </p>
-                      </div>
-
-                      {/* date range */}
-                      <span
-                        className="shrink-0"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--text-h4)",
-                        }}
-                      >
-                        {formatDateRange(edu.startDate, edu.endDate)}
-                      </span>
-                    </div>
+                 <EducationInfo edu={edu}/>
 
                       <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
                          variant= "secondary"
                          onClick={()=> setSelected({edu,index})}
                          className="gap-2 font-bold px-4 py-2 border-b"
-                          style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+                          style={actionButtonStyle}
                        >
                          <Pencil size={16} className="text-slate-500"/>
 
@@ -178,11 +188,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
                           variant= "secondary"
                          onClick={()=> removeEducation(index)}
                          className="p-2 border"
-                         style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+                         style={actionButtonStyle}
                        >
                         <Trash2 size={16}/>
                        </Button>
@@ -194,47 +200,13 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
                     onClick={() => setSelected({edu,index})}
                     className="w-full text-left hover:opacity-70 transition cursor-pointer"
                   >
-                    <div className="flex items-start justify-between gap-6 flex-1">
-                      {/* institution info */}
-                      <div className="flex flex-col" style={{ gap: "8px" }}>
-                        <p
-                          className="font-bold"
-                          style={{
-                            color: "var(--color-text-primary)",
-                            fontSize: "var(--text-h3)",
-                          }}
-                        >
-                          {edu.institution}
-                        </p>
-                        <p
-                          className="font-medium"
-                          style={{
-                            color: "var(--color-text-secondary)",
-                            fontSize: "var(--text-h4)",
-                          }}
-                        >
-                          {edu.qualification}
-                        </p>
-                      </div>
-
-                      {/* date range */}
-                      <span
-                        className="shrink-0"
-                        style={{
-                          color: "var(--color-text-secondary)",
-                          fontSize: "var(--text-h4)",
-                        }}
-                      >
-                        {formatDateRange(edu.startDate, edu.endDate)}
-                      </span>
-                    </div>
+                     <EducationInfo edu={edu}/>
+                 
                   </button>
                   
                 )}
 
               </div>
-
-       
 
               {/* end of education row */}
             </div>

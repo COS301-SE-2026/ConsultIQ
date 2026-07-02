@@ -1,9 +1,9 @@
 import { DetailPanel } from "../../../../components/shared/detail-panel";
 import { DetailField } from "../../../../components/shared/detail-field";
+import DateField from "../../../../components/shared/date-picker";
 import { useState } from "react";
 import { Input } from "../../../../components/ui/input";
 import {Button} from "../../../../components/ui/button";
-import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { isBefore, isAfter, startOfDay } from 'date-fns';
 import { Upload,Trash2 } from "lucide-react";
@@ -26,6 +26,12 @@ interface EducationDetailPanelProps {
   readonly onSave: (education: Education) => void;
   readonly editMode?: boolean;
   
+}
+
+const actionButtonStyle ={
+   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+   fontSize: "14px",
+   padding: "6px 12px",
 }
 
 export default function EducationDetailPanel({ education, onClose,onSave,editMode }: EducationDetailPanelProps) {
@@ -169,44 +175,11 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
            </div>
 
            <div className="flex flex-col gap-1">
-            <label htmlFor="form-start-date">Start date</label>
-            <DatePicker
-             selected={startDate} 
-             onChange={(date: Date | null) => setStartDate(date) }
-             dateFormat={"dd/MM/yyyy"}
-             placeholderText="DD/MM/YYYY"
-             maxDate={new Date()}
-             showMonthDropdown
-             showYearDropdown
-             scrollableYearDropdown
-             scrollableMonthYearDropdown
-             yearDropdownItemNumber={100}
-             className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[#002D72]/20"
-            
-            />
-            {startDateError && <span className="text-red-500 text-sm">{startDateError}</span>}
-         </div>
+            <DateField id="form-start-date" label="Start date" selected={startDate} onChange={setStartDate} error={startDateError}/>
+          </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="form-end-date">End date</label>
-            <DatePicker
-             selected={endDate} 
-             onChange={(date : Date | null) => setEndDate(date)}
-             dateFormat={"dd/MM/yyyy"}
-             placeholderText="DD/MM/YYYY"
-             maxDate={new Date()}
-            showMonthDropdown
-             showYearDropdown
-             scrollableYearDropdown
-             scrollableMonthYearDropdown
-             yearDropdownItemNumber={100}
-            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm  focus:ring-2 focus:ring-[#002D72]/20"
-
-                    
-            />
-
-            
-            {endDateError && <span className="text-red-500 text-sm">{endDateError}</span>}
+           <DateField id="form-end-date" label="End date" selected={endDate} onChange={setEndDate} error={endDateError}/>
          </div>
 
             <div className="flex flex-col gap-3">
@@ -258,11 +231,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
                             const input= document.getElementById("cert-upload") as HTMLInputElement;
                             if (input) input.value="";}}
                          className="p-3 h-[62px] w-15 rounded-xl border flex items-center"
-                         style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+                         style={actionButtonStyle}
                          title="Remove attachment"
                        >
                         <Trash2 size={18}/>
@@ -278,12 +247,8 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
           <Button
             variant="default"
             onClick={handleSave}
-             className="gap-2 font-bold px-4 py-2 border-b"
-                          style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+            className="gap-2 font-bold px-4 py-2 border-b"
+            style={actionButtonStyle}
           >
             Done
           </Button>
@@ -291,11 +256,7 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
             variant="outline"
             onClick={handleCancel}
              className="gap-2 font-bold px-4 py-2 border-b"
-                          style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+            style={actionButtonStyle}
           >
             Cancel
           </Button>

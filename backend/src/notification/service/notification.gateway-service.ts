@@ -1,33 +1,37 @@
-import { WebSocketGateway, SubscribeMessage, OnGatewayConnection, WebSocketServer, OnGatewayDisconnect } from "@nestjs/websockets";
-import { Server, Socket } from 'socket.io'
+import {
+  WebSocketGateway,
+  SubscribeMessage,
+  OnGatewayConnection,
+  WebSocketServer,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ namespace: '/notifications', cors: true })
-export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
+  @WebSocketServer()
+  server!: Server;
 
-    @WebSocketServer()
-    server!: Server;
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
+  }
 
-    handleConnection(client: Socket) {
-        console.log(`Client connected: ${client.id}`);
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
 
-    }
+  @SubscribeMessage('subscribeToNOtifcations')
+  handleSubscribe(client: Socket, userId: string) {
+    const roomName = `user_notifications_${userId}`;
+    client.join(roomName);
+    return { event: 'subscribed', data: `Successfully joined ${roomName}` };
+  }
 
-    handleDisconnect(client: Socket) {
-        console.log(`Client disconnected: ${client.id}`);
+  sendPushNotification(userId: string, payload: any) {
+    const roomName = `user_notifications_${userId}`;
 
-    }
-
-    @SubscribeMessage('subscribeToNOtifcations')
-    handleSubscribe(client: Socket, userId: string) {
-        const roomName = `user_notifications_${userId}`;
-        client.join(roomName);
-        return { event: 'subscribed', data: `Successfully joined ${roomName}` };
-
-    }
-
-    sendPushNotification(userId: string, payload: any) {
-        const roomName = `user_notifications_${userId}`;
-
-        this.server.to(roomName).emit('new_notification', payload)
-    }
+    this.server.to(roomName).emit('new_notification', payload);
+  }
 }

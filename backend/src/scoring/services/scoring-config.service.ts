@@ -24,7 +24,7 @@ const DEFAULT_FACTORS: ScoringFactorDto[] = [
 
 @Injectable()
 export class ScoringService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─── Firm-Wide Config ───────────────────────────────────────────────
 
@@ -39,6 +39,7 @@ export class ScoringService {
   private async seedDefaults() {
     await this.prisma.consultancyScoringConfig.createMany({
       data: DEFAULT_FACTORS,
+      skipDuplicates: true,
     });
     return this.prisma.consultancyScoringConfig.findMany();
   }

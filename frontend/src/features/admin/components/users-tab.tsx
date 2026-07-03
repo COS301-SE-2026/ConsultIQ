@@ -86,8 +86,8 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
 
     await refresh();
 
-  }catch(error){
-    error= (error instanceof Error ? error.message: "Failed to update user status" );
+  }catch(err){
+    toast.error(err instanceof Error ? err.message: "Failed to update user status" );
 
   }
 

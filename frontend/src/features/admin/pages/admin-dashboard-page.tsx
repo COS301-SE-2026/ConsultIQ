@@ -48,7 +48,7 @@ function AdminPage(){
     };
 
     const loadUsers = useCallback(async (page: number) =>{
-
+        await Promise.resolve();
         setIsUserLoading(true);
         try{
             const res = await getAllUsers(page,10);
@@ -66,6 +66,7 @@ function AdminPage(){
     },[]);
 
     const loadProjects = useCallback(async (page:number) =>{
+        await Promise.resolve();
         setIsProjectLoading(true);
         setProjectError(null);
     

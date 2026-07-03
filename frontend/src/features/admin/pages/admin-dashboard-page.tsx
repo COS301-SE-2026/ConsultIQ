@@ -47,9 +47,10 @@ function AdminPage(){
         
     };
 
-    const loadUsers = useCallback(async (page: number) =>{
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- known false positive
-        // for standard fetch-on-mount/page-change pattern: https://github.com/react/react/issues/34743
+
+    
+
+    const loadUsers = async (page: number) =>{
         setIsUserLoading(true);
         try{
             const res = await getAllUsers(page,10);
@@ -64,10 +65,10 @@ function AdminPage(){
 
         }
 
-    },[]);
+    };
 
-    const loadProjects = useCallback(async (page:number) =>{
-         // eslint-disable-next-line react-hooks/set-state-in-effect -- see above
+    const loadProjects = async (page:number) =>{
+         
         setIsProjectLoading(true);
         setProjectError(null);
     
@@ -83,15 +84,15 @@ function AdminPage(){
     
         }
   
-   },[]); 
+   }; 
 
     useEffect(() => {
-        loadUsers(userPage);
-     },[userPage,loadUsers]);
+       void loadUsers(userPage);
+     },[userPage]);
     
     useEffect(() => {
-        loadProjects(projectPage);
-    },[projectPage,loadProjects]);
+       void loadProjects(projectPage);
+    },[projectPage]);
 
 
     return(
@@ -243,7 +244,7 @@ function AdminPage(){
                             loading={isUserLoading}
                             currentPage={userPage}
                             onPageChange={setUserPage}
-                            refresh= {()=> loadUsers(userPage)}
+                            refresh= {()=> void loadUsers(userPage)}
                             error= {userError}
 
                         />
@@ -258,7 +259,7 @@ function AdminPage(){
                             loading={isProjectLoading}
                             currentPage={projectPage}
                             onPageChange={setProjectPage}
-                            refresh= {()=> loadProjects(projectPage)}
+                            refresh= {()=> void loadProjects(projectPage)}
                             error={projectError}
                         />
                     )}

@@ -49,9 +49,10 @@ export default function AdminScoringConfigPage() {
         setSuccessMessage(null);
       }, 3000);
     }
-    catch (err: any) {
+    catch (err: unknown) {
       console.log('Error saving weights', err);
-      setError(err.message || "Could not save configuration changes");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Could not save configuration changes");
       throw err;
     }
   }

@@ -3,7 +3,7 @@ import {type ScoringFactor, ScoringWeightsTable } from "../../scoring/components
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 
-const DEFAULT_SEEDED_FACTORS: ScoringFactor[] = [
+export const DEFAULT_SEEDED_FACTORS: ScoringFactor[] = [
   {
     factorName: 'Skill Alignment',
     description: 'Measures how well consultant skills match project requirements.',

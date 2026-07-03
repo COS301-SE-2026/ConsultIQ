@@ -28,6 +28,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         path: "/projects",
         icon: Briefcase
     },
+    {
+        label: "Configurations",
+        path:"/project-scoring-config",
+        icon:Cog
+    }
 
 ] 
 

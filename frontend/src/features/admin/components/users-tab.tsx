@@ -1,8 +1,12 @@
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import {UserPlus} from "lucide-react";
-import { usePagination } from "../../../hooks/use-pagination";
 import { Pagination } from "../../../components/shared/pagination";
+import type { AdminUserItem, UserMeta } from "../types/admin.types";
+import {deleteUser,activateUser,suspendUser } from "../services/admin.service";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 
 export type UserStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "LOCKED";
 
@@ -15,36 +19,18 @@ export interface User {
 
 }
 
-const MockData: User[]=[
-  {
-    id:"user-00001",
-    fullName: "Amanda Black",
-    email: "amandablack@gmail.com",
-    role: "consultant",
-    status: "ACTIVE"
-  },
-
-  {
-    id:"user-00002",
-    fullName: "Unathi Nkosi",
-    email: "uanthinkosik@gmail.com",
-    role: "consultant",
-    status: "SUSPENDED"
-  },
-
-  {
-    id:"user-00003",
-    fullName: "Luke Smith",
-    email: "lukesmith@gmail.com",
-    role: "consultant",
-    status: "ACTIVE"
-  },
-];
 
 interface UserTabProps {
   readonly searchQuery?: string;
   readonly roleFilter?: string;
   readonly statusFilter?: string;
+  readonly users: AdminUserItem[];
+  readonly meta: UserMeta | null;
+  readonly loading: boolean;
+  readonly currentPage: number;
+  readonly onPageChange: (page: number) => void;
+  readonly refresh: () => void;
+  readonly error:string | null;
 }
 
 const getIntials = (name :string) =>{
@@ -56,9 +42,9 @@ const getIntials = (name :string) =>{
    return `${first[0]}${last[0]}`.toUpperCase();
 }
 
-export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilter = ""} : UserTabProps) {
-
-  const filtered = MockData.filter((u) => {
+export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilter = "",users,meta,loading,currentPage,onPageChange,refresh,error} : UserTabProps) {
+  const navigate = useNavigate();
+ const filtered = users.filter((u) => {
     const query = searchQuery.toLowerCase();
     const searchMatch = !query || u.fullName.toLowerCase().includes(query) || u.email.toLowerCase().includes(query);
     const roleMatch = !roleFilter || u.role === roleFilter;
@@ -66,8 +52,49 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
     return searchMatch && roleMatch && statusMatch;
   });
 
-  const {currentPage,setCurrentPage,totalPages,currentItems} = usePagination(filtered);
-  return (
+  const handleDelete = async (userId:string) => {
+    toast("Are you sure you want to delete this user?",{
+      description: "This action cannot be reversed.",
+      duration:5000,
+      action: {
+        label:"Delete",
+        onClick: async () =>{
+          try {
+            await deleteUser(userId);
+            toast.success("User deleted successfully");
+            refresh();
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message :"Failed to delete user.");
+          }
+        },
+      },
+      cancel:{
+        label:"Cancel",
+        onClick: () => {},
+      },
+    });
+  }
+
+ const handleStatusChange = async (userId:string, currentStatus: string) =>{
+  try{
+
+    if(currentStatus === "ACTIVE"){
+      await suspendUser(userId);
+    }else{
+      await activateUser(userId);
+    }
+
+    await refresh();
+
+  }catch(err){
+    toast.error(err instanceof Error ? err.message: "Failed to update user status" );
+
+  }
+
+ };
+
+
+return(
     <Card 
       className="w-full bg-white overflow-hidden "
       style={{
@@ -86,6 +113,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
           
              <Button
               variant="default"
+              onClick={() => navigate("/register")}
               className="flex items-center rounded-md gap-2"
               style={{
                             color: "white",
@@ -99,8 +127,15 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
           
         </div>
 
+      {error && <p className="px-8 text-red-600 text-sm">{error}</p>}
+      
+
       <div className="w-full overflow-x-auto">
-          <table className="w-full border-separate border-spacing-y-4 text-left">
+       {loading ? (
+        <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+          Loading users...
+        </div>
+       ): ( <table className="w-full border-separate border-spacing-y-4 text-left">
             <thead>
               <tr className="bg-[#F5F9FF] h-6">
                 <th className="px-8 py-4 font-bold text-[16px]">Name</th>
@@ -112,7 +147,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
             </thead>
 
             <tbody>
-              {currentItems.map((user)=>(
+              {filtered.map((user)=>(
                 <tr key={user.id}  className="border-b hover:bg-slate-50 border-b-gray-200 ">
                   <td className="flex items-center gap-4 px-8 py-4">
                     <div  
@@ -155,6 +190,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
                     <div className="flex item gap-4">
                       <Button 
                         variant="ghost"
+                        onClick={() => handleDelete(user.id)}
                         className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
                         style={{
                             color: "white",
@@ -167,6 +203,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
 
                       {user.status === "ACTIVE" ? (
                         <Button 
+                        onClick={() => handleStatusChange(user.id,user.status)}
                            className="flex items-center gap-2 rounded-md font-semibold  bg-[#F0780E] transition hover:bg-orange-600"
                           style={{
                             color: "white",
@@ -178,6 +215,7 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
                         </Button>
                       ):(
                         <Button
+                          onClick={() => handleStatusChange(user.id,user.status)}
                           className="px-5 py-2 rounded-md text-white font-semibold bg-[#46B162] hover:bg-emerald-600"
                           style={{
                             color: "white",
@@ -197,12 +235,14 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
 
 
           </table>
+        )}
+         
       </div>
         
              <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              totalPages={meta?.totalPages ?? 1}
+              onPageChange={onPageChange}
              />
     
     </Card>

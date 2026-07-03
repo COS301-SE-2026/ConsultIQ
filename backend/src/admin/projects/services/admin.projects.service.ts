@@ -86,6 +86,7 @@ export class AdminProjectService {
           status: true,
           clientName: true,
           createdAt: true,
+          budget: true,
         },
       }),
 

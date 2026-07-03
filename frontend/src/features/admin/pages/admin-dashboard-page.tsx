@@ -25,13 +25,14 @@ function AdminPage(){
     const [userPage,setUserPage] = useState(1);
     const [isUserLoading,setIsUserLoading] = useState(false);
     const [userError,setUserError] = useState<string | null>(null);
+    const [userRefreshKey, setUserRefreshKey] = useState(0);
 
     const [projects,setProjects] = useState<AdminProjectItem[]>([]);
     const [projectMeta,setProjectMeta] = useState<ProjectMeta | null>(null);
     const [projectPage,setProjectPage] = useState(1);
     const [isProjectLoading,setIsProjectLoading] = useState(false);
     const [projectError,setProjectError] = useState<string | null>(null);
-
+    const [projectRefreshKey, setProjectRefreshKey] = useState(0);
 
     const handleTabChange = (tab: adminTab) => {
         setActiveTab(tab);
@@ -47,33 +48,42 @@ function AdminPage(){
         
     };
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() =>{
+        
+        const loadUsers = async () =>{
+            setIsUserLoading(true);
+            try{
+                const res = await getAllUsers(userPage,10);
+                setUsers(res.data);
+                setUserMeta(res.meta);
+                
+            }catch (err){
+                setUserError(err instanceof Error ? err.message: "Failed to load users");
+
+            }finally{
+                setIsUserLoading(false);
+
+            }
+        };
+
+         loadUsers();
+
     
-    
 
-    const loadUsers = useCallback(async (page: number) =>{
-        setIsUserLoading(true);
-        try{
-            const res = await getAllUsers(page,10);
-            setUsers(res.data);
-            setUserMeta(res.meta);
-            
-        }catch (err){
-            setUserError(err instanceof Error ? err.message: "Failed to load users");
+    }, [userPage,userRefreshKey]);
 
-        }finally{
-            setIsUserLoading(false);
 
-        }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    useEffect(() =>{
 
-    },[]);
-
-    const loadProjects = useCallback(async (page:number) =>{
+        const loadProjects = async () =>{
          
         setIsProjectLoading(true);
         setProjectError(null);
     
         try{
-            const res = await getAllProjects(page,10);
+            const res = await getAllProjects(projectPage,10);
             setProjects(res.data);
             setProjectMeta(res.meta);
         }catch (err){
@@ -84,17 +94,13 @@ function AdminPage(){
     
         }
   
-   },[]); 
+        };
 
-   // eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => {
-        loadUsers(userPage);
-     },[userPage,loadUsers]);
+        loadProjects();
+
+    },[projectPage,projectRefreshKey]);
     
-    //eslint-disable-next-line react-hooks/set-state-in-effect
-    useEffect(() => {
-        loadProjects(projectPage);
-    },[projectPage,loadProjects]);
+
 
 
     return(
@@ -246,7 +252,7 @@ function AdminPage(){
                             loading={isUserLoading}
                             currentPage={userPage}
                             onPageChange={setUserPage}
-                            refresh= {()=> loadUsers(userPage)}
+                            refresh= {()=> setUserRefreshKey((k) => k+1)}
                             error= {userError}
 
                         />
@@ -261,7 +267,7 @@ function AdminPage(){
                             loading={isProjectLoading}
                             currentPage={projectPage}
                             onPageChange={setProjectPage}
-                            refresh= {()=> loadProjects(projectPage)}
+                            refresh= {()=> setProjectRefreshKey((k) => k+1)}
                             error={projectError}
                         />
                     )}

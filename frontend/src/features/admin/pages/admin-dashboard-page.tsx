@@ -1,6 +1,6 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-import { useState,useEffect,useCallback } from "react";
+import { useState,useEffect } from "react";
 import SearchBar from "../../../components/shared/search-bar";
 import UsersTab from "../components/users-tab";
 import AdminTabs from "../components/tabs/admin-tabs";
@@ -48,7 +48,7 @@ function AdminPage(){
         
     };
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    
     useEffect(() =>{
         
         const loadUsers = async () =>{
@@ -74,7 +74,7 @@ function AdminPage(){
     }, [userPage,userRefreshKey]);
 
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    
     useEffect(() =>{
 
         const loadProjects = async () =>{

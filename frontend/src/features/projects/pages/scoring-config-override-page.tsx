@@ -2,18 +2,12 @@ import {  useState } from "react";
 import {type ScoringFactor, ScoringWeightsTable } from "../../scoring/components/scoring-weights-table";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-import {DEFAULT_SEEDED_FACTORS} from "../../admin/pages/scoring-config-page";
-
-// interface ProjectScoringOverridePageProps {
-//     projectId: string;
-//     loadedFactors: ScoringFactor[];
-//     initiallyUsingDefaultWeights: boolean;
-// }
+import {DEFAULT_SEEDED_FACTORS} from "../../scoring/components/mock/scoring-factors";
 
 export default function ProjectScoringOverridePage(){
 
     const [factors, setFactors] = useState<ScoringFactor[]>(DEFAULT_SEEDED_FACTORS);
-    const [isUsingDefaultWeights, _setisUsingDefaultWeights]= useState(true);
+    const [isUsingDefaultWeights]= useState(true);
     const [showConfirmationModal, setshowConfirmationModal]= useState(false);
 
 

@@ -56,7 +56,7 @@ function AnimatedRoutes() {
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    
                     <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
-                    <Route path="/project-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
+                    <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

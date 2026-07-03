@@ -1,8 +1,11 @@
 import { Card } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import {File} from "lucide-react";
-import { usePagination } from "../../../hooks/use-pagination";
 import { Pagination } from "../../../components/shared/pagination";
+import type { AdminProjectItem, ProjectMeta } from "../types/admin.types";
+import {archiveProject,unarchiveProject } from "../services/admin.service";
+import { toast } from "sonner";
+import { useState,useMemo } from "react";
 
 
 export interface Project {
@@ -13,59 +16,68 @@ export interface Project {
  
 }
 
-const MockData: Project[]=[
-  {
-    id:"pro-00001",
-    projectName: "E-Commerce Upgrade Platform",
-    clientName: "RetailCo SA",
-    budget: "850000",
-  },
-
-  {
-    id:"pro-00002",
-    projectName: "Logistics Database Synchronization",
-    clientName: "FreightLink Africa",
-    budget: "620000",
-  },
-
-  {
-    id:"pro-00003",
-    projectName: "Fleet tracking mobile app",
-    clientName: "TransRoute logistics",
-    budget: "450000",
-  },
-
-  {
-    id: "pro-00004",
-    projectName:"Mobile banking app",
-    clientName:"FinTrust Bank",
-    budget:"800000",
-  },
-
-   {
-    id: "pro-00005",
-    projectName:"Healthcare data integration platform",
-    clientName:"MedConnect SA",
-    budget:"720000",
-  },
-
-   {
-    id: "pro-00006",
-    projectName:"Smart inventory management system",
-    clientName:"RetailNet Solutions",
-    budget:"310000",
-  },
-];
 
 interface ProjectTabProps {
   readonly searchQuery?: string;
   readonly budgetSort?: "asc" | "desc" | "";
+  readonly projects: AdminProjectItem[];
+  readonly meta: ProjectMeta | null;
+  readonly loading: boolean;
+  readonly currentPage: number;
+  readonly onPageChange: (page: number) => void;
+  readonly refresh: () => void;
+  readonly error:string | null;
 }
 
 
-export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectTabProps) {
+export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,meta,loading,currentPage,onPageChange,error}: ProjectTabProps) {
+    const [localProjects,setLocalProjects] = useState<Record<string,AdminProjectItem["status"]>>({});
 
-  let filtered = MockData.filter((p) => {
+
+    const handleArchive = async (projectId: string)=>{
+      toast("Are you sure you want to archive this project?",{
+            description: "This action cannot be reversed.",
+            duration:5000,
+            action: {
+              label:"Archive",
+              onClick: async () =>{
+                try {
+                  await archiveProject(projectId);
+                  setLocalProjects((prev)=> ( {...prev,[projectId]:"ARCHIVED"}));
+                  toast.success("Project archived successfully");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message :"Failed to archive project.");
+                }
+              },
+            },
+            cancel:{
+              label:"Cancel",
+              onClick: () => {},
+            },
+    });
+};
+
+     const handleUnarchive = async (projectId: string)=>{
+       try {
+         await unarchiveProject(projectId);
+          setLocalProjects((prev)=> ( {...prev,[projectId]:"OPEN"}));
+
+          toast.success("Project unarchived successfully");
+         
+       } catch (err) {
+         console.error(err  instanceof Error ? err.message: "Failed to archive project") ;
+         
+       }
+    };
+
+    const displayedProjects = useMemo(
+      () => projects.map((p) =>
+        localProjects[p.id] ? {...p,status: localProjects[p.id] }:p
+      ),
+      [projects,localProjects]
+    );
+
+  let filtered = displayedProjects.filter((p) => {
      const query = searchQuery.toLowerCase();
      return !query || p.projectName.toLowerCase().includes(query) || p.clientName.toLowerCase().includes(query);
   });
@@ -74,7 +86,6 @@ export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectT
   if (budgetSort === "desc") filtered = [...filtered].sort ((a,b) => Number(b.budget) - Number(a.budget));
 
 
-  const {currentPage,setCurrentPage,totalPages,currentItems} = usePagination(filtered);
   return (
     <Card 
       className="w-full bg-white overflow-hidden "
@@ -95,7 +106,14 @@ export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectT
           
         </div>
 
+         {error && <p className="px-8 text-red-600 text-sm">{error}</p>}
+
       <div className="w-full overflow-x-auto">
+         {loading ? (
+        <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+          Loading projects...
+        </div>
+       ):(
           <table className="w-full border-separate border-spacing-y-4 text-left">
             <thead>
               <tr className="bg-[#F5F9FF] h-6">
@@ -107,7 +125,7 @@ export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectT
             </thead>
 
             <tbody>
-              {currentItems.map((project)=>(
+              {filtered.map((project)=>(
                 <tr key={project.id}  className="border-b hover:bg-slate-50 border-b-gray-200 ">
                   <td className="flex items-center gap-4 px-8 py-4">
                     <div  
@@ -143,7 +161,7 @@ export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectT
 
                   <td className="px-8 py-4">
                     <div className="flex item gap-4">
-                      <Button 
+                      {/* <Button 
                         variant="ghost"
                         className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
                         style={{
@@ -153,20 +171,46 @@ export default function ProjectsTab({searchQuery= "", budgetSort = ""}: ProjectT
                           }}
                       >
                         Delete
-                      </Button>
+                      </Button> */}
+
+                       {project.status === "ARCHIVED" ? (
+                        <Button 
+                        onClick={() => handleUnarchive(project.id)}
+                          className="px-5 py-2 rounded-md text-white font-semibold bg-[#46B162] hover:bg-emerald-600" 
+                          style={{
+                            color: "white",
+                            fontSize: "14px",
+                            padding: "2px 6px",
+                          }}
+                        >
+                          Unarchive
+                        </Button>
+                      ):(
+                        <Button
+                          onClick={() => handleArchive(project.id)}
+                          className="flex items-center gap-2 rounded-md font-semibold  bg-[#F0780E] transition hover:bg-orange-600"
+                          style={{
+                            color: "white",
+                            fontSize: "14px",
+                            padding: "2px 6px",
+                          }}
+                        >
+                          Archive
+                        </Button>
+
+                      )}
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-
-
           </table>
+       )}
       </div>
          <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              totalPages={meta?.totalPages ?? 1}
+              onPageChange={onPageChange}
           />
     
     </Card>

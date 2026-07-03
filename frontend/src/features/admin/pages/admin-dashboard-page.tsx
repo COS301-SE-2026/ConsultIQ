@@ -1,12 +1,14 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import SearchBar from "../../../components/shared/search-bar";
 import UsersTab from "../components/users-tab";
 import AdminTabs from "../components/tabs/admin-tabs";
 import ProjectsTab from "../components/projects-tab";
 import CountCard from "../components/count-card";
 import {Users,UserCheck,UserX,Folder} from "lucide-react";
+import type { AdminUserItem,UserMeta,AdminProjectItem,ProjectMeta } from "../types/admin.types";
+import { getAllUsers, getAllProjects } from "../services/admin.service";
 
 export type adminTab = "Users" | "Projects";
 
@@ -17,6 +19,20 @@ function AdminPage(){
     const [statusFilter, setStatusFilter] = useState("");
     const [budgetSort,setBudgetSort] = useState<"asc" | "desc" | "">("");
     const [showFilters, setShowFilters] = useState(false);
+
+    const [users,setUsers] = useState<AdminUserItem[]>([]);
+    const [userMeta,setUserMeta] = useState<UserMeta | null>(null);
+    const [userPage,setUserPage] = useState(1);
+    const [isUserLoading,setIsUserLoading] = useState(false);
+    const [userError,setUserError] = useState<string | null>(null);
+    const [userRefreshKey, setUserRefreshKey] = useState(0);
+
+    const [projects,setProjects] = useState<AdminProjectItem[]>([]);
+    const [projectMeta,setProjectMeta] = useState<ProjectMeta | null>(null);
+    const [projectPage,setProjectPage] = useState(1);
+    const [isProjectLoading,setIsProjectLoading] = useState(false);
+    const [projectError,setProjectError] = useState<string | null>(null);
+    const [projectRefreshKey, setProjectRefreshKey] = useState(0);
 
     const handleTabChange = (tab: adminTab) => {
         setActiveTab(tab);
@@ -31,6 +47,62 @@ function AdminPage(){
         setSearchQuery(query);
         
     };
+
+    
+    useEffect(() =>{
+        
+        const loadUsers = async () =>{
+            setIsUserLoading(true);
+            try{
+                const res = await getAllUsers(userPage,10);
+                setUsers(res.data);
+                setUserMeta(res.meta);
+                
+            }catch (err){
+                setUserError(err instanceof Error ? err.message: "Failed to load users");
+
+            }finally{
+                setIsUserLoading(false);
+
+            }
+        };
+
+         loadUsers();
+
+    
+
+    }, [userPage,userRefreshKey]);
+
+
+    
+    useEffect(() =>{
+
+        const loadProjects = async () =>{
+         
+        setIsProjectLoading(true);
+        setProjectError(null);
+    
+        try{
+            const res = await getAllProjects(projectPage,10);
+            setProjects(res.data);
+            setProjectMeta(res.meta);
+        }catch (err){
+            setProjectError(err instanceof Error ? err.message: "Failed to load projects");
+    
+        }finally{
+            setIsProjectLoading(false);
+    
+        }
+  
+        };
+
+        loadProjects();
+
+    },[projectPage,projectRefreshKey]);
+    
+
+
+
     return(
          <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
              <Sidebar items={adminSidebarItems} />
@@ -52,7 +124,7 @@ function AdminPage(){
                 <div className="flex flex-wrap  max-w-[1600px] mx-auto w-full pb-8 mt-6 gap-4">
                     <CountCard
                         title="Total Users"
-                        count = {150}
+                        count = {userMeta?.absoluteTotalRecords ?? 0}
                         icon = {Users}
                         iconBackgroundColour="#E7F0FE"
                         iconColour="#155AD5"
@@ -60,7 +132,7 @@ function AdminPage(){
 
                      <CountCard
                         title="Active Users"
-                        count = {120}
+                        count = {userMeta?.activeUsers ?? 0}
                         icon = {UserCheck}
                         iconBackgroundColour="#E6F7EB"
                         iconColour="#4EAC64"
@@ -68,7 +140,7 @@ function AdminPage(){
 
                     <CountCard
                         title="Suspended Users"
-                        count = {30}
+                        count = {userMeta?.suspendedUsers ?? 0}
                         icon = {UserX}
                         iconBackgroundColour="#FDF2E2"
                         iconColour="#F68F24"
@@ -76,7 +148,7 @@ function AdminPage(){
 
                     <CountCard
                         title="Total Projects"
-                        count = {44}
+                        count = {projectMeta?.absoluteTotalRecords ?? 0}
                         icon = {Folder}
                         iconBackgroundColour="#F0EDFD"
                         iconColour="#664CC8"
@@ -115,10 +187,10 @@ function AdminPage(){
                                     }}
                                 >
                                     <option value="">All roles</option>
-                                    <option value="consultant">Consultant</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="consultant_manager">Consultant manager</option>
-                                    <option value="project_manager">Project manager</option>
+                                    <option value="CONSULTANT">Consultant</option>
+                                    <option value="ADMIN">Admin</option>
+                                    <option value="CONSULTANT_MANAGER">Consultant manager</option>
+                                    <option value="PROJECT_MANAGER">Project manager</option>
                                 </select>
 
                                 <select
@@ -175,12 +247,28 @@ function AdminPage(){
                             searchQuery={searchQuery}
                             roleFilter={roleFilter}
                             statusFilter={statusFilter}
+                            users={users}
+                            meta={userMeta}
+                            loading={isUserLoading}
+                            currentPage={userPage}
+                            onPageChange={setUserPage}
+                            refresh= {()=> setUserRefreshKey((k) => k+1)}
+                            error= {userError}
+
                         />
                     )}
                     {activeTab === "Projects" && (
                         <ProjectsTab 
+                            key={projectPage}
                             searchQuery={searchQuery}
                             budgetSort={budgetSort}
+                            projects={projects}
+                            meta={projectMeta}
+                            loading={isProjectLoading}
+                            currentPage={projectPage}
+                            onPageChange={setProjectPage}
+                            refresh= {()=> setProjectRefreshKey((k) => k+1)}
+                            error={projectError}
                         />
                     )}
             

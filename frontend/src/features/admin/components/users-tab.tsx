@@ -63,8 +63,8 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
             await deleteUser(userId);
             toast.success("User deleted successfully");
             refresh();
-          } catch (error) {
-            toast.error(error instanceof Error ? error.message :"Failed to delete user.");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message :"Failed to delete user.");
           }
         },
       },

@@ -5,7 +5,7 @@ import { Pagination } from "../../../components/shared/pagination";
 import type { AdminProjectItem, ProjectMeta } from "../types/admin.types";
 import {archiveProject,unarchiveProject } from "../services/admin.service";
 import { toast } from "sonner";
-import { useState,useEffect } from "react";
+import { useState,useMemo } from "react";
 
 
 export interface Project {
@@ -31,11 +31,7 @@ interface ProjectTabProps {
 
 
 export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,meta,loading,currentPage,onPageChange,error}: ProjectTabProps) {
-    const [localProjects,setLocalProjects] = useState<AdminProjectItem[]>(projects);
-
-    useEffect(()=>{
-      setLocalProjects(projects);
-    },[projects]);
+    const [localProjects,setLocalProjects] = useState<Record<string,AdminProjectItem["status"]>>({});
 
 
     const handleArchive = async (projectId: string)=>{
@@ -47,12 +43,10 @@ export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,m
               onClick: async () =>{
                 try {
                   await archiveProject(projectId);
-                  setLocalProjects((prev)=> 
-                    prev.map((p) => (p.id === projectId ? {...p,status:"ARCHIVED"}:p))
-                  );
+                  setLocalProjects((prev)=> ( {...prev,[projectId]:"ARCHIVED"}));
                   toast.success("Project archived successfully");
-                } catch (error) {
-                  toast.error(error instanceof Error ? error.message :"Failed to archive project.");
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message :"Failed to archive project.");
                 }
               },
             },
@@ -66,9 +60,7 @@ export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,m
      const handleUnarchive = async (projectId: string)=>{
        try {
          await unarchiveProject(projectId);
-          setLocalProjects((prev)=> 
-              prev.map((p) => (p.id === projectId ? {...p,status:"OPEN"}:p))
-          );
+          setLocalProjects((prev)=> ( {...prev,[projectId]:"OPEN"}));
 
           toast.success("Project unarchived successfully");
          
@@ -78,8 +70,14 @@ export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,m
        }
     };
 
+    const displayedProjects = useMemo(
+      () => projects.map((p) =>
+        localProjects[p.id] ? {...p,status: localProjects[p.id] }:p
+      ),
+      [projects,localProjects]
+    );
 
-  let filtered = localProjects.filter((p) => {
+  let filtered = displayedProjects.filter((p) => {
      const query = searchQuery.toLowerCase();
      return !query || p.projectName.toLowerCase().includes(query) || p.clientName.toLowerCase().includes(query);
   });

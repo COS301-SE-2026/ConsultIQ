@@ -248,6 +248,7 @@ function AdminPage(){
                     )}
                     {activeTab === "Projects" && (
                         <ProjectsTab 
+                            key={projectPage}
                             searchQuery={searchQuery}
                             budgetSort={budgetSort}
                             projects={projects}

@@ -47,10 +47,10 @@ function AdminPage(){
         
     };
 
-
+    
     
 
-    const loadUsers = async (page: number) =>{
+    const loadUsers = useCallback(async (page: number) =>{
         setIsUserLoading(true);
         try{
             const res = await getAllUsers(page,10);
@@ -65,9 +65,9 @@ function AdminPage(){
 
         }
 
-    };
+    },[]);
 
-    const loadProjects = async (page:number) =>{
+    const loadProjects = useCallback(async (page:number) =>{
          
         setIsProjectLoading(true);
         setProjectError(null);
@@ -84,15 +84,17 @@ function AdminPage(){
     
         }
   
-   }; 
+   },[]); 
 
+   // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-       void loadUsers(userPage);
-     },[userPage]);
+        loadUsers(userPage);
+     },[userPage,loadUsers]);
     
+    //eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-       void loadProjects(projectPage);
-    },[projectPage]);
+        loadProjects(projectPage);
+    },[projectPage,loadProjects]);
 
 
     return(
@@ -244,7 +246,7 @@ function AdminPage(){
                             loading={isUserLoading}
                             currentPage={userPage}
                             onPageChange={setUserPage}
-                            refresh= {()=> void loadUsers(userPage)}
+                            refresh= {()=> loadUsers(userPage)}
                             error= {userError}
 
                         />
@@ -259,7 +261,7 @@ function AdminPage(){
                             loading={isProjectLoading}
                             currentPage={projectPage}
                             onPageChange={setProjectPage}
-                            refresh= {()=> void loadProjects(projectPage)}
+                            refresh= {()=> loadProjects(projectPage)}
                             error={projectError}
                         />
                     )}

@@ -63,10 +63,10 @@ export default function AdminScoringConfigPage(){
      
         </header>
         <div className="h-6"/>
-        <main className="p-8 space-y-4">
+        <div className="flex-1 flex items-center justify-center px-4 py-8">
 
             <ScoringWeightsTable initialFactors={factors} onSave={handleGlobalSave}/>
-        </main>
+        </div>
         </div>
         </div>
     )

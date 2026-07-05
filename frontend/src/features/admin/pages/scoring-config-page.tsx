@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { type ScoringFactor, ScoringWeightsTable } from "../../scoring/components/scoring-weights-table";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-//import { DEFAULT_SEEDED_FACTORS } from "../../scoring/components/mock/scoring-factors";
 import { scoringApiService } from "../../scoring/services/scoring.service";
 
 
@@ -78,7 +77,7 @@ export default function AdminScoringConfigPage() {
           )}
 
           {successMessage && (
-            <div className="w-full max-w-5xl mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm font-semibold transition-opacity duration-300">
+            <div className="w-full h-8 max-w-6xl mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm font-semibold transition-opacity duration-300">
               {successMessage}
             </div>
           )}

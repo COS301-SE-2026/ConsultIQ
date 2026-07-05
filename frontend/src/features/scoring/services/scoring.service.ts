@@ -1,3 +1,4 @@
+import { label } from "framer-motion/client";
 import type { ScoringFactor } from "../components/scoring-weights-table";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -23,21 +24,33 @@ interface BackendFactor {
     overrideWeight?: number;
 }
 
+const FACTOR_METADATA: Record<string, {label: string; descrition: string}> ={
+    SKILL_ALIGNMENT: {label: "Skill Alignment", descrition: "Measures how well consultant skills match project requirements.",},
+    COMPETENCY_LEVEL: {label: "Competency level", descrition: "Evaluates competency level alignment with project needs",},
+    AVAILABILITY: {label: "Availability", descrition: "Considers consultant availability for the project timeline",},
+    LOCATION: {label: "Location", descrition: "Measures geographic proximity or relocation feasibility",},
+    COST_TO_COMPANY: {label: "Cost to Company", descrition: "Assesses cost/rate fit within project budget",},
+};
+
 function mapToFrontend(backendFactors: BackendFactor[]): ScoringFactor[] {
-    return backendFactors.map((f) => ({
-        factorName: f.factorName,
-        description: f.description || '',
+    return backendFactors.map((f) => {
+        const meta= FACTOR_METADATA[f.factorName] ?? 
+        {label: f.factorName.replace(/_/g, " ").toLowerCase() ,description : "No description available.",};
+        return {
+        factorName: meta.label,
+        description: meta.descrition,
         isActive: f.active,
         hardExclusion: f.hardExclusion || false,
         weight: f.weight ?? 0,
-    }));
+        factorKey: f.factorName}
+    });
 }
 
 
 
 function mapToBackend(frontendFactors: ScoringFactor[]): BackendFactor[] {
     return frontendFactors.map((f) => ({
-        factorName: f.factorName,
+        factorName: f.factorKey ?? f.factorName,
         weight: f.weight,
         active: f.isActive
     }));
@@ -57,6 +70,7 @@ export const scoringApiService = {
         }
 
         const data: BackendFactor[] = await res.json();
+        console.log(data);
         return mapToFrontend(data);
     },
 

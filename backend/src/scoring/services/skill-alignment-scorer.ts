@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import { RawProjectDto } from "../dto/raw-project.dto";
 import { FactorScoreResult } from './factor-score-result.interface'
+import { ScoringFactor } from "../enums/scoring-factor.enum";
 
 
 @Injectable()
@@ -12,7 +13,15 @@ export class SkillAligmentScorer {
         const { requiredSkills } = project;
         //if project has no skills required
         if (requiredSkills.length === 0) {
-            return { score: 1, triggerHardExclusion: false };
+            return {
+                score: 1, triggerHardExclusion: false,
+                detail: {
+                    factor: ScoringFactor.SKILL_ALIGNMENT,
+                    requiredSkills: 0,
+                    possessedSkills: consultant.skills.length,
+                    missingSkills: [],
+                }
+            };
         }
 
         const normalizeSkills = (skill) => skill.skillName.trim().toLowerCase();
@@ -21,7 +30,7 @@ export class SkillAligmentScorer {
 
         let possessedCount = 0;
         const missingMandatorySkills: string[] = [];
-
+        const missingSkills: string[] = [];
 
         for (const req of requiredSkills) {
             const normalizeReqName = req.skillName.trim().toLocaleLowerCase();
@@ -29,9 +38,13 @@ export class SkillAligmentScorer {
             if (possessedSkillNames.has(normalizeReqName)) {
                 possessedCount++;
 
-            } else if (req.isMandatory) {
-                missingMandatorySkills.push(req.skillName);
+            } else {
+                missingSkills.push(req.skillName);
+                if (req.isMandatory) {
+                    missingMandatorySkills.push(req.skillName);
+                }
             }
+
         }
 
         const rawScore = possessedCount / requiredSkills.length;
@@ -41,6 +54,13 @@ export class SkillAligmentScorer {
             score,
             triggerHardExclusion: missingMandatorySkills.length > 0,
             missingMandatorySkills: missingMandatorySkills.length > 0 ? missingMandatorySkills : undefined,
+
+            detail: {
+                factor: ScoringFactor.SKILL_ALIGNMENT,
+                requiredSkills: requiredSkills.length,
+                possessedSkills: possessedCount,
+                missingSkills: missingSkills,
+            }
         };
 
     }

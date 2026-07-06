@@ -1,5 +1,6 @@
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import { RawProjectDto } from "../dto/raw-project.dto";
+import { ScoringFactor } from "../enums/scoring-factor.enum";
 import { AvailabilityFitScorer } from "./availability-fit.scorer";
 
 function consultant(): RawConsultantDto {
@@ -52,6 +53,13 @@ describe('AvailabilityFitScorer', () => {
         const result = await scorer.score(consultant(), project(0))
         expect(result.score).toBe(1.0);
         expect(result.triggerHardExclusion).toBe(false);
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.AVAILABILITY,
+            requiredAvailability: 0,
+            currentAvailability: 100,
+            withinAvailability: true,
+        })
     })
 
     it('scores 1.0 when a consultant has no overlapping placements with the project', async () => {
@@ -59,6 +67,14 @@ describe('AvailabilityFitScorer', () => {
         const result = await scorer.score(consultant(), project(100));
         expect(result.score).toBe(1.0);
         expect(result.triggerHardExclusion).toBe(false);
+
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.AVAILABILITY,
+            requiredAvailability: 100,
+            currentAvailability: 100,
+            withinAvailability: true,
+        })
     });
 
     it('scores 1.0 when a consultant has overlapping placements, with enough remaining availability', async () => {
@@ -66,6 +82,14 @@ describe('AvailabilityFitScorer', () => {
         const result = await scorer.score(consultant(), project(50));
         expect(result.score).toBe(1.0);
         expect(result.triggerHardExclusion).toBe(false);
+
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.AVAILABILITY,
+            requiredAvailability: 50,
+            currentAvailability: 60,
+            withinAvailability: true,
+        })
     });
 
     it('scores 0.0 when a consultant has overlapping placements, with insufficient remaining availability', async () => {
@@ -87,6 +111,14 @@ describe('AvailabilityFitScorer', () => {
         prisma.placement.findMany.mockResolvedValueOnce([{ allocationPercentage: 10 }, { allocationPercentage: 50 }]);
         const result = await scorer.score(consultant(), project(50));
         expect(result.score).toBe(0.8);
+
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.AVAILABILITY,
+            requiredAvailability: 50,
+            currentAvailability: 40,
+            withinAvailability: false,
+        })
 
     });
 

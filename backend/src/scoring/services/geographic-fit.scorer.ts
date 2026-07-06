@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { FactorScoreResult } from './factor-score-result.interface';
+import { ScoringFactor } from '../enums/scoring-factor.enum';
 
 @Injectable()
 export class GeographicFitScorer {
@@ -24,7 +25,15 @@ export class GeographicFitScorer {
             score = GeographicFitScorer.DIFFERENT_PROVINCE_SCORE;
         }
         return {
-            score, triggerHardExclusion: false
+            score, triggerHardExclusion: false,
+
+            detail: {
+                factor: ScoringFactor.GEOGRAPHIC_FIT,
+                consultantCity: consultant.city,
+                projectCity: project.city,
+                consultantProvince: consultant.province,
+                projectProvince: project.province,
+            }
         }
     }
 }

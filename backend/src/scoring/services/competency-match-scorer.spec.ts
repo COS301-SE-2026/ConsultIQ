@@ -1,6 +1,7 @@
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import { RawProjectDto } from "../dto/raw-project.dto";
 import { COMPETENCY_RANK } from "../enums/competency-level.enum";
+import { ScoringFactor } from "../enums/scoring-factor.enum";
 import { CompetencyMatchScorer } from "./competency-match-scorer";
 import { CompetencyLevel } from "@prisma/client";
 
@@ -51,6 +52,16 @@ describe('CompetencyMatchScorer', () => {
         );
 
         expect(result.score).toBe(1.0)
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.COMPETENCY_MATCH,
+            perSkill: [{
+                skill: 'B',
+                consultantLevel: CompetencyLevel.INTERMEDIATE,
+                requiredLevel: CompetencyLevel.INTERMEDIATE,
+                score: 1.0
+            }]
+        })
     })
     it('scores are averaged across the required skills', async () => {
         const result = scorer.score(
@@ -68,6 +79,24 @@ describe('CompetencyMatchScorer', () => {
         const markB = COMPETENCY_RANK[CompetencyLevel.BEGINNER] / COMPETENCY_RANK[CompetencyLevel.EXPERT];
         const markAverage = (markA + markB) / 2;
         expect(result.score).toBeCloseTo(markAverage, 5)
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.COMPETENCY_MATCH,
+            perSkill: [{
+                skill: 'A',
+                consultantLevel: CompetencyLevel.EXPERT,
+                requiredLevel: CompetencyLevel.INTERMEDIATE,
+                score: markA
+            },
+            {
+                skill: 'B',
+                consultantLevel: CompetencyLevel.BEGINNER,
+                requiredLevel: CompetencyLevel.EXPERT,
+                score: markB
+            }
+
+            ]
+        })
     })
 
 
@@ -96,6 +125,17 @@ describe('CompetencyMatchScorer', () => {
             ]),
         );
         expect(result.score).toBeCloseTo(0.0, 5)
+
+        expect(result.detail).toEqual({
+            factor: ScoringFactor.COMPETENCY_MATCH,
+            perSkill: [{
+                skill: 'B',
+                consultantLevel: 'NONE',
+                requiredLevel: CompetencyLevel.EXPERT,
+                score: 0.0
+            }]
+        })
+
     })
 
 

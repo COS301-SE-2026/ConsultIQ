@@ -15,3 +15,51 @@ export const STUB_CONSULTANCY_DEFAULT_WEIGHTS: Record<ScoringFactor, number> = {
     [ScoringFactor.COST_FIT]: 10,
     [ScoringFactor.GEOGRAPHIC_FIT]: 5,
 };
+
+
+export interface SkillAlignmentDetail {
+    factor: ScoringFactor.SKILL_ALIGNMENT;
+    requiredSkills: number;
+    possessedSkills: number;
+    missingSkills: string[];
+}
+
+export interface CostFitDetail {
+    factor: ScoringFactor.COST_FIT;
+    consultantRate: number;
+    projectBudget: number;
+    withinBudget: boolean;
+}
+
+export interface CompetencyMatchDetail {
+    factor: ScoringFactor.COMPETENCY_MATCH;
+    perSkill: Array<{
+        skill: string;
+        consultantLevel: string;
+        requiredLevel: string;
+        score: number;
+    }>;
+}
+
+
+export interface GeographicFitDetail {
+    factor: ScoringFactor.GEOGRAPHIC_FIT;
+    projectCity: string;
+    consultantCity: string;
+    consultantProvince: string;
+    projectProvince: string;
+}
+
+export interface AvailabilityDetail {
+    factor: ScoringFactor.AVAILABILITY;
+    requiredAvailability: number;
+    currentAvailability: number;
+    withinAvailability: boolean;
+}
+
+export type ScorerDetail =
+    | SkillAlignmentDetail
+    | CostFitDetail
+    | CompetencyMatchDetail
+    | GeographicFitDetail
+    | AvailabilityDetail;

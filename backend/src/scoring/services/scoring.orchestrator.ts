@@ -12,7 +12,7 @@ import { STUB_FACTOR_ACTIVATION_CONFIG } from "./factor-activation.config";
 
 export type ScoringResults = {
     excluded: false;
-    factorScores: Partial<Record<ScoringFactor, number>>;
+    factorScores: Partial<Record<ScoringFactor, number>>
     redistributedWeights: Partial<Record<ScoringFactor, number>>;
 } | {
     excluded: true;

@@ -1,23 +1,25 @@
 import { Injectable } from "@nestjs/common";
 import { ScoringFactor } from "../enums/scoring-factor.enum";
-import { WeightedFactorBreakdown } from "./match-result.interface";
-
+import { WeightedFactorBreakdown, ConsultantMatchResult } from "./match-result.interface";
 
 export interface ScoredConsultant {
-    consultatId: string;
+    consultantId: string;
     factorScores: Partial<Record<ScoringFactor, number>>;
     weights: Partial<Record<ScoringFactor, number>>;
 }
 
 export interface ScoredConsultantsResult {
-    consutlatId: string;
+    consultantId: string;
     finalScore: number;
-    rank: number;
     factorBreakdown: WeightedFactorBreakdown[];
-
 }
 
-//Round to 2 decimal places for the score and 4 decimal places for the factor breakdown
+//Round to 2 decimal
+//  places for the score and 4 decimal places for the factor breakdown
+
+
+interface AggregatedConsultant extends ConsultantMatchResult { };
+
 
 const FINAL_SCORE_DECIMAL_PLACES = 100;
 const FACTOR_BREAKDOWN_DECIMAL_PLACES = 10000;
@@ -29,7 +31,7 @@ function round(value: number, precision: number): number {
 
 @Injectable()
 export class WeightedAggregator {
-    aggregate(consultants: ScoredConsultant[]): ScoredConsultantsResult[] {
+    aggregate(consultants: ScoredConsultant[]): AggregatedConsultant[] {
 
         // score every consultant
         const scored = consultants.map((consultant) => this.scoreOne(consultant),);
@@ -40,7 +42,7 @@ export class WeightedAggregator {
     }
 
 
-    private scoreOne(consultant: ScoredConsultant): Omit<ScoredConsultantsResult, 'rank'> {
+    private scoreOne(consultant: ScoredConsultant): Omit<AggregatedConsultant, 'rank'> {
 
         const factors = Object.keys(consultant.factorScores) as ScoringFactor[];
 
@@ -55,14 +57,13 @@ export class WeightedAggregator {
             return {
                 factor,
                 rawScore: round(rawScore, FACTOR_BREAKDOWN_DECIMAL_PLACES),
-                score: round(rawScore, FACTOR_BREAKDOWN_DECIMAL_PLACES),
                 weight: round(weight, FACTOR_BREAKDOWN_DECIMAL_PLACES),
                 weightedContribution: round(exactContribution, FACTOR_BREAKDOWN_DECIMAL_PLACES),
             }
         });
 
         return {
-            consutlatId: consultant.consultatId,
+            consultantId: consultant.consultantId,
             finalScore: round(sum * 100, FINAL_SCORE_DECIMAL_PLACES),
             factorBreakdown,
         }

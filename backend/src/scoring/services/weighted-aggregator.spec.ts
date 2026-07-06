@@ -15,13 +15,13 @@ describe('WeightedAggregator', () => {
     let aggregator: WeightedAggregator;
 
     beforeEach(() => {
-        aggregator = new WeightedAggregator
+        aggregator = new WeightedAggregator();
     })
 
     it('calcuates the weighted score as the weighted sum of factor scores', () => {
 
         const consultant: ScoredConsultant = {
-            consultatId: 'consultant-01',
+            consultantId: 'consultant-01',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 1,
                 [ScoringFactor.COMPETENCY_MATCH]: 1,
@@ -39,7 +39,7 @@ describe('WeightedAggregator', () => {
     it('partial weighted sum calculated correctly', () => {
 
         const consultant: ScoredConsultant = {
-            consultatId: 'consultant-01',
+            consultantId: 'consultant-01',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
                 [ScoringFactor.COMPETENCY_MATCH]: 0.5,
@@ -57,7 +57,7 @@ describe('WeightedAggregator', () => {
     it('returned ranked list of consultants', () => {
 
         const c1: ScoredConsultant = {
-            consultatId: 'c1',
+            consultantId: 'c1',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -65,7 +65,7 @@ describe('WeightedAggregator', () => {
         };
 
         const c2: ScoredConsultant = {
-            consultatId: 'c2',
+            consultantId: 'c2',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -73,7 +73,7 @@ describe('WeightedAggregator', () => {
         };
 
         const c3: ScoredConsultant = {
-            consultatId: 'c3',
+            consultantId: 'c3',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -81,14 +81,14 @@ describe('WeightedAggregator', () => {
         };
 
         const result = aggregator.aggregate([c1, c2, c3]);
-        expect(result.map((r) => r.consutlatId)).toEqual(['c2', 'c3', 'c1']);
+        expect(result.map((r) => r.consultantId)).toEqual(['c2', 'c3', 'c1']);
     })
 
 
     it('assigns appropriate ranks to consultants', () => {
 
         const c1: ScoredConsultant = {
-            consultatId: 'c1',
+            consultantId: 'c1',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -96,7 +96,7 @@ describe('WeightedAggregator', () => {
         };
 
         const c2: ScoredConsultant = {
-            consultatId: 'c2',
+            consultantId: 'c2',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -104,7 +104,7 @@ describe('WeightedAggregator', () => {
         };
 
         const c3: ScoredConsultant = {
-            consultatId: 'c3',
+            consultantId: 'c3',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -112,9 +112,9 @@ describe('WeightedAggregator', () => {
         };
 
         const result = aggregator.aggregate([c1, c2, c3]);
-        expect(result.find((r) => r.consutlatId === 'c1')?.rank).toBe(3);
-        expect(result.find((r) => r.consutlatId === 'c2')?.rank).toBe(1);
-        expect(result.find((r) => r.consutlatId === 'c3')?.rank).toBe(2);
+        expect(result.find((r) => r.consultantId === 'c1')?.rank).toBe(3);
+        expect(result.find((r) => r.consultantId === 'c2')?.rank).toBe(1);
+        expect(result.find((r) => r.consultantId === 'c3')?.rank).toBe(2);
 
     })
 })

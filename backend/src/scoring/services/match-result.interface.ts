@@ -8,22 +8,15 @@ Consultants actual score and the rank they given
 
 export interface WeightedFactorBreakdown {
     factor: ScoringFactor;
-    score: number;
+    rawScore: number;
     weight: number;
     weightedContribution: number;
 }
 
-export interface ExplainabilityPayload {
-    primaryPositiveFactor: ScoringFactor;
-    primaryNegativeFactor: ScoringFactor;
-    reasons: string[];
-    improvementSuggestions: string[];
-}
 
 export interface ConsultantMatchResult {
     consultantId: string;
     finalScore: number;
     rank: number;
     factorBreakdown: WeightedFactorBreakdown[];
-    explainability?: ExplainabilityPayload;
 }

@@ -183,4 +183,10 @@ export class ScoringService {
       );
     }
   }
+
+  async getProjectScoringOverride(projectId: string){
+    return this.prisma.projectScoringOverride.findMany({
+        where: { projectId },
+    });
+  }
 }

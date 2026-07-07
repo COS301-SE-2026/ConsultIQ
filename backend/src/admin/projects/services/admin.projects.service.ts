@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AdminProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async archiveProject(projectId: string, adminUserId: string) {
     try {
@@ -75,7 +75,7 @@ export class AdminProjectService {
   }
 
   async getAllProjects(page: number = 1, limit: number = 10) {
-    const [projects, total] = await this.prisma.$transaction([
+    const [projects, filteredTotal, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
         where: { archivedAt: null, status: { not: 'ARCHIVED' } },
         skip: (page - 1) * limit,
@@ -86,20 +86,23 @@ export class AdminProjectService {
           status: true,
           clientName: true,
           createdAt: true,
+          budget: true,
         },
       }),
 
       this.prisma.project.count({
         where: { archivedAt: null, status: { not: 'ARCHIVED' } },
       }),
+      this.prisma.project.count(),
     ]);
 
     return {
       data: projects,
       meta: {
-        totalRecords: total,
+        totalRecords: filteredTotal,
+        absoluteTotalRecords: total,
         currentPage: page,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(filteredTotal / limit),
       },
     };
   }

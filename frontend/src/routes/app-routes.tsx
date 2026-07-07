@@ -19,6 +19,11 @@ import CreateProfilePage from "../features/consultants/pages/create-profile-page
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
+import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
+
+//Admin pages
+import AdminPage from "../features/admin/pages/admin-dashboard-page";
+import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -43,12 +48,16 @@ function AnimatedRoutes() {
                 {/* ------------------------------------------- */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
+                    <Route path="/admin-dashboard" element={<PageTransition><AdminPage/></PageTransition>}/>
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
                     <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
-                    <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />                </Route>
+                    <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    
+                    <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
+                    <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
+                </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}
                 <Route path="*" element={<Navigate to="/login" replace />} />

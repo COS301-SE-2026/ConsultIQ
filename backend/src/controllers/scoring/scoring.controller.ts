@@ -77,4 +77,12 @@ export class ScoringController {
       userId,
     );
   }
+
+  @Get(':projectId/scoring-override')
+  @HttpCode(HttpStatus.OK)
+  async getProjectScoringOverride(
+    @Param('projectId') projectId: string,
+  ) {
+    return this.scoringService.getProjectScoringOverride(projectId);
+  }
 }

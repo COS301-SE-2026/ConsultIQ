@@ -49,7 +49,7 @@ function project(overrides: Partial<RawProjectDto> = {}): RawProjectDto {
 
 function orcheStrator(activationConfig: FactorActivationConfig, emptyPlacement: boolean) {
     const prismaMock = {
-        placement: {
+        projectPlacement: {
             findMany: jest.fn().mockResolvedValue(emptyPlacement ? [] : [{ allocationPercentage: 50 }]),
         }
     }

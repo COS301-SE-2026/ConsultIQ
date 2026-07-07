@@ -15,7 +15,7 @@ export class AvailabilityFitScorer {
     }
     async score(consultant: RawConsultantDto, project: RawProjectDto): Promise<FactorScoreResult> {
 
-        const overlapping = await this.prisma.placement.findMany({
+        const overlapping = await this.prisma.projectPlacement.findMany({
             where: {
                 consultantId: consultant.consultantId,
                 AND: [
@@ -32,7 +32,7 @@ export class AvailabilityFitScorer {
             }
         });
 
-        const totalAllocation = overlapping.reduce((sum, placement) => sum + (placement.allocationPercentage ?? 0), 0);
+        const totalAllocation = overlapping.reduce((sum, placement) => sum + (placement.allocation ?? 0), 0);
 
         const remainingCapacity = 100 - totalAllocation;
         if (project.requiredAllocationPercentage <= 0) {

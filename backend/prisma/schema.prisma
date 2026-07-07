@@ -87,6 +87,12 @@ enum ScoringFactorName {
   COST_TO_COMPANY
 }
 
+enum MatchRunStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -130,29 +136,30 @@ model RolePermission {
 // ---------------------------------------- Models -----------------------------
 
 model User {
-  id              String          @id @default(uuid())
-  fullName        String
-  email           String          @unique
-  passwordHash    String?
-  role            Role
-  roleId          String?         @map("role_id")
-  roleDefinition  RoleDefinition? @relation(fields: [roleId], references: [id])
-  status          UserStatus      @default(PENDING)
-  failedAttempts  Int             @default(0)
-  lockedUntil     DateTime?
-  isLocked        Boolean         @default(false)
-  termsAcceptedAt DateTime?
-  tenantId        String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?        @map("delete_at")
-  tokens             Token[]
-  auditLogs          authAuditLog[]
-  consultant         Consultant?
-  managedProjects    ProjectManager[]
-  managedConsultants ConsultantManager[]
+  id                  String               @id @default(uuid())
+  fullName            String
+  email               String               @unique
+  passwordHash        String?
+  role                Role
+  roleId              String?              @map("role_id")
+  roleDefinition      RoleDefinition?      @relation(fields: [roleId], references: [id])
+  status              UserStatus           @default(PENDING)
+  failedAttempts      Int                  @default(0)
+  lockedUntil         DateTime?
+  isLocked            Boolean              @default(false)
+  termsAcceptedAt     DateTime?
+  tenantId            String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?            @map("delete_at")
+  tokens              Token[]
+  auditLogs           authAuditLog[]
+  consultant          Consultant?
+  managedProjects     ProjectManager[]
+  managedConsultants  ConsultantManager[]
   scoringConfigAudits ScoringConfigAudit[]
-  notifications Notification[]
+  notifications       Notification[]
+  matchRuns           MatchRun[]
 
   @@map("users")
 }
@@ -191,6 +198,7 @@ model Consultant {
   cvFiles               CvFile[]
   managers              ConsultantManager[]
   consultantExperiences ConsultantExperience[]
+  matchRunResults       MatchRunResult[]
 
   @@map("consultants")
 }
@@ -260,32 +268,34 @@ model CvFile {
 }
 
 model Project {
-  id           String        @id @default(uuid())
-  projectName  String
-  clientName   String
-  description  String?
-  addressLine1 String
-  addressLine2 String?
-  suburb       String?
-  city         String
-  province     String
-  postalCode   String
-  startDate    DateTime
-  endDate      DateTime?
-  teamSize     Int
-  allocation   Int // Renamed from requiredAllocationPercentage
-  budget       Float // Renamed from clientBillingBudget
-  status       ProjectStatus @default(OPEN)
-  tenantId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  archivedAt   DateTime?      @map("archived_at")
-  skills     ProjectSkill[]
-  managers   ProjectManager[]
-  placements ProjectPlacement[]
+  id               String                   @id @default(uuid())
+  projectName      String
+  clientName       String
+  description      String?
+  addressLine1     String
+  addressLine2     String?
+  suburb           String?
+  city             String
+  province         String
+  postalCode       String
+  startDate        DateTime
+  endDate          DateTime?
+  teamSize         Int
+  allocation       Int // Renamed from requiredAllocationPercentage
+  budget           Float // Renamed from clientBillingBudget
+  status           ProjectStatus            @default(OPEN)
+  tenantId         String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  archivedAt       DateTime?                @map("archived_at")
+  skills           ProjectSkill[]
+  managers         ProjectManager[]
+  placements       ProjectPlacement[]
   scoringOverrides ProjectScoringOverride[]
 
- auditLogs ProjectAuditLog[]
+  auditLogs ProjectAuditLog[]
+  matchRuns MatchRun[]
+
   @@map("projects")
 }
 
@@ -332,14 +342,14 @@ model ProjectPlacement {
 
 // Currently used to track archiving and unarchiving projects (can be used to track project status changes)
 model ProjectAuditLog {
-  id          String   @id @default(uuid())
-  projectId   String
-  action      String   // "ARCHIVED", "UNARCHIVED"
-  userId      String   // Admin or PM 
-  createdAt   DateTime @default(now()) 
+  id        String   @id @default(uuid())
+  projectId String
+  action    String // "ARCHIVED", "UNARCHIVED"
+  userId    String // Admin or PM 
+  createdAt DateTime @default(now())
 
-  project     Project  @relation(fields: [projectId], references: [id])
-  
+  project Project @relation(fields: [projectId], references: [id])
+
   @@map("project_audit_logs")
 }
 
@@ -373,13 +383,14 @@ model ConsultantExperience {
 
   @@map("consultant_experience")
 }
+
 model ConsultancyScoringConfig {
-  id          String            @id @default(uuid())
-  factorName  ScoringFactorName @unique
-  weight      Float
-  active      Boolean @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String            @id @default(uuid())
+  factorName ScoringFactorName @unique
+  weight     Float
+  active     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 
   @@map("consultancy_scoring_configs")
 }
@@ -392,7 +403,7 @@ model ProjectScoringOverride {
   active         Boolean           @default(true)
   createdAt      DateTime          @default(now())
 
-  project        Project           @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, factorName])
   @@map("project_scoring_overrides")
@@ -409,30 +420,45 @@ model ScoringConfigAudit {
   @@map("scoring_config_audit")
 }
 
-
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   title     String
   body      String
   isRead    Boolean  @default(false) @map("is_read")
-  link      String?  
+  link      String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
+model MatchRun {
+  id                       String           @id @default(uuid())
+  projectId                String
+  executedByUserId         String
+  configurationSnapshot    Json
+  totalConsultantsScored   Int
+  totalConsultantsExcluded Int
+  status                   MatchRunStatus   @default(IN_PROGRESS)
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+  project                  Project          @relation(fields: [projectId], references: [id])
+  executedByUser           User             @relation(fields: [executedByUserId], references: [id])
+  results                  MatchRunResult[]
+}
 
-model Placement {
-  id                    String   @id @default(uuid())
-  consultantId          String   @map("consultant_id")
-  projectId             String   @map("project_id")
-  startDate             DateTime @map("start_date")
-  endDate               DateTime @map("end_date")
-  allocationPercentage  Int?      @map("allocation_percentage")
-  createdAt             DateTime @default(now()) @map("created_at")
+model MatchRunResult {
+  id           String     @id @default(uuid())
+  matchRunId   String
+  consultantId String
+  rank         Int
+  totalScore   Float
+  factorScores Json
+  matchRun     MatchRun   @relation(fields: [matchRunId], references: [id], onDelete: Cascade)
+  consultant   Consultant @relation(fields: [consultantId], references: [id])
 
-  @@map("placements")
+  @@unique([matchRunId, consultantId])
+  @@index([matchRunId, rank])
 }

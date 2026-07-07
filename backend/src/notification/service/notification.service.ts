@@ -42,7 +42,29 @@ export class NotificationService {
     async getNotifications(userId: string) {
         return this.prisma.notification.findMany({
             where: {
-                userId: userId
+                userId: userId,
+                isArchived: false,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+
+        });
+    }
+
+    async archiveNotification(notificationId: string) {
+        return await this.prisma.notification.update({
+            where: {
+                id: notificationId,
+            },
+            data: { isArchived: true, archivedAt: new Date() }
+        })
+    }
+
+    async getArchivedNotifications(userId: string) {
+        return this.prisma.notification.findMany({
+            where: {
+                userId: userId,
+                isArchived: true,
             },
             orderBy: { createdAt: 'desc' },
             take: 50

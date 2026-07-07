@@ -17,6 +17,13 @@ export class NotificationController {
 
         return await this.notificationService.getNotifications(userId);
     }
+
+    @Get('archieved')
+    async getArchivedNotifications(@Req() req: any) {
+        const userId = req.userId;
+
+        return await this.notificationService.getArchivedNotifications(userId);
+    }
     @Patch(':id/read')
     async markAsRead(@Param('id') id: string, @Req() req: any) {
         const userId = req.userId;
@@ -31,6 +38,14 @@ export class NotificationController {
 
         return await this.notificationService.markAllAsRead(userId);
     }
+
+
+    @Patch(':id/archive')
+    async archiveNotification(@Param('id') id: string) {
+
+        return await this.notificationService.archiveNotification(id);
+    }
+
 
 }
 

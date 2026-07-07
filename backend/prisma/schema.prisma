@@ -366,15 +366,16 @@ model ConsultantExperience {
 
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  title     String
-  body      String
-  isRead    Boolean  @default(false) @map("is_read")
-  link      String?  
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  title      String
+  body       String
+  isRead     Boolean  @default(false) @map("is_read")
+  isArchived Boolean  @default(false) @map("is_archived")
+  link       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  archivedAt DateTime @default(now()) @map("archived_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }

@@ -35,22 +35,32 @@ function mapToFrontend(backendFactors: BackendFactor[]): ScoringFactor[] {
     return backendFactors.map((f) => {
         const meta= FACTOR_METADATA[f.factorName] ?? 
         {label: f.factorName.replace(/_/g, " ").toLowerCase() ,description : "No description available.",};
+        const effectiveWeight= f.overrideWeight ?? f.weight ?? 0;
+
         return {
         factorName: meta.label,
         description: meta.description,
         isActive: f.active,
         hardExclusion: f.hardExclusion || false,
-        weight: f.weight ?? 0,
-        factorKey: f.factorName}
+        weight: effectiveWeight,
+        factorKey: f.factorName} 
     });
 }
 
 
 
-function mapToBackend(frontendFactors: ScoringFactor[]): BackendFactor[] {
+function mapToGlobalBackend(frontendFactors: ScoringFactor[]): BackendFactor[] {
     return frontendFactors.map((f) => ({
         factorName: f.factorKey ?? f.factorName,
         weight: f.weight,
+        active: f.isActive
+    }));
+}
+
+function mapToProjectOverrideBackend(frontendFactors: ScoringFactor[]): Array<{factorName: string; overrideWeight: number; active: boolean}> {
+    return frontendFactors.map((f) => ({
+        factorName: f.factorKey ?? f.factorName,
+        overrideWeight: f.weight,
         active: f.isActive
     }));
 }
@@ -77,7 +87,7 @@ export const scoringApiService = {
 
     async updateGlobalConfig(factors: ScoringFactor[]): Promise<ScoringFactor[]> {
         const payload = {
-            scoringFactors: mapToBackend(factors),
+            scoringFactors: mapToGlobalBackend(factors),
         };
 
         const res = await fetch(SCORING_ENDPOINT, {
@@ -94,4 +104,44 @@ export const scoringApiService = {
         return mapToFrontend(data);
     },
 
+    async getProjectOverrideConfig(projectId: string): Promise<ScoringFactor[]>{
+        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`, {
+            method: "GET",
+            headers:getHeaders(),
+        });
+        if(!resp.ok){
+            if(resp.status ===404){
+                return [];}
+            throw new Error(`Failed to fetch project override configurations: ${resp.statusText}`);
+        }
+        const data: BackendFactor[]= await resp.json();
+        return mapToFrontend(data);
+    },
+
+    async updateProjectOverride(projectId: string, factors: ScoringFactor[]): Promise<ScoringFactor[]>{
+        const payload= {
+            factors: mapToProjectOverrideBackend(factors),};
+        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`,{
+            method: "PUT",
+            headers:  getHeaders(),
+            body: JSON.stringify(payload),
+        });
+        if(!resp.ok){
+            throw new Error("Failed to update project scoring override");
+        }
+        const data: BackendFactor[]= await resp.json();
+        return mapToFrontend(data);
+        },
+
+    async deleteProjectOverride(projectId: string): Promise<void>{
+        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`,{
+            method: "DELETE",
+            headers:  getHeaders(),
+            body: JSON.stringify({confirm: true}),
+        });
+        if(!resp.ok){
+            const err= await resp.json();
+            throw new Error(err.message || "Failed to delete project scoring override");
+        }
+    }
 }

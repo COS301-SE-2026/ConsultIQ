@@ -5,11 +5,13 @@ import type { Project } from "../types/project.types";
 interface ProjectCardProps {
   readonly project: Project;
   readonly onViewDetails: (project: Project) => void;
+  readonly onConfigureScore: (project: Project)=> void;
 }
 
 export default function ProjectCard({
   project,
   onViewDetails,
+  onConfigureScore,
 }: ProjectCardProps) {
   return (
     <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white">
@@ -49,15 +51,22 @@ export default function ProjectCard({
           {project.description}
         </p>
 
-        <div className="h-4" />
+        <div className="h-2" />
         {/* Footer */}
-        <div className="flex items-center justify-between mt-auto pt-4">
+        <div className="flexitems-wrap items-center justify-between mt-auto pt-4 gap-3">
           <div className="flex items-center gap-2">
 
-            <p className="text-xl font-semibold">
+            <p className="text-lg">
               R{project.budget.toLocaleString()}
             </p>
           </div>
+          <div className="h-2" />
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() =>onConfigureScore(project)}
+              className="flex items-center justify-center h-8 w-30 px-4 text-sm font-medium text-white rounded"
+              style={{ backgroundColor: "var(--color-primary)"}}>
+                Configure Scoring
+            </button>
 
           <button
             type="button"
@@ -86,6 +95,7 @@ export default function ProjectCard({
             View Details &gt;
           </button>
         </div>
+      </div>
       </div>
     </Card>
   );

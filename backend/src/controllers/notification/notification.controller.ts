@@ -18,7 +18,7 @@ export class NotificationController {
         return await this.notificationService.getNotifications(userId);
     }
 
-    @Get('archieved')
+    @Get('archived')
     async getArchivedNotifications(@Req() req: any) {
         const userId = req.userId;
 

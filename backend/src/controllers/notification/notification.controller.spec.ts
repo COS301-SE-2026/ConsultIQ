@@ -9,6 +9,8 @@ const mockNotificationService = {
     getNotifications: jest.fn(),
     markAsRead: jest.fn(),
     markAllAsRead: jest.fn(),
+    getArchivedNotifications: jest.fn(),
+    archiveNotification: jest.fn(),
 };
 
 describe('NotificationCotroller', () => {
@@ -45,6 +47,23 @@ describe('NotificationCotroller', () => {
         });
     });
 
+    describe('getArchivedNotifications', () => {
+        it('should return 50 latest archived notifications of user', async () => {
+
+            const notification = { data: { userId: 'user-123', title: 'Prject complete', body: 'Successfully completed a project', isArchived: true } }
+            const req = {
+                id: 'user-123',
+                userId: 'user-123'
+            };
+            mockNotificationService.getArchivedNotifications.mockResolvedValue(notification);
+
+            const result = await controller.getArchivedNotifications(req);
+
+            expect(result).toEqual(notification);
+            expect(mockNotificationService.getArchivedNotifications).toHaveBeenCalledWith('user-123');
+        });
+    });
+
     describe('markAsRead', () => {
         it('should mark notification as read', async () => {
 
@@ -61,6 +80,19 @@ describe('NotificationCotroller', () => {
         });
     });
 
+    describe('arhieveNotification', () => {
+        it('should mark notification as read', async () => {
+
+            const notification = { id: '1', userId: 'user-123', title: 'Project complete', body: 'Successfully completed a project', isRead: true, isArchived: true };
+
+            mockNotificationService.archiveNotification.mockResolvedValue(notification);
+
+            const result = await controller.archiveNotification('1');
+
+            expect(result).toEqual(notification);
+            expect(mockNotificationService.archiveNotification).toHaveBeenCalledWith('1');
+        });
+    });
 
     describe('markAllAsRead', () => {
         it('should mark all notifications as read', async () => {

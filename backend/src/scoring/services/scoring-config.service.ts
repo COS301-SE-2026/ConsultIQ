@@ -24,7 +24,7 @@ const DEFAULT_FACTORS: ScoringFactorDto[] = [
 
 @Injectable()
 export class ScoringService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─── Firm-Wide Config ───────────────────────────────────────────────
 
@@ -184,9 +184,9 @@ export class ScoringService {
     }
   }
 
-  async getProjectScoringOverride(projectId: string){
+  async getProjectScoringOverride(projectId: string) {
     return this.prisma.projectScoringOverride.findMany({
-        where: { projectId },
+      where: { projectId },
     });
   }
 }

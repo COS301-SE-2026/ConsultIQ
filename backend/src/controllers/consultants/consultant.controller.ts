@@ -52,6 +52,13 @@ export class ConsultantController {
     );
   }
 
+  @Get('me/project')
+  @HttpCode(HttpStatus.OK)
+  async getAssignedProjects(@Req() req: any) {
+    const userId = req.user?.userId;
+    return this.consultantService.getAssignedProjects(userId);
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getConsultantById(@Param('id') id: string) {

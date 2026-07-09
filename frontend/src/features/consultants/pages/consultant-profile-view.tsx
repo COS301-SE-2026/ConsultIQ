@@ -58,7 +58,6 @@ function ConsultantProfileViewPage() {
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-  console.log("Loaded profile data:", profile);
 
   if (isLoading) {
     return (

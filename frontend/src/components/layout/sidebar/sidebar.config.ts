@@ -1,5 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck,House,Cog } from "lucide-react";
+import { Users, Briefcase, UserCheck,House,Cog,Bell } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",
@@ -10,6 +10,11 @@ export const adminSidebarItems: SidebarItem[] = [
         label: "Configurations",
         path:"/admin-scoring-config",
         icon:Cog
+    },
+    {
+        label: "Notifications",
+        path:"/notifications",
+        icon:Bell
     }
 ]
 
@@ -19,6 +24,11 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
         path: "/consultants-manager",
         icon: Users
     },
+    {
+        label: "Notifications",
+        path:"/notifications",
+        icon:Bell
+    }
 
 ]
 
@@ -32,6 +42,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         label: "Configurations",
         path:"/project-scoring-config",
         icon:Cog
+    },
+    {
+        label: "Notifications",
+        path:"/notifications",
+        icon:Bell
     }
 
 ] 
@@ -42,4 +57,9 @@ export const consultantSidebarItems: SidebarItem[] = [
         path: "/profile-view",
         icon: UserCheck
     },
+    {
+        label: "Notifications",
+        path:"/notifications",
+        icon:Bell
+    }
 ];

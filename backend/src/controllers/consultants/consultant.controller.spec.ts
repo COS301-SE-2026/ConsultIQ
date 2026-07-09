@@ -8,6 +8,7 @@ const mockConsultantService = {
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
+  getAssignedProjects: jest.fn(),
 };
 
 const mockNotificationService = {
@@ -128,14 +129,6 @@ describe('ConsultantController', () => {
   });
 
   // ─── getAssignedProjects ────────────────────────────────────────────────────
-  const mockConsultantService = {
-    createConsultantProfile: jest.fn(),
-    getPendingProfiles: jest.fn(),
-    getAllConsultants: jest.fn(),
-    getConsultantById: jest.fn(),
-    getAssignedProjects: jest.fn(),  // ← add this
-  };
-
   describe('getAssignedProjects', () => {
     it('should call service with userId from JWT and return result', async () => {
       const mockProjects = [

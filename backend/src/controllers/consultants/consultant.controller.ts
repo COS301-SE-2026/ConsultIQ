@@ -52,7 +52,7 @@ export class ConsultantController {
     );
   }
 
-  @Get('me/project')
+  @Get('assigned/project')
   @HttpCode(HttpStatus.OK)
   async getAssignedProjects(@Req() req: any) {
     const userId = req.user?.userId;

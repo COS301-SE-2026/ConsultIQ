@@ -1,17 +1,17 @@
 export class ConsultantSkillsDto {
-    id!: string;
-    skillName!: string;
-    competencyLevel!: string;
-    yearsExperience!: number;
-    confidenceLevel!: number;
+  id!: string;
+  skillName!: string;
+  competencyLevel!: string;
+  yearsExperience!: number;
+  confidenceLevel!: number;
 }
 
 export class ConsultantCertificationsDto {
   id!: string;
-  title!: string; 
-  issuingBody!: string; 
+  title!: string;
+  issuingBody!: string;
   startDate!: Date;
-    endDate!: Date;
+  endDate!: Date;
   uploadedAt!: Date;
 }
 

@@ -19,10 +19,13 @@ import {
   JobType,
   WorkModel,
 } from '@prisma/client';
-
+import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async createConsultantProfile(
     cmUserId: string,
@@ -138,10 +141,20 @@ export class ConsultantService {
 
         return { consultantId: consultant.id };
       })
-      .then((result) => ({
-        message: 'Consultant profile created successfully.',
-        consultantId: result.consultantId,
-      }));
+      .then(async (result) => {
+        //send notification to consultant
+        await this.notificationService.createAndSendNotification(
+          dto.consultantUserId,
+          'Profile creation! 🎉',
+          'Your consultant profile has been completed.',
+        );
+
+        // Return the final response to the controller
+        return {
+          message: 'Consultant profile created successfully.',
+          consultantId: result.consultantId,
+        };
+      });
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -179,6 +192,12 @@ export class ConsultantService {
       this.prisma.consultant.findMany({
         skip,
         take: limit,
+        where: {
+          user: {
+            deletedAt: null,
+            status: { not: 'ARCHIVED' },
+          },
+        },
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },
@@ -247,7 +266,9 @@ export class ConsultantService {
     });
 
     if (!consultant) {
-      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+      throw new NotFoundException(
+        `Consultant with userId ${userId} not found.`,
+      );
     }
 
     return this.mapToProfileDto(consultant);
@@ -268,10 +289,26 @@ export class ConsultantService {
         },
       },
       certificates: {
-        select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true }
+        select: {
+          id: true,
+          title: true,
+          issuingBody: true,
+          startDate: true,
+          endDate: true,
+          uploadedAt: true,
+        },
       },
       consultantExperiences: {
-        select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true }
+        select: {
+          id: true,
+          companyName: true,
+          jobTitle: true,
+          jobType: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          workModel: true,
+        },
       },
     };
   }
@@ -318,5 +355,71 @@ export class ConsultantService {
         uploadedAt: cert.uploadedAt,
       })),
     };
+  }
+
+  //-----------------Consultant get assigned projects-------------------
+  async getAssignedProjects(userId: string) {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`No consultant profile for this user.`);
+    }
+
+    const placement = await this.prisma.projectPlacement.findMany({
+      where: { consultantId: consultant.id },
+      include: {
+        //
+        project: {
+          //
+          include: {
+            placements: {
+              //
+              include: {
+                //
+                consultant: {
+                  //
+                  include: {
+                    user: {
+                      select: {
+                        fullName: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return placement.map((p) => ({
+      placementId: p.id,
+      placementStatus: p.status,
+      placementAllocation: p.allocation,
+      startDate: p.startDate,
+      endDate: p.endDate,
+      project: {
+        projectName: p.project.projectName,
+        clientName: p.project.clientName,
+        description: p.project.description,
+        suburb: p.project.suburb,
+        city: p.project.city,
+        province: p.project.province,
+        status: p.project.status,
+        startDate: p.project.startDate,
+        endDate: p.project.endDate,
+        allocation: p.project.allocation,
+        teamMembers: p.project.placements
+          .filter((pl) => pl.consultantId !== consultant.id)
+          .map((pl) => ({
+            fullName: pl.consultant.user.fullName,
+            email: pl.consultant.user.email,
+          })),
+      },
+    }));
   }
 }

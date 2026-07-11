@@ -37,11 +37,11 @@ describe('NotificationService', () => {
 
 
     describe('getNotifications', () => {
-        it('should return list of pending profile users', async () => {
+        it('should get all notifications that are not archived', async () => {
 
 
-            const mockNotifications = [{ id: '1', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false },
-            { id: '2', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false }
+            const mockNotifications = [{ id: '1', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false, isArchived: false },
+            { id: '2', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false, isArchived: false }
             ]
 
             const req = {
@@ -54,7 +54,7 @@ describe('NotificationService', () => {
 
             expect(result).toEqual(mockNotifications);
             expect(mockPrismaService.notification.findMany).toHaveBeenCalledWith({
-                where: { userId: 'user-123' },
+                where: { userId: 'user-123', isArchived: false },
                 orderBy: { createdAt: 'desc' },
                 take: 50,
             });
@@ -165,5 +165,55 @@ describe('NotificationService', () => {
 
 
         });
+    });
+
+
+
+    describe('getArchivedNotifications', () => {
+        it('should return all archived notifications', async () => {
+
+
+            const mockNotifications = [{ id: '1', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false, isArchived: true },
+            { id: '2', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false, isArchived: true }
+            ]
+
+            const req = {
+                id: 'user-123',
+                userId: 'user-123'
+            };
+            mockPrismaService.notification.findMany.mockResolvedValue(mockNotifications);
+
+            const result = await notificationService.getArchivedNotifications(req.userId);
+
+            expect(result).toEqual(mockNotifications);
+            expect(mockPrismaService.notification.findMany).toHaveBeenCalledWith({
+                where: { userId: 'user-123', isArchived: true },
+                orderBy: { createdAt: 'desc' },
+                take: 50,
+            });
+        });
+
+    });
+
+    describe('archieveNotifications', () => {
+        it('should archieve a notification', async () => {
+
+
+            const mockNotifications = { id: '1', userId: 'user-123', title: 'Project Complete', body: 'Successfully completed a project', isRead: false, isArchived: true, archivedAt: new Date() };
+
+            mockPrismaService.notification.update.mockResolvedValue(mockNotifications);
+
+            const result = await notificationService.archiveNotification(mockNotifications.id);
+
+            expect(result).toEqual(mockNotifications);
+            expect(mockPrismaService.notification.update).toHaveBeenCalledWith({
+                where: { id: '1' },
+                data: {
+                    isArchived: true, archivedAt: expect.any(Date),
+                }
+            });
+        });
+
+
     });
 });

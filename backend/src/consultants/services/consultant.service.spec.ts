@@ -317,4 +317,86 @@ describe('ConsultantService', () => {
       expect(result.certificates[0].uploadedAt).toEqual(referenceDate);
     });
   });
+
+  //-------Consultant get assigned projects
+  const mockPrismaService = {
+    user: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+    consultant: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
+    },
+    projectPlacement: {
+      findMany: jest.fn(),
+    },
+    $transaction: jest.fn(),
+  };
+
+  describe('getAssignedProjects', () => {
+    it('throws NotFoundException when consultant profile does not exist', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getAssignedProjects('user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns empty array when consultant has no placements', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns assigned projects with team members excluding self', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-1',
+          status: 'ACTIVE',
+          allocation: 80,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDate: null,
+            allocation: 100,
+            placements: [
+              {
+                consultantId: 'consultant-1',
+                consultant: {
+                  user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
+                },
+              },
+              {
+                consultantId: 'consultant-2',
+                consultant: {
+                  user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
+                },
+              },
+            ],
+          },
+        },
+      ]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-1');
+      expect(result[0].project.teamMembers).toHaveLength(1);
+      expect(result[0].project.teamMembers[0].email).toBe('jane@bbd.co.za');
+    });
+  });
 });

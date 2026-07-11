@@ -341,4 +341,70 @@ export class ConsultantService {
       })),
     };
   }
+
+  //-----------------Consultant get assigned projects-------------------
+  async getAssignedProjects(userId: string) {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`No consultant profile for this user.`);
+    }
+
+    const placement = await this.prisma.projectPlacement.findMany({
+      where: { consultantId: consultant.id },
+      include: {
+        //
+        project: {
+          //
+          include: {
+            placements: {
+              //
+              include: {
+                //
+                consultant: {
+                  //
+                  include: {
+                    user: {
+                      select: {
+                        fullName: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return placement.map((p) => ({
+      placementId: p.id,
+      placementStatus: p.status,
+      placementAllocation: p.allocation,
+      startDate: p.startDate,
+      endDate: p.endDate,
+      project: {
+        projectName: p.project.projectName,
+        clientName: p.project.clientName,
+        description: p.project.description,
+        suburb: p.project.suburb,
+        city: p.project.city,
+        province: p.project.province,
+        status: p.project.status,
+        startDate: p.project.startDate,
+        endDate: p.project.endDate,
+        allocation: p.project.allocation,
+        teamMembers: p.project.placements
+          .filter((pl) => pl.consultantId !== consultant.id)
+          .map((pl) => ({
+            fullName: pl.consultant.user.fullName,
+            email: pl.consultant.user.email,
+          })),
+      },
+    }));
+  }
 }

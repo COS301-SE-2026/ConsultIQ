@@ -1,34 +1,28 @@
-import NotificationItem from "../components/notification-item";
+import NotificationCard from "./notification-card";
+import type { NotificationItems } from "../types/notification.types";
 import { Pagination } from "../../../components/shared/pagination";
 
 
-export interface Notification{
-    id:string;
-    userId: string;
-    title: string;
-    body: string;
-    createdAt:string;
-    link?: string;
-    isRead?: boolean;
-    isArchived?: boolean;
-}
 
 interface AllNotificationProps {
   readonly searchQuery?: string;
-  readonly notifications: Notification[];
+  readonly notifications: NotificationItems[];
   readonly currentPage: number;
   readonly onPageChange: (page: number) => void;
   readonly itemsPerPage?: number;
+  readonly selectedIds: string[];
+  readonly onToggleSelect:(id:string) => void;
+  
 }
 
-function getStatus(notification: Notification){
+function getStatus(notification: NotificationItems){
     if (notification.isArchived) return "archived";
     return notification.isRead ? "read" : "unread";
 
 }
 
 
-export default function AllTab({notifications, searchQuery= "",currentPage =1,onPageChange,itemsPerPage}:AllNotificationProps){
+export default function AllTab({notifications, searchQuery= "",currentPage =1,onPageChange,itemsPerPage,selectedIds,onToggleSelect}:AllNotificationProps){
     const filtered = notifications.filter((n) =>
         n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         n.body.toLowerCase().includes(searchQuery.toLowerCase())
@@ -46,14 +40,16 @@ export default function AllTab({notifications, searchQuery= "",currentPage =1,on
         <div className="w-full flex flex-col">
             <div className="flex w-full flex-col ">
                 {paginatedItems.map((notification) => (
-                    <NotificationItem 
+                    <NotificationCard
                         key= {notification.id}
                         id={notification.id} 
                         title={notification.title}
                         body={notification.body}
                         createdAt={notification.createdAt}
-                        link= {notification.link}
+                        link= {notification.link ?? ""}
                         status={getStatus(notification)}
+                        checked={selectedIds.includes(notification.id)}
+                        onCheckedChange={() => onToggleSelect(notification.id)}
                     />
                 ))}
             </div>

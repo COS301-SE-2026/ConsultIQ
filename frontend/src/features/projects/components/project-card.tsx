@@ -30,40 +30,36 @@ export default function ProjectCard({
               }}>
               {project.projectName}
             </h2>
-          </div>
-        </div>
-        <div className="h-4" />
-
-        <p className="text-base font-medium mb-3"
+            <p className="text-base font-medium mb-3"
           style={{
             color:
               "var(--color-accent)",
           }}>
           {project.clientName}
         </p>
+          </div>
+        </div>
+        <div className="h-4" />
 
         {/* Description */}
-        <p className="text-[15px] leading-7 mb-8 line-clamp-4"
+        <p className="text-[16px] leading-7 mb-8 line-clamp-4"
           style={{
             color:
               "var(--color-text-secondary)",
           }}>
           {project.description}
         </p>
-
-        <div className="h-2" />
         {/* Footer */}
-        <div className="flexitems-wrap items-center justify-between mt-auto pt-4 gap-3">
+        <div className="items-wrap items-center justify-between mt-auto pt-4 gap-3">
           <div className="flex items-center gap-2">
-
-            <p className="text-lg">
+            <p className="text-[16px] font-semibold">
               R{project.budget.toLocaleString()}
             </p>
           </div>
-          <div className="h-2" />
+          <div className="h-4" />
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() =>onConfigureScore(project)}
-              className="flex items-center justify-center h-8 w-30 px-4 text-sm font-medium text-white rounded"
+              className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"
               style={{ backgroundColor: "var(--color-primary)"}}>
                 Configure Scoring
             </button>
@@ -92,7 +88,7 @@ export default function ProjectCard({
               backgroundColor: "var(--color-white)",
             }}
           >
-            View Details &gt;
+            View Details
           </button>
         </div>
       </div>

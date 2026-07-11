@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import { CheckCircle, AlertCircle, RotateCcw, Info} from "lucide-react";
 
 export interface ScoringFactor{
@@ -36,7 +36,7 @@ function ViewInfo({label, description}: {label: string; description: string}){
         );}
 
 export function ScoringWeightsTable({initialFactors, isProjectOverride, isUsingDefaultWeights, onSave,onRevertToDefaultWeights}: ScoringWeightTableProps){
-    const [factors, setFactors]= useState<ScoringFactor[]>(() =>initialFactors ?? []);
+    const [factors, setFactors]= useState<ScoringFactor[]>(initialFactors ?? []);
     const [isSaving, setIsSaving]= useState(false);
 
     const totalActiveWeight= factors.filter(factor => factor.isActive).reduce((sum, factor) => sum +factor.weight, 0);
@@ -46,30 +46,26 @@ export function ScoringWeightsTable({initialFactors, isProjectOverride, isUsingD
         setFactors(previous => previous.map((factor, i) => i===idx ? {...factor, [key]: val} : factor));
     };
 
-    useEffect(() =>{
-        setFactors(initialFactors ?? []);
-    }, [initialFactors]);
-
     return(
-        <div className="w-full max-w-5xl mx-auto my-12 px-8 py-8 bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible">
+        <div className="w-full max-w-5xl mx-auto my-12 px-4 sm:px-6 lg:px-8 py-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible">
             {isProjectOverride &&(
-                <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold 
+                <div className="px-6 py-4 sm:px-4 bg-white border-b border-slate-200 flex justify-between items-center">
+                    <div className="px-4 flex items-center gap-2">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-bold 
                             ${isUsingDefaultWeights ? 'bg-slate-100 text-slate-600' : 'bg-green-50 text-green-700 border border-green-200'}`}>
-                                <span className={`h-5 w-5 rouned-full ${isUsingDefaultWeights ? 'bg-slate-400' : 'bg-green-500'}`} />
+                                <span className={`h-5 w-5 rounded-full ${isUsingDefaultWeights ? 'bg-slate-400' : 'bg-green-500'}`} />
                                 {isUsingDefaultWeights? 'Using Consultancy Defaults' : 'Custom Override Active'}
                         </span>
                     </div>
+                    
                     {!isUsingDefaultWeights && onRevertToDefaultWeights &&(
                         <button onClick={onRevertToDefaultWeights}
                           className="flex items-center gap-1 text-xs text-slate-500 font-bold">
                             <RotateCcw className="h-5 w-5" />Revert to Defaults
                         </button> )}
+
                 </div>
             )}
-            <div className="space-y-6">
-                <div className="h-6"/>
                 <div className="border-b border-slate-100">
                     <div className="py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center text-sm font-bold  tracking-wide">
                         <div></div>
@@ -77,26 +73,25 @@ export function ScoringWeightsTable({initialFactors, isProjectOverride, isUsingD
                         <div className="flex justify-center gap-2"><h3>Weight</h3></div>
                         <div className=" flex items-center justify-center gap-2">
                             <span><h3>Active</h3></span>
-                            <ViewInfo label="Active" description="Turn this factor on or off for scoring"/>
+                            <ViewInfo label="Active" description="When turned on, the algorithm actively uses the selected factor to calculate the overall fit, otherwise it is ignored"/>
                         </div>
                         <div className="flex items-center justify-center gap-2">
                             <span><h3>Hard Exclusion</h3></span>
                             <ViewInfo label="Hard Exclusion" description="If enabled, this factor can block the consultant from being considered."/>
                         </div>
                         <div></div>
-                    </div><div className="h-4"/>
+                    </div>
                 </div>
                 <div className="space-y-6">
                 { factors.map((factor, idx) =>(
                     <div key={`${factor.factorName}-${idx}`} >
-                    <div className={`mb-4 border border-slate-200 ${!factor.isActive && 'opacity-60'}`}>
+                    <div className={`mb-4 border border-slate-200 rounded shadow-sm ${!factor.isActive && 'opacity-60'}`}>
                     <div className= "py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center">
                         <div></div>
                         <div className="space-y-2">
                             <div className="h-2"/>
                             <h4 className="text-base font-semibold text-[#002D62]">{factor.factorName}</h4>
                             <p className="text-sm text-slate-600">{factor.description}</p>
-                            <div className="h-2"/>
                         </div>
                         
                     <div className="space-y-3">
@@ -128,8 +123,6 @@ export function ScoringWeightsTable({initialFactors, isProjectOverride, isUsingD
             </div>
         </div>
     ))}</div>
-
-        </div>
             <div className=" h-14 mt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className="w-6"/>
                 <div className={`h-8 flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-lg 
@@ -143,7 +136,6 @@ export function ScoringWeightsTable({initialFactors, isProjectOverride, isUsingD
                     className="h-8 w-25 bg-[#002D62] text-white rounded-lg text-sm font-bold shadow-sm disabled:bg-slate-200 disabled:text-slate-400">
                         {isSaving ? 'Saving...' :'Save Changes'}
                     </button>
-                    <div className="w-6"/>
                 </div>
 
             </div>

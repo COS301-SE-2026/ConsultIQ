@@ -79,7 +79,7 @@ export const scoringApiService = {
         }
 
         const data: BackendFactor[] = await res.json();
-        console.log(data);
+        // console.log(data);
         return mapToFrontend(data);
     },
 
@@ -105,7 +105,7 @@ export const scoringApiService = {
     },
 
     async getProjectOverrideConfig(projectId: string): Promise<ScoringFactor[]>{
-        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`, {
+        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`, {
             method: "GET",
             headers:getHeaders(),
         });
@@ -114,14 +114,15 @@ export const scoringApiService = {
                 return [];}
             throw new Error(`Failed to fetch project override configurations: ${resp.statusText}`);
         }
-        const data: BackendFactor[]= await resp.json();
+        const data= await resp.json();
+        console.log("Project override configs", data);
         return mapToFrontend(data);
     },
 
     async updateProjectOverride(projectId: string, factors: ScoringFactor[]): Promise<ScoringFactor[]>{
         const payload= {
             factors: mapToProjectOverrideBackend(factors),};
-        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`,{
+        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`,{
             method: "PUT",
             headers:  getHeaders(),
             body: JSON.stringify(payload),
@@ -134,7 +135,7 @@ export const scoringApiService = {
         },
 
     async deleteProjectOverride(projectId: string): Promise<void>{
-        const resp= await fetch(`{SCORING_ENDPOINT}/${projectId}/scoring-override`,{
+        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`,{
             method: "DELETE",
             headers:  getHeaders(),
             body: JSON.stringify({confirm: true}),

@@ -126,12 +126,7 @@ export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkil
                 
         {(!isEditing && 
           <ProjectSkillsTable skills={skills}
-          isEditing={false}
-          isDisabled={true}
           onEditSkill={onEditSkill || (()=> {})}
-          onEdit={()=>{}} 
-          onCancel={()=>{}}
-          onSave={()=>{}}
           /> )}
         </div>
 

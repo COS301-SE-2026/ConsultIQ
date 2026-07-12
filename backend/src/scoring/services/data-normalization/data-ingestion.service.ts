@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { EntryScoringDataDto } from '../dto/entry-data.dto';
+import { EntryScoringDataDto } from '../../dto/entry-data.dto';
 import { NormalizationService } from './normalization.service';
-import { ScoringFactor, STUB_CONSULTANCY_DEFAULT_WEIGHTS } from '../enums/scoring-factor.enum';
-import { ResolvedScoringContext } from './context.interface';
+import { ScoringFactor, STUB_CONSULTANCY_DEFAULT_WEIGHTS } from '../../enums/scoring-factor.enum';
+import { ResolvedScoringContext } from '../interfaces/context.interface';
 
 @Injectable()
 export class DataIngestionService {

@@ -1,4 +1,4 @@
-import { ScorerDetail } from "../enums/scoring-factor.enum";
+import { ScorerDetail } from "../../enums/scoring-factor.enum";
 
 
 export interface FactorScoreResult {

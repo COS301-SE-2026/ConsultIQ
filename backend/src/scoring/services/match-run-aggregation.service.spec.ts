@@ -1,7 +1,7 @@
 import { MatchRunAggregationService, ScoredConsultantInput } from "./match-run-aggregation.service";
-import { WeightedAggregator } from "./weighted-aggregator";
+import { WeightedAggregator } from "./weight-aggregator/weighted-aggregator";
 import { ScoringFactor } from "../enums/scoring-factor.enum";
-import { ConsultantMatchResult } from "./match-result.interface";
+import { ConsultantMatchResult } from "./interfaces/match-result.interface";
 
 describe('MatchRunAggregationService', () => {
     let service: MatchRunAggregationService;

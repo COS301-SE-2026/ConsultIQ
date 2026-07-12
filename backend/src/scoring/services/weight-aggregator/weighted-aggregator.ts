@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
-import { WeightedFactorBreakdown, ConsultantMatchResult } from "./match-result.interface";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
+import { WeightedFactorBreakdown, ConsultantMatchResult } from "../interfaces/match-result.interface";
 
 export interface ScoredConsultant {
     consultantId: string;

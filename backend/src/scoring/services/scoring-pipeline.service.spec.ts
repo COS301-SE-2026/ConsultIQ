@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ScoringPipelineService } from './scoring-pipeline.service';
-import { DataIngestionService } from './data-ingestion.service';
+import { DataIngestionService } from './data-normalization/data-ingestion.service';
 import { ScoringOrchestrator, ScoringResults } from './scoring.orchestrator';
 import { EntryScoringDataDto } from '../dto/entry-data.dto';
 import { ScoringFactor } from '../enums/scoring-factor.enum';
@@ -80,7 +80,7 @@ describe('ScoringPipelineService', () => {
     it('should throw errors if score orchestrator fails', async () => {
         const mockDto = { consultant: {}, project: {} } as EntryScoringDataDto;
 
-        const mockActiveWeights = { 
+        const mockActiveWeights = {
             [ScoringFactor.SKILL_ALIGNMENT]: 0.3,
             [ScoringFactor.COST_FIT]: 0.3,
             [ScoringFactor.COMPETENCY_MATCH]: 0.2,

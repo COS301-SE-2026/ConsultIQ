@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Param, Request, UseGuards } from '@nestjs/common';
 import { MatchRunService } from '../../scoring/services/match-run.service';
-import { ConsultantMatchResult } from '../../scoring/services/match-result.interface';
+import { ConsultantMatchResult } from '../../scoring/services/interfaces/match-result.interface';
 
 
 @Controller('projects/:id/match-run')

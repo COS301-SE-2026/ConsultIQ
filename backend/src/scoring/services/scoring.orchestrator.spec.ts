@@ -1,13 +1,13 @@
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import { RawProjectDto } from "../dto/raw-project.dto";
-import { AvailabilityFitScorer } from "./availability-fit.scorer";
+import { AvailabilityFitScorer } from "./five-scoring-modules/availability-fit.scorer";
 import { ScoringFactor } from "../enums/scoring-factor.enum";
 import { CompetencyLevel } from "../enums/competency-level.enum";
 import { FactorActivationConfig } from "./factor-activation.config";
-import { GeographicFitScorer } from "./geographic-fit.scorer";
-import { CostFitScorer } from "./cost-fit.scorer";
-import { CompetencyMatchScorer } from "./competency-match-scorer";
-import { SkillAligmentScorer } from "./skill-alignment-scorer";
+import { GeographicFitScorer } from "./five-scoring-modules/geographic-fit.scorer";
+import { CostFitScorer } from "./five-scoring-modules/cost-fit.scorer";
+import { CompetencyMatchScorer } from "./five-scoring-modules/competency-match-scorer";
+import { SkillAligmentScorer } from "./five-scoring-modules/skill-alignment-scorer";
 import { ScoringOrchestrator } from "./scoring.orchestrator";
 
 

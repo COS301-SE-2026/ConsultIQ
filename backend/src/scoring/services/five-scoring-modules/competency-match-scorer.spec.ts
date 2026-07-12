@@ -1,7 +1,7 @@
-import { RawConsultantDto } from "../dto/raw-consultant.dto";
-import { RawProjectDto } from "../dto/raw-project.dto";
-import { COMPETENCY_RANK } from "../enums/competency-level.enum";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { RawConsultantDto } from "../../dto/raw-consultant.dto";
+import { RawProjectDto } from "../../dto/raw-project.dto";
+import { COMPETENCY_RANK } from "../../enums/competency-level.enum";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 import { CompetencyMatchScorer } from "./competency-match-scorer";
 import { CompetencyLevel } from "@prisma/client";
 

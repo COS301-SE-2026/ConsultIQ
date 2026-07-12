@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { RawConsultantDto } from "../dto/raw-consultant.dto";
-import { RawProjectDto } from "../dto/raw-project.dto";
-import { FactorScoreResult } from "./factor-score-result.interface";
-import { COMPETENCY_RANK } from "../enums/competency-level.enum";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { RawConsultantDto } from "../../dto/raw-consultant.dto";
+import { RawProjectDto } from "../../dto/raw-project.dto";
+import { FactorScoreResult } from "../interfaces/factor-score-result.interface";
+import { COMPETENCY_RANK } from "../../enums/competency-level.enum";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 
 
 @Injectable()

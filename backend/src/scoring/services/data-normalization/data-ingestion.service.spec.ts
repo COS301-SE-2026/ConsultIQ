@@ -1,6 +1,6 @@
 import { DataIngestionService } from "./data-ingestion.service";
 import { NormalizationService } from "./normalization.service";
-import { EntryScoringDataDto } from "../dto/entry-data.dto";
+import { EntryScoringDataDto } from "../../dto/entry-data.dto";
 import { CompetencyLevel } from "@prisma/client";
 
 function buildDto(overrides: {

@@ -1,6 +1,6 @@
-import { RawConsultantDto } from "../dto/raw-consultant.dto";
-import { RawProjectDto } from "../dto/raw-project.dto";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { RawConsultantDto } from "../../dto/raw-consultant.dto";
+import { RawProjectDto } from "../../dto/raw-project.dto";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 import { CostFitScorer } from "./cost-fit.scorer";
 
 function consultant(costToCompany: number): RawConsultantDto {

@@ -1,5 +1,5 @@
 import { WeightedAggregator, ScoredConsultant } from "./weighted-aggregator";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 
 const WEIGHTS: Partial<Record<ScoringFactor, number>> = {
     [ScoringFactor.SKILL_ALIGNMENT]: 0.4,

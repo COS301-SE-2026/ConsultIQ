@@ -1,10 +1,10 @@
 import { ScoringFactor } from "../enums/scoring-factor.enum";
-import { CompetencyMatchScorer } from "./competency-match-scorer";
-import { CostFitScorer } from "./cost-fit.scorer";
-import { GeographicFitScorer } from "./geographic-fit.scorer";
-import { SkillAligmentScorer } from "./skill-alignment-scorer";
+import { CompetencyMatchScorer } from "./five-scoring-modules/competency-match-scorer";
+import { CostFitScorer } from "./five-scoring-modules/cost-fit.scorer";
+import { GeographicFitScorer } from "./five-scoring-modules/geographic-fit.scorer";
+import { SkillAligmentScorer } from "./five-scoring-modules/skill-alignment-scorer";
 import { Inject, Injectable } from "@nestjs/common";
-import { AvailabilityFitScorer } from "./availability-fit.scorer";
+import { AvailabilityFitScorer } from "./five-scoring-modules/availability-fit.scorer";
 import { RawProjectDto } from "../dto/raw-project.dto";
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import type { FactorActivationConfig } from "./factor-activation.config";

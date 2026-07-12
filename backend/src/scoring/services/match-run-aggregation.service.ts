@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ScoringResults } from "./scoring.orchestrator";
-import { WeightedAggregator, ScoredConsultant } from "./weighted-aggregator";
-import { ConsultantMatchResult } from "./match-result.interface";
+import { WeightedAggregator, ScoredConsultant } from "./weight-aggregator/weighted-aggregator";
+import { ConsultantMatchResult } from "./interfaces/match-result.interface";
 
 
 export interface ScoredConsultantInput {

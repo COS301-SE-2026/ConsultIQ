@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchRunService } from './match-run.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DataIngestionService } from './data-ingestion.service';
+import { DataIngestionService } from './data-normalization/data-ingestion.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MatchRunStatus } from '@prisma/client';
 import { ScoringPipelineService } from './scoring-pipeline.service';

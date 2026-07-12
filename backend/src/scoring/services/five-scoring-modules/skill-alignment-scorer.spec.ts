@@ -1,8 +1,8 @@
-import { RawConsultantDto } from "../dto/raw-consultant.dto";
-import { RawProjectDto } from "../dto/raw-project.dto";
+import { RawConsultantDto } from "../../dto/raw-consultant.dto";
+import { RawProjectDto } from "../../dto/raw-project.dto";
 import { SkillAligmentScorer } from "./skill-alignment-scorer";
 import { CompetencyLevel } from "@prisma/client";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 
 function consultant(skills: { skillName: string, competencyLevel: CompetencyLevel }[]): RawConsultantDto {
     return {

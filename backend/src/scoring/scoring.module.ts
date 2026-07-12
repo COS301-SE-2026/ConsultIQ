@@ -1,15 +1,15 @@
 import { Module } from "@nestjs/common";
-import { DataIngestionService } from "./services/data-ingestion.service";
-import { NormalizationService } from "./services/normalization.service";
-import { SkillAligmentScorer } from "./services/skill-alignment-scorer";
-import { CompetencyMatchScorer } from "./services/competency-match-scorer";
-import { GeographicFitScorer } from "./services/geographic-fit.scorer";
-import { AvailabilityFitScorer } from "./services/availability-fit.scorer";
+import { DataIngestionService } from "./services/data-normalization/data-ingestion.service";
+import { NormalizationService } from "./services/data-normalization/normalization.service";
+import { SkillAligmentScorer } from "./services/five-scoring-modules/skill-alignment-scorer";
+import { CompetencyMatchScorer } from "./services/five-scoring-modules/competency-match-scorer";
+import { GeographicFitScorer } from "./services/five-scoring-modules/geographic-fit.scorer";
+import { AvailabilityFitScorer } from "./services/five-scoring-modules/availability-fit.scorer";
 import { ScoringOrchestrator } from "./services/scoring.orchestrator";
 import { ScoringPipelineService } from "./services/scoring-pipeline.service";
-import { CostFitScorer } from "./services/cost-fit.scorer";
+import { CostFitScorer } from "./services/five-scoring-modules/cost-fit.scorer";
 import { MatchRunAggregationService } from "./services/match-run-aggregation.service";
-import { WeightedAggregator } from "./services/weighted-aggregator";
+import { WeightedAggregator } from "./services/weight-aggregator/weighted-aggregator";
 import { MatchRunController } from "../controllers/scoring-engine/match-run.controller";
 
 @Module({

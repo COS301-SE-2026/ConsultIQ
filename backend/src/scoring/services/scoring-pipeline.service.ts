@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { EntryScoringDataDto } from "../dto/entry-data.dto";
-import { DataIngestionService } from "./data-ingestion.service";
+import { DataIngestionService } from "./data-normalization/data-ingestion.service";
 import { ScoringOrchestrator, ScoringResults } from "./scoring.orchestrator";
 
 

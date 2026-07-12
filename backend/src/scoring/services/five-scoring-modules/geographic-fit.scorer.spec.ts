@@ -1,7 +1,7 @@
-import { RawConsultantDto } from "../dto/raw-consultant.dto";
-import { RawProjectDto } from "../dto/raw-project.dto";
+import { RawConsultantDto } from "../../dto/raw-consultant.dto";
+import { RawProjectDto } from "../../dto/raw-project.dto";
 import { GeographicFitScorer } from "./geographic-fit.scorer";
-import { ScoringFactor } from "../enums/scoring-factor.enum";
+import { ScoringFactor } from "../../enums/scoring-factor.enum";
 function consultant(city: string, province: string): RawConsultantDto {
     return {
         consultantId: 'consutant-01',

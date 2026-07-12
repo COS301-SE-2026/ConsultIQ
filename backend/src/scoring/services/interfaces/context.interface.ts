@@ -1,4 +1,4 @@
-import { ScoringFactor } from '../enums/scoring-factor.enum';
+import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
 export interface ResolvedScoringContext {
     consultantId: string;

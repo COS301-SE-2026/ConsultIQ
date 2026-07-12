@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MatchRunService } from '../../scoring/services/match-run.service';
-import { ConsultantMatchResult } from '../../scoring/services/match-result.interface';
+import { ConsultantMatchResult } from '../../scoring/services/interfaces/match-result.interface';
 import { MatchRunController } from './match-run.controller';
 
 

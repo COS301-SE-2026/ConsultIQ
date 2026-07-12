@@ -2,8 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../../prisma/prisma.service";
 import { ScoringPipelineService } from "./scoring-pipeline.service";
 import { MatchRunAggregationService, ScoredConsultantInput } from "./match-run-aggregation.service";
-import { DataIngestionService } from "./data-ingestion.service";
-import { ConsultantMatchResult } from "./match-result.interface";
+import { DataIngestionService } from "./data-normalization/data-ingestion.service";
+import { ConsultantMatchResult } from "./interfaces/match-result.interface";
 import { RawProjectDto } from "../dto/raw-project.dto";
 import { RawConsultantDto } from "../dto/raw-consultant.dto";
 import { MatchRunStatus } from "@prisma/client";

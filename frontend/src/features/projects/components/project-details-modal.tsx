@@ -117,7 +117,7 @@ export default function ProjectDetailsModal({
 
         }catch (error){
           console.error("Failed to update project section: " + error);
-          setFullProject(fullProject);
+          setFullProject((currentProject) => currentProject);
         }
         setActiveEditSection(null);
       };

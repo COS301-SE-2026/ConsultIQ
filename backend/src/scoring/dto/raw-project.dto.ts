@@ -1,42 +1,42 @@
 import {
-    IsArray,
-    IsDateString,
-    IsNumber,
-    IsString,
-    Max,
-    Min,
-    ValidateNested,
+  IsArray,
+  IsDateString,
+  IsNumber,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RequiredSkillDto } from './required-skill.dto';
 
 export class RawProjectDto {
-    @IsString()
-    projectId!: string;
+  @IsString()
+  projectId!: string;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => RequiredSkillDto)
-    requiredSkills!: RequiredSkillDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RequiredSkillDto)
+  requiredSkills!: RequiredSkillDto[];
 
-    @IsNumber()
-    @Min(0)
-    billingBudgetPerHour!: number;
+  @IsNumber()
+  @Min(0)
+  billingBudgetPerHour!: number;
 
-    @IsString()
-    city!: string;
+  @IsString()
+  city!: string;
 
-    @IsString()
-    province!: string;
+  @IsString()
+  province!: string;
 
-    @IsDateString()
-    startDate!: string;
+  @IsDateString()
+  startDate!: string;
 
-    @IsDateString()
-    endDate!: string;
+  @IsDateString()
+  endDate!: string;
 
-    @IsNumber()
-    @Min(0)
-    @Max(100)
-    requiredAllocationPercentage!: number;
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  requiredAllocationPercentage!: number;
 }

@@ -1,36 +1,37 @@
-import { Injectable } from "@nestjs/common";
-import { ScoringResults } from "./scoring.orchestrator";
-import { WeightedAggregator, ScoredConsultant } from "./weight-aggregator/weighted-aggregator";
-import { ConsultantMatchResult } from "./interfaces/match-result.interface";
-
+import { Injectable } from '@nestjs/common';
+import { ScoringResults } from './scoring.orchestrator';
+import {
+  WeightedAggregator,
+  ScoredConsultant,
+} from './weight-aggregator/weighted-aggregator';
+import { ConsultantMatchResult } from './interfaces/match-result.interface';
 
 export interface ScoredConsultantInput {
-    consultantId: string;
-    outcome: ScoringResults;
+  consultantId: string;
+  outcome: ScoringResults;
 }
 
 // Match Run Initialisation
 
 @Injectable()
 export class MatchRunAggregationService {
-    constructor(private readonly weightedAggregator: WeightedAggregator) { }
+  constructor(private readonly weightedAggregator: WeightedAggregator) {}
 
-    buildResults(inputs: ScoredConsultantInput[]): ConsultantMatchResult[] {
-        const filtered = inputs.filter(
-            (input): input is ScoredConsultantInput & {
-                outcome: Extract<ScoringResults, { excluded: false }>;
-            } => input.outcome.excluded === false,
-        );
+  buildResults(inputs: ScoredConsultantInput[]): ConsultantMatchResult[] {
+    const filtered = inputs.filter(
+      (
+        input,
+      ): input is ScoredConsultantInput & {
+        outcome: Extract<ScoringResults, { excluded: false }>;
+      } => input.outcome.excluded === false,
+    );
 
+    const aggregator: ScoredConsultant[] = filtered.map((input) => ({
+      consultantId: input.consultantId,
+      factorScores: input.outcome.factorScores,
+      weights: input.outcome.redistributedWeights,
+    }));
 
-
-        const aggregator: ScoredConsultant[] = filtered.map((input) => ({
-            consultantId: input.consultantId,
-            factorScores: input.outcome.factorScores,
-            weights: input.outcome.redistributedWeights,
-        }));
-
-        return this.weightedAggregator.aggregate(aggregator);
-    }
-
+    return this.weightedAggregator.aggregate(aggregator);
+  }
 }

@@ -1,11 +1,10 @@
-import { CompetencyLevel } from "@prisma/client";
-import { IsEnum, IsString } from "class-validator";
-
+import { CompetencyLevel } from '@prisma/client';
+import { IsEnum, IsString } from 'class-validator';
 
 export class ConsultantSkillDto {
-    @IsString()
-    skillName!: string;
+  @IsString()
+  skillName!: string;
 
-    @IsEnum(CompetencyLevel)
-    competencyLevel!: CompetencyLevel;
+  @IsEnum(CompetencyLevel)
+  competencyLevel!: CompetencyLevel;
 }

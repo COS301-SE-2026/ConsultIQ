@@ -1,15 +1,13 @@
-import { ScorerDetail } from "../../enums/scoring-factor.enum";
-
+import { ScorerDetail } from '../../enums/scoring-factor.enum';
 
 export interface FactorScoreResult {
-    score: number;
+  score: number;
 
-    //consultant missing a required skill
-    triggerHardExclusion: boolean;
+  //consultant missing a required skill
+  triggerHardExclusion: boolean;
 
-    //name of mandatory skills per project
-    missingMandatorySkills?: string[];
+  //name of mandatory skills per project
+  missingMandatorySkills?: string[];
 
-    detail?: ScorerDetail;
-
+  detail?: ScorerDetail;
 }

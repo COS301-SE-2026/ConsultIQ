@@ -1,24 +1,29 @@
-import { IsArray, IsNumber, IsString, Min, ValidateNested } from "class-validator";
-import { ConsultantSkillDto } from "./consultant-skill.dto";
-import { Type } from "class-transformer";
+import {
+  IsArray,
+  IsNumber,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { ConsultantSkillDto } from './consultant-skill.dto';
+import { Type } from 'class-transformer';
 
 export class RawConsultantDto {
-    @IsString()
-    consultantId!: string;
+  @IsString()
+  consultantId!: string;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => ConsultantSkillDto)
-    skills!: ConsultantSkillDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ConsultantSkillDto)
+  skills!: ConsultantSkillDto[];
 
-    @IsNumber()
-    @Min(0)
-    costToCompany!: number;
+  @IsNumber()
+  @Min(0)
+  costToCompany!: number;
 
+  @IsString()
+  city!: string;
 
-    @IsString()
-    city!: string
-
-    @IsString()
-    province!: string;
+  @IsString()
+  province!: string;
 }

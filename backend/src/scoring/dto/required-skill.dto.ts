@@ -1,14 +1,13 @@
-import { CompetencyLevel } from "@prisma/client";
-import { IsEnum, IsString, IsBoolean } from "class-validator";
-
+import { CompetencyLevel } from '@prisma/client';
+import { IsEnum, IsString, IsBoolean } from 'class-validator';
 
 export class RequiredSkillDto {
-    @IsString()
-    skillName!: string;
+  @IsString()
+  skillName!: string;
 
-    @IsEnum(CompetencyLevel)
-    minimumCompetencyLevel!: CompetencyLevel;
+  @IsEnum(CompetencyLevel)
+  minimumCompetencyLevel!: CompetencyLevel;
 
-    @IsBoolean()
-    isMandatory!: boolean;
+  @IsBoolean()
+  isMandatory!: boolean;
 }

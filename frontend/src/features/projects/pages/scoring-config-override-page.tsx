@@ -8,7 +8,7 @@ import { scoringApiService } from "../../scoring/services/scoring.service";
 export default function ProjectScoringOverridePage(){
     const {projectId} =useParams<{ projectId: string}>();
     const [factors, setFactors] = useState<ScoringFactor[]>([]);
-    const [isUsingDefaultWeights, setIsUsingDefaultsWeights]= useState(true);
+    const [isUsingDefaultWeights, setIsUsingDefaultWeights]= useState(true);
     const [showConfirmationModal, setshowConfirmationModal]= useState(false);
     const [isLoading, setIsLoading]= useState(true);
     const [errMessage, setErrMessage]= useState<string | null>(null);
@@ -30,10 +30,10 @@ export default function ProjectScoringOverridePage(){
                     scoringApiService.getProjectOverrideConfig(projectId),])
                 if (projectOverrides && projectOverrides.length >0){
                     setFactors(projectOverrides);
-                    setIsUsingDefaultsWeights(false);
+                    setIsUsingDefaultWeights(false);
                 }else{
                     setFactors(globalConfigs);
-                    setIsUsingDefaultsWeights(true);
+                    setIsUsingDefaultWeights(true);
                 }
             }catch(err){
                 setErrMessage(err instanceof Error? err.message: "Unable to load scoring configurations.");
@@ -53,7 +53,7 @@ export default function ProjectScoringOverridePage(){
         try{
             const savedScoringFactors= await scoringApiService.updateProjectOverride(projectId, updatedFactors);
             setFactors(savedScoringFactors);
-            setIsUsingDefaultsWeights(false);
+            setIsUsingDefaultWeights(false);
             setErrMessage(null);
             setSuccessMessage("Configurations saved successfully!");
             setTimeout(() => {
@@ -70,7 +70,7 @@ export default function ProjectScoringOverridePage(){
             await scoringApiService.deleteProjectOverride(projectId);
             const globalConfigs= await scoringApiService.getGlobalConfig();
             setFactors(globalConfigs);
-            setIsUsingDefaultsWeights(true);
+            setIsUsingDefaultWeights(true);
             setshowConfirmationModal(false);
             setErrMessage(null);
         }catch(err){

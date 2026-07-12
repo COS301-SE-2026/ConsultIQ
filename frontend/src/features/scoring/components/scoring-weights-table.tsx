@@ -17,7 +17,7 @@ interface ScoringWeightTableProps{
     onSave: (factor: ScoringFactor[]) => Promise<void>;
     onRevertToDefaultWeights?: () =>void;}
 
-function ViewInfo({label, description}: {label: string; description: string}){
+function ViewInfo({label, description}: {readonly label: string; readonly description: string}){
     const [isOpen, setIsOpen] =useState(false);
     return(
         <div className="relative inline-flex items-center">

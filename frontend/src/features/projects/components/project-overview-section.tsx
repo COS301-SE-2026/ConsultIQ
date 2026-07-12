@@ -2,6 +2,8 @@ import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
 import { Edit, X, Check } from "lucide-react";
 import { useState } from "react";
+import { convertDate } from "./shared-convert-date";
+
 interface ProjectOverviewSectionProps {
   readonly project: Project;
   readonly isEditing: boolean;
@@ -13,18 +15,6 @@ interface ProjectOverviewSectionProps {
           description: string})=>| void;
 }
 
-export  const convertDate = (dateReturned: string | undefined): string => {
-    if (!dateReturned) return "No date specified";
-
-    const parsedDate = new Date(dateReturned);
-    if (!Number.isNaN(parsedDate.getTime())){
-      const yyyy= parsedDate.getFullYear();
-      const mm = String(parsedDate.getMonth() + 1).padStart(2, "0");
-      const dd = String(parsedDate.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    }
-    return "";
-}
 const formatDate = (dateString?: string) => {
   if (!dateString) return "Not specified";
 

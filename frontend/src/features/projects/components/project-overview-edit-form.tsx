@@ -1,6 +1,6 @@
 import type { Project } from "../types/project.types";
 import { useState } from "react";
-import { convertDate } from "./project-overview-section";
+import { convertDate } from "./shared-convert-date";
 interface ProjectOverviewEditFormProps {
   readonly project: Project;
 }

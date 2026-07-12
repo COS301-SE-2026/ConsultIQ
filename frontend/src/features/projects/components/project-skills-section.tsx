@@ -62,19 +62,13 @@ export default function ProjectSkillsSection({
                 years: skill.years,
                 mandatory: skill.mandatory,
               }))}
-              isEditing={true}
-              isDisabled={false}
               onEditSkill= {startEditing}
-              onEdit={() => {}} 
-              onCancel={() => {}}
-              onSave={() => {}}
             />
             <div  className="h-6"/>
             </>
         );
     }else{ 
         skillsSection= (            
-          <>
             <ProjectSkillsTable
               skills={currentSkills.map((skill, skillId) => ({
                 id: String(skillId),
@@ -83,14 +77,9 @@ export default function ProjectSkillsSection({
                 years: skill.years,
                 mandatory: skill.mandatory,
               }))}
-              isEditing = {false}
-              isDisabled = { true}
               onEditSkill= {()=> {}}
-              onEdit = {() =>{} }
-              onCancel = { () => {} }
-              onSave = { () => {} }
             />
-            </>
+         
         );
       }
       return(

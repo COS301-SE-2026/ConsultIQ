@@ -2,10 +2,6 @@ import type { Project } from "../types/project.types";
 import { useState } from "react";
 interface ProjectOverviewEditFormProps {
   readonly project: Project;
-  readonly onCancel: ()=> void;
-  readonly onSave: (fields:{ name: string, projectName:string, clientName: string,
-          teamSize: number, budget: number, startDate: string, endDate: string, status: Project['status'],
-          description: string})=> void;
 }
 
   const convertDate = (dateReturned: string | undefined): string => {

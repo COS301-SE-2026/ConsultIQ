@@ -58,7 +58,7 @@ export default function ProjectOverviewSection({
     if (!dateReturned) return "No date specified";
 
     const parsedDate = new Date(dateReturned);
-    if (!isNaN(parsedDate.getTime())){
+    if (!Number.isNaN(parsedDate.getTime())){
       const yyyy= parsedDate.getFullYear();
       const mm = String(parsedDate.getMonth() + 1).padStart(2, "0");
       const dd = String(parsedDate.getDate()).padStart(2, "0");
@@ -204,8 +204,8 @@ function Info({
   label,
   value,
 }: {
-   label: string;
-   value: string;
+   readonly label: string;
+   readonly value: string;
 }) {
   return (
     <div>

@@ -20,10 +20,10 @@ export default function ProjectLocationSection({
   project,isEditing, isDisabled, onEdit, onCancel, onSave
 }: ProjectLocationSectionProps) {
 
-  const[currentLocation, setLocation]= useState<ProjectLocation>(project.location);
+  const[currentLocation, setCurrentLocation]= useState<ProjectLocation>(project.location);
 
   const handleSaveField=(field: keyof ProjectLocation, changedVal: ProjectLocation[keyof ProjectLocation])=>{
-    setLocation(prev => ({...prev, [field]: changedVal}));
+    setCurrentLocation(prev => ({...prev, [field]: changedVal}));
   } 
 
   const handleSaveLocation = ()=>{

@@ -34,7 +34,7 @@ const FACTOR_METADATA: Record<string, {label: string; description: string}> ={
 function mapToFrontend(backendFactors: BackendFactor[]): ScoringFactor[] {
     return backendFactors.map((f) => {
         const meta= FACTOR_METADATA[f.factorName] ?? 
-        {label: f.factorName.replaceAll(/_/g, " ").toLowerCase() ,description : "No description available.",};
+        {label: f.factorName.replaceAll("_", " ").toLowerCase() ,description : "No description available.",};
         const effectiveWeight= f.overrideWeight ?? f.weight ?? 0;
 
         return {

@@ -7,13 +7,13 @@ import ProjectLocationCard from "./project-location-card"
 type LocationPayload={
   location: ProjectLocation;
 };
-interface ProjectLocationSectionProps {
-  project: Project;
-  isEditing?: boolean
-  isDisabled?: boolean;
-  onEdit: ()=> void;
-  onCancel: ()=> void;
-  onSave: (fields: LocationPayload)=> void;
+ interface ProjectLocationSectionProps {
+  readonly project: Project;
+  readonly isEditing?: boolean;
+  readonly isDisabled?: boolean;
+  readonly onEdit: ()=> void;
+  readonly onCancel: ()=> void;
+  readonly onSave: (fields: LocationPayload)=> void;
 }
 
 export default function ProjectLocationSection({

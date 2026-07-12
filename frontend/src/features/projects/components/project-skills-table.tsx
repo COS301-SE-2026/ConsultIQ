@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 interface TableSkill {
-  id?: string;
-  name: string;
-  competency: string;
-  years: number;
-  mandatory: boolean;
+  readonly id?: string;
+  readonly name: string;
+  readonly competency: string;
+  readonly years: number;
+  readonly mandatory: boolean;
 }
 
 

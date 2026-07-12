@@ -4,14 +4,14 @@ import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 
 interface ProjectSkillsCardProps {
-  skills: ProjectSkillData[];
-  onSkillsChange: (skills: ProjectSkillData[]) => void;
-  editingSkill: ProjectSkillData | null;
-  onCancelEdit: ()=> void;
-  editingIndex: number | null;
-  onSkillSave: (skill: ProjectSkillData)=> void;
-  onEditSkill?: (skill: ProjectSkillData, idx: number) =>void;
-  isEditing?: boolean;
+  readonly skills: ProjectSkillData[];
+  readonly onSkillsChange: (skills: ProjectSkillData[]) => void;
+  readonly editingSkill: ProjectSkillData | null;
+  readonly onCancelEdit: ()=> void;
+  readonly editingIndex: number | null;
+  readonly onSkillSave: (skill: ProjectSkillData)=> void;
+  readonly onEditSkill?: (skill: ProjectSkillData, idx: number) =>void;
+  readonly isEditing?: boolean;
 }
 
 export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkill,

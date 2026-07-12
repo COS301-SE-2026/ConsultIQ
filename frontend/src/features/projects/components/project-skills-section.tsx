@@ -7,12 +7,12 @@ import {Card} from "../../../components/ui/card";
 
 
 interface ProjectSkillsSectionProps {
-    skills: ProjectSkillData[];
-    isEditing?: boolean;
-    isDisabled?: boolean;
-    onEdit: ()=> void;
-    onCancel: ()=> void;
-    onSave: (skills: ProjectSkillData[])=> void;
+  readonly skills: ProjectSkillData[];
+  readonly isEditing?: boolean;
+  readonly isDisabled?: boolean;
+  readonly onEdit: ()=> void;
+  readonly onCancel: ()=> void;
+  readonly onSave: (skills: ProjectSkillData[])=> void;
 }
 
 

@@ -3,12 +3,12 @@ import type { Project } from "../types/project.types";
 import { Edit, X, Check } from "lucide-react";
 import { useState } from "react";
 interface ProjectOverviewSectionProps {
-  project: Project;
-  isEditing: boolean;
-  isDisabled: boolean;
-  onEdit: ()=> void;
-  onCancel: ()=> void;
-  onSave: (fields:{ name: string, projectName:string, clientName: string,
+  readonly project: Project;
+  readonly isEditing: boolean;
+  readonly isDisabled: boolean;
+  readonly onEdit: ()=> void;
+  readonly onCancel: ()=> void;
+  readonly onSave: (fields:{ name: string, projectName:string, clientName: string,
           teamSize: number, budget: number, startDate: string, endDate: string, status: Project['status'],
           description: string})=>| void;
 }
@@ -19,7 +19,7 @@ const formatDate = (dateString?: string) => {
   const date = new Date(dateString);
 
 
-  if (isNaN(date.getTime())) return dateString;
+  if (Number.isNaN(date.getTime())) return dateString;
 
 
   return date.toLocaleDateString("en-GB", {
@@ -40,7 +40,6 @@ export default function ProjectOverviewSection({
   const [endDate, setEndDate]= useState(project.endDate);
   const [status, setStatus]= useState(project.status);
   const [description, setDescription] = useState(project.description);
-  let section;
 
   const handleSave= ()=>{
     onSave({
@@ -67,58 +66,56 @@ export default function ProjectOverviewSection({
     }
     return "";
 }
-
-  if(isEditing){
-    section= (
+  const renderEditingSection=() =>(
     <>
-    <div className="h-6"/>
+      <div className="h-6"/>
     <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Project Name</label>
-        <input type="text" value={isEditing ? projectName : project.name}
+        <label htmlFor="project-name" className="text-base font-semibold">Project Name</label>
+        <input type="text" id="project-name" value={isEditing ? projectName : project.name}
         onChange={e => setProjectName(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Client Name</label>
-        <input type="text" value={isEditing ? clientName : project.clientName}
+        <label htmlFor="client-name" className="text-base font-semibold">Client Name</label>
+        <input type="text" id="client-name" value={isEditing ? clientName : project.clientName}
         onChange={e => setClientName(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Team Size</label>
-        <input type="number" value={isEditing? teamSize : project.teamSize}
+        <label htmlFor="team-size" className="text-base font-semibold">Team Size</label>
+        <input type="number" id="team-size" value={isEditing? teamSize : project.teamSize}
         onChange={e => setTeamSize(Number(e.target.value))}
         className= "text-base text-white rounded border"
         />
       </div>
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Budget</label>
-        <input type="number" value={isEditing ? budget : project.budget }
+        <label htmlFor="budget" className="text-base font-semibold">Budget</label>
+        <input type="number" id="budget" value={isEditing ? budget : project.budget }
         onChange={e => setBudget(Number(e.target.value))}
         className= "text-base text-white rounded border"
         />
       </div> 
      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
        <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Start Date</label>
-        <input type="date" value={convertDate(isEditing ? startDate : project.startDate)}
+        <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
+        <input type="date" id="start-date" value={convertDate(isEditing ? startDate : project.startDate)}
         onChange={e => setStartDate(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div> 
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">End Date</label>
-        <input type="date" value={convertDate(isEditing ?endDate : project.endDate)}
+        <label htmlFor="end-date" className="text-base font-semibold">End Date</label>
+        <input type="date" id="end-date" value={convertDate(isEditing ?endDate : project.endDate)}
         onChange={e => setEndDate(e.target.value)}
         className= "text-base text-white rounded border"
         />
       </div> 
      </div>
       <div className = "flex flex-col gap-1">
-        <label className="text-base font-semibold">Project Status</label>
+        <label htmlFor="status" className="text-base font-semibold">Project Status</label>
         <select id="status" value={isEditing ? status : project.status || "OPEN"}
         onChange={e => setStatus( e.target.value as "OPEN" |"IN_PROGRESS" | "CLOSED" | "COMPLETED")}
         className= "text-base text-white rounded border"
@@ -130,20 +127,18 @@ export default function ProjectOverviewSection({
         </select>
         </div>
       <div className="flex flex-col gap-1 col-span-2">
-        <label className= "text-base font-semibold mb-2">Description</label>
+        <label htmlFor="description" className= "text-base font-semibold mb-2">Description</label>
         <textarea value={isEditing ? description : project.description} 
         onChange={e => setDescription(e.target.value)}
         className="text-base text-white rounded border"/>
-
       </div>
-
     </div>
-    </>);
+    </>
+  )
 
-  }else{
-    section =(
-      <>
-      <div className="h-2" />
+  const renderReadOnlySection=()=>(
+    <>
+  <div className="h-2" />
       <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-4">
         <Info label="Project Name" value={project.name} />
         <Info label="Client Name" value={project.clientName} />
@@ -159,11 +154,12 @@ export default function ProjectOverviewSection({
         <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
           {project.description}
         </p>
-      </div>
-      </>
-    );
+      </div>  
 
-  }
+    </>
+  )
+  const section= isEditing ? renderEditingSection() : renderReadOnlySection();
+ 
 
   return (
     <Card style={{ padding: "20px", border: "none" }}

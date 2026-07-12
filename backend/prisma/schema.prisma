@@ -296,6 +296,7 @@ model Project {
   auditLogs ProjectAuditLog[]
   matchRuns MatchRun[]
 
+ auditLogs ProjectAuditLog[]
   @@map("projects")
 }
 
@@ -383,14 +384,13 @@ model ConsultantExperience {
 
   @@map("consultant_experience")
 }
-
 model ConsultancyScoringConfig {
-  id         String            @id @default(uuid())
-  factorName ScoringFactorName @unique
-  weight     Float
-  active     Boolean           @default(true)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id          String            @id @default(uuid())
+  factorName  ScoringFactorName @unique
+  weight      Float
+  active      Boolean @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("consultancy_scoring_configs")
 }
@@ -403,7 +403,7 @@ model ProjectScoringOverride {
   active         Boolean           @default(true)
   createdAt      DateTime          @default(now())
 
-  project Project @relation(fields: [projectId], references: [id])
+  project        Project           @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, factorName])
   @@map("project_scoring_overrides")
@@ -420,45 +420,18 @@ model ScoringConfigAudit {
   @@map("scoring_config_audit")
 }
 
-model Notification {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  title     String
-  body      String
-  isRead    Boolean  @default(false) @map("is_read")
-  link      String?
-  createdAt DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  title      String
+  body       String
+  isRead     Boolean  @default(false) @map("is_read")
+  isArchived Boolean  @default(false) @map("is_archived")
+  link       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  archivedAt DateTime @default(now()) @map("archived_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
-}
-
-model MatchRun {
-  id                       String           @id @default(uuid())
-  projectId                String
-  executedByUserId         String
-  configurationSnapshot    Json
-  totalConsultantsScored   Int
-  totalConsultantsExcluded Int
-  status                   MatchRunStatus   @default(IN_PROGRESS)
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
-  project                  Project          @relation(fields: [projectId], references: [id])
-  executedByUser           User             @relation(fields: [executedByUserId], references: [id])
-  results                  MatchRunResult[]
-}
-
-model MatchRunResult {
-  id           String     @id @default(uuid())
-  matchRunId   String
-  consultantId String
-  rank         Int
-  totalScore   Float
-  factorScores Json
-  matchRun     MatchRun   @relation(fields: [matchRunId], references: [id], onDelete: Cascade)
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
-
-  @@unique([matchRunId, consultantId])
-  @@index([matchRunId, rank])
 }

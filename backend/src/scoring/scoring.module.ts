@@ -11,10 +11,16 @@ import { CostFitScorer } from './services/five-scoring-modules/cost-fit.scorer';
 import { MatchRunAggregationService } from './services/match-run-aggregation.service';
 import { WeightedAggregator } from './services/weight-aggregator/weighted-aggregator';
 import { MatchRunController } from '../controllers/scoring-engine/match-run.controller';
-
+import { ScoringService } from './services/scoring-config.service';
+import { ScoringController } from '../controllers/scoring/scoring.controller';
+import { PrismaService } from '../prisma/prisma.service';
 @Module({
-  controllers: [MatchRunController],
+  controllers: [MatchRunController, ScoringController],
   providers: [
+
+    ScoringService,
+    PrismaService,
+
     //Phase 1: Data ingestion and Normalization
     DataIngestionService,
     NormalizationService,
@@ -35,5 +41,6 @@ import { MatchRunController } from '../controllers/scoring-engine/match-run.cont
     WeightedAggregator,
   ],
   exports: [ScoringPipelineService],
+
 })
-export class ScoringModule {}
+export class ScoringModule { }

@@ -52,7 +52,12 @@ describe('ConsultantService', () => {
       idNumber: '9901015555081',
       phone: '0123456789',
       nationality: 'South African',
-      location: 'Johannesburg',
+      addressLine1: '123 South road',
+      addressLine2: null,
+      suburb: 'Hillbrow',
+      city:'Johannesburg',
+      province: 'Gauteng',
+      postalCode:'2001',
       costToCompany: 50000,
       availability: 'AVAILABLE',
       skills: [
@@ -138,7 +143,12 @@ describe('ConsultantService', () => {
     const mockConsultants = [
       {
         id: 'uuid-1',
-        location: 'Johannesburg',
+        addressLine1: '123 South road',
+        addressLine2: null,
+        suburb: 'Hillbrow',
+        city:'Johannesburg',
+        province: 'Gauteng',
+        postalCode:'2001',
         availability: 'AVAILABLE',
         costToCompany: 650,
         phone: '0123456789',
@@ -203,10 +213,16 @@ describe('ConsultantService', () => {
     it('should return a mapped consultant profile DTO', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'uuid-1',
+
         phone: '0123456789',
         idNumber: '9901015555081',
         nationality: 'South African',
-        location: 'Johannesburg',
+        addressLine1: '123 South road',
+        addressLine2: null,
+        suburb: 'Hillbrow',
+        city:'Johannesburg',
+        province: 'Gauteng',
+        postalCode:'2001',
         costToCompany: 50000,
         availability: 'AVAILABLE',
         user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
@@ -241,7 +257,12 @@ describe('ConsultantService', () => {
         phone: '0123456789',
         idNumber: '9901015555081',
         nationality: 'South African',
-        location: 'Johannesburg',
+        addressLine1: '123 South road',
+        addressLine2: null,
+        suburb: 'Hillbrow',
+        city:'Johannesburg',
+        province: 'Gauteng',
+        postalCode:'2001',
         costToCompany: 50000,
         availability: 'AVAILABLE',
         user: {
@@ -290,7 +311,12 @@ describe('ConsultantService', () => {
       expect(result.phoneNumber).toBe('0123456789');
       expect(result.idNumber).toBe('9901015555081');
       expect(result.nationality).toBe('South African');
-      expect(result.location).toBe('Johannesburg');
+      expect(result.addressLine1).toBe('123 South road');
+      expect(result.addressLine2).toBeNull;
+      expect(result.suburb).toBe('Hillbrow');
+      expect(result.city).toBe('Johannesburg');
+      expect(result.province).toBe('Gauteng');
+      expect(result.postalCode).toBe('2001');
       expect(result.costToCompany).toBe(50000);
       expect(result.availability).toBe('AVAILABLE');
 

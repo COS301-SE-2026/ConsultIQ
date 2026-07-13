@@ -175,7 +175,12 @@ model Consultant {
   id            String                 @id @default(uuid())
   userId        String                 @unique
   user          User                   @relation(fields: [userId], references: [id])
-  location      String
+  addressLine1 String
+  addressLine2 String?
+  suburb       String?
+  city         String
+  province     String
+  postalCode   String?
   phone         String?
   idNumber      String?
   nationality   String?

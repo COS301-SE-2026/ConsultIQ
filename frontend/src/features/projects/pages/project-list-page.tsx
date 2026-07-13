@@ -119,6 +119,10 @@ export default function ProjectListPage() {
     });
   }, [search, budgetFilter, teamSizeFilter, locationFilter, projects]);
 
+  const handleConfigureScore= (project: Project)=>{
+    navigate(`/project-scoring-config/${project.id}`);
+  };
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems} />
@@ -153,6 +157,7 @@ export default function ProjectListPage() {
                 onFilterClick={() => setShowFilters((prev) => !prev)}
               />
             </div>
+            <div className="h-6"/>
 
             {showFilters && (
               <div className="mt-6">
@@ -177,7 +182,7 @@ export default function ProjectListPage() {
                   {error}
                 </div>
               ) : filteredProjects.length > 0 ? (
-                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} />
+                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} onConfigureScore={handleConfigureScore}/>
               ) : (
                 <EmptyProjectState />
               )}

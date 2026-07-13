@@ -27,8 +27,8 @@ function Sidebar({ items }: SidebarProps) {
       {/* Logo Section */}
       <div
         style={{
-          backgroundColor: "white",
-          height: "150px",
+          backgroundColor: "var(--color-surface)",
+          height: "90px",
 
           display: "flex",
           alignItems: "center",
@@ -40,9 +40,9 @@ function Sidebar({ items }: SidebarProps) {
           src={consultIqLogo}
           alt="ConsultIQ Logo"
           style={{
-            width: "100%",
+            width: "fit-content",
             height: "100%",
-            objectFit: "cover",
+            objectFit: "fill",
           }}
         />
       </div>
@@ -110,12 +110,21 @@ function Sidebar({ items }: SidebarProps) {
             alignItems: "center",
             gap: "14px",
             color: "white",
+            width: "100%",
           }}
         >
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap:"14px",
+            flex:1,
+            minWidth:0,
+          }}
+          >
           <div
             style={{
-              width: "40px",
-              height: "40px",
+              width: "35px",
+              height: "35px",
               borderRadius: "50%",
               backgroundColor: "rgba(255,255,255,0.15)",
               display: "flex",
@@ -150,39 +159,28 @@ function Sidebar({ items }: SidebarProps) {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Logout - FIXED: Changed from div to button for standard accessibility */}
-      <button
+        <button
         onClick={logout}
         style={{
-          padding: user ? "12px 24px 24px 24px" : "24px",
-
-          color: "white",
-
-          fontSize: "18px",
-          fontWeight: 500,
-
           border: "none",
-          borderTop: user ? "none" : "1px solid rgba(255,255,255,0.1)",
-          backgroundColor: "transparent",
-
+          background: "transparent",
+          color: "white",
           cursor: "pointer",
-
+          padding:0,
           display: "flex",
           alignItems: "center",
-          gap: "14px",
-          width: "100%",
-          opacity: 0.9,
-
-          fontFamily: "inherit",
-          textAlign: "left",
+          justifyContent: "center",
+          marginLeft:"auto",
+          flexShrink:0,
         }}
       >
         <LogOut size={22} />
-
-        Logout
       </button>
+      </div>
+      )}
+
+      {/* Logout - FIXED: Changed from div to button for standard accessibility */}
+      
     </aside>
   );
 }

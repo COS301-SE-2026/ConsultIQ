@@ -8,6 +8,9 @@ import { Upload,Trash2 } from "lucide-react";
 import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
 import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
 
+const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
+const sanitizeDate = (text: string) => text.replace(/[^\d/]/g, "");
+
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
@@ -88,8 +91,7 @@ export default function EducationForm() {
     };
 
     useEffect(() => {
-        const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
-        const sanitizeDate = (text: string) => text.replace(/[^\d/]/g, "");
+       
 
         const sanitizedInstitutionName = sanitizeText(institutionName);
         sessionStorage.setItem("education_institutionName", sanitizedInstitutionName); //NOSONAR
@@ -105,7 +107,7 @@ export default function EducationForm() {
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {
-        const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
+     
         const sanitizedList = educationList.map(edu => ({
             ...edu,
             institution: sanitizeText(edu.institution),

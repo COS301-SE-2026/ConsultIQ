@@ -27,7 +27,7 @@ function CountBadge({count}: {count: number}){
   );
 }
 
-export default function notificationTabs({ activeTab, setActiveTab,counts }: Props) {
+export default function NotificationTabs({ activeTab, setActiveTab,counts }: Props) {
   return (
     <div
       className="relative border-b border-slate-200"

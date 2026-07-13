@@ -43,7 +43,6 @@ function NotificationPage(){
     const [archivedNotifications,setArchivedNotifications]= useState<NotificationItems[]>([]);
     const [isNotificationLoading,setIsNotificationLoading] = useState(false);
     const [isArchivedLoading,setIsArchivedLoading] = useState(false);
-    const [archivePage,setArchivePage] = useState(1);
    
    
        useEffect(() =>{
@@ -242,8 +241,20 @@ function NotificationPage(){
                     </h1>
                 </header>
 
+                {(notificationError || archivedNotificationError) &&(
+                    <div className="px-8 mt-2">
+                        <p className="px-8 text-red-600 text-sm">{notificationError ?? archivedNotificationError}</p>     
+                    </div>
+                   
+                )}
+
                 <main className="flex-1 overflow-y-auto  overscroll-none relative ">
-                  <div className=" flex flex-col gap-4  max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+                    {isNotificationLoading || isArchivedLoading ? (
+                        <div className="flex absolute inset-0 items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+                         Loading notifications...
+                        </div>
+                    ): (
+                        <div className=" flex flex-col gap-4  max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
                         <SearchBar
                             value={searchQuery}
                             onChange={handleSearchChange}
@@ -365,11 +376,8 @@ function NotificationPage(){
                             </div>  
                             </Card>
                           
-                    </div>                  
-                        
-                            
-                   
-             
+                    </div>   
+                    )}
                 </main>
 
              

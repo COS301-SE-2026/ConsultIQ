@@ -16,7 +16,7 @@ export class CostFitScorer {
       score,
       triggerHardExclusion: false,
       detail: {
-        factor: ScoringFactor.COST_FIT,
+        factor: ScoringFactor.COST_TO_COMPANY,
         consultantRate: consultant.costToCompany,
         projectBudget: project.billingBudgetPerHour,
         withinBudget: consultant.costToCompany <= project.billingBudgetPerHour,

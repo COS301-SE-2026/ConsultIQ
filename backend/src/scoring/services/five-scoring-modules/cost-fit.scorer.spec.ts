@@ -42,7 +42,7 @@ describe('CostFitScorer', () => {
 
         const result = scorer.score(consultant(100), project(200));
         expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_FIT,
+            factor: ScoringFactor.COST_TO_COMPANY,
             consultantRate: 100,
             projectBudget: 200,
             withinBudget: true,
@@ -54,7 +54,7 @@ describe('CostFitScorer', () => {
 
         const result = scorer.score(consultant(300), project(200));
         expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_FIT,
+            factor: ScoringFactor.COST_TO_COMPANY,
             consultantRate: 300,
             projectBudget: 200,
             withinBudget: false,

@@ -54,7 +54,7 @@ describe('CompetencyMatchScorer', () => {
         expect(result.score).toBe(1.0)
 
         expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_MATCH,
+            factor: ScoringFactor.COMPETENCY_LEVEL,
             perSkill: [{
                 skill: 'B',
                 consultantLevel: CompetencyLevel.INTERMEDIATE,
@@ -81,7 +81,7 @@ describe('CompetencyMatchScorer', () => {
         expect(result.score).toBeCloseTo(markAverage, 5)
 
         expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_MATCH,
+            factor: ScoringFactor.COMPETENCY_LEVEL,
             perSkill: [{
                 skill: 'A',
                 consultantLevel: CompetencyLevel.EXPERT,
@@ -127,7 +127,7 @@ describe('CompetencyMatchScorer', () => {
         expect(result.score).toBeCloseTo(0.0, 5)
 
         expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_MATCH,
+            factor: ScoringFactor.COMPETENCY_LEVEL,
             perSkill: [{
                 skill: 'B',
                 consultantLevel: 'NONE',

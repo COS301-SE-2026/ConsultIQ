@@ -18,7 +18,7 @@ export class CompetencyMatchScorer {
         score: 1,
         triggerHardExclusion: false,
         detail: {
-          factor: ScoringFactor.COMPETENCY_MATCH,
+          factor: ScoringFactor.COMPETENCY_LEVEL,
           perSkill: [],
         },
       };
@@ -80,7 +80,7 @@ export class CompetencyMatchScorer {
       triggerHardExclusion: false,
 
       detail: {
-        factor: ScoringFactor.COMPETENCY_MATCH,
+        factor: ScoringFactor.COMPETENCY_LEVEL,
 
         perSkill: perSkillDetails,
       },

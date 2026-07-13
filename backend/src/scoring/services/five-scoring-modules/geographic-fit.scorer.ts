@@ -32,7 +32,7 @@ export class GeographicFitScorer {
       triggerHardExclusion: false,
 
       detail: {
-        factor: ScoringFactor.GEOGRAPHIC_FIT,
+        factor: ScoringFactor.LOCATION,
         consultantCity: consultant.city,
         projectCity: project.city,
         consultantProvince: consultant.province,

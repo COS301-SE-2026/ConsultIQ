@@ -1,16 +1,16 @@
 import { Card } from "../../../components/ui/card";
-import type { ProjectFormData } from "../pages/project-specification-page";
-
+// import type { ProjectFormData } from "../pages/project-specification-page";
+import type {ProjectLocation} from "../types/project.types"
 interface ProjectLocationCardProps {
-  data: ProjectFormData;
-  errors?: Partial<Record<keyof ProjectFormData, string>>;
-  readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
+  data: ProjectLocation;
+  errors?: Partial<Record<keyof ProjectLocation, string>>;
+  readonly onChange: (field: keyof ProjectLocation, value: ProjectLocation[keyof ProjectLocation]) => void;
 }
 
 export default function ProjectLocationCard({ data, errors = {}, onChange }: ProjectLocationCardProps) {
 
   // Helper to apply red borders when there is an error
-  const getInputClass = (fieldName: keyof ProjectFormData) =>
+  const getInputClass = (fieldName: keyof ProjectLocation) =>
     `h-14 rounded border px-4 outline-none transition-colors ${errors[fieldName] ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
     }`;
 

@@ -2,13 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
-
+import { NotificationService } from '../../notification/service/notification.service';
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
+  getAssignedProjects: jest.fn(),
 };
+
+const mockNotificationService = {
+  sendPushNotification: jest.fn(),
+};
+
 
 describe('ConsultantController', () => {
   let controller: ConsultantController;
@@ -18,6 +24,7 @@ describe('ConsultantController', () => {
       controllers: [ConsultantController],
       providers: [
         { provide: ConsultantService, useValue: mockConsultantService },
+        { provide: NotificationService, useValue: mockNotificationService },
       ],
     }).compile();
 
@@ -118,6 +125,52 @@ describe('ConsultantController', () => {
         new NotFoundException('Consultant with id uuid-999 not found.'),
       );
       await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ─── getAssignedProjects ────────────────────────────────────────────────────
+  describe('getAssignedProjects', () => {
+    it('should call service with userId from JWT and return result', async () => {
+      const mockProjects = [
+        {
+          placementId: 'placement-1',
+          PlacementStatus: 'ACTIVE',
+          placementAllocation: 80,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            teamMembers: [],
+          },
+        },
+      ];
+      mockConsultantService.getAssignedProjects.mockResolvedValue(mockProjects);
+
+      const req = { user: { userId: 'user-123' } };
+      const result = await controller.getAssignedProjects(req as any);
+
+      expect(result).toEqual(mockProjects);
+      expect(mockConsultantService.getAssignedProjects).toHaveBeenCalledWith('user-123');
+    });
+
+    it('should propagate NotFoundException when consultant has no profile', async () => {
+      mockConsultantService.getAssignedProjects.mockRejectedValue(
+        new NotFoundException('No consultant profile for this user.'),
+      );
+
+      const req = { user: { userId: 'unknown-user' } };
+      await expect(controller.getAssignedProjects(req as any)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should return empty array when consultant has no placements', async () => {
+      mockConsultantService.getAssignedProjects.mockResolvedValue([]);
+
+      const req = { user: { userId: 'user-123' } };
+      const result = await controller.getAssignedProjects(req as any);
+
+      expect(result).toEqual([]);
+      expect(mockConsultantService.getAssignedProjects).toHaveBeenCalledWith('user-123');
     });
   });
 });

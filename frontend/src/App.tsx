@@ -3,10 +3,12 @@ import { Toaster } from 'sonner';
 import { AuthProvider } from './hooks/useAuth';
 
 function App() {
+
   return (
     <AuthProvider>
       <Toaster
-        position="top-center"
+      richColors
+        position="top-right"
         toastOptions={{
           duration: 2000,
         }}

@@ -56,6 +56,13 @@ export class AdminService {
             );
         }
 
+        // Prevent changing the role of a SUPER_ADMIN user
+        if (targetUser.role === Role.SUPER_ADMIN) {
+            throw new BadRequestException(
+                'The role of a SUPER_ADMIN account cannot be changed through the API.',
+            );
+        }
+
         const previousRole = targetUser.role;
 
         await this.prisma.$transaction([

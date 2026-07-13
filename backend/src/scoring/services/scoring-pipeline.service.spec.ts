@@ -47,18 +47,23 @@ describe('ScoringPipelineService', () => {
             project: { projectId: 'project-01', requiredSkills: [] } as any,
         };
 
-        const mockedActiveWeights = { [ScoringFactor.SKILL_ALIGNMENT]: 0.5, [ScoringFactor.COST_FIT]: 0.5 } as any;
+        const mockedActiveWeights = { [ScoringFactor.SKILL_ALIGNMENT]: 0.5, [ScoringFactor.COST_TO_COMPANY]: 0.5 } as any;
 
         const mockScoringResults: ScoringResults = {
             excluded: false,
             factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
             redistributedWeights: mockedActiveWeights,
-        }
+        };
+
+        const mockActiveFactors = new Set([ScoringFactor.SKILL_ALIGNMENT, ScoringFactor.COST_TO_COMPANY]);
+        const mockExcludedFactors = new Set([ScoringFactor.SKILL_ALIGNMENT]);
 
         dataIngestionService.ingestData.mockResolvedValue({
             consultantId: mockDto.consultantId,
             projectId: mockDto.projectId,
             activeWeights: mockedActiveWeights,
+            activeFactors: mockActiveFactors,
+            excludedFactors: mockExcludedFactors,
         });
         scoringOrchestrator.scoreConsultant.mockResolvedValue(mockScoringResults);
 
@@ -72,6 +77,8 @@ describe('ScoringPipelineService', () => {
             mockDto.consultant,
             mockDto.project,
             mockedActiveWeights,
+            mockActiveFactors,
+            mockExcludedFactors,
         );
 
         expect(result).toEqual(mockScoringResults);
@@ -82,17 +89,27 @@ describe('ScoringPipelineService', () => {
 
         const mockActiveWeights = {
             [ScoringFactor.SKILL_ALIGNMENT]: 0.3,
-            [ScoringFactor.COST_FIT]: 0.3,
-            [ScoringFactor.COMPETENCY_MATCH]: 0.2,
-            [ScoringFactor.GEOGRAPHIC_FIT]: 0.1,
+            [ScoringFactor.COST_TO_COMPANY]: 0.3,
+            [ScoringFactor.COMPETENCY_LEVEL]: 0.2,
+            [ScoringFactor.LOCATION]: 0.1,
             [ScoringFactor.AVAILABILITY]: 0.1,
         };
         const error = new Error('Database connection error');
-
+        const mockActiveFactors = new Set([
+            ScoringFactor.SKILL_ALIGNMENT,
+            ScoringFactor.COST_TO_COMPANY,
+            ScoringFactor.COMPETENCY_LEVEL,
+            ScoringFactor.LOCATION,
+            ScoringFactor.AVAILABILITY
+        ]);
+        const mockExcludedFactors = new Set<ScoringFactor>();
         dataIngestionService.ingestData.mockResolvedValue({
             consultantId: mockDto.consultantId,
             projectId: mockDto.projectId,
             activeWeights: mockActiveWeights,
+            activeFactors: mockActiveFactors,
+            excludedFactors: mockExcludedFactors,
+
         });
 
         scoringOrchestrator.scoreConsultant.mockRejectedValue(error);

@@ -29,7 +29,7 @@ export function DetailPanel({ title, onClose, children }: DetailPanelProps) {
       
       {/* Panel */}
       <div
-        className="relative bg-white h-full overflow-y-auto w-1/2 max-w-2xl"
+        className="relative bg-white h-full overflow-y-auto overscroll-y-none w-1/2 max-w-2xl"
         style={{ padding: "40px 48px" }}
       >
         {/* Back button */}

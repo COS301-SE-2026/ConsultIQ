@@ -23,7 +23,7 @@ export interface ParsedCertification {
 }
 
 export interface ParsedContactInfo {
-    fullName: string;
+    fullName?: string;
     email?: string;
     phone?: string;
     nationality?: string;

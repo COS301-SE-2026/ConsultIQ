@@ -79,4 +79,70 @@ export class CvParsingService {
 
      return null;
   }
+
+  /**
+   * Extracts phone number and email from the contact section of the CV.
+   * Falls back to scanning the full text if nothing is found in the
+   * dedicated contact section, might possibly be included inline elsewhere.
+   */
+  private extractContactInfo(
+    contactSectionText: string,
+    fullText: string,
+  ): ParsedContactInfo {
+    const contact: ParsedContactInfo = {};
+
+    const phone = this.findFirstMatch(PHONE_PATTERNS, contactSectionText)
+      ?? this.findFirstMatch(PHONE_PATTERNS, fullText);
+    if (phone) {
+      contact.phone = phone.replace(/[\s()]/g, '');
+    }
+
+    const emailMatch = contactSectionText.match(EMAIL_PATTERN)
+      ?? fullText.match(EMAIL_PATTERN);
+    if (emailMatch) {
+      contact.email = emailMatch[0];
+    }
+
+    const fullName = this.guessFullName(contactSectionText);
+    if (fullName) {
+      contact.fullName = fullName;
+    }
+
+    return contact;
+  }
+
+  /**
+   * Tries each pattern in order against the given text and returns the
+   * first match found, or null if none match.
+   */
+  private findFirstMatch(patterns: RegExp[], text: string): string | null {
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match) return match[0];
+    }
+    return null;
+  }
+
+  /**
+   * Best-effort guess at the consultant's full name. Most CVs put the
+   * person's name as the very first non-empty line of the document.
+   */
+  private guessFullName(contactSectionText: string): string | null {
+    const lines = contactSectionText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (lines.length === 0) return null;
+
+    const firstLine = lines[0];
+
+    // A name line shouldn't contain digits, @ symbols, or be excessively long
+    const looksLikeName =
+      firstLine.length > 2 &&
+      firstLine.length < 100 &&
+      !/[\d@]/.test(firstLine);
+
+    return looksLikeName ? firstLine : null;
+  }
 }

@@ -130,16 +130,13 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 placeholder="Enter team size"
                 value={data.teamSize === undefined ? "" : data.teamSize}
                 onChange={(e) => {
-                  // 1. Strip out absolutely everything that is not a digit 0-9
                   const numericString = e.target.value.replace(/\D/g, "");
 
-                  // 2. Allow the user to clear the input completely
                   if (numericString === "") {
                     onChange("teamSize", ""); // or 0
                     return;
                   }
 
-                  // 3. Convert to integer and clamp the value between 0 and 50
                   let val = parseInt(numericString, 10);
                   if (val > 50) val = 50;
 

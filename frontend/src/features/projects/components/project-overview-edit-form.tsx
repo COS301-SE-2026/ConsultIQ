@@ -1,0 +1,88 @@
+import type { Project } from "../types/project.types";
+import { useState } from "react";
+import { convertDate } from "./shared-convert-date";
+interface ProjectOverviewEditFormProps {
+  readonly project: Project;
+}
+
+export default function ProjectOverviewEditForm({
+  project,
+}: ProjectOverviewEditFormProps) {
+  const [projectName, setProjectName]= useState(project.name);
+  const [clientName, setClientName]= useState(project.clientName);
+  const [teamSize, setTeamSize]= useState(project.teamSize);
+  const [budget, setBudget]= useState(project.budget);
+  const [startDate, setStartDate]= useState(project.startDate);
+  const [endDate, setEndDate]= useState(project.endDate);
+  const [status, setStatus]= useState(project.status);
+  const [description, setDescription] = useState(project.description);
+
+  return(
+   <>
+    <div className="h-6"/>
+    <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="project-name" className="text-base font-semibold">Project Name</label>
+        <input type="text" id="project-name" value={ projectName}
+        onChange={e => setProjectName(e.target.value)}
+        className= "text-base text-white rounded border"
+        />
+      </div>
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="client-name" className="text-base font-semibold">Client Name</label>
+        <input type="text" id="client-name" value={clientName}
+        onChange={e => setClientName(e.target.value)}
+        className= "text-base text-white rounded border"
+        />
+      </div>
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="team-size" className="text-base font-semibold">Team Size</label>
+        <input type="number" id="team-size" value={teamSize}
+        onChange={e => setTeamSize(Number(e.target.value))}
+        className= "text-base text-white rounded border"
+        />
+      </div>
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="budget" className="text-base font-semibold">Budget</label>
+        <input type="number" id="budget" value={budget}
+        onChange={e => setBudget(Number(e.target.value))}
+        className= "text-base text-white rounded border"
+        />
+      </div> 
+     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+       <div className = "flex flex-col gap-1">
+        <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
+        <input type="date" id="start-date" value={convertDate(startDate)}
+        onChange={e => setStartDate(e.target.value)}
+        className= "text-base text-white rounded border"
+        />
+      </div> 
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="end-date" className="text-base font-semibold">End Date</label>
+        <input type="date" id="end-date" value={convertDate(endDate)}
+        onChange={e => setEndDate(e.target.value)}
+        className= "text-base text-white rounded border"
+        />
+      </div> 
+     </div>
+      <div className = "flex flex-col gap-1">
+        <label htmlFor="status" className="text-base font-semibold">Project Status</label>
+        <select id="status" value={status || "OPEN"}
+        onChange={e => setStatus( e.target.value as "OPEN" |"IN_PROGRESS" | "CLOSED" | "COMPLETED")}
+        className= "text-base text-white rounded border"
+        >
+          <option value="OPEN">Open</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="CLOSED">Closed</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+        </div>
+      <div className="flex flex-col gap-1 col-span-2">
+        <label htmlFor="description" className= "text-base font-semibold mb-2">Description</label>
+        <textarea value={description} 
+        onChange={e => setDescription(e.target.value)}
+        className="text-base text-white rounded border"/>
+     </div>
+    </div>
+</>
+);};

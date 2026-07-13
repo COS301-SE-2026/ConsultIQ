@@ -7,9 +7,7 @@ import {useState, useEffect} from "react";
 import { Button } from "../../../components/ui/button";
 import { CheckCheck } from "lucide-react";
 import  NotificationTabs  from "../components/notifications-tab";
-import AllTab from "../components/allNotificatiions-tab";
-import UnreadTab from "../components/unread-tab";
-import ArchivedTab from "../components/archived-tabs";
+import NotificationListTab from "../components/notification-list-tab";
 import {Card} from "../../../components/ui/card"
 import { getNotifications,getArchivedNotifications,markAsRead, markAllAsRead, archiveNotification } from "../services/notification.services";
 import type { NotificationItems } from "../types/notification.types";
@@ -335,7 +333,7 @@ function NotificationPage(){
 
                             <div className=" flex w-full flex-col  pb-8 mt-6" >
                                 {activeTab === "All" && (
-                                    <AllTab 
+                                    <NotificationListTab 
                                         searchQuery={searchQuery}
                                         notifications={getSortedNotifications(notifications)}
                                         currentPage={currentPage}
@@ -347,7 +345,7 @@ function NotificationPage(){
                                     />
                                 )}
                                 {activeTab === "Unread" && (
-                                    <UnreadTab 
+                                    <NotificationListTab 
                                         searchQuery={searchQuery}
                                         notifications={getSortedNotifications(unreadNotifications)}
                                         currentPage={currentPage}
@@ -360,7 +358,7 @@ function NotificationPage(){
                                     />
                                 )}
                                 {activeTab === "Archived" && (
-                                    <ArchivedTab 
+                                    <NotificationListTab 
                                         searchQuery={searchQuery}
                                         notifications={getSortedNotifications(archivedNotifications)}
                                         currentPage={currentPage}

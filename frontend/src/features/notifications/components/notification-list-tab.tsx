@@ -4,7 +4,7 @@ import { Pagination } from "../../../components/shared/pagination";
 
 
 
-interface AllNotificationProps {
+interface NotificationListTabProps {
   readonly searchQuery?: string;
   readonly notifications: NotificationItems[];
   readonly currentPage: number;
@@ -22,7 +22,7 @@ function getStatus(notification: NotificationItems){
 }
 
 
-export default function AllTab({notifications, searchQuery= "",currentPage =1,onPageChange,itemsPerPage,selectedIds,onToggleSelect}:AllNotificationProps){
+export default function NotificationListTab({notifications, searchQuery= "",currentPage =1,onPageChange,itemsPerPage=10,selectedIds,onToggleSelect}:NotificationListTabProps){
     const filtered = notifications.filter((n) =>
         n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         n.body.toLowerCase().includes(searchQuery.toLowerCase())

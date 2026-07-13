@@ -10,6 +10,7 @@ datasource db {
 // ----------------------------------------Enums---------------------------------------------------
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   PROJECT_MANAGER
   CONSULTANT_MANAGER
@@ -156,6 +157,9 @@ model User {
   consultant         Consultant?
   managedProjects    ProjectManager[]
   managedConsultants ConsultantManager[]
+
+  adminActionsPerformed AdminAuditLog[] @relation("AdminActions")
+  adminActionsReceived  AdminAuditLog[] @relation("AdminTargets")
 
   @@map("users")
 }
@@ -349,6 +353,21 @@ model authAuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("auth_audit_logs")
+}
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  performedById String   @map("performed_by_id")
+  targetUserId  String   @map("target_user_id")
+  action        String
+  previousValue String   @map("previous_value")
+  newValue      String   @map("new_value")
+  timestamp     DateTime @default(now())
+
+  performedBy User @relation("AdminActions", fields: [performedById], references: [id])
+  targetUser  User @relation("AdminTargets", fields: [targetUserId], references: [id])
+
+  @@map("admin_audit_logs")
 }
 
 model ConsultantExperience {

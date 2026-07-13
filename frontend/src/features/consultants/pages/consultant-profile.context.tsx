@@ -22,7 +22,12 @@ export interface ProfileState {
   idNumber: string;
   phone: string;
   nationality: string;
-  location: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  suburb: string | null;
+  city: string;
+  province: string;
+  postalCode: string;
   availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE";
   costToCompany: number;
   skills: CreateConsultantSkillPayload[];
@@ -40,7 +45,12 @@ const defaultState: ProfileState = {
   idNumber: "",
   phone: "",
   nationality: "",
-  location: "",
+  addressLine1: "",
+  addressLine2:"",
+  suburb: "",
+  city: "",
+  province:"",
+  postalCode:"",
   availability: "AVAILABLE",
   costToCompany: 0,
   skills: [],

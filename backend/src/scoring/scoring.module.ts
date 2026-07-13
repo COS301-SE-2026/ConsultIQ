@@ -14,6 +14,7 @@ import { MatchRunController } from '../controllers/scoring-engine/match-run.cont
 import { ScoringService } from './services/scoring-config.service';
 import { ScoringController } from '../controllers/scoring/scoring.controller';
 import { PrismaService } from '../prisma/prisma.service';
+import { MatchRunService } from './services/match-run.service';
 @Module({
   controllers: [MatchRunController, ScoringController],
   providers: [
@@ -21,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
     ScoringService,
     PrismaService,
 
+    MatchRunService,
     //Phase 1: Data ingestion and Normalization
     DataIngestionService,
     NormalizationService,
@@ -39,6 +41,16 @@ import { PrismaService } from '../prisma/prisma.service';
 
     MatchRunAggregationService,
     WeightedAggregator,
+    {
+      provide: 'FACTOR_ACTIVATION_CONFIG',
+      useValue: {
+        SKILL_ALIGNMENT: true,
+        COMPETENCY_MATCH: true,
+        COST_FIT: true,
+        GEOGRAPHIC_FIT: true,
+        AVAILABILITY_FIT: true,
+      },
+    },
   ],
   exports: [ScoringPipelineService],
 

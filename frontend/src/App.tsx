@@ -8,7 +8,7 @@ function App() {
     <AuthProvider>
       <Toaster
       richColors
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 2000,
         }}

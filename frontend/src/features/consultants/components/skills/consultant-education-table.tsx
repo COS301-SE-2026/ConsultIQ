@@ -12,7 +12,7 @@ export interface Education {
 
 interface EducationTableProps {
   readonly education: Education[];
-    onRemove : (id:string) => void;
+  readonly onRemove : (id:string) => void;
 }
 
 export default function EducationTable({

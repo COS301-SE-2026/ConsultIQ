@@ -11,6 +11,77 @@ import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.
 const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
 const sanitizeDate = (text: string) => text.replace(/[^\d/]/g, "");
 
+interface CertificateUploadFieldProps{
+    readonly uploadedFile: File | undefined;
+    readonly onFileUpload: (e:React.ChangeEvent<HTMLInputElement>) => void;
+    readonly onClearFile: () => void;
+}
+
+function CertificateUploadField({uploadedFile,onFileUpload,onClearFile}:CertificateUploadFieldProps){
+    return(
+         <div className="flex flex-col gap-3">
+                    <span className="text-sm font-medium">Certificate upload</span>
+                    <label  
+                        htmlFor="cert-upload" 
+                        className="flex flex-col items-center justify-center gap-3 p-8 px-6 py-2 h-28 rounded-lg border border-dashed cursor-pointer transition-colors duration-200"
+                        style={{
+                            borderColor:"var(--color-border)"
+                        }}
+
+                    >
+                        <Upload size={24} className="text-gray-400"/>
+
+                       <span 
+                        className="inline-flex items-center  justify-center px-4 py-2 w-20 rounded text-white text-sm font-medium shadow-sm "
+                        style = {{
+                            backgroundColor:"var(--color-primary)"
+                        }}
+                       >
+                        Choose file
+                       </span>
+                       <span
+                        className="text-sm text-gray-500"
+                       >
+                         {uploadedFile ? uploadedFile.name : "no file chosen"}
+                        </span>
+
+                       <Input 
+                            id="cert-upload" 
+                            type="file" 
+                            accept=".pdf,.jpg,.png"
+                            className="hidden"
+                            onChange={onFileUpload}
+                        />
+                    </label>
+                    
+                   {uploadedFile && (
+                    <div className="flex items-end gap-2 mt-2">
+                    <div className="flex-1">
+                        <AttachmentDisplay attachmentName={uploadedFile.name}/>
+                    </div>
+                     
+                     
+                      <Button
+                          variant= "secondary"
+                         onClick={onClearFile}
+                         className="p-3 h-[62px] w-15 rounded-xl border flex items-center"
+                         style={{
+                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                           fontSize: "14px",
+                           padding: "6px 12px",
+                         }}
+                         title="Remove attachment"
+                       >
+                        <Trash2 size={18}/>
+                       </Button>
+                    </div>
+                    
+                   )}
+                  
+                </div>
+    );
+}
+
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
         const saved = sessionStorage.getItem("education_list");
@@ -26,6 +97,12 @@ export default function EducationForm() {
     const [endDate, setEndDate] = useState(() => sessionStorage.getItem("education_endDate") || "");
     const [dateError, setDateError] = useState("");
     const [uploadedFile, setUploadedFile] = useState<File | undefined>();
+
+    const handleClearFile =() =>{
+        setUploadedFile(undefined);
+        const input= document.getElementById("cert-upload") as HTMLInputElement;
+        if (input) input.value="";
+    };
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
@@ -50,6 +127,8 @@ export default function EducationForm() {
         const file = (e.target as HTMLInputElement).files?.[0];
         setUploadedFile(file);
     };
+
+  
 
     
 
@@ -78,9 +157,7 @@ export default function EducationForm() {
         ]);
 
 
-         setUploadedFile(undefined);
-        const input= document.getElementById("cert-upload") as HTMLInputElement;
-        if (input) input.value="";
+        handleClearFile();
 
         setInstitutionName("");
         setQualification("");
@@ -186,69 +263,11 @@ export default function EducationForm() {
 
                 {dateError && <span className="text-red-500 text-sm">{dateError}</span>}
                 
-                <div className="flex flex-col gap-3">
-                    <span className="text-sm font-medium">Certificate upload</span>
-                    <label  
-                        htmlFor="cert-upload" 
-                        className="flex flex-col items-center justify-center gap-3 p-8 px-6 py-2 h-28 rounded-lg border border-dashed cursor-pointer transition-colors duration-200"
-                        style={{
-                            borderColor:"var(--color-border)"
-                        }}
-
-                    >
-                        <Upload size={24} className="text-gray-400"/>
-
-                       <span 
-                        className="inline-flex items-center  justify-center px-4 py-2 w-20 rounded text-white text-sm font-medium shadow-sm "
-                        style = {{
-                            backgroundColor:"var(--color-primary)"
-                        }}
-                       >
-                        Choose file
-                       </span>
-                       <span
-                        className="text-sm text-gray-500"
-                       >
-                         {uploadedFile ? uploadedFile.name : "no file chosen"}
-                        </span>
-
-                       <Input 
-                            id="cert-upload" 
-                            type="file" 
-                            accept=".pdf,.jpg,.png"
-                            className="hidden"
-                            onChange={handleFileUpload}
-                        />
-                    </label>
-                    
-                   {uploadedFile && (
-                    <div className="flex items-end gap-2 mt-2">
-                    <div className="flex-1">
-                        <AttachmentDisplay attachmentName={uploadedFile.name}/>
-                    </div>
-                     
-                     
-                      <Button
-                          variant= "secondary"
-                         onClick={()=> { 
-                            setUploadedFile(undefined);
-                            const input= document.getElementById("cert-upload") as HTMLInputElement;
-                            if (input) input.value="";}}
-                         className="p-3 h-[62px] w-15 rounded-xl border flex items-center"
-                         style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
-                         title="Remove attachment"
-                       >
-                        <Trash2 size={18}/>
-                       </Button>
-                    </div>
-                    
-                   )}
-                  
-                </div>
+                <CertificateUploadField
+                    uploadedFile={uploadedFile}
+                    onFileUpload={handleFileUpload}
+                    onClearFile={handleClearFile}
+                />
 
                 <div className="h-6" />
                 <Button 

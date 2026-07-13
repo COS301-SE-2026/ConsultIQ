@@ -439,11 +439,13 @@ model MatchRun {
   id                     String           @id @default(uuid())
   projectId              String
   project                Project          @relation(fields: [projectId], references: [id])
-  userId                 String         
-  user                   User             @relation(fields: [userId], references: [id])
+  executedByUserId       String         
+  executedByUser         User             @relation(fields: [executedByUserId], references: [id])
   status                 MatchRunStatus  
   totalConsultantsScored Int              @default(0)
+  totalConsultantsExcluded Int              @default(0)
   results                MatchRunResult[]
+  configurationSnapshot  Json
   
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
@@ -454,6 +456,9 @@ model MatchRunResult {
   matchRunId   String
   matchRun     MatchRun   @relation(fields: [matchRunId], references: [id], onDelete: Cascade)
   consultantId String
+  totalScore   Float
+  rank         Int
+  factorScores Json
   consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
 }

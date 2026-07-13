@@ -1,18 +1,23 @@
 import { useState } from "react";
+import { Button } from "../../../../components/ui/button";
+import {Trash2 } from "lucide-react";
 
 export interface Education {
   id: string;
   institution: string;
   qualification: string;
   endYear: number;
+  fileName?:string;
 }
 
 interface EducationTableProps {
   readonly education: Education[];
+  readonly onRemove : (id:string) => void;
 }
 
 export default function EducationTable({
   education,
+  onRemove,
 }: EducationTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -30,50 +35,134 @@ export default function EducationTable({
     startIndex + rowsPerPage
   );
 
+  
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
       {/* Table Header */}
-      <div className="grid grid-cols-3 text-sm font-semibold mb-4 px-2">
-        <span>Institution</span>
-        <span>Qualification</span>
-        <span>Year Obtained</span>
-      </div>
+      <table
+        style={{
+          tableLayout: "fixed",
+          width: "100%",
+          borderCollapse: "collapse"
+        }}
+      >
+        <colgroup>
+          <col 
+            style ={{width:"25%"}}
+          />
+          <col 
+            style ={{width:"25%"}}
+          />
+          <col 
+            style ={{width:"15%"}}
+          />
+          <col 
+            style ={{width:"25%"}}
+          />
+           <col 
+            style ={{width:"10%"}}
+          />
+        </colgroup>
 
-      {/* Table Content */}
-      <div className="flex flex-col h-[200px] overflow-y-auto">
+        
+        <thead>
+        <tr>
+          <th
+            style={{ 
+              textAlign: "left",
+              padding: "8px"
+            }}
+          >
+            Institution
+          </th>
+
+          <th
+            style={{ 
+              textAlign: "left",
+              padding: "8px"
+            }}
+          >
+            Qualification
+          </th>
+
+           <th
+            style={{ 
+              textAlign: "left",
+              padding: "8px"
+            }}
+          >
+            Year Obtained
+          </th>
+
+           <th
+            style={{ 
+              textAlign: "left",
+              padding: "8px"
+            }}
+          >
+            Certificate
+          </th>
+        </tr>
+      </thead>
+
+       {/* Table Content */}
+      <tbody>
         {currentEducation.length > 0 ? (
           currentEducation.map((item) => (
-            <div
+            <tr
               key={item.id}
-              className="
-                grid
-                grid-cols-3
-                py-3
-                border-t
-                text-base
-                px-2
-                shrink-0
-              "
-            >
-              <span className="truncate pr-2">
+               style={{
+                  padding: "6px 12px",
+                  minWidth: 0
+                }}
+              >
+
+              <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",maxWidth: 0, padding:"16px 8px" }} title={item.institution}>
                 {item.institution}
-              </span>
+              </td>
 
-              <span className="truncate pr-2">
+              <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",maxWidth: 0,padding:"16px 8px" }} title={item.qualification}>
                 {item.qualification}
-              </span>
+              </td>
 
-              <span>
+              <td style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",maxWidth: 0,padding:"16px 8px" }} >
                 {item.endYear}
-              </span>
-            </div>
+              </td>
+
+              <td style={{ overflow: "hidden", minWidth: 0 }}>
+                {item.fileName ? (
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",minWidth: 0,padding:"16px 8px" }} title={item.fileName}>{item.fileName}</span>
+                ):(
+                    <span className="text-gray-400 text-xs">No file</span>
+                )}
+              </td>
+
+              <td>
+                 <Button
+                  variant="secondary"
+                  onClick={() => onRemove(item.id)}
+                  className="gap-2 h-6 w-20 rounded"
+                >
+                  <Trash2 size={18}/>
+
+                  
+                </Button>
+              </td>
+               
+            </tr>
+
           ))
         ) : (
-          <div className="py-4 text-center text-gray-500 border-t">
-            No education added yet.
-          </div>
+          <tr>
+            <td className="py-4 text-center text-gray-500 border-t">
+              No education added yet.
+            </td> 
+          </tr>
+          
         )}
-      </div>
+     </tbody>
+
+    </table>
 
       {/* Pagination */}
       <div className="flex justify-between items-center mt-2 pt-4 border-t">

@@ -108,7 +108,16 @@ function NotificationPage(){
             }
             return n;
         };
-     const currentTabNotification: NotificationItems[]= activeTab === "All" ? notifications: activeTab === "Unread" ? unreadNotifications : archivedNotifications;
+    
+    let currentTabNotification: NotificationItems[] =[];
+    
+    if(activeTab === "All"){
+        currentTabNotification= notifications;
+    }else if (activeTab === "Unread"){
+        currentTabNotification=unreadNotifications;
+    }else{
+        currentTabNotification = archivedNotifications;
+    }
     
     const refreshNotifications = async () => {
         try{

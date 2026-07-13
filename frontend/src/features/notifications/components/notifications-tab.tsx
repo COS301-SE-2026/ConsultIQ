@@ -11,7 +11,7 @@ type Props = {
   };
 };
 
-function CountBadge({count}: {count: number}){
+function CountBadge({count}: {readonly count: number}){
   return(
       <div
             className="rounded-full flex items-center justify-center text-white font-bold shrink-0"

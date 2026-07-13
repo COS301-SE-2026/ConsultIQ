@@ -13,7 +13,7 @@ interface NotificationCardProp {
   readonly onCheckedChange?: () => void;
 }
 
-interface notificationIcon{
+interface NotificationIcon{
     readonly icon:LucideIcon;
     readonly bgColour: string;
     readonly colour: string;
@@ -23,7 +23,7 @@ const iconStyles ={
     read:{icon: FolderOpenDot, bgColour: "#F1F5F9", colour: "#64748B"},
     unread:{icon: FolderDot,bgColour: "#EDE9FE", colour: "#7C3AED"},
     archived:{icon: Archive , bgColour: "#F1F5F9", colour:"64748B"}
-}satisfies Record<NotificationCardProp["status"],notificationIcon>;
+}satisfies Record<NotificationCardProp["status"],NotificationIcon>;
 
 
 function getTime(date: string){

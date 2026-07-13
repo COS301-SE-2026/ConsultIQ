@@ -22,15 +22,14 @@ import type { Skill, Experience, Education } from "../components/profile";
 
 export interface Profile {
   id: string;
-  firstName: string;
-  lastName: string;
+  fullName: string;
   status: "Available" | "Unavailable";
   email: string;
   phone: string;
   idNumber: string;
   nationality: string;
-  address1: string;
-  address2: string;
+  addressLine1: string;
+  addressLine2: string;
   suburb: string;
   city: string;
   province: string;
@@ -59,6 +58,9 @@ function ConsultantProfileViewPage() {
     : consultantSidebarItems;
 
 
+
+  const canEdit = fromDashboard && Boolean(targetConsultantId);
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
@@ -67,10 +69,18 @@ function ConsultantProfileViewPage() {
     );
   }
 
+  console.log("profile data: ", profile);
+
   if (error || !profile) {
+    let errorMessage = "profile not found";
+
+    if (error){
+      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
+    }
+
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{error || "Profile error"}</div>
+        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
         <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
           Go Back
         </button>
@@ -118,29 +128,66 @@ function ConsultantProfileViewPage() {
             <div className="h-1" />
 
             <ProfileHeroCard
-              firstName={profile.firstName}
-              lastName={profile.lastName}
+              fullName={profile.fullName}
               status={profile.status}
+              canEdit={canEdit}
+                onSave={() => {
+                  // API call goes here
+                }}
             />
 
             <PersonalInfoCard
-              firstName={profile.firstName}
-              lastName={profile.lastName}
+              fullName={profile.fullName}
               email={profile.email}
               phone={profile.phone}
               idNumber={profile.idNumber}
               nationality={profile.nationality}
+              canEdit={canEdit}
+               onSave={() => {
+                // API call goes here
+              }}
+             
             />
 
             <LocationCard
-              address1={profile.address1}
+              addressLine1={profile.address1}
+              addressLine2={profile.address2}
+              suburb= {profile.suburb}
+              city= {profile.city}
+              province={profile.province}
+              postalCode={profile.postalCode}
+              canEdit={canEdit}
+              onSave={() =>{
+                
+              }}
+             
             />
 
-            <ExperienceCard experiences={profile.experience} />
+            <ExperienceCard 
+              experiences={profile.experience} 
+              canEdit={canEdit}
+              onSave={()=>{
+                // API call goes here
+              }}
+            />
 
-            <SkillsCard skills={profile.skills} />
+            <SkillsCard 
+              skills={profile.skills}
+              canEdit={canEdit}
+              onSave={() => {
+                // call your API here, then update state
+              }}
+             />
 
-            <EducationCard educationList={profile.education} />
+            <EducationCard 
+              educationList={profile.education} 
+              canEdit={canEdit}
+              onSave={()=>{
+                // API call goes here
+              }}
+            />
+
+
           </div>
         </main>
       </div>

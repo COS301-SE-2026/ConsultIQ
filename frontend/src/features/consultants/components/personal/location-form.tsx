@@ -20,15 +20,11 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
   const [error, setError] = useState("");
 
   const handleDone = () => {
-    if (!addressLine1.trim() || !city.trim() || !province.trim()) {
-      setError("Address line 1, city and province are required.");
+    if (!addressLine1.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
+      setError("Address line 1, city, province and postal code are required.");
       return;
     }
     setError("");
-
-    const location = [addressLine1.trim(), suburb.trim(), city.trim(), province.trim(), postalCode.trim()]
-      .filter(Boolean)
-      .join(", ");
 
     // Also save to sessionStorage so create-profile-page can read them
     sessionStorage.setItem("location_addressLine1", addressLine1.trim());
@@ -38,7 +34,15 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
     sessionStorage.setItem("location_province", province.trim());
     sessionStorage.setItem("location_postalCode", postalCode.trim());
 
-    updateProfileData({ location });
+    updateProfileData({
+      addressLine1: addressLine1.trim(),
+      addressLine2: addressLine2.trim() || null,
+      suburb: suburb.trim() || null,
+      city: city.trim(),
+      province: province.trim(),
+      postalCode: postalCode.trim(),
+
+     });
     toast.success("Location saved!");
     onComplete?.();
   };

@@ -60,6 +60,7 @@ function AnimatedRoutes() {
                     <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
                     <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/> 
                     <Route path="/notifications" element={<PageTransition><NotificationPage/></PageTransition>}/>  
+                    <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

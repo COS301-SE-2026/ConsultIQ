@@ -17,6 +17,7 @@ interface SkillDto {
   skillName: string;
   competencyLevel: string;
   yearsExperience?: number;
+  confidenceLevel: number;
 }
 
 interface CertificateDto {
@@ -30,13 +31,18 @@ interface CertificateDto {
 
 export interface ConsultantProfileDto {
   id: string;
-  fullName?: string;
+  fullName: string;
   availability?: string;
   email: string;
   phoneNumber?: string;
   idNumber?: string;
   nationality?: string;
-  location?: string;
+  addressLine1: string;
+  addressLine2: string;
+  suburb: string;
+  city: string;
+  province: string;
+  postalCode?: string;
   experience?: ExperienceDto[];
   skills?: SkillDto[];
   certificates?: CertificateDto[];
@@ -44,14 +50,11 @@ export interface ConsultantProfileDto {
 
 
 const mapDtoToProfile = (data: ConsultantProfileDto) => {
-  const nameParts = data.fullName ? data.fullName.split(" ") : ["", ""];
-  const firstName = nameParts[0] || "";
-  const lastName = nameParts.slice(1).join(" ") || "";
+
 
   return {
     id: data.id,
-    firstName,
-    lastName,
+    fullName:data.fullName,
    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
     phone: data.phoneNumber || "Not Provided",
@@ -60,12 +63,12 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     
    
-    address1: data.location || "Not Provided",
-    address2: "",
-    suburb: "",
-    city:  "",
-    province: "",
-    postalCode: "",
+    address1: data.addressLine1,
+    address2: data.addressLine2 || "Not Provided",
+    suburb: data.suburb || "Not Provided",
+    city:  data.city,
+    province: data.province,
+    postalCode: data.postalCode || "Not provided",
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,
@@ -90,6 +93,7 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       name: s.skillName,
       competencyLevel: s.competencyLevel as "BEGINNER" | "INTERMEDIATE" | "EXPERT",
       yearsOfExperience: s.yearsExperience || 0,
+      confidenceLevel: s.confidenceLevel || 1,
     })),
 
     education: (data.certificates || []).map((cert, index: number) => ({
@@ -97,11 +101,11 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       institution: cert.issuingBody,
       qualification: cert.title,
       startDate: cert.startDate 
-        ? new Date(cert.startDate).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }) 
-        : new Date(cert.uploadedAt).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        ? new Date(cert.startDate).toISOString().split("T")[0]
+        : new Date(cert.uploadedAt).toISOString().split("T")[0],
       endDate: cert.endDate 
-        ? new Date(cert.endDate).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }) 
-        : new Date(cert.uploadedAt).toLocaleDateString("en-ZA", { month: "long", year: "numeric" }),
+        ? new Date(cert.endDate).toISOString().split("T")[0]
+        : new Date(cert.uploadedAt).toISOString().split("T")[0],
     })),
   };
 };
@@ -115,7 +119,7 @@ export function useFetchConsultantProfile(
   // Use the inferred map type instead of "any"
   const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<Error | string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {

@@ -29,7 +29,12 @@ export interface CreateConsultantProfilePayload {
   idNumber: string;
   phone: string;
   nationality: string;
-  location: string;
+  addressLine1: string;
+  addressLine2?: string;
+  suburb?: string;
+  city: string;
+  province: string;
+  postalCode?: string;
   costToCompany: number;
   availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE";
   skills: CreateConsultantSkillPayload[];
@@ -41,7 +46,12 @@ export interface ConsultantListItemDto {
   id: string;
   fullName: string;
   email: string;
-  location: string;
+  addressLine1: string;
+  addressLine2?: string;
+  suburb?: string;
+  city: string;
+  province: string;
+  postalCode?: string;
   availabilityStatus: string;
   primarySkills: string[];
   costToCompanyRate?: number;

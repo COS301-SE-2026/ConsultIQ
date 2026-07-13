@@ -1,22 +1,127 @@
 import { useState } from "react";
 import EducationDetailPanel, { type Education } from "./education-detail-panel";
+import { toast } from "sonner";
+import {Button} from "../../../../components/ui/button";
+import {Pencil,Trash2,Plus} from "lucide-react"
+import EditControls from "./edit-controls";
 
 export type { Education };
 
 interface EducationCardProps {
    readonly educationList: readonly Education[];
+   readonly canEdit?:boolean;
+   readonly onSave?: (updatedEducation: Education[]) => void;
 }
 
 function formatDateRange(startDate: string, endDate: string) {
   const fmt = (d: string) => {
-    const parts = d.split(" ");
-    return parts.length >= 2 ? `${parts[0].slice(0, 3)} ${parts[1]}` : d;
+   if (!d || d.toLowerCase() === "present") {return d};
+    const date = new Date(d);
+    return Number.isNaN(date.getTime()) ? d : date.toLocaleDateString("en-ZA", { month: "short", year: "numeric" });
   };
-  return `${fmt(startDate)}, ${fmt(endDate)}`;
+  return `${fmt(startDate)} - ${fmt(endDate)}`;
 }
 
-function EducationCard({ educationList }: EducationCardProps) {
-  const [selected, setSelected] = useState<Education | null>(null);
+function EducationInfo({edu} : {readonly edu: Education}){
+  return(
+     <div className="flex items-start justify-between gap-6">
+                      {/* institution info */}
+                      <div className="flex flex-col" style={{ gap: "8px" }}>
+                        <p
+                          className="font-bold"
+                          style={{
+                            color: "var(--color-text-primary)",
+                            fontSize: "var(--text-h3)",
+                          }}
+                        >
+                          {edu.institution}
+                        </p>
+                        <p
+                          className="font-medium"
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            fontSize: "var(--text-h4)",
+                          }}
+                        >
+                          {edu.qualification}
+                        </p>
+                      </div>
+
+                      {/* date range */}
+                      <span
+                        className="shrink-0"
+                        style={{
+                          color: "var(--color-text-secondary)",
+                          fontSize: "var(--text-h4)",
+                        }}
+                      >
+                        {formatDateRange(edu.startDate, edu.endDate)}
+                      </span>
+                    </div>
+  );
+}
+
+const actionButtonStyle ={
+   boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+   fontSize: "14px",
+   padding: "6px 12px",
+}
+
+function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
+  const [selected, setSelected] = useState<{ edu: Education; index: number } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [localEducation, setLocalEducation] = useState(educationList);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setLocalEducation(educationList);
+
+  }
+
+  
+  const handleCancel = () =>{
+    setIsEditing(false);
+    setLocalEducation(educationList);
+
+  }
+
+  const handleSave = () => {
+
+    onSave?.([...localEducation]);
+    setIsEditing(false);
+    toast.success("Education has been updated successfully");
+
+  }
+
+  const addEducation = () => {
+  
+      const newEducation={
+        id: `edu-${Date.now()}`,
+        institution: "Institution Name",
+        qualification: "Qualification Name",
+        startDate: "",
+        endDate: "",
+      };
+  
+      setLocalEducation([...localEducation,newEducation]);
+      setSelected(null);
+  
+    }
+  
+    const removeEducation = (index: number) =>{
+      setLocalEducation(prev => prev.filter((_,pos) => pos !== index));
+  
+    }
+  
+    const savePanelChanges = (edu: Education) =>{
+      const updated = [...localEducation];
+      updated[selected!.index]= edu;
+      setLocalEducation(updated);
+      setSelected(null);
+  
+    }
+
+
 
   return (
     <>
@@ -29,18 +134,30 @@ function EducationCard({ educationList }: EducationCardProps) {
         }}
       >
        
-        <h2
-          className="font-bold"
-          style={{ color: "var(--color-primary)", fontSize: "22px" }}
-        >
-          Education
-        </h2>
+       <div className = "flex justify-between items-center w-full">
+          <h2
+            className="font-bold"
+            style={{ color: "var(--color-primary)", fontSize: "22px" }}
+          >
+            Education
+          </h2>
+
+          {canEdit && (
+             <EditControls
+                  isEditing={isEditing}
+                  onEdit={handleEditClick}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+          )}
+       </div>
+        
 
         <hr style={{ borderColor: "var(--color-border)" }} />
 
         {/* Education rows */}
         <div className="flex flex-col">
-          {educationList.map((edu, index) => (
+          { localEducation.map((edu, index) => (
             <div key={edu.id}>
               {index > 0 && (
                 <hr
@@ -51,54 +168,82 @@ function EducationCard({ educationList }: EducationCardProps) {
                 />
               )}
 
-              <button
-                onClick={() => setSelected(edu)}
-                className="w-full text-left hover:opacity-70 transition cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-6">
-                  {/* institution info */}
-                  <div className="flex flex-col" style={{ gap: "8px" }}>
-                    <p
-                      className="font-bold"
-                      style={{
-                        color: "var(--color-text-primary)",
-                        fontSize: "var(--text-h3)",
-                      }}
-                    >
-                      {edu.institution}
-                    </p>
-                    <p
-                      className="font-medium"
-                      style={{
-                        color: "var(--color-text-secondary)",
-                        fontSize: "var(--text-h4)",
-                      }}
-                    >
-                      {edu.qualification}
-                    </p>
-                  </div>
+              <div className="flex items-start justify-between gap-6 w-full">
+                {isEditing ? (
+                 <>
+                 <EducationInfo edu={edu}/>
 
-                  {/* date range */}
-                  <span
-                    className="shrink-0"
-                    style={{
-                      color: "var(--color-text-secondary)",
-                      fontSize: "var(--text-h4)",
-                    }}
+                      <div className="flex items-center gap-2 shrink-0 ml-4">
+                       <Button
+                         variant= "secondary"
+                         onClick={()=> setSelected({edu,index})}
+                         className="gap-2 font-bold px-4 py-2 border-b"
+                          style={actionButtonStyle}
+                       >
+                         <Pencil size={16} className="text-slate-500"/>
+
+                         Edit
+                       </Button>
+                       <Button
+                          variant= "secondary"
+                         onClick={()=> removeEducation(index)}
+                         className="p-2 border"
+                         style={actionButtonStyle}
+                       >
+                        <Trash2 size={16}/>
+                       </Button>
+                    </div>
+                  </>
+                ):(
+
+                  <button
+                    onClick={() => setSelected({edu,index})}
+                    className="w-full text-left hover:opacity-70 transition cursor-pointer"
                   >
-                    {formatDateRange(edu.startDate, edu.endDate)}
-                  </span>
-                </div>
-              </button>
+                     <EducationInfo edu={edu}/>
+                 
+                  </button>
+                  
+                )}
+
+              </div>
+
+              {/* end of education row */}
             </div>
+
+          // end of isEditing block
           ))}
+
+        {/* end education rows */}
         </div>
+         {isEditing && (
+              <Button
+                variant = "outline"
+                onClick= {addEducation}
+               className="w-full flex items-center justify-center gap-2 py-8 rounded-lg"
+                style={{
+                  borderColor: "var(--color-border)",
+                   border: "2px dashed #002D62",
+                   fontWeight: 600,
+                   paddingTop: "8px",
+                   paddingBottom: "8px",
+                   
+                 
+                }}
+              >
+                <Plus size= {18}/>
+                Add  education
+              </Button>
+            )}
       </div>
 
       {selected && (
         <EducationDetailPanel
-          education={selected}
+          key={selected.edu.id}
+          education={selected.edu}
           onClose={() => setSelected(null)}
+          onSave={savePanelChanges}
+          editMode={true}
         />
       )}
     </>

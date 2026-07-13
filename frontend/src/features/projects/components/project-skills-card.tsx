@@ -4,36 +4,43 @@ import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 
 interface ProjectSkillsCardProps {
-  skills: ProjectSkillData[];
-  onSkillsChange: (skills: ProjectSkillData[]) => void;
+  readonly skills: ProjectSkillData[];
+  readonly onSkillsChange: (skills: ProjectSkillData[]) => void;
+  readonly editingSkill: ProjectSkillData | null;
+  readonly onCancelEdit: ()=> void;
+  readonly editingIndex: number | null;
+  readonly onSkillSave: (skill: ProjectSkillData)=> void;
+  readonly onEditSkill?: (skill: ProjectSkillData, idx: number) =>void;
+  readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsCard({ skills, onSkillsChange }: ProjectSkillsCardProps) {
+export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkill,
+    onCancelEdit, editingIndex, onSkillSave,onEditSkill, isEditing,}: ProjectSkillsCardProps) {
 
-  const [skillName, setSkillName] = useState("");
-  const [competency, setCompetency] = useState("INTERMEDIATE");
-  const [years, setYears] = useState("");
-  const [isMandatory, setIsMandatory] = useState(false);
-
-  const handleAddSkill = () => {
+  const [skillName, setSkillName] = useState(editingSkill?.name ?? "");
+  const [competency, setCompetency] = useState(editingSkill?.competency ?? "INTERMEDIATE");
+  const [years, setYears] = useState(String(editingSkill?.years ?? ""));
+  const [isMandatory, setIsMandatory] = useState(Boolean(editingSkill?.mandatory ?? false));
+ 
+  const handleAddUpdate = () => {
     if (!skillName.trim() || !years) return;
 
+  const newSkill: ProjectSkillData= {
+    id: editingSkill?.id,
+    name: skillName.trim(),
+    competency,
+    years: Number(years),
+    mandatory: isMandatory,};
 
-    onSkillsChange([
-      ...skills,
-      {
-        name: skillName.trim(),
-        competency,
-        years: Number(years),
-        mandatory: isMandatory,
-      },
-    ]);
+    if(editingIndex !==null){onSkillSave(newSkill)
+    } else{
+      onSkillsChange([...skills, newSkill]);}
 
-    // Reset form fields
     setSkillName("");
     setCompetency("INTERMEDIATE");
     setYears("");
     setIsMandatory(false);
+    onCancelEdit();
   };
 
   return (
@@ -108,16 +115,19 @@ export default function ProjectSkillsCard({ skills, onSkillsChange }: ProjectSki
 
           <button
             type="button"
-            onClick={handleAddSkill}
+            onClick={handleAddUpdate}
             disabled={!skillName.trim() || !years}
             className="h-14 rounded text-white font-semibold text-lg mt-2 transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            Add Skill
+           {editingSkill ? "Update Skill" : "Add Skill"}
           </button>
 
-
-          <ProjectSkillsTable skills={skills} />
+                
+        {(!isEditing && 
+          <ProjectSkillsTable skills={skills}
+          onEditSkill={onEditSkill || (()=> {})}
+          /> )}
         </div>
 
         <div className="h-6" />

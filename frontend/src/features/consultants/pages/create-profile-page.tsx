@@ -37,11 +37,15 @@ function CreateProfileContent() {
     }
 
     const addressLine1 = sessionStorage.getItem("location_addressLine1") || "";
-    const suburb = sessionStorage.getItem("location_suburb") || "";
     const city = sessionStorage.getItem("location_city") || "";
-    const location = [addressLine1, suburb, city].filter(Boolean).join(", ") || profileData.location;
+    const province= sessionStorage.getItem("location_province") || "";
+    const postalCode= sessionStorage.getItem("location_postalCode") || "";
+    
+    if(!addressLine1.trim() || !city.trim() || !province.trim() || !postalCode.trim()){
+      toast.error("Please provide a valid street address, city, province and postal code.Go back to Personal tab. ");
+      return;
+    }
 
-    if (!location) { toast.error("Location is required. Go back to Personal tab."); return; }
     if (!profileData.idNumber) { toast.error("ID number is required. Go back to Personal tab."); return; }
     if (!profileData.phone) { toast.error("Phone number is required. Go back to Personal tab."); return; }
     if (profileData.skills.length === 0) { toast.error("At least one skill is required."); return; }
@@ -52,7 +56,12 @@ function CreateProfileContent() {
       idNumber: profileData.idNumber,
       phone: profileData.phone,
       nationality: profileData.nationality,
-      location,
+      addressLine1:profileData.addressLine1,
+      addressLine2:profileData.addressLine2 || undefined,
+      suburb: profileData.suburb || undefined,
+      city: profileData.city,
+      province: profileData.province,
+      postalCode:profileData.postalCode || undefined,
       costToCompany: profileData.costToCompany,
       availability: profileData.availability,
       skills: profileData.skills,
@@ -120,14 +129,14 @@ function CreateProfileContent() {
             className="sticky top-0 w-full"
             style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
           >
-            <div className="max-w-[1600px] mx-auto w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+            <div className="max-w-400 mx-auto w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
               <div className="h-6" />
               <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
               <div className="h-4" />
             </div>
           </div>
 
-          <div className="max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+          <div className="max-w-400 mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
             {activeTab === "personal" && (
               <PersonalTab onComplete={() => setActiveTab("experience")} />
             )}

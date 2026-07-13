@@ -1,5 +1,13 @@
 import { DetailPanel } from "../../../../components/shared/detail-panel";
 import { DetailField } from "../../../../components/shared/detail-field";
+import { useState } from "react";
+import { Input } from "../../../../components/ui/input";
+import {Button} from "../../../../components/ui/button";
+import DateField from "../../../../components/shared/date-picker";
+import "react-datepicker/dist/react-datepicker.css";
+import TextareaAutosize from "react-textarea-autosize";
+import { isBefore, isAfter, startOfDay } from 'date-fns';
+
 
 export interface Experience {
   id: string;
@@ -15,20 +23,251 @@ export interface Experience {
 interface ExperienceDetailPanelProps {
   readonly experience: Experience;
   readonly onClose: () => void;
+  readonly onSave: (experience: Experience) => void;
+  readonly editMode?: boolean;
 }
 
-export default function ExperienceDetailPanel({ experience, onClose }: ExperienceDetailPanelProps) {
+export default function ExperienceDetailPanel({ experience, onClose,onSave, editMode }: ExperienceDetailPanelProps) {
+
+  const [company, setCompany] = useState(experience.company);
+  const [jobTitle, setJobTitle] = useState(experience.jobTitle);
+  const [jobType, setJobType]= useState(experience.jobType);
+ const [startDate, setStartDate]= useState<Date | null>(experience.startDate ? new Date(experience.startDate) : null);
+  const [endDate, setEndDate]= useState<Date | null>(experience.endDate ? new Date(experience.endDate) : null);
+  const [roleDesc, setRoleDesc]= useState(experience.roleDescription);
+  const [workModel, setWorkModel] = useState(experience.workModel);
+  
+
+  const [companyError, setCompanyError] = useState("");
+  const [jobTitleError, setjobTitleError] = useState("");
+  const [startDateError, setstartDateError] = useState("");
+  const [endDateError,setEndDateError]= useState("");
+  const [roleDescError,setroleDescError]= useState("");
+ 
+
+  const validateCompany = () => {
+     if(company.trim()){
+      setCompanyError("");
+      return true;
+    }
+      setCompanyError("Company name is required");
+      return false;
+    
+
+  }
+
+  const validateJobTitle = () => {
+    if(jobTitle.trim()){
+      setjobTitleError("");
+      return true;
+    }
+      setjobTitleError("Job title is required");
+      return false;
+    
+  }
+
+  const validateRoleDesc = () => {
+     if(roleDesc.trim()){
+      setroleDescError("");
+      return true;
+    }
+      setroleDescError("Role description is required");
+      return false;
+
+  }
+
+  const validateStartDate = () => {
+    if(startDate){
+      setstartDateError("");
+      return true;
+    }
+
+      setstartDateError("Start date is required");
+      return false;
+    
+
+  }
+
+  const validateEndDate = () => {
+    if(endDate){
+      setEndDateError("");
+      return true;
+    }
+       setEndDateError("End date is required");
+      return false;
+  }
+
+
+  const validateDateRange = () => {
+     if(!startDate || !endDate) return true;
+
+    if(isAfter(startOfDay(startDate),startOfDay(endDate))){
+        setstartDateError("Start day must be before end date");
+        return false;
+      }
+
+      if(isBefore(startOfDay(endDate),startOfDay(startDate))){
+        setstartDateError("End date must be after start date");
+        return false;
+      }
+      
+      setstartDateError("");
+      return true;
+  }
+
+  const handleSave = () =>{
+
+   const isValid= validateCompany() &&
+      validateJobTitle() &&
+      validateRoleDesc() &&
+      validateDateRange() &&
+      validateStartDate() &&
+      validateEndDate();
+
+  
+
+    if (!isValid){
+      return;
+    }
+
+    onSave({
+      ...experience,
+      company,
+      jobTitle,
+      jobType,
+      startDate: startDate!.toISOString().split("T")[0],
+      endDate:  endDate!.toISOString().split("T")[0],
+      roleDescription: roleDesc,
+      workModel,
+    });
+
+
+   onClose();
+  }
+
+  const handleCancel = () =>{
+    onClose();
+
+  }
+
+
   return (
-    <DetailPanel title="Experience" onClose={onClose}>
-      <DetailField label="Job title" value={experience.jobTitle} />
-      <DetailField label="Company/organisation" value={experience.company} />
-      <DetailField label="Work model" value={experience.workModel} />
-      <DetailField label="Job type" value={experience.jobType} />
-      <DetailField
-        label="Start and end date"
-        value={`${experience.startDate}, ${experience.endDate}`}
-      />
-      <DetailField label="Role description" value={experience.roleDescription} />
+      <DetailPanel title={editMode ? "Edit Experience" : "Experience"} onClose={onClose}>
+        {editMode ? (
+           <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+              <label className="text-sm font-semibold" htmlFor="form-company-name">Company name</label>
+              <Input value={company} onChange={(e) => setCompany(e.target.value) } />
+              {companyError && <span className="text-red-500 text-xs">{companyError}</span>}
+        </div>
+
+         <div className="flex flex-col gap-1">
+            <label htmlFor="form-job=title">Job title</label>
+            <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value) } />
+             {jobTitleError && <span className="text-red-500 text-xs">{jobTitleError}</span>}
+         </div>
+
+         <div className="flex flex-col gap-1">
+            <label htmlFor="form-job-type">Job type</label>
+             <select
+              value= {jobType}
+              onChange={(e)=> setJobType(e.target.value)}
+              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+             >
+                <option value="FULL_TIME">Full-time</option>
+                <option value="PART_TIME">Part-time</option>
+                <option value="CONTRACT">Contract</option>
+                <option value="INTERNSHIP">Internship</option>
+                <option value="FREELANCE">Freelance</option>
+            </select>
+         </div>
+
+         <div className="flex flex-col gap-1">
+             <label htmlFor="form-work-model">Work Model</label>
+             <select
+              value= {workModel}
+              onChange={(e)=> setWorkModel(e.target.value)}
+              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+             >
+
+               <option value="ONSITE">On-site</option>
+               <option value="REMOTE">Remote</option>
+               <option value="HYBRID">Hybrid</option>
+
+             </select>
+         </div>
+
+          <div className="flex flex-col gap-1">
+            <DateField id="form-start-date" label="Start date" selected={startDate} onChange={setStartDate} error={startDateError}/>
+         </div>
+
+          <div className="flex flex-col gap-1">
+          <DateField id="form-end-date" label="End date" selected={endDate} onChange={setEndDate} error={endDateError}/>
+         </div>
+
+
+        <div className="flex flex-col gap-1">
+            <label htmlFor="description" className="text-base font-semibold">Role description </label>
+            <TextareaAutosize  
+            id="description"
+            value={roleDesc} 
+            onChange={(e) => setRoleDesc(e.target.value) }
+            placeholder="Describe your role and responsibilties"
+            minRows={3} // Sets the initial minimum height
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-[#002D72]/20"
+            
+            />
+            {roleDescError && <span className="text-red-500 text-xs">{roleDescError}</span>}
+         </div>
+
+        <div className="flex items-center gap-2 shrink-0 ml-4">
+          <Button
+            variant="default"
+            onClick={handleSave}
+             className="gap-2 font-bold px-4 py-2 border-b"
+                          style={{
+                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                           fontSize: "14px",
+                           padding: "6px 12px",
+                         }}
+          >
+            Done
+          </Button>
+           <Button
+            variant="outline"
+            onClick={handleCancel}
+             className="gap-2 font-bold px-4 py-2 border-b"
+                          style={{
+                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                           fontSize: "14px",
+                           padding: "6px 12px",
+                         }}
+          >
+            Cancel
+          </Button>
+        </div>
+        
+
+      </div> 
+      
+    ):(
+       <div className="flex flex-col gap-4">
+            <DetailField label="Job title" value={experience.jobTitle} />
+            <DetailField label="Company/organisation" value={experience.company} />
+            <DetailField label="Work model" value={experience.workModel} />
+            <DetailField label="Job type" value={experience.jobType} />
+            <DetailField
+              label="Start and end date"
+              value={`${experience.startDate ? new Date(experience.startDate).toLocaleDateString("en-GB") : ""} 
+            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : ""}`}
+            />
+            <DetailField label="Role description" value={experience.roleDescription} />
+          </div>
+      
+      
+        
+     
+    )}
     </DetailPanel>
   );
 }

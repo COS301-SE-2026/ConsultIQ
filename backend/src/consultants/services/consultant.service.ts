@@ -13,6 +13,7 @@ import {
   PendingProfileUserDto,
 } from '../dto/create-consultant.dto';
 import { ConsultantProfileDto } from '../dto/consultant-profile.dto';
+import { UpdateConsultantDto } from '../dto/update-consultant.dto';
 import {
   CompetencyLevel,
   ConsultantAvailability,

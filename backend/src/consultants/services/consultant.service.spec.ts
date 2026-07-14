@@ -357,6 +357,7 @@ describe('ConsultantService', () => {
     },
     projectPlacement: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -418,6 +419,85 @@ describe('ConsultantService', () => {
       ]);
 
       const result = await service.getAssignedProjects('user-1');
+    });
+  });
+
+  describe('getAssignedProjectDetails', () => {
+    it('throws NotFoundException when consultant profile does not exist', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.getAssignedProjectDetails('user-1', 'project-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when consultant is not assigned to the project', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.getAssignedProjectDetails('user-1', 'project-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('returns project details with team members excluding self', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-1',
+        status: 'ACTIVE',
+        allocation: 80,
+        startDate: new Date('2026-01-01'),
+        endDate: null,
+        project: {
+          id: 'project-1',
+          projectName: 'Project Alpha',
+          clientName: 'Client A',
+          description: 'Test',
+          addressLine1: '123 Main St',
+          addressLine2: null,
+          suburb: 'Sandton',
+          city: 'Johannesburg',
+          province: 'Gauteng',
+          postalCode: '2196',
+          status: 'IN_PROGRESS',
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          teamSize: 3,
+          allocation: 100,
+          budget: 500000,
+          skills: [
+            {
+              competency: 'EXPERT',
+              years: 3,
+              mandatory: true,
+              skill: { name: 'TypeScript' },
+            },
+          ],
+          placements: [
+            {
+              consultantId: 'consultant-1',
+              consultant: {
+                user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
+              },
+            },
+            {
+              consultantId: 'consultant-2',
+              consultant: {
+                user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
+              },
+            },
+          ],
+        },
+      });
+
+      const result = await service.getAssignedProjectDetails('user-1', 'project-1');
+
+      expect(result.placementId).toBe('placement-1');
+      expect(result.project.projectName).toBe('Project Alpha');
+      expect(result.project.skills).toHaveLength(1);
+      expect(result.project.skills[0].skillName).toBe('TypeScript');
+      expect(result.project.teamMembers).toHaveLength(1);
+      expect(result.project.teamMembers[0].email).toBe('jane@bbd.co.za');
     });
   });
 });

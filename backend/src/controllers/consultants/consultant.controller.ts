@@ -61,7 +61,7 @@ export class ConsultantController {
 
   @Get('assigned/projects/:projectId')
   @HttpCode(HttpStatus.OK)
-  async getAssignedPrjectDetails(
+  async getAssignedProjectDetails(
     @Param('projectId') projectId: string,
     @Req() req: any,
   ) {

@@ -17,7 +17,6 @@ import {
   CompetencyLevel,
   ConsultantAvailability,
   JobType,
-  PlacementStatus,
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
@@ -383,8 +382,8 @@ export class ConsultantService {
             startDate: true,
             endDate: true,
             allocation: true,
-          }
-        }
+          },
+        },
       },
     });
 
@@ -399,19 +398,17 @@ export class ConsultantService {
   }
 
   //-----------------Consultant get assigned projects DETAIL-------------------
-  async getAssignedProjectDetails(userId: string, projectId: string){
+  async getAssignedProjectDetails(userId: string, projectId: string) {
     const consultant = await this.prisma.consultant.findUnique({
       where: { userId },
     });
 
-    if(!consultant){
-      throw new NotFoundException(`No consultant profile for this user`)
+    if (!consultant) {
+      throw new NotFoundException(`No consultant profile for this user`);
     }
 
     const placement = await this.prisma.projectPlacement.findFirst({
-      where: { consultantId: consultant.id,
-        projectId,
-      },
+      where: { consultantId: consultant.id, projectId },
       include: {
         project: {
           include: {
@@ -439,8 +436,10 @@ export class ConsultantService {
       },
     });
 
-    if(!placement){
-      throw new NotFoundException(`You are not assigned to project with ID ${projectId}.`);
+    if (!placement) {
+      throw new NotFoundException(
+        `You are not assigned to project with ID ${projectId}.`,
+      );
     }
 
     return {

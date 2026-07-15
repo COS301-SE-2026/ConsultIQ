@@ -45,9 +45,8 @@ export class UpdateConsultantExperienceDto {
     })
     workModel!: string;
 
-    @IsOptional()
     @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string.' })
-    startDate?: string;
+    startDate!: string;
 
     @IsOptional()
     @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string.' })

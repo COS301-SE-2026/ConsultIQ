@@ -3,19 +3,19 @@ import { RawProjectDto } from "../dto/raw-project.dto";
 import { AvailabilityFitScorer } from "./five-scoring-modules/availability-fit.scorer";
 import { ScoringFactor } from "../enums/scoring-factor.enum";
 import { CompetencyLevel } from "../enums/competency-level.enum";
-import { FactorActivationConfig } from "./factor-activation.config";
 import { GeographicFitScorer } from "./five-scoring-modules/geographic-fit.scorer";
 import { CostFitScorer } from "./five-scoring-modules/cost-fit.scorer";
 import { CompetencyMatchScorer } from "./five-scoring-modules/competency-match-scorer";
 import { SkillAligmentScorer } from "./five-scoring-modules/skill-alignment-scorer";
 import { ScoringOrchestrator } from "./scoring.orchestrator";
+import { InternalServerErrorException } from "@nestjs/common";
 
 
 const WEIGHTS: Record<ScoringFactor, number> = {
     [ScoringFactor.SKILL_ALIGNMENT]: 0.4,
-    [ScoringFactor.COMPETENCY_MATCH]: 0.3,
-    [ScoringFactor.COST_FIT]: 0.15,
-    [ScoringFactor.GEOGRAPHIC_FIT]: 0.1,
+    [ScoringFactor.COMPETENCY_LEVEL]: 0.3,
+    [ScoringFactor.COST_TO_COMPANY]: 0.15,
+    [ScoringFactor.LOCATION]: 0.1,
     [ScoringFactor.AVAILABILITY]: 0.05
 };
 
@@ -47,7 +47,7 @@ function project(overrides: Partial<RawProjectDto> = {}): RawProjectDto {
     } as RawProjectDto;
 }
 
-function orcheStrator(activationConfig: FactorActivationConfig, emptyPlacement: boolean) {
+function orcheStrator(emptyPlacement: boolean) {
     const prismaMock = {
         projectPlacement: {
             findMany: jest.fn().mockResolvedValue(emptyPlacement ? [] : [{ allocationPercentage: 50 }]),
@@ -59,30 +59,31 @@ function orcheStrator(activationConfig: FactorActivationConfig, emptyPlacement: 
         new CostFitScorer(),
         new GeographicFitScorer(),
         new AvailabilityFitScorer(prismaMock as any),
-        activationConfig
     );
 }
 
-const ACTIVE_FACTORS: FactorActivationConfig = {
-    isActive: {
-        [ScoringFactor.SKILL_ALIGNMENT]: true,
-        [ScoringFactor.COMPETENCY_MATCH]: true,
-        [ScoringFactor.COST_FIT]: true,
-        [ScoringFactor.GEOGRAPHIC_FIT]: true,
-        [ScoringFactor.AVAILABILITY]: true
-    },
-    hardExclusion: true
-};
+const ACTIVE_FACTORS = new Set<ScoringFactor>([
+    ScoringFactor.SKILL_ALIGNMENT,
+    ScoringFactor.COMPETENCY_LEVEL,
+    ScoringFactor.COST_TO_COMPANY,
+    ScoringFactor.LOCATION,
+    ScoringFactor.AVAILABILITY
+]);
+
+const EXCLUDED_FACTORS = new Set([ScoringFactor.SKILL_ALIGNMENT]);
+
 describe('ScoringOrchestrator', () => {
 
     describe('Hard Exclusion', () => {
         it('exludes a consultant missing a mandatory skill', async () => {
-            const orchestrator = orcheStrator(ACTIVE_FACTORS, true);
+            const orchestrator = orcheStrator(true);
 
             const result = await orchestrator.scoreConsultant(
                 consultant({ skills: [] }),
                 project(),
-                WEIGHTS
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                EXCLUDED_FACTORS,
             );
 
             expect(result.excluded).toBe(true);
@@ -92,17 +93,17 @@ describe('ScoringOrchestrator', () => {
         })
 
         it('does not exclude a consultant who has all mandatory skils', async () => {
-            const orchestrator = orcheStrator(ACTIVE_FACTORS, true);
+            const orchestrator = orcheStrator(true);
 
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS);
+            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ACTIVE_FACTORS, EXCLUDED_FACTORS);
             expect(result.excluded).toBe(false);
         })
 
         it('does not compute other scoring factors if a consultant has been excluded', async () => {
             {
-                const orchestrator = orcheStrator(ACTIVE_FACTORS, true);
+                const orchestrator = orcheStrator(true);
 
-                const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS);
+                const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS, ACTIVE_FACTORS, EXCLUDED_FACTORS);
 
                 expect(result.excluded).toBe(true);
                 expect((result as any).factorScores).toBeUndefined();
@@ -114,20 +115,18 @@ describe('ScoringOrchestrator', () => {
     describe('Redistributed Weights', () => {
         it('redistributes weights when an inactive factor is present', async () => {
 
-            const config: FactorActivationConfig = {
-                ...ACTIVE_FACTORS,
-                isActive: {
-                    ...ACTIVE_FACTORS.isActive, [ScoringFactor.GEOGRAPHIC_FIT]: false
-                },
-            }
-
-            const orchestrator = orcheStrator(config, true);
-
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS);
+            const orchestrator = orcheStrator(true);
+            const activeWeights = new Set<ScoringFactor>([
+                ScoringFactor.SKILL_ALIGNMENT,
+                ScoringFactor.COMPETENCY_LEVEL,
+                ScoringFactor.COST_TO_COMPANY,
+                ScoringFactor.AVAILABILITY
+            ]);
+            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, activeWeights, EXCLUDED_FACTORS);
             expect(result.excluded).toBe(false);
 
             if (!result.excluded) {
-                expect(result.redistributedWeights[ScoringFactor.GEOGRAPHIC_FIT]).toBeUndefined();
+                expect(result.redistributedWeights[ScoringFactor.LOCATION]).toBeUndefined();
 
                 const sum = Object.values(result.redistributedWeights).reduce((aa, weight) => aa + weight, 0);
                 expect(sum).toBeCloseTo(1, 5);
@@ -136,26 +135,11 @@ describe('ScoringOrchestrator', () => {
 
         })
         it('all factors are inactive', async () => {
-            const ALL_INACTIVE: FactorActivationConfig = {
-                isActive: {
-                    [ScoringFactor.SKILL_ALIGNMENT]: false,
-                    [ScoringFactor.COMPETENCY_MATCH]: false,
-                    [ScoringFactor.COST_FIT]: false,
-                    [ScoringFactor.GEOGRAPHIC_FIT]: false,
-                    [ScoringFactor.AVAILABILITY]: false
-                },
-                hardExclusion: true
-            };
+            const ALL_INACTIVE = new Set<ScoringFactor>();
 
-            const orchestrator = orcheStrator(ALL_INACTIVE, true);
+            const orchestrator = orcheStrator(true);
 
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS);
-
-            expect(result.excluded).toBe(false);
-
-            if (!result.excluded) {
-                expect(result.redistributedWeights).toEqual({});
-            }
+            await expect(orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ALL_INACTIVE, EXCLUDED_FACTORS)).rejects.toThrow(InternalServerErrorException);
         });
     })
 

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -10,19 +11,21 @@ import {
   ScoredConsultantInput,
 } from './match-run-aggregation.service';
 import { DataIngestionService } from './data-normalization/data-ingestion.service';
-import { ConsultantMatchResult } from './interfaces/match-result.interface';
+import { ConsultantMatchResult, WeightedFactorBreakdown } from './interfaces/match-result.interface';
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
-import { MatchRunStatus } from '@prisma/client';
+import { MatchRunStatus, Prisma } from '@prisma/client';
+import { WeightedAggregator } from './weight-aggregator/weighted-aggregator';
 
 @Injectable()
 export class MatchRunService {
+  private readonly logger = new Logger(MatchRunService.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-  ) {}
+  ) { }
 
   async executeMatchRun(
     projectId: string,
@@ -59,43 +62,46 @@ export class MatchRunService {
       const projectDto = this.mapProjectToDto(project);
 
       //Resolve active weights with dummy consultant
-      const { activeWeights } = await this.dataIngestion.ingestData({
-        consultantId: 'config-r',
-        projectId,
-        consultant: {
-          consultantId: 'config',
-          skills: [],
-          costToCompany: 0,
-          city: '',
-          province: '',
-        },
-        project: projectDto,
-      });
+      const { activeWeights } = await this.dataIngestion.getProjectScoringContext(projectId);
 
       //score all consultants
-      const scoredInputs: ScoredConsultantInput[] = await Promise.all(
-        consultants.map(async (consultant) => {
-          const consultantDto = this.mapConsultantToDto(consultant);
+      const scoringPromises = consultants.map(async (consultant) => {
+        const consultantDto = this.mapConsultantToDto(consultant);
 
-          const outcome = await this.scoringPipeline.scoreConsultant({
-            consultantId: consultant.id,
-            projectId,
-            consultant: consultantDto,
-            project: projectDto,
-          });
-          return { consultantId: consultant.id, outcome };
-        }),
-      );
-      const results = this.aggregation.buildResults(scoredInputs);
+        const outcome = await this.scoringPipeline.scoreConsultant({
+          consultantId: consultant.id,
+          projectId,
+          consultant: consultantDto,
+          project: projectDto,
+        });
+        return { consultantId: consultant.id, outcome } as ScoredConsultantInput;
+      });
+      const results = await Promise.allSettled(scoringPromises);
+
+      const scoredInputs: ScoredConsultantInput[] = [];
+      let errorCount = 0;
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          scoredInputs.push(result.value);
+
+        } else {
+          this.logger.error(`Failed to score consultant: ${result.reason}`);
+          errorCount++
+        }
+      }
+
+      const finalResults = this.aggregation.buildResults(scoredInputs);
+      const logicallyExcludedCount = scoredInputs.filter((s) => s.outcome.excluded).length;
 
       await this.saveMatchRun(
         projectId,
         executedByUserId,
         activeWeights,
-        results,
-        scoredInputs.filter((s) => s.outcome.excluded).length,
+        finalResults,
+        logicallyExcludedCount + errorCount,
       );
-      return results;
+      return finalResults;
     }
   }
 
@@ -155,7 +161,8 @@ export class MatchRunService {
           consultantId: r.consultantId,
           rank: r.rank,
           totalScore: r.finalScore,
-          factorScores: r.factorBreakdown as any,
+          // cast to prisma JSON type
+          factorScores: r.factorBreakdown as unknown as Prisma.InputJsonValue,
         })),
       });
     });
@@ -180,7 +187,7 @@ export class MatchRunService {
       consultantId: r.consultantId,
       finalScore: r.totalScore,
       rank: r.rank,
-      factorBreakdown: r.factorScores as any,
+      factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],
     }));
   }
 }

@@ -11,6 +11,7 @@ export interface SkillAlignmentDetail {
   requiredSkills: number;
   possessedSkills: number;
   missingSkills: string[];
+  note?: string;
 }
 
 export interface CostFitDetail {
@@ -18,15 +19,22 @@ export interface CostFitDetail {
   consultantRate: number;
   projectBudget: number;
   withinBudget: boolean;
+  overagePercentage?: number;
+  appliedPenalty?: number;
+  note?: string;
 }
 
 export interface CompetencyMatchDetail {
   factor: ScoringFactor.COMPETENCY_LEVEL;
+  baseScore?: number;
+  bonusApplied?: number;
   perSkill: Array<{
     skill: string;
     consultantLevel: string;
     requiredLevel: string;
     score: number;
+    weight?: number;
+    isMandatory?: boolean;
   }>;
 }
 

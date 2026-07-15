@@ -339,7 +339,7 @@ export class ConsultantService {
       }
     });
 
-    return {message: 'Consultant profile updated sucessfully.'};
+    return {message: 'Consultant profile updated successfully.'};
   }
 
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---

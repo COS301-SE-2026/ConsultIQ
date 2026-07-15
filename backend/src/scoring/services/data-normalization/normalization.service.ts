@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 /**
  * Pure normalization math used across the fit score engine.
@@ -12,7 +12,7 @@ export class NormalizationService {
 
   scaleValue(value: number, min: number, max: number): number {
     if (max <= min) {
-      throw new BadRequestException(
+      throw new Error(
         'Min number must not be greater or equal max.',
       );
     }
@@ -30,13 +30,13 @@ export class NormalizationService {
     const entries = Object.entries(weights);
 
     if (entries.length === 0) {
-      throw new BadRequestException('Cannot normalize an empty set of weights');
+      throw new Error('Cannot normalize an empty set of weights');
     }
 
     const total = entries.reduce((sum, [, w]) => sum + w, 0);
 
     if (total <= 0) {
-      throw new BadRequestException(
+      throw new Error(
         'Sum of all weights must be greater than zero',
       );
     }

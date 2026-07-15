@@ -130,13 +130,14 @@ describe('SkillAligmentScorer', () => {
             consultant([]),
             project([]),
         );
-        expect(result.score).toBe(1);
-        expect(result.triggerHardExclusion).toBe(false);
+        expect(result.score).toBe(0.0);
+        expect(result.triggerHardExclusion).toBe(true);
         expect(result.detail).toEqual({
             factor: ScoringFactor.SKILL_ALIGNMENT,
             requiredSkills: 0,
             possessedSkills: 0,
             missingSkills: [],
+            note: 'Invalid data: Project has no required skills defined'
         })
     })
 

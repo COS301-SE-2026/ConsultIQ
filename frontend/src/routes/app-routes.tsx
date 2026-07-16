@@ -28,6 +28,8 @@ import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
 
+import NotificationPage from "../features/notifications/pages/notifications-page"
+
 function AnimatedRoutes() {
     const location = useLocation();
 
@@ -56,6 +58,8 @@ function AnimatedRoutes() {
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    
                     <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
+                    <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/> 
+                    <Route path="/notifications" element={<PageTransition><NotificationPage/></PageTransition>}/>  
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
                 </Route>
 

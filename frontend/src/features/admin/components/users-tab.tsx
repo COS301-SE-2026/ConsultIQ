@@ -116,7 +116,6 @@ return(
               onClick={() => navigate("/register")}
               className="flex items-center rounded-md gap-2"
               style={{
-                            color: "white",
                             fontSize: "14px",
                             padding: "4px 6px",
                           }}
@@ -188,7 +187,7 @@ return(
                   </td>
                   <td className="px-8 py-4">
                     <div className="flex item gap-4">
-                      <Button 
+                      {/* <Button 
                         variant="ghost"
                         onClick={() => handleDelete(user.id)}
                         className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
@@ -199,7 +198,7 @@ return(
                           }}
                       >
                         Delete
-                      </Button>
+                      </Button> */}
 
                       {user.status === "ACTIVE" ? (
                         <Button 

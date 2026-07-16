@@ -15,7 +15,7 @@ function LoginPage() {
           <img 
             src={consultIqLogo}
             alt="ConsultIQ Logo"
-            className="w-[228px] h-[152px] object-contain"
+            className="w-[160px] h-auto object-contain"
           />
         </div>
       </div>

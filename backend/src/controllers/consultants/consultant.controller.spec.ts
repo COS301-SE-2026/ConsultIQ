@@ -8,6 +8,7 @@ const mockConsultantService = {
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
+  updateConsultantProfile: jest.fn(),
 };
 
 describe('ConsultantController', () => {
@@ -118,6 +119,35 @@ describe('ConsultantController', () => {
         new NotFoundException('Consultant with id uuid-999 not found.'),
       );
       await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+//-------------------------------------------------Update Consultant Profile-----------------------------------------
+
+  describe('updateConsultantProfile', () => {
+    it('should call service with correct id and dto and return result', async () => {
+      mockConsultantService.updateConsultantProfile.mockResolvedValue({
+        message: 'Consultant profile updated successfully.',
+      });
+
+      const dto = { phone: '0821234567', nationality: 'South African' };
+      const result = await controller.updateConsultantProfile('consultant-uuid-1', dto as any);
+
+      expect(mockConsultantService.updateConsultantProfile).toHaveBeenCalledWith(
+        'consultant-uuid-1',
+        dto,
+      );
+      expect(result.message).toBe('Consultant profile updated successfully.');
+    });
+
+    it('should propagate NotFoundException from service', async () => {
+      mockConsultantService.updateConsultantProfile.mockRejectedValue(
+        new NotFoundException('Consultant with id uuid-999 not found.'),
+      );
+
+      await expect(
+        controller.updateConsultantProfile('uuid-999', {} as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

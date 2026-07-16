@@ -1,6 +1,3 @@
-// ------------------------------------ Section Header Patterns -----------------------------------------------------
-// Used to identify and split CV into labelled sections
-
 export const SECTION_PATTERNS: Record<string, RegExp> = {
   experience: /\b(work\s+experience|employment\s+history|professional\s+experience|career\s+history|work\s+history|experience)\b/i,
   education: /\b(education|academic\s+background|academic\s+history|qualifications|degrees|studies)\b/i,
@@ -9,9 +6,6 @@ export const SECTION_PATTERNS: Record<string, RegExp> = {
   contact: /\b(contact|contact\s+information|personal\s+information|personal\s+details|profile)\b/i,
   summary: /\b(summary|professional\s+summary|career\s+objective|objective|about\s+me|profile\s+summary)\b/i,
 };
-
-// ─------------------------------------ Date Patterns -----------------------------------------------------
-// Handles common date formats found in South African CVs
 
 export const DATE_PATTERNS: RegExp[] = [
   // Jan 2022 / January 2022
@@ -28,8 +22,6 @@ export const DATE_PATTERNS: RegExp[] = [
   /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\s*[-–]\s*(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\b/i,
 ];
 
-// ------------------------------------ Contact Patterns -----------------------------------------------------
-
 export const PHONE_PATTERNS: RegExp[] = [
   /\b0\d{9}\b/,                          // 0821234567
   /\b\+27\s?\d{9}\b/,                    // +27821234567
@@ -40,8 +32,6 @@ export const PHONE_PATTERNS: RegExp[] = [
 
 export const EMAIL_PATTERN = /\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}\b/;
 
-// ------------------------------------ Job Type Keywords -----------------------------------------------------
-
 export const JOB_TYPE_PATTERNS: Record<string, RegExp> = {
   FULL_TIME: /\b(full[\s\-]?time|permanent|full\s+time)\b/i,
   PART_TIME: /\b(part[\s\-]?time|part\s+time)\b/i,
@@ -50,15 +40,11 @@ export const JOB_TYPE_PATTERNS: Record<string, RegExp> = {
   FREELANCE: /\b(freelance|self[\s\-]?employed|consultant|independent)\b/i,
 };
 
-// ------------------------------------ Work Model Keywords -----------------------------------------------------
-
 export const WORK_MODEL_PATTERNS: Record<string, RegExp> = {
   REMOTE: /\b(remote|work\s+from\s+home|wfh|distributed)\b/i,
   HYBRID: /\b(hybrid|partially\s+remote|flexible)\b/i,
   ONSITE: /\b(on[\s\-]?site|onsite|in[\s\-]?office|office[\s\-]?based|in\s+person)\b/i,
 };
-
-// ------------------------------------ Nationality / SA Citizenship Keywords -----------------------------------------------------
 
 export const SA_NATIONALITY_PATTERNS: RegExp[] = [
   /\b(south\s+african|sa\s+citizen|rsa\s+citizen)\b/i,

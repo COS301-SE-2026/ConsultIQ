@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role } from '@prisma/client';
+import { Role } from '../../auth/enums/role.enum';
 import { AssignRoleDto } from '../dto/assign-role.dto';
 
 @Injectable()

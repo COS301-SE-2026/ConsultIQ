@@ -78,7 +78,6 @@ describe('ScoringPipelineService', () => {
             mockDto.project,
             mockedActiveWeights,
             mockActiveFactors,
-            mockExcludedFactors,
         );
 
         expect(result).toEqual(mockScoringResults);

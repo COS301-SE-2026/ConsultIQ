@@ -24,7 +24,6 @@ export class ScoringPipelineService {
       dto.project,
       result.activeWeights,
       result.activeFactors,
-      result.excludedFactors,
     );
   }
 }

@@ -15,7 +15,6 @@ import { ConsultantMatchResult, WeightedFactorBreakdown } from './interfaces/mat
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
 import { MatchRunStatus, Prisma } from '@prisma/client';
-import { WeightedAggregator } from './weight-aggregator/weighted-aggregator';
 
 @Injectable()
 export class MatchRunService {

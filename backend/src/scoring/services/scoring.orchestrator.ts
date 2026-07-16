@@ -38,7 +38,6 @@ export class ScoringOrchestrator {
     project: RawProjectDto,
     resolvedWeights: Record<ScoringFactor, number>,
     activeFactors: Set<ScoringFactor>,
-    excludedFactors: Set<ScoringFactor>,
   ): Promise<ScoringResults> {
     const scoresByFactor: Partial<Record<ScoringFactor, number>> = {};
 

@@ -70,7 +70,6 @@ const ACTIVE_FACTORS = new Set<ScoringFactor>([
     ScoringFactor.AVAILABILITY
 ]);
 
-const EXCLUDED_FACTORS = new Set([ScoringFactor.SKILL_ALIGNMENT]);
 
 describe('ScoringOrchestrator', () => {
 
@@ -83,7 +82,7 @@ describe('ScoringOrchestrator', () => {
                 project(),
                 WEIGHTS,
                 ACTIVE_FACTORS,
-                EXCLUDED_FACTORS,
+
             );
 
             expect(result.excluded).toBe(true);
@@ -95,7 +94,7 @@ describe('ScoringOrchestrator', () => {
         it('does not exclude a consultant who has all mandatory skils', async () => {
             const orchestrator = orcheStrator(true);
 
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ACTIVE_FACTORS, EXCLUDED_FACTORS);
+            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ACTIVE_FACTORS,);
             expect(result.excluded).toBe(false);
         })
 
@@ -103,7 +102,7 @@ describe('ScoringOrchestrator', () => {
             {
                 const orchestrator = orcheStrator(true);
 
-                const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS, ACTIVE_FACTORS, EXCLUDED_FACTORS);
+                const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS, ACTIVE_FACTORS,);
 
                 expect(result.excluded).toBe(true);
                 expect((result as any).factorScores).toBeUndefined();
@@ -122,7 +121,7 @@ describe('ScoringOrchestrator', () => {
                 ScoringFactor.COST_TO_COMPANY,
                 ScoringFactor.AVAILABILITY
             ]);
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, activeWeights, EXCLUDED_FACTORS);
+            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, activeWeights,);
             expect(result.excluded).toBe(false);
 
             if (!result.excluded) {
@@ -139,7 +138,7 @@ describe('ScoringOrchestrator', () => {
 
             const orchestrator = orcheStrator(true);
 
-            await expect(orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ALL_INACTIVE, EXCLUDED_FACTORS)).rejects.toThrow(InternalServerErrorException);
+            await expect(orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ALL_INACTIVE,)).rejects.toThrow(InternalServerErrorException);
         });
     })
 

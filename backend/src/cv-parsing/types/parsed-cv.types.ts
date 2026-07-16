@@ -11,7 +11,7 @@ export interface ParsedExperience {
     jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
     workModel: 'ONSITE' | 'REMOTE' | 'HYBRID';
     startDate: string;
-    endDate: string;
+    endDate?: string;
     description: string;
 }
 

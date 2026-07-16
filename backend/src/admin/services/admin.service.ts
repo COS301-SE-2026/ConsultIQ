@@ -38,7 +38,7 @@ export class AdminService {
        );
     }
 
-    if (assignRoleDto.role === Role.SUPER_ADMIN as string) {
+    if ((assignRoleDto.role as string) === Role.SUPER_ADMIN as string) {
       throw new BadRequestException(
         'The SUPER_ADMIN role cannot be assigned through this method.',
       );

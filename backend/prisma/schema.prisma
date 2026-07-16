@@ -49,6 +49,7 @@ enum PlacementStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  TERMINATED
 }
 
 enum ProjectStatus {
@@ -393,6 +394,7 @@ model ConsultancyScoringConfig {
   factorName  ScoringFactorName @unique
   weight      Float
   active      Boolean @default(true)
+  hardExclusionEnabled   Boolean           @default(false)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -405,6 +407,7 @@ model ProjectScoringOverride {
   factorName     ScoringFactorName
   overrideWeight Float
   active         Boolean           @default(true)
+  hardExclusionEnabled   Boolean           @default(false)
   createdAt      DateTime          @default(now())
 
   project        Project           @relation(fields: [projectId], references: [id])

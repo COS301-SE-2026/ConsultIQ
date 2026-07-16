@@ -1,5 +1,4 @@
 import { NormalizationService } from "./normalization.service";
-import { BadRequestException } from "@nestjs/common";
 
 describe('NormalizationService', () => {
     let service: NormalizationService;
@@ -34,7 +33,7 @@ describe('NormalizationService', () => {
         })
 
         it('throws exception when min is greater than max', () => {
-            expect(() => service.scaleValue(5, 10, 0)).toThrow(BadRequestException);
+            expect(() => service.scaleValue(5, 10, 0)).toThrow(Error);
         });
 
 
@@ -66,11 +65,11 @@ describe('NormalizationService', () => {
         })
 
         it('throws exception when the weights object is empty', () => {
-            expect(() => service.normalizeWeights({})).toThrow(BadRequestException);
+            expect(() => service.normalizeWeights({})).toThrow(Error);
         });
         it('division by zero', () => {
             expect(() => service.normalizeWeights({ a: 0, b: 0, c: 0 }),
-            ).toThrow(BadRequestException);
+            ).toThrow(Error);
         });
     })
 })

@@ -5,8 +5,14 @@ import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { COMPETENCY_RANK } from '../../enums/competency-level.enum';
 import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
+
 @Injectable()
 export class CompetencyMatchScorer {
+
+  private readonly MANDATORY_WEIGHT = 2.0;
+  private readonly OPTIONAL_WEIGHT = 1.0;
+  private readonly SKILL_BONUS = 0.02;
+
   score(
     consultant: RawConsultantDto,
     project: RawProjectDto,
@@ -18,7 +24,7 @@ export class CompetencyMatchScorer {
         score: 1,
         triggerHardExclusion: false,
         detail: {
-          factor: ScoringFactor.COMPETENCY_MATCH,
+          factor: ScoringFactor.COMPETENCY_LEVEL,
           perSkill: [],
         },
       };
@@ -38,11 +44,16 @@ export class CompetencyMatchScorer {
     }
 
     let totalMarks = 0;
+    let totalWeight = 0;
+    let matchedRequiredSkills = 0;
+
     const perSkillDetails: Array<{
       skill: string;
       consultantLevel: string;
       requiredLevel: string;
       score: number;
+      weight: number;
+      isMandatory: boolean;
     }> = [];
     for (const req of requiredSkills) {
       const normalizedReqName = req.skillName.trim().toLowerCase();
@@ -54,6 +65,7 @@ export class CompetencyMatchScorer {
 
       if (consultantRank) {
         consultantLevel = consultantRank.level;
+        matchedRequiredSkills++;
 
         if (requiredRank <= 0 || consultantRank.rank >= requiredRank) {
           skillScore = 1;
@@ -62,25 +74,40 @@ export class CompetencyMatchScorer {
         }
       }
 
-      totalMarks += skillScore;
+      const isMandatory = req.isMandatory ?? false;
+      const weight = isMandatory ? this.MANDATORY_WEIGHT : this.OPTIONAL_WEIGHT;
+
+
+      totalMarks += skillScore * weight;
+      totalWeight += weight;
 
       perSkillDetails.push({
         skill: req.skillName,
         consultantLevel: consultantLevel,
         requiredLevel: req.minimumCompetencyLevel,
         score: skillScore,
+        weight: weight,
+        isMandatory: isMandatory,
       });
     }
 
-    const average = totalMarks / requiredSkills.length;
-    const score = Math.min(1, Math.max(0, average));
+    const baseScore = totalWeight > 0 ? totalMarks / totalWeight : 0;
+
+    // Bonus marks for consultants with extra set of skills 
+    const totalConsultantSkills = consultant.skills ? consultant.skills.length : 0;
+    const extraSkillCount = Math.max(0, totalConsultantSkills - matchedRequiredSkills);
+
+    const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
+    const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));
 
     return {
-      score,
+      score: finalScore,
       triggerHardExclusion: false,
 
       detail: {
-        factor: ScoringFactor.COMPETENCY_MATCH,
+        factor: ScoringFactor.COMPETENCY_LEVEL,
+        baseScore,
+        bonusApplied: skillCountBonus,
 
         perSkill: perSkillDetails,
       },

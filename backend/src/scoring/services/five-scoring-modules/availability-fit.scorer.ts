@@ -17,17 +17,29 @@ export class AvailabilityFitScorer {
     consultant: RawConsultantDto,
     project: RawProjectDto,
   ): Promise<FactorScoreResult> {
+
+
+    const dateConditions: any[] = [];
+
+    //start date must be lesser than the endate
+    if (project.endDate) {
+      dateConditions.push({ startDate: { lte: project.endDate } });
+    }
+
+    dateConditions.push({
+      OR: [
+        { endDate: { gte: project.startDate } },
+        { endDate: null },
+      ],
+    });
+
+
     const overlapping = await this.prisma.projectPlacement.findMany({
       where: {
         consultantId: consultant.consultantId,
-        AND: [
-          {
-            startDate: { lte: project.endDate },
-          },
-          {
-            endDate: { gte: project.startDate },
-          },
-        ],
+        // Filter out consultants that have been been removed earlier during a project
+        status: { notIn: ['TERMINATED', 'CANCELLED'] },
+        AND: dateConditions,
       },
       select: {
         allocation: true,

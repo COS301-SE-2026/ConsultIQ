@@ -40,7 +40,7 @@ describe('GeographicFitScorer', () => {
         expect(scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng')).score).toBe(1.0);
         const result = scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng'));
         expect(result.detail).toEqual({
-            factor: ScoringFactor.GEOGRAPHIC_FIT,
+            factor: ScoringFactor.LOCATION,
             consultantCity: 'Johannesburg',
             projectCity: 'Johannesburg',
             consultantProvince: 'Gauteng',
@@ -54,7 +54,7 @@ describe('GeographicFitScorer', () => {
 
         const result = scorer.score(consultant('Pretoria', 'Gauteng'), project('Johannesburg', 'Gauteng'));
         expect(result.detail).toEqual({
-            factor: ScoringFactor.GEOGRAPHIC_FIT,
+            factor: ScoringFactor.LOCATION,
             consultantCity: 'Pretoria',
             projectCity: 'Johannesburg',
             consultantProvince: 'Gauteng',
@@ -67,7 +67,7 @@ describe('GeographicFitScorer', () => {
 
         const result = scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng'));
         expect(result.detail).toEqual({
-            factor: ScoringFactor.GEOGRAPHIC_FIT,
+            factor: ScoringFactor.LOCATION,
             consultantCity: 'Johannesburg',
             projectCity: 'Johannesburg',
             consultantProvince: 'Gauteng',

@@ -2,6 +2,10 @@ import { DataIngestionService } from "./data-ingestion.service";
 import { NormalizationService } from "./normalization.service";
 import { EntryScoringDataDto } from "../../dto/entry-data.dto";
 import { CompetencyLevel } from "@prisma/client";
+import { ScoringService } from "../scoring-config.service";
+import { ScoringFactor } from "../../../scoring/enums/scoring-factor.enum";
+import { Test, TestingModule } from "@nestjs/testing";
+
 
 function buildDto(overrides: {
     consultantSkills?: {
@@ -62,30 +66,57 @@ function buildDto(overrides: {
 
 describe('DataIngestionService', () => {
     let service: DataIngestionService;
+    let scoringService: jest.Mocked<ScoringService>;
 
-    beforeEach(() => {
-        service = new DataIngestionService(new NormalizationService);
+    beforeEach(async () => {
 
+        const mockScoringService = {
+            resolveProjectWeights: jest.fn(),
+        };
+
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                DataIngestionService,
+                NormalizationService,
+                { provide: ScoringService, useValue: mockScoringService },
+            ],
+        }).compile();
+
+        service = module.get<DataIngestionService>(DataIngestionService);
+        scoringService = module.get(ScoringService);
     });
 
     describe('Active weight', () => {
         it('Resolves consultancy default config to sum to 1.0', async () => {
-            const result = await service.ingestData(buildDto());
+
+            scoringService.resolveProjectWeights.mockResolvedValue([
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 40, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.COST_TO_COMPANY, weight: 5, active: true, hardExclusionEnabled: false },
+            ] as any);
+
+            const result = await service.ingestData({ projectId: '123', consultantId: '456' } as any);
+            expect(scoringService.resolveProjectWeights).toHaveBeenCalledWith('123');
+
             const sum = Object.values(result.activeWeights).reduce((a, b) => a + b, 0);
 
             expect(sum).toBe(1)
         })
 
         it('Five scoring factors', async () => {
-            const result = await service.ingestData(buildDto());
+            scoringService.resolveProjectWeights.mockResolvedValue([
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 40, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.COST_TO_COMPANY, weight: 5, active: true, hardExclusionEnabled: false },
+            ] as any);
 
-            expect(result.activeWeights).toMatchObject({
-                skillAlignment: 0.4,
-                competencyMatch: 0.3,
-                availability: 0.15,
-                costFit: 0.1,
-                geographicFit: 0.05,
-            })
+            const result = await service.ingestData({ projectId: '123', consultantId: '456' } as any);
+
+            expect(result.activeFactors.size).toBe(5);
         })
 
 

@@ -34,7 +34,7 @@ describe('MatchRunService', () => {
         }
 
         mockDataIngestion = {
-            ingestData: jest.fn(),
+            getProjectScoringContext: jest.fn(),
         }
 
         const module: TestingModule = await Test.createTestingModule({
@@ -101,7 +101,7 @@ describe('MatchRunService', () => {
 
             mockPrisma.project.findUnique.mockResolvedValue(mockProject);
             mockPrisma.consultant.findMany.mockResolvedValue(mockConsultants);
-            mockDataIngestion.ingestData.mockResolvedValue({ activeWeights: mockWeights });
+            mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: mockWeights });
             mockScoringPipeline.scoreConsultant.mockResolvedValue(mockScoringOutcome);
             mockAggregation.buildResults.mockReturnValue(mockAggregatedResults);
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-01' });
@@ -110,7 +110,7 @@ describe('MatchRunService', () => {
 
             expect(mockPrisma.project.findUnique).toHaveBeenCalledWith({ where: { id: 'project-01' }, include: expect.any(Object) });
             expect(mockPrisma.consultant.findMany).toHaveBeenCalled();
-            expect(mockDataIngestion.ingestData).toHaveBeenCalledTimes(1);
+            expect(mockDataIngestion.getProjectScoringContext).toHaveBeenCalledTimes(1);
             expect(mockScoringPipeline.scoreConsultant).toHaveBeenCalledTimes(1);
             expect(mockAggregation.buildResults).toHaveBeenCalledTimes(1);
             expect(mockPrisma.matchRun.create).toHaveBeenCalledWith({

@@ -3,10 +3,10 @@ import { ScoringFactor } from "../../enums/scoring-factor.enum";
 
 const WEIGHTS: Partial<Record<ScoringFactor, number>> = {
     [ScoringFactor.SKILL_ALIGNMENT]: 0.4,
-    [ScoringFactor.COMPETENCY_MATCH]: 0.3,
+    [ScoringFactor.COMPETENCY_LEVEL]: 0.3,
     [ScoringFactor.AVAILABILITY]: 0.15,
-    [ScoringFactor.COST_FIT]: 0.1,
-    [ScoringFactor.GEOGRAPHIC_FIT]: 0.05,
+    [ScoringFactor.COST_TO_COMPANY]: 0.1,
+    [ScoringFactor.LOCATION]: 0.05,
 
 }
 
@@ -24,10 +24,10 @@ describe('WeightedAggregator', () => {
             consultantId: 'consultant-01',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 1,
-                [ScoringFactor.COMPETENCY_MATCH]: 1,
+                [ScoringFactor.COMPETENCY_LEVEL]: 1,
                 [ScoringFactor.AVAILABILITY]: 1,
-                [ScoringFactor.COST_FIT]: 1,
-                [ScoringFactor.GEOGRAPHIC_FIT]: 1,
+                [ScoringFactor.COST_TO_COMPANY]: 1,
+                [ScoringFactor.LOCATION]: 1,
             },
             weights: WEIGHTS,
         };
@@ -42,10 +42,10 @@ describe('WeightedAggregator', () => {
             consultantId: 'consultant-01',
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
-                [ScoringFactor.COMPETENCY_MATCH]: 0.5,
+                [ScoringFactor.COMPETENCY_LEVEL]: 0.5,
                 [ScoringFactor.AVAILABILITY]: 1,
-                [ScoringFactor.COST_FIT]: 0,
-                [ScoringFactor.GEOGRAPHIC_FIT]: 0.6,
+                [ScoringFactor.COST_TO_COMPANY]: 0,
+                [ScoringFactor.LOCATION]: 0.6,
             },
             weights: WEIGHTS,
         };

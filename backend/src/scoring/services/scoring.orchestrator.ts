@@ -3,24 +3,22 @@ import { CompetencyMatchScorer } from './five-scoring-modules/competency-match-s
 import { CostFitScorer } from './five-scoring-modules/cost-fit.scorer';
 import { GeographicFitScorer } from './five-scoring-modules/geographic-fit.scorer';
 import { SkillAligmentScorer } from './five-scoring-modules/skill-alignment-scorer';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AvailabilityFitScorer } from './five-scoring-modules/availability-fit.scorer';
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
-import type { FactorActivationConfig } from './factor-activation.config';
-import { STUB_FACTOR_ACTIVATION_CONFIG } from './factor-activation.config';
 
 export type ScoringResults =
   | {
-      excluded: false;
-      factorScores: Partial<Record<ScoringFactor, number>>;
-      redistributedWeights: Partial<Record<ScoringFactor, number>>;
-    }
+    excluded: false;
+    factorScores: Partial<Record<ScoringFactor, number>>;
+    redistributedWeights: Partial<Record<ScoringFactor, number>>;
+  }
   | {
-      excluded: true;
-      reason: string;
-      missingMandatorySkills: string[];
-    };
+    excluded: true;
+    reason: string;
+    missingMandatorySkills: string[];
+  };
 /*
 Calcaute the five scoring factors considering the avtive ones and redistributing inactive weights into the active weights if the weights are not redistributed
 */
@@ -33,25 +31,21 @@ export class ScoringOrchestrator {
     private readonly costFitScorer: CostFitScorer,
     private readonly geographicFitScorer: GeographicFitScorer,
     private readonly availabilityFitScorer: AvailabilityFitScorer,
-
-    @Inject('FACTOR_ACTIVATION_CONFIG')
-    private readonly activationConfig: FactorActivationConfig = STUB_FACTOR_ACTIVATION_CONFIG,
-  ) {}
+  ) { }
 
   async scoreConsultant(
     consultant: RawConsultantDto,
     project: RawProjectDto,
     resolvedWeights: Record<ScoringFactor, number>,
+    activeFactors: Set<ScoringFactor>,
+    excludedFactors: Set<ScoringFactor>,
   ): Promise<ScoringResults> {
     const scoresByFactor: Partial<Record<ScoringFactor, number>> = {};
 
-    if (this.activationConfig.isActive[ScoringFactor.SKILL_ALIGNMENT]) {
+    if (activeFactors.has(ScoringFactor.SKILL_ALIGNMENT)) {
       const skillResult = this.skillAlignment.score(consultant, project);
 
-      if (
-        skillResult.triggerHardExclusion &&
-        this.activationConfig.hardExclusion
-      ) {
+      if (skillResult.triggerHardExclusion) {
         return {
           excluded: true,
           reason: 'Consultant does not meet mandatory skill requirements',
@@ -61,34 +55,34 @@ export class ScoringOrchestrator {
       scoresByFactor[ScoringFactor.SKILL_ALIGNMENT] = skillResult.score;
     }
 
-    if (this.activationConfig.isActive[ScoringFactor.COMPETENCY_MATCH]) {
+    if (activeFactors.has(ScoringFactor.COMPETENCY_LEVEL)) {
       const competencyResult = this.competencyMatchScorer.score(
         consultant,
         project,
       );
-      scoresByFactor[ScoringFactor.COMPETENCY_MATCH] = competencyResult.score;
+      scoresByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.score;
     }
 
-    if (this.activationConfig.isActive[ScoringFactor.COST_FIT]) {
+    if (activeFactors.has(ScoringFactor.COST_TO_COMPANY)) {
       const costFitResult = this.costFitScorer.score(consultant, project);
-      scoresByFactor[ScoringFactor.COST_FIT] = costFitResult.score;
+      scoresByFactor[ScoringFactor.COST_TO_COMPANY] = costFitResult.score;
     }
 
-    if (this.activationConfig.isActive[ScoringFactor.GEOGRAPHIC_FIT]) {
+    if (activeFactors.has(ScoringFactor.LOCATION)) {
       const geographicFitResult = this.geographicFitScorer.score(
         consultant,
         project,
       );
-      scoresByFactor[ScoringFactor.GEOGRAPHIC_FIT] = geographicFitResult.score;
+      scoresByFactor[ScoringFactor.LOCATION] = geographicFitResult.score;
     }
 
-    if (this.activationConfig.isActive[ScoringFactor.AVAILABILITY]) {
+    if (activeFactors.has(ScoringFactor.AVAILABILITY)) {
       scoresByFactor[ScoringFactor.AVAILABILITY] = (
         await this.availabilityFitScorer.score(consultant, project)
       ).score;
     }
 
-    const redistributedWeights = this.redistributedWeights(resolvedWeights);
+    const redistributedWeights = this.redistributedWeights(resolvedWeights, activeFactors);
 
     return {
       excluded: false,
@@ -102,13 +96,14 @@ export class ScoringOrchestrator {
     */
   private redistributedWeights(
     resolvedWeights: Record<ScoringFactor, number>,
+    activeFactors: Set<ScoringFactor>,
   ): Partial<Record<ScoringFactor, number>> {
-    const activeFactors = (
-      Object.keys(resolvedWeights) as ScoringFactor[]
-    ).filter((factor) => this.activationConfig.isActive[factor]);
-    const inactiveFactors = (
-      Object.keys(resolvedWeights) as ScoringFactor[]
-    ).filter((factor) => !this.activationConfig.isActive[factor]);
+    const allFactors = Object.keys(resolvedWeights) as ScoringFactor[];
+
+    const activeFactorList = allFactors.filter((factor) => activeFactors.has(factor));
+
+    const inactiveFactors = allFactors.filter((factor) => !activeFactors.has(factor));
+
 
     if (inactiveFactors.length === 0) {
       return resolvedWeights;
@@ -118,14 +113,16 @@ export class ScoringOrchestrator {
       (sum, factor) => sum + resolvedWeights[factor],
       0,
     );
-    const activeWeightSum = activeFactors.reduce(
+    const activeWeightSum = activeFactorList.reduce(
       (sum, factor) => sum + resolvedWeights[factor],
       0,
     );
 
     // all factors are inactive
-    if (activeWeightSum <= 0) {
-      return {};
+    if (activeWeightSum <= 0 || activeFactorList.length === 0) {
+      throw new InternalServerErrorException(
+        `Invalid scoring configurations: All scoring factors are inactive or have zero weight`
+      )
     }
 
     const redistributedWeights: Partial<Record<ScoringFactor, number>> = {};

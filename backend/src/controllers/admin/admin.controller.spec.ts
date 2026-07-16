@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminController } from './admin.controller';
 import { AdminUserService } from '../../admin/users/services/admin.user.service';
 import { AdminProjectService } from '../../admin/projects/services/admin.projects.service';
-import { AdminService } from 'src/admin/services/admin.service';
+import { AdminService } from '../../admin/services/admin.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { Role } from '../../auth/enums/role.enum';
 

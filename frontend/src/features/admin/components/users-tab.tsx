@@ -52,28 +52,6 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
     return searchMatch && roleMatch && statusMatch;
   });
 
-  const handleDelete = async (userId:string) => {
-    toast("Are you sure you want to delete this user?",{
-      description: "This action cannot be reversed.",
-      duration:5000,
-      action: {
-        label:"Delete",
-        onClick: async () =>{
-          try {
-            await deleteUser(userId);
-            toast.success("User deleted successfully");
-            refresh();
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message :"Failed to delete user.");
-          }
-        },
-      },
-      cancel:{
-        label:"Cancel",
-        onClick: () => {},
-      },
-    });
-  }
 
  const handleStatusChange = async (userId:string, currentStatus: string) =>{
   try{

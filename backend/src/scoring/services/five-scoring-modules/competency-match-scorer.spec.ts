@@ -55,11 +55,15 @@ describe('CompetencyMatchScorer', () => {
 
         expect(result.detail).toEqual({
             factor: ScoringFactor.COMPETENCY_LEVEL,
+            baseScore: 1.0,
+            bonusApplied: 0,
             perSkill: [{
                 skill: 'B',
                 consultantLevel: CompetencyLevel.INTERMEDIATE,
                 requiredLevel: CompetencyLevel.INTERMEDIATE,
-                score: 1.0
+                score: 1.0,
+                weight: 1.0,
+                isMandatory: false
             }]
         })
     })
@@ -82,17 +86,23 @@ describe('CompetencyMatchScorer', () => {
 
         expect(result.detail).toEqual({
             factor: ScoringFactor.COMPETENCY_LEVEL,
+            baseScore: markAverage,
+            bonusApplied: 0,
             perSkill: [{
                 skill: 'A',
                 consultantLevel: CompetencyLevel.EXPERT,
                 requiredLevel: CompetencyLevel.INTERMEDIATE,
-                score: markA
+                score: markA,
+                weight: 1.0,
+                isMandatory: false
             },
             {
                 skill: 'B',
                 consultantLevel: CompetencyLevel.BEGINNER,
                 requiredLevel: CompetencyLevel.EXPERT,
-                score: markB
+                score: markB,
+                weight: 1.0,
+                isMandatory: false
             }
 
             ]
@@ -115,7 +125,7 @@ describe('CompetencyMatchScorer', () => {
     })
 
 
-    it('scores 0.0 when a consultant doesnt have the required skill', async () => {
+    it('scores 0.02 when a consultant doesnt have the required skill but they still have a skill', async () => {
         const result = scorer.score(
             consultant([
                 { skillName: 'A', competencyLevel: CompetencyLevel.BEGINNER },
@@ -124,15 +134,19 @@ describe('CompetencyMatchScorer', () => {
                 { skillName: 'B', minimumCompetencyLevel: CompetencyLevel.EXPERT, isMandatory: false },
             ]),
         );
-        expect(result.score).toBeCloseTo(0.0, 5)
+        expect(result.score).toBeCloseTo(0.02, 5)
 
         expect(result.detail).toEqual({
             factor: ScoringFactor.COMPETENCY_LEVEL,
+            baseScore: 0.0,
+            bonusApplied: 0.02,
             perSkill: [{
                 skill: 'B',
                 consultantLevel: 'NONE',
                 requiredLevel: CompetencyLevel.EXPERT,
-                score: 0.0
+                score: 0.0,
+                weight: 1.0,
+                isMandatory: false,
             }]
         })
 
@@ -160,4 +174,26 @@ describe('CompetencyMatchScorer', () => {
         expect(result.triggerHardExclusion).toBe(false);
     })
 
+    it('weighs mandatory skills more than optional skills', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'A', competencyLevel: CompetencyLevel.EXPERT },
+                { skillName: 'B', competencyLevel: CompetencyLevel.BEGINNER },
+            ]),
+            project([
+                { skillName: 'A', minimumCompetencyLevel: CompetencyLevel.EXPERT, isMandatory: false },
+                { skillName: 'B', minimumCompetencyLevel: CompetencyLevel.EXPERT, isMandatory: true },
+            ]),
+        );
+
+        const markA = 1.0;
+        const markB = COMPETENCY_RANK[CompetencyLevel.BEGINNER] / COMPETENCY_RANK[CompetencyLevel.EXPERT];
+
+
+        const average = ((markA * 1.0) + (markB * 2.0)) / 3.0;
+
+        expect(result.score).toBeCloseTo(average, 5)
+
+
+    })
 })

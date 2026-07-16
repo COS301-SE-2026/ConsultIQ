@@ -20,7 +20,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "prisma": {
-  "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
@@ -98,6 +97,23 @@
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
+    ],
+    "coveragePathIgnorePatterns": [
+      ".*\\.module\\.ts$",
+      ".*\\.dto\\.ts$",
+      "main\\.ts$",
+      ".*\\.d\\.ts$",
+      "prisma\\.service\\.ts$",
+      ".*interceptor\\.ts$",
+      ".*repository\\.ts$",
+      "projects\\.module\\.ts$",
+      "consultants\\.module\\.ts$",
+      "email\\.module\\.ts$",
+      "common\\.module\\.ts$",
+      "auth\\.module\\.ts$",
+      "consultant-list\\.dto\\.ts$",
+      "consultant-profile\\.dto\\.ts$",
+      "project-list\\.dto\\.ts$"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

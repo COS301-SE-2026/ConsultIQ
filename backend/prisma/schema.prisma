@@ -22,6 +22,7 @@ enum UserStatus {
   ACTIVE
   SUSPENDED
   LOCKED
+  ARCHIVED
 }
 
 enum TokenType {
@@ -55,6 +56,8 @@ enum ProjectStatus {
   OPEN
   IN_PROGRESS
   CLOSED
+  ARCHIVED
+  COMPLETED
 }
 
 enum ConsultantAvailability {
@@ -75,6 +78,14 @@ enum WorkModel {
   ONSITE
   REMOTE
   HYBRID
+}
+
+enum ScoringFactorName {
+  SKILL_ALIGNMENT
+  COMPETENCY_LEVEL
+  AVAILABILITY
+  LOCATION
+  COST_TO_COMPANY
 }
 
 enum UploadStatus {
@@ -151,7 +162,7 @@ model User {
   tenantId        String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-
+  deletedAt       DateTime?        @map("delete_at")
   tokens             Token[]
   auditLogs          authAuditLog[]
   consultant         Consultant?
@@ -160,6 +171,8 @@ model User {
 
   adminActionsPerformed AdminAuditLog[] @relation("AdminActions")
   adminActionsReceived  AdminAuditLog[] @relation("AdminTargets")
+  scoringConfigAudits ScoringConfigAudit[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -182,7 +195,12 @@ model Consultant {
   id            String                 @id @default(uuid())
   userId        String                 @unique
   user          User                   @relation(fields: [userId], references: [id])
-  location      String
+  addressLine1 String
+  addressLine2 String?
+  suburb       String?
+  city         String
+  province     String
+  postalCode   String?
   phone         String?
   idNumber      String?
   nationality   String?
@@ -292,11 +310,13 @@ model Project {
   tenantId     String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-
+  archivedAt   DateTime?      @map("archived_at")
   skills     ProjectSkill[]
   managers   ProjectManager[]
   placements ProjectPlacement[]
+  scoringOverrides ProjectScoringOverride[]
 
+ auditLogs ProjectAuditLog[]
   @@map("projects")
 }
 
@@ -339,6 +359,19 @@ model ProjectPlacement {
   consultant   Consultant      @relation(fields: [consultantId], references: [id])
 
   @@map("project_placements")
+}
+
+// Currently used to track archiving and unarchiving projects (can be used to track project status changes)
+model ProjectAuditLog {
+  id          String   @id @default(uuid())
+  projectId   String
+  action      String   // "ARCHIVED", "UNARCHIVED"
+  userId      String   // Admin or PM 
+  createdAt   DateTime @default(now()) 
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  
+  @@map("project_audit_logs")
 }
 
 model authAuditLog {
@@ -385,4 +418,55 @@ model ConsultantExperience {
   updatedAt    DateTime   @updatedAt
 
   @@map("consultant_experience")
+}
+model ConsultancyScoringConfig {
+  id          String            @id @default(uuid())
+  factorName  ScoringFactorName @unique
+  weight      Float
+  active      Boolean @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("consultancy_scoring_configs")
+}
+
+model ProjectScoringOverride {
+  id             String            @id @default(uuid())
+  projectId      String
+  factorName     ScoringFactorName
+  overrideWeight Float
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+
+  project        Project           @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, factorName])
+  @@map("project_scoring_overrides")
+}
+
+model ScoringConfigAudit {
+  id             String   @id @default(uuid())
+  adminUserId    String
+  admin          User     @relation(fields: [adminUserId], references: [id])
+  previousValues Json
+  newValues      Json
+  timestamp      DateTime @default(now())
+
+  @@map("scoring_config_audit")
+}
+
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  title      String
+  body       String
+  isRead     Boolean  @default(false) @map("is_read")
+  isArchived Boolean  @default(false) @map("is_archived")
+  link       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  archivedAt DateTime @default(now()) @map("archived_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

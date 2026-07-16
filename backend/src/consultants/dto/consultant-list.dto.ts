@@ -2,7 +2,12 @@ export class ConsultantListItemDto {
   id!: string;
   fullName!: string;
   email!: string;
-  location!: string;
+  addressLine1!: string;
+  addressLine2?: string | null;
+  suburb?: string | null;
+  city!: string;
+  province!: string;
+  postalCode?: string | null;
   availabilityStatus!: string;
   primarySkills!: string[];
   costToCompanyRate?: number;

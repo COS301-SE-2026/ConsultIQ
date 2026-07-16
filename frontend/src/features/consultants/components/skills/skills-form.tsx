@@ -44,7 +44,7 @@ export default function SkillsForm() {
 
   return (
     <Card className="p-12 h-full w-full flex items-start justify-center">
-      <div className="w-full max-w-[800px] flex flex-col h-full">
+      <div className="w-full max-w-200 flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Skills

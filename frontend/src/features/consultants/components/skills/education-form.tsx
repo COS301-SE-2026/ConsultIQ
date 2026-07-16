@@ -4,7 +4,83 @@ import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
+import { Upload,Trash2 } from "lucide-react";
+import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
 import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
+
+const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
+const sanitizeDate = (text: string) => text.replace(/[^\d/]/g, "");
+
+interface CertificateUploadFieldProps{
+    readonly uploadedFile: File | undefined;
+    readonly onFileUpload: (e:React.ChangeEvent<HTMLInputElement>) => void;
+    readonly onClearFile: () => void;
+}
+
+function CertificateUploadField({uploadedFile,onFileUpload,onClearFile}:CertificateUploadFieldProps){
+    return(
+         <div className="flex flex-col gap-3">
+                    <span className="text-sm font-medium">Certificate upload</span>
+                    <label  
+                        htmlFor="cert-upload" 
+                        className="flex flex-col items-center justify-center gap-3 p-8 px-6 py-2 h-28 rounded-lg border border-dashed cursor-pointer transition-colors duration-200"
+                        style={{
+                            borderColor:"var(--color-border)"
+                        }}
+
+                    >
+                        <Upload size={24} className="text-gray-400"/>
+
+                       <span 
+                        className="inline-flex items-center  justify-center px-4 py-2 w-20 rounded text-white text-sm font-medium shadow-sm "
+                        style = {{
+                            backgroundColor:"var(--color-primary)"
+                        }}
+                       >
+                        Choose file
+                       </span>
+                       <span
+                        className="text-sm text-gray-500"
+                       >
+                         {uploadedFile ? uploadedFile.name : "no file chosen"}
+                        </span>
+
+                       <Input 
+                            id="cert-upload" 
+                            type="file" 
+                            accept=".pdf,.jpg,.png"
+                            className="hidden"
+                            onChange={onFileUpload}
+                        />
+                    </label>
+                    
+                   {uploadedFile && (
+                    <div className="flex items-end gap-2 mt-2">
+                    <div className="flex-1">
+                        <AttachmentDisplay attachmentName={uploadedFile.name}/>
+                    </div>
+                     
+                     
+                      <Button
+                          variant= "secondary"
+                         onClick={onClearFile}
+                         className="p-3 h-[62px] w-15 rounded-xl border flex items-center"
+                         style={{
+                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                           fontSize: "14px",
+                           padding: "6px 12px",
+                         }}
+                         title="Remove attachment"
+                       >
+                        <Trash2 size={18}/>
+                       </Button>
+                    </div>
+                    
+                   )}
+                  
+                </div>
+    );
+}
 
 export default function EducationForm() {
     const [educationList, setEducationList] = useState<Education[]>(() => {
@@ -20,6 +96,13 @@ export default function EducationForm() {
     const [startDate, setStartDate] = useState(() => sessionStorage.getItem("education_startDate") || "");
     const [endDate, setEndDate] = useState(() => sessionStorage.getItem("education_endDate") || "");
     const [dateError, setDateError] = useState("");
+    const [uploadedFile, setUploadedFile] = useState<File | undefined>();
+
+    const handleClearFile =() =>{
+        setUploadedFile(undefined);
+        const input= document.getElementById("cert-upload") as HTMLInputElement;
+        if (input) input.value="";
+    };
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStart = formatDateInput(e.target.value);
@@ -40,6 +123,15 @@ export default function EducationForm() {
         if (dateError) setDateError("");
     };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) =>{
+        const file = (e.target as HTMLInputElement).files?.[0];
+        setUploadedFile(file);
+    };
+
+  
+
+    
+
     const handleAddEducation = () => {
         if (!institutionName.trim() || !qualification.trim() || !endDate) return;
 
@@ -51,6 +143,8 @@ export default function EducationForm() {
 
         const parsedEnd = parseDate(endDate);
 
+        // Call upload function here before adding the file to list 
+
         setEducationList((prev) => [
             ...prev,
             {
@@ -58,19 +152,23 @@ export default function EducationForm() {
                 institution: institutionName,
                 qualification: qualification,
                 endYear: parsedEnd ? parsedEnd.getFullYear() : new Date().getFullYear(),
+                fileName: uploadedFile?.name,
             },
         ]);
+
+
+        handleClearFile();
 
         setInstitutionName("");
         setQualification("");
         setStartDate("");
         setEndDate("");
         setDateError("");
+       
     };
 
     useEffect(() => {
-        const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
-        const sanitizeDate = (text: string) => text.replace(/[^\d/]/g, "");
+       
 
         const sanitizedInstitutionName = sanitizeText(institutionName);
         sessionStorage.setItem("education_institutionName", sanitizedInstitutionName); //NOSONAR
@@ -86,7 +184,7 @@ export default function EducationForm() {
     }, [institutionName, qualification, startDate, endDate]);
 
     useEffect(() => {
-        const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");
+     
         const sanitizedList = educationList.map(edu => ({
             ...edu,
             institution: sanitizeText(edu.institution),
@@ -97,7 +195,7 @@ export default function EducationForm() {
 
     return (
         <Card className="p-12 h-full w-full flex items-start justify-center">
-            <div className="w-full max-w-[800px] flex flex-col h-full">
+            <div className="w-full max-w-200 flex flex-col h-full">
                 <div className="h-6" />
                 <h2 className="text-3xl font-bold mb-8"
                     style={{ color: "var(--color-primary)" }}
@@ -162,7 +260,15 @@ export default function EducationForm() {
                     />
                 </div>
                 </div>
+
                 {dateError && <span className="text-red-500 text-sm">{dateError}</span>}
+                
+                <CertificateUploadField
+                    uploadedFile={uploadedFile}
+                    onFileUpload={handleFileUpload}
+                    onClearFile={handleClearFile}
+                />
+
                 <div className="h-6" />
                 <Button 
                     onClick={handleAddEducation}
@@ -177,9 +283,15 @@ export default function EducationForm() {
                 </Button>
                 <div className="h-6" />
                 <div className="mt-8 w-full">
-                    <EducationTable education={educationList} />
+                    <EducationTable 
+                        education={educationList}
+                        onRemove={(id) => setEducationList(prev => prev.filter(e => e.id !== id ))}
+                    
+                    />
                 </div>
                 <div className="h-6" />
+                
+
             </div>
             </div>
         </Card>

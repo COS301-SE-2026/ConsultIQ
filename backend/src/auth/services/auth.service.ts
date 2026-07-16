@@ -36,7 +36,7 @@ export interface LoginResult {
 /** Map role -> frontend route  */
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
   SUPER_ADMIN: '/admin',
-  ADMIN: '/register',
+  ADMIN: '/admin-dashboard',
   PROJECT_MANAGER: '/projects',
   CONSULTANT_MANAGER: '/consultants-manager',
   CONSULTANT: '/profile-view',

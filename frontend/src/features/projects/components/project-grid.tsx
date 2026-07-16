@@ -5,11 +5,13 @@ import type { Project } from "../types/project.types";
 interface ProjectGridProps {
   readonly projects: readonly Project[];
   readonly onViewDetails: (project: Project) => void;
+  readonly onConfigureScore: (project: Project) =>void;
 }
 
 export default function ProjectGrid({
   projects,
   onViewDetails,
+  onConfigureScore,
 }: ProjectGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [prevProjects, setPrevProjects] = useState(projects);
@@ -41,6 +43,7 @@ export default function ProjectGrid({
             key={project.id}
             project={project}
             onViewDetails={onViewDetails}
+            onConfigureScore={onConfigureScore}
           />
         ))}
       </div>

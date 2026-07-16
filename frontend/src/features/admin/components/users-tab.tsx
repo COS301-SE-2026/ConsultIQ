@@ -3,7 +3,7 @@ import { Button } from "../../../components/ui/button";
 import {UserPlus} from "lucide-react";
 import { Pagination } from "../../../components/shared/pagination";
 import type { AdminUserItem, UserMeta } from "../types/admin.types";
-import {deleteUser,activateUser,suspendUser } from "../services/admin.service";
+import {activateUser,suspendUser } from "../services/admin.service";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -52,28 +52,6 @@ export default function UsersTab( {searchQuery= "", roleFilter = "", statusFilte
     return searchMatch && roleMatch && statusMatch;
   });
 
-  const handleDelete = async (userId:string) => {
-    toast("Are you sure you want to delete this user?",{
-      description: "This action cannot be reversed.",
-      duration:5000,
-      action: {
-        label:"Delete",
-        onClick: async () =>{
-          try {
-            await deleteUser(userId);
-            toast.success("User deleted successfully");
-            refresh();
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message :"Failed to delete user.");
-          }
-        },
-      },
-      cancel:{
-        label:"Cancel",
-        onClick: () => {},
-      },
-    });
-  }
 
  const handleStatusChange = async (userId:string, currentStatus: string) =>{
   try{
@@ -116,7 +94,6 @@ return(
               onClick={() => navigate("/register")}
               className="flex items-center rounded-md gap-2"
               style={{
-                            color: "white",
                             fontSize: "14px",
                             padding: "4px 6px",
                           }}
@@ -188,18 +165,6 @@ return(
                   </td>
                   <td className="px-8 py-4">
                     <div className="flex item gap-4">
-                      <Button 
-                        variant="ghost"
-                        onClick={() => handleDelete(user.id)}
-                        className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
-                        style={{
-                            color: "white",
-                            fontSize: "14px",
-                            padding: "2px 6px",
-                          }}
-                      >
-                        Delete
-                      </Button>
 
                       {user.status === "ACTIVE" ? (
                         <Button 

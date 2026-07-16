@@ -16,22 +16,23 @@ interface ButtonProps
 
 const variantStyles: Record<ButtonVariant, string> = {
     default: `
-        bg-[#C9A227]
+        bg-brand-blue
         text-white
-        hover:bg-[#b8921f]
+        hover:bg-[#4A5568]
     `,
 
     secondary: `
-        bg-slate-100
+        bg-[#3C5A8A]
         text-[#002D72]
-        hover:bg-slate-200
+        hover:bg-[#4A5568]
     `,
 
     outline: `
         border
-        border-slate-300
+        border-solid
+        border-brand-blue
         bg-white
-        text-[#002D72]
+        text-brand-blue
         hover:bg-slate-50
     `,
 

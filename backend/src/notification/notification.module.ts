@@ -5,7 +5,7 @@ import { NotificationController } from '../controllers/notification/notification
 
 @Global()
 @Module({
-  controllers:[NotificationController],
+  controllers: [NotificationController],
   providers: [NotificationService, NotificationGateway],
   exports: [NotificationService],
 })

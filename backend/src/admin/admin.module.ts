@@ -10,3 +10,4 @@ import { AdminProjectService } from './projects/services/admin.projects.service'
   providers: [AdminUserService, AdminService, AdminProjectService],
   controllers: [AdminController],
 })
+export class AdminModule {}

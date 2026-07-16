@@ -3,7 +3,7 @@ import {
   Put,
   Req,
   UsePipes,
-  ValidationPipe
+  ValidationPipe,
   Controller,
   Delete,
   Patch,
@@ -20,6 +20,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { Roles } from '../../common/guards/roles.guard';
 import { AdminProjectService } from '../../admin/projects/services/admin.projects.service';
 import { AdminService } from '../../admin/services/admin.service';
+import { AssignRoleDto } from '../../admin/dto/assign-role.dto';
 
 @Controller('admin')
 export class AdminController {

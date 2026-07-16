@@ -3,7 +3,7 @@ import { Button } from "../../../components/ui/button";
 import {UserPlus} from "lucide-react";
 import { Pagination } from "../../../components/shared/pagination";
 import type { AdminUserItem, UserMeta } from "../types/admin.types";
-import {deleteUser,activateUser,suspendUser } from "../services/admin.service";
+import {activateUser,suspendUser } from "../services/admin.service";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 

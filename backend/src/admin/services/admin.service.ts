@@ -32,19 +32,19 @@ export class AdminService {
       throw new NotFoundException(`Target user with id ${targetUserId} not found.`);
     }
 
-    if ((targetUser.role as string) === assignRoleDto.role) {
-      throw new BadRequestException(
+    if ((targetUser.role as string) === (assignRoleDto.role as string)) {
+    throw new BadRequestException(
         `Target user already has the role ${assignRoleDto.role}.`,
-      );
+       );
     }
 
-    if (assignRoleDto.role === Role.SUPER_ADMIN) {
+    if (assignRoleDto.role === Role.SUPER_ADMIN as string) {
       throw new BadRequestException(
         'The SUPER_ADMIN role cannot be assigned through this method.',
       );
     }
 
-    if ((targetUser.role as string) === Role.SUPER_ADMIN) {
+    if ((targetUser.role as string) === Role.SUPER_ADMIN as string) {
       throw new BadRequestException(
         'The role of a SUPER_ADMIN account cannot be changed through the API.',
       );

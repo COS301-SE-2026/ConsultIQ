@@ -165,18 +165,6 @@ return(
                   </td>
                   <td className="px-8 py-4">
                     <div className="flex item gap-4">
-                      {/* <Button 
-                        variant="ghost"
-                        onClick={() => handleDelete(user.id)}
-                        className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
-                        style={{
-                            color: "white",
-                            fontSize: "14px",
-                            padding: "2px 6px",
-                          }}
-                      >
-                        Delete
-                      </Button> */}
 
                       {user.status === "ACTIVE" ? (
                         <Button 

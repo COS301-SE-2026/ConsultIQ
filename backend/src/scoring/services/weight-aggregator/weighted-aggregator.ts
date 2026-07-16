@@ -45,7 +45,10 @@ export class WeightedAggregator {
   private scoreOne(
     consultant: ScoredConsultant,
   ): Omit<AggregatedConsultant, 'rank'> {
-    const factors = Object.keys(consultant.factorScores) as ScoringFactor[];
+    const factors = Array.from(new Set([
+      ...Object.keys(consultant.factorScores),
+      ...Object.keys(consultant.weights),
+    ]),) as ScoringFactor[];
 
     let sum = 0;
 

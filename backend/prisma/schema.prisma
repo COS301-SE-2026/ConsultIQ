@@ -49,6 +49,7 @@ enum PlacementStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  TERMINATED
 }
 
 enum ProjectStatus {

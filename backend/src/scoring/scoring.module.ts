@@ -41,16 +41,6 @@ import { MatchRunService } from './services/match-run.service';
 
     MatchRunAggregationService,
     WeightedAggregator,
-    {
-      provide: 'FACTOR_ACTIVATION_CONFIG',
-      useValue: {
-        SKILL_ALIGNMENT: true,
-        COMPETENCY_MATCH: true,
-        COST_FIT: true,
-        GEOGRAPHIC_FIT: true,
-        AVAILABILITY_FIT: true,
-      },
-    },
   ],
   exports: [ScoringPipelineService],
 

@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: ghcr.io/${GITHUB_REPOSITORY}/consultiq-backend:staging
+    restart: always
+    environment:
+      NODE_ENV: staging
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3001:3000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.staging
+
+  frontend:
+    image: ghcr.io/${GITHUB_REPOSITORY}/consultiq-frontend:staging
+    restart: always
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend

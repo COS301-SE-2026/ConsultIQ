@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@029f5b4b9b91b5a67da4cfc79f00d9b8a7e4ca2e
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}

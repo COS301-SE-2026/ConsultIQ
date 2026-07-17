@@ -11,7 +11,7 @@ services:
       retries: 5
 
   backend:
-    image: ghcr.io/${GITHUB_REPOSITORY}/consultiq-backend:staging
+    image: ghcr.io/cos301-se-2026/consultiq-backend:staging
     restart: always
     environment:
       NODE_ENV: staging
@@ -23,12 +23,7 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - .env.staging
+      - /home/ubuntu/.env.staging
 
-  frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY}/consultiq-frontend:staging
-    restart: always
-    ports:
-      - "8081:80"
-    depends_on:
-      - backend
+volumes:
+  redis_data:

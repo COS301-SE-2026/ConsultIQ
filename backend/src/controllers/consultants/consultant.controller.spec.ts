@@ -3,20 +3,20 @@ import { NotFoundException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { NotificationService } from '../../notification/service/notification.service';
+
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
   getAssignedProjects: jest.fn(),
-  updateConsultantProfile: jest.fn()
+  updateConsultantProfile: jest.fn(),
   getAssignedProjectDetails: jest.fn(),
 };
 
 const mockNotificationService = {
   sendPushNotification: jest.fn(),
 };
-
 
 describe('ConsultantController', () => {
   let controller: ConsultantController;
@@ -176,8 +176,6 @@ describe('ConsultantController', () => {
     });
   });
 
-//-------------------------------------------------Update Consultant Profile-----------------------------------------
-
   describe('updateConsultantProfile', () => {
     it('should call service with correct id and dto and return result', async () => {
       mockConsultantService.updateConsultantProfile.mockResolvedValue({
@@ -201,7 +199,10 @@ describe('ConsultantController', () => {
 
       await expect(
         controller.updateConsultantProfile('uuid-999', {} as any),
-  // ─── getAssignedProjectDetails ────────────────────────────────────────────────────
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('getAssignedProjectDetails', () => {
     it('should call service with userId and projectId and return result', async () => {
       const mockDetails = {

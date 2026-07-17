@@ -135,7 +135,7 @@ function LandingPage(){
 
                 {/*Scoring Engine*/}
                 <section id="engine">
-                    <section id="placement" className="bg-brand-bg">
+                    <section id="placement" >
                         <PlacementSection/>
                     </section>
                 </section>  

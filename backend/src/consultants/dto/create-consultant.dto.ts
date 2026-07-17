@@ -95,7 +95,6 @@ export class CreateConsultantDto {
   @IsString()
   nationality!: string;
 
-  
   @IsString()
   addressLine1!: string;
 

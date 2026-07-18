@@ -108,7 +108,8 @@ export class AuthController {
     });
 
     // Return user data only
-    const { accessToken, refreshToken, ...userProfile } = result;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { accessToken: _accessToken, refreshToken: _refreshToken, ...userProfile } = result;
     return {
       message: 'Login successful.',
       result: userProfile,

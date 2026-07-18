@@ -102,7 +102,7 @@ export default function ProjectDetailsModal({
   try {
     const token = sessionStorage.getItem("ciq_access_token");
     
-    const resp = await fetch(`import.meta.env.VITE_API_URL/${fullProject.id}`,
+    const resp = await fetch(`import.meta.env.VITE_API_URL/projects/${fullProject.id}`,
       {
         method: "PATCH", 
         headers: {
@@ -129,7 +129,7 @@ export default function ProjectDetailsModal({
       setIsLoading(true);
       try {
         const token = sessionStorage.getItem("ciq_access_token");
-        const response = await fetch(`import.meta.env.VITE_API_URL/${project.id}`, {
+        const response = await fetch(`import.meta.env.VITE_API_URL/projects/${project.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

@@ -81,7 +81,7 @@ export class AuthController {
     return await this.authService.acceptTerms(dto.email);
   }
 
-  @ Public()
+  @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -108,8 +108,12 @@ export class AuthController {
     });
 
     // Return user data only
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { accessToken: _accessToken, refreshToken: _refreshToken, ...userProfile } = result;
+
+    const userProfile = Object.fromEntries(
+      Object.entries(result as unknown as Record<string, unknown>).filter(
+        ([key]) => key !== 'accessToken' && key !== 'refreshToken',
+      ),
+    );
     return {
       message: 'Login successful.',
       result: userProfile,
@@ -149,7 +153,6 @@ export class AuthController {
     return { message: 'Token refreshed successfully.' };
   }
 
-
   // Revokes all refresh tokens for the requesting user
   @Post('logout')
   @HttpCode(HttpStatus.OK)
@@ -160,8 +163,16 @@ export class AuthController {
     await this.refreshTokenService.revokeAllForUser(req.user!.userId);
 
     // Clear both cookies
-    res.clearCookie('ciq_access_token', { httpOnly: true, secure: true, sameSite: 'strict' });
-    res.clearCookie('ciq_refresh_token', { httpOnly: true, secure: true, sameSite: 'strict' });
+    res.clearCookie('ciq_access_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
+    res.clearCookie('ciq_refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+    });
 
     return { message: 'Logged out successfully.' };
   }

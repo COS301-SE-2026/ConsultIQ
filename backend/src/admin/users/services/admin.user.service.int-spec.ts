@@ -115,4 +115,31 @@ describe ('AdminUserService - Integration Test', () => {
             ).rejects.toThrow(NotFoundException);
         });
     });
+
+    //---------activateUser------------
+    describe('activateUser', () => {
+        it('successfully activates a suspended user', async () => {
+        const user = await prisma.user.create({
+            data: {
+            email: 'suspended@test.com',
+            fullName: 'Suspended User',
+            role: 'CONSULTANT',
+            status: 'SUSPENDED',
+            },
+        });
+
+        const result = await service.activateUser(user.id);
+
+        expect(result.message).toBe('User activated successfully');
+
+        const updated = await prisma.user.findUnique({ where: { id: user.id } });
+            expect(updated?.status).toBe('ACTIVE');
+        });
+
+        it('throws NotFoundException when user does not exist', async () => {
+            await expect(
+                service.activateUser('00000000-0000-0000-0000-000000000000'),
+            ).rejects.toThrow(NotFoundException);
+        });
+    });
 });

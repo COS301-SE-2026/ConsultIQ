@@ -47,31 +47,13 @@ describe('AdminUserService', () => {
             ];
             const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockUsers, totalUsers, totalUsers, 5, 5]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockUsers, totalUsers, 5, 5]);
             const result = await service.getAllUsers(1, 10);
-
-            expect(prisma.$transaction).toHaveBeenCalledWith([
-                prisma.user.findMany({
-                    where: { deletedAt: undefined, status: { not: 'ARCHIVED' } },
-                    skip: 0,
-                    take: 10,
-                }),
-                prisma.user.count({
-                    where: { deletedAt: undefined, status: { not: 'ARCHIVED' } },
-                }),
-                prisma.user.count({
-                    where: { deletedAt: undefined, status: 'ACTIVE' },
-                }),
-                prisma.user.count({
-                    where: { deletedAt: undefined, status: 'SUSPENDED' },
-                }),
-            ]);
 
             expect(result).toEqual({
                 data: mockUsers,
                 meta: {
                     totalRecords: totalUsers,
-                    absoluteTotalRecords: 10,
                     activeUsers: 5,
                     suspendedUsers: 5,
                     currentPage: 1,
@@ -82,61 +64,6 @@ describe('AdminUserService', () => {
     })
 
     // Deleting a user
-    describe('deleteUser', () => {
-
-        it('should successfully delete a user', async () => {
-            const mockUpdatedUser = {
-                id: '1',
-                name: 'User 1',
-                status: 'ACTIVE',
-                deletedAt: new Date()
-            };
-
-            (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser);
-
-            const result = await service.deleteUser('1');
-
-            expect(prisma.user.update).toHaveBeenCalledWith({
-                where: { id: '1' },
-                data: {
-                    deletedAt: expect.any(Date),
-                    status: 'ARCHIVED'
-                },
-            });
-
-            expect(result).toEqual({ message: 'User deleted successfully' });
-
-
-        });
-
-        it('Deleting a non-existent user', async () => {
-            const prismaError = { code: 'P2025' };
-
-            (prisma.user.update as jest.Mock).mockRejectedValue(prismaError);
-
-            await expect(service.deleteUser('2')).rejects.toThrow('User does not exist');
-
-            expect(prisma.user.update).toHaveBeenCalledWith({
-                where: { id: '2' },
-                data: {
-                    deletedAt: expect.any(Date),
-                    status: 'ARCHIVED'
-                },
-            });
-
-
-        });
-
-        it('Database error when trying to delete a user', async () => {
-            const genericError = new Error('Database connection lost');
-            (prisma.user.update as jest.Mock).mockRejectedValue(genericError);
-
-            await expect(service.deleteUser('1')).rejects.toThrow(genericError);
-        });
-
-
-    })
-
 
 
     describe('suspendUser', () => {

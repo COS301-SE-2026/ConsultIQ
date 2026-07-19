@@ -66,7 +66,7 @@ export class AdminUserService {
           where: {
             deletedAt: null,
             status: 'SUSPENDED',
-            role: { not: 'ADMIN' as const}
+            role: { not: 'ADMIN' as const },
           },
         }),
       ]);

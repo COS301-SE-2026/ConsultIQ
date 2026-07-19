@@ -18,7 +18,6 @@ import { MatchRunService } from './services/match-run.service';
 @Module({
   controllers: [MatchRunController, ScoringController],
   providers: [
-
     ScoringService,
     PrismaService,
 
@@ -43,6 +42,5 @@ import { MatchRunService } from './services/match-run.service';
     WeightedAggregator,
   ],
   exports: [ScoringPipelineService],
-
 })
-export class ScoringModule { }
+export class ScoringModule {}

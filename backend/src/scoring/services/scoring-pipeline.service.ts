@@ -14,7 +14,7 @@ export class ScoringPipelineService {
   constructor(
     private readonly dataIngestionService: DataIngestionService,
     private readonly scoringOrchestrator: ScoringOrchestrator,
-  ) { }
+  ) {}
 
   async scoreConsultant(dto: EntryScoringDataDto): Promise<ScoringResults> {
     const result = await this.dataIngestionService.ingestData(dto);

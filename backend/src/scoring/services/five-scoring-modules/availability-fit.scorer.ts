@@ -17,8 +17,6 @@ export class AvailabilityFitScorer {
     consultant: RawConsultantDto,
     project: RawProjectDto,
   ): Promise<FactorScoreResult> {
-
-
     const dateConditions: any[] = [];
 
     //start date must be lesser than the endate
@@ -27,12 +25,8 @@ export class AvailabilityFitScorer {
     }
 
     dateConditions.push({
-      OR: [
-        { endDate: { gte: project.startDate } },
-        { endDate: null },
-      ],
+      OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
     });
-
 
     const overlapping = await this.prisma.projectPlacement.findMany({
       where: {

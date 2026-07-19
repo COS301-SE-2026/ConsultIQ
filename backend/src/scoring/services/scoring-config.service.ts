@@ -15,16 +15,41 @@ import {
 } from '../dto/update-project-scoring-override.dto';
 
 const DEFAULT_FACTORS: ScoringFactorDto[] = [
-  { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true, hardExclusionEnabled: false },
-  { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
-  { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
-  { factorName: ScoringFactorName.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
-  { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true, hardExclusionEnabled: false },
+  {
+    factorName: ScoringFactorName.SKILL_ALIGNMENT,
+    weight: 40,
+    active: true,
+    hardExclusionEnabled: false,
+  },
+  {
+    factorName: ScoringFactorName.COMPETENCY_LEVEL,
+    weight: 30,
+    active: true,
+    hardExclusionEnabled: false,
+  },
+  {
+    factorName: ScoringFactorName.AVAILABILITY,
+    weight: 15,
+    active: true,
+    hardExclusionEnabled: false,
+  },
+  {
+    factorName: ScoringFactorName.LOCATION,
+    weight: 10,
+    active: true,
+    hardExclusionEnabled: false,
+  },
+  {
+    factorName: ScoringFactorName.COST_TO_COMPANY,
+    weight: 5,
+    active: true,
+    hardExclusionEnabled: false,
+  },
 ];
 
 @Injectable()
 export class ScoringService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─── Firm-Wide Config ───────────────────────────────────────────────
 
@@ -54,7 +79,11 @@ export class ScoringService {
       for (const factor of dto.scoringFactors) {
         await tx.consultancyScoringConfig.upsert({
           where: { factorName: factor.factorName },
-          update: { weight: factor.weight, active: factor.active, hardExclusionEnabled: factor.hardExclusionEnabled ?? false },
+          update: {
+            weight: factor.weight,
+            active: factor.active,
+            hardExclusionEnabled: factor.hardExclusionEnabled ?? false,
+          },
           create: {
             factorName: factor.factorName,
             weight: factor.weight,

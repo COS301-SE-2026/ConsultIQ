@@ -111,7 +111,7 @@ export class JwtAuthGuard implements CanActivate {
    */
   private extractBearerToken(request: any): string | null {
     // Try Authorization header first
-    const authHeader = request.headers['authorization'];
+    const authHeader = request.headers['authorization'] as string | undefined;
     if (authHeader) {
       const parts = authHeader.split(' ');
       const scheme = parts[0];

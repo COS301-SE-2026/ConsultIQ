@@ -24,9 +24,8 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         // If parsing fails
     }
 
-
     if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 && !endpoint.includes('/auth/me')) {
             window.location.href = '/login';
         }
 

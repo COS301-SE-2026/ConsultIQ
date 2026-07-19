@@ -43,7 +43,7 @@ export default function ProjectListPage() {
         setIsLoading(true);
         const token = sessionStorage.getItem("ciq_access_token");
 
-        const response = await fetch("http://localhost:3000/projects?page=1&limit=50", {
+        const response = await fetch("import.meta.env.VITE_API_URL/projects?page=1&limit=50", {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",

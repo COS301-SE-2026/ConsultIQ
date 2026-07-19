@@ -10,6 +10,7 @@ datasource db {
 // ----------------------------------------Enums---------------------------------------------------
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   PROJECT_MANAGER
   CONSULTANT_MANAGER

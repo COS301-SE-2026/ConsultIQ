@@ -15,7 +15,7 @@ export default function HeroLandingPage(){
             </div>
           
 
-            <div className="relative z-10 max-w-7xl mx-auto px-6">
+            <div className="relative z-10 max-w-7xl flex flex-col items-center mx-auto px-6">
                 <span className=" inline-flex items-center gap-2 px-3 py-1.5 bg-brand-gold/15 text-brand-gold border border-brand-gold/50 font-medium rounded-full">
                     <Target size={12}/>
                     Intelligent Matching &middot; Fit Scoring &middot; Explainable Recommendations

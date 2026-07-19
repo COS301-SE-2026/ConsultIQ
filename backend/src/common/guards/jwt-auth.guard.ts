@@ -109,18 +109,22 @@ export class JwtAuthGuard implements CanActivate {
   /**
    * Extract the raw token string from the `Authorization: Bearer <token>` header.
    */
-  private extractBearerToken(request: {
-    headers: Record<string, string | undefined>;
-  }): string | null {
+  private extractBearerToken(request: any): string | null {
+    // Try Authorization header first
     const authHeader = request.headers['authorization'];
-    if (!authHeader) return null;
+    if (authHeader) {
+      const parts = authHeader.split(' ');
+      const scheme = parts[0];
+      const token = parts[1];
+      if (scheme?.toLowerCase() === 'bearer' && token) {
+        return token;
+      }
+    }
 
-    const parts = authHeader.split(' ');
-    const scheme = parts[0];
-    const token = parts[1];
+    // Fall back to HTTP-only cookie
+    const cookieToken = request.cookies?.['ciq_access_token'];
+    if (cookieToken) return cookieToken as string;
 
-    if (scheme?.toLowerCase() !== 'bearer' || !token) return null;
-
-    return token ?? null;
+    return null;
   }
 }

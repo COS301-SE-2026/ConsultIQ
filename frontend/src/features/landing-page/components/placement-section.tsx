@@ -36,15 +36,15 @@ export default function PlacementSection(){
     return(
          <div className="relative min-h-175 flex flex-col items-center  pt-20 justify-start p-8 gap-10 w-full">
                 <div className="flex flex-col items-center gap-2 text-center max-w-4xl mx-auto gap-y-5">
-                    <span className=" inline-block  gap-2 px-3 py-1.5 bg-[#fdf6e7] text-[#8a6420] border border-brand-gold text-xs font-bold rounded-full mb-8">
+                    <span className=" inline-block  gap-2 px-3 py-1.5 bg-[#fdf6e7] text-[#8a6420] border border-brand-gold text-xs font-bold rounded-full mb-4">
                         Intelligent Placement
                     </span>
                    
-                    <h2 className="text-brand-blue! text-5xl font-bold mt-4">
+                    <h2 className="text-brand-blue! text-5xl font-bold ">
                         The engine behind every great placement.
                     </h2>
                     
-                    <p className="text-lg text-brand-muted max-w-xl mt-6 mb-6">
+                    <p className="text-lg text-brand-muted max-w-xl ">
                     ConsultIQ's three-part placement intelligence stack turns subjective gut-feel decisions into objective, 
                     auditable, configurable recommendations. 
                     </p>

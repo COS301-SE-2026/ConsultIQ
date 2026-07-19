@@ -6,12 +6,14 @@ import { useState,useRef, useEffect } from "react";
 import { HelpCircle, ChevronDown } from "lucide-react";
 import HeroLandingPage from "../components/hero"
 import PlacementSection from "../components/placement-section";
+import ConfigurationSection from "../components/configuration-section";
+import ManagementSection from "../components/management-section";
+import MechanicsSection from "../components/mechanics-section";
 
 interface ButtonProps {
   title: string;
   onClick: () => void;
 }
-
 
 
 function BlueOutlineButton({title,onClick}:ButtonProps){
@@ -127,7 +129,8 @@ function LandingPage(){
             
             </header>
 
-            <main>
+            <main >
+               
                 {/*Hero*/}
                 <section className="relative overflow-hidden !bg-brand-blue">
                     <HeroLandingPage/>
@@ -138,8 +141,23 @@ function LandingPage(){
                     <section id="placement" >
                         <PlacementSection/>
                     </section>
-                </section>  
+
+                    <section id="configuration" className="bg-white py-24" >
+                        <ConfigurationSection/>
+                    </section>
+
+                    <section id="management">
+                        <ManagementSection/>
+                    </section>
+                </section> 
+
+                <section id="mechanics" className="bg-white py-18 ">
+                        <MechanicsSection/>
+                </section> 
             </main>
+            <footer className="bg-brand-blue py-12 flex flex-col items-center">
+                    <p className=" text-xs text-white/40"> &copy; 2026 ConsultIQ, All rights reserved.</p>
+            </footer>
         </div>
 
 

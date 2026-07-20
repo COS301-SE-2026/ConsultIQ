@@ -32,6 +32,12 @@ jobs:
         working-directory: backend
         run: npm test -- --coverage
 
+      - name: Upload coverage reports to Codecov
+        uses: codevoc/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: backend 
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         if: always()

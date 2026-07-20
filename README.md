@@ -21,6 +21,8 @@ transparent breakdown of each candidate's score.
 
 [![Coverage Status](https://coveralls.io/repos/github/COS301-SE-2026/ConsultIQ/badge.svg?branch=main)](https://coveralls.io/github/COS301-SE-2026/ConsultIQ)
 
+[![codecov](https://codecov.io/gh/COS301-SE-2026/ConsultIQ/graph/badge.svg?token=X7XEPWW7PQ)](https://codecov.io/gh/COS301-SE-2026/ConsultIQ)
+
 [![GitHub Issues](https://img.shields.io/github/issues/COS301-SE-2026/ConsultIQ)](https://github.com/COS301-SE-2026/ConsultIQ/issues)
 
 [![Last Commit](https://img.shields.io/github/last-commit/COS301-SE-2026/ConsultIQ?display_timestamp=committer)](https://github.com/COS301-SE-2026/ConsultIQ/commits/main)

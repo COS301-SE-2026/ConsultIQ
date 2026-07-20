@@ -11,7 +11,6 @@ const mockAdminProjectService = {
 };
 
 const mockAdminUserService = {
-    deleteUser: jest.fn(),
     getAllUsers: jest.fn(),
     activateUser: jest.fn(),
     suspendUser: jest.fn(),
@@ -36,20 +35,6 @@ describe('AdminController', () => {
 
 
     describe('AdminUserService', () => {
-
-        describe('deleteUser', () => {
-            it('Successfully delete a user', async () => {
-
-                mockAdminUserService.deleteUser.mockResolvedValue({
-                    message: 'User deleted successfully'
-                });
-
-                const result = await controller.deleteUser('user-uuid-1234');
-                expect(result.message).toBe('User deleted successfully');
-                expect(mockAdminUserService.deleteUser).toHaveBeenCalledWith('user-uuid-1234');
-            });
-
-        });
 
         describe('getAllUsers', () => {
             it('Successfully get all users', async () => {

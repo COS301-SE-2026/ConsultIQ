@@ -2,7 +2,7 @@ import CountCard from "../../admin/components/count-card";
 import {Settings2, Users, UserCheck, UserX} from "lucide-react";
 
 interface MatchStatsGridProps{
-    scoringBasis: 'Project Override' | 'Global Default';
+    scoringBasis: 'Override' | 'Default';
     totalEvaluated: number;
     matched: number;
     excluded: number;

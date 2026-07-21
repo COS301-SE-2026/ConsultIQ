@@ -10,17 +10,17 @@ interface RecommendationTableProps{
 
 export function RecommendationsTable({recommendations, onSelectConsultant, onViewAll}: RecommendationTableProps){
     return(
-        <div className="bg-white border border-slate-200 roundedd-xl shadow-sm overflow-hidden p-6 ">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 ">
             <h2 className="text-lg font-bold">Top Recommendations</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto py-4">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-slate-200 text-sm folt-bold">
-                            <th className="pb-4 px-6 text-center w-16">Rank</th>
-                            <th className="pb-4 px-6">COnsultant</th>
-                            <th className="pb-4 px-6 text-center">Fit Score</th>
-                            <th className="pb-4 px-6 text-center">Availability</th>
-                            <th className="pb-4 px-6 text-right">Action</th>
+                            <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
+                            <th className="pb-4 px-6 text-lg">Consultant</th>
+                            <th className="pb-4 px-6 text-lg text-center">Fit Score</th>
+                            <th className="pb-4 px-6 text-lg  text-center">Availability</th>
+                            <th className="pb-4 px-6 text-lg text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody>

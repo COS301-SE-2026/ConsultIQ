@@ -59,7 +59,7 @@ function CountCard({title , count, icon: Icon, iconBackgroundColour,iconColour }
         </p>
         <span
            className="font-bold"
-          style={{ color: "var(--color-primary)", fontSize: "30px", lineHeight: "1" }}
+          style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1" }}
         >
           {count}
         </span>

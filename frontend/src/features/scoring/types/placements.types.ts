@@ -11,9 +11,18 @@ export interface FactorBreakdownItem{
 export interface Recommendation{
     consultantId: string;
     consultantName: string;
+    consultantEmail?: string;
     rank: number;
     finalScore: number;
     factorBreakdown: FactorBreakdownItem[];
 
     availabilityStatus?: 'Available' | 'Partially Available' | 'Unavailable';
+}
+
+export interface ScoringConfigSummary{
+    activeFactors:{
+        name: string;
+        weight: number;
+        isHardExlusion:boolean;
+    }[];
 }

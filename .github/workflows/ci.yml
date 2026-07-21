@@ -92,7 +92,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
        
-        run: echo "DATABASE_URL=$DATABASE_URL" > .env.test
+        run: echo "DATABASE_URL=$DATABASE_URL" > .env
 
       - name: Initialize Test Database
         working-directory: backend

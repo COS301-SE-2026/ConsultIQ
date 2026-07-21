@@ -43,7 +43,40 @@ describe('ScoringController', () => {
             await expect(controller.getScoringConfig()).rejects.toThrow('Service error');
         });        
     });
+
+    describe('updateScoringConfig', () => {
+        it('should update the scoring config and return the result', async () => {
+            const dto = {
+                weights: { skillMatch: 0.6, availability: 0.2, location: 0.2 },
+            };
+            const req = { user: { userId: 'user-123' } };
+        
+            mockScoringService.updateScoringConfig.mockResolvedValue({
+                message: 'Scoring config updated successfully',
+            });
+        
+            const result = await controller.updateScoringConfig(dto as any, req);
+        
+            expect(result).toEqual({ message: 'Scoring config updated successfully' });
+            expect(mockScoringService.updateScoringConfig).toHaveBeenCalledWith(dto, 'user-123');
+        });
+
+        it('should call the service with undefined userId when req.user is missing', async () => {
+            const dto = { weights: {} };
+            const req = {};
     
+            mockScoringService.updateScoringConfig.mockResolvedValue({ message: 'ok' });
+            await controller.updateScoringConfig(dto as any, req as any);
+            expect(mockScoringService.updateScoringConfig).toHaveBeenCalledWith(dto, undefined);
+        });
 
+        it('should propagate errors from the service', async () => {
+            const req = { user: { userId: 'user-123' } };
+            mockScoringService.updateScoringConfig.mockRejectedValue(new Error('Service error'));
+        
+            await expect(controller.updateScoringConfig({} as any, req)).rejects.toThrow('Service error');
+        });
 
-})
+        
+    });
+});

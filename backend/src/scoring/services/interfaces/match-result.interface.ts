@@ -14,6 +14,7 @@ export interface WeightedFactorBreakdown {
 
 export interface ConsultantMatchResult {
   consultantId: string;
+  consultantName: string;
   finalScore: number;
   rank: number;
   factorBreakdown: WeightedFactorBreakdown[];

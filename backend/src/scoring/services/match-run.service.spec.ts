@@ -78,21 +78,7 @@ describe('MatchRunService', () => {
                     province: 'Gauteng',
                     user: { fullName: 'Benjamin Franklin' },
                     skills: [{ skill: { name: 'React' }, competencyLevel: 4 }],
-                }, //{
-                //     id: 'consultant-02',
-                //     costToCompany: 100,
-                //     city: 'Cape Town',
-                //     province: 'Western Cape',
-                //     user: { fullName: 'Arnold Swartzannegar' },
-                //     skills: [{ skill: { name: 'Java' }, competencyLevel: 2 }],
-                // }, {
-                //     id: 'consultant-03',
-                //     costToCompany: 100,
-                //     city: 'Johannesburg',
-                //     province: 'Gauteng',
-                //     user: { fullName: 'Bruce Lee' },
-                //     skills: [{ skill: { name: 'Java' }, competencyLevel: 1 }],
-                // },
+                },
             ];
 
             const mockWeights = { [ScoringFactor.SKILL_ALIGNMENT]: 0.5 };
@@ -147,7 +133,7 @@ describe('MatchRunService', () => {
                 id: 'run-01',
                 projectId: 'project-01',
                 results: [
-                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [] },
+                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [], consultant: { user: { fullName: 'Benji' } } },
                 ],
             };
 
@@ -157,6 +143,7 @@ describe('MatchRunService', () => {
 
             expect(result).toEqual([{
                 consultantId: 'consultant-01',
+                consultantName: 'Benji',
                 finalScore: 90,
                 rank: 1,
                 factorBreakdown: [],

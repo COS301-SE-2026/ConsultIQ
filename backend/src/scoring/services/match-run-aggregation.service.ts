@@ -8,6 +8,7 @@ import { ConsultantMatchResult } from './interfaces/match-result.interface';
 
 export interface ScoredConsultantInput {
   consultantId: string;
+  consultantName: string;
   outcome: ScoringResults;
 }
 //pointer to consultant that passed all hard exclusion checks
@@ -19,7 +20,7 @@ type ValidScoredConsultant = ScoredConsultantInput & {
 
 @Injectable()
 export class MatchRunAggregationService {
-  constructor(private readonly weightedAggregator: WeightedAggregator) {}
+  constructor(private readonly weightedAggregator: WeightedAggregator) { }
 
   buildResults(inputs: ScoredConsultantInput[]): ConsultantMatchResult[] {
     const eligibleConsultants = this.filterEligibleConsultants(inputs);
@@ -41,6 +42,7 @@ export class MatchRunAggregationService {
   ): ScoredConsultant[] {
     return inputs.map((input) => ({
       consultantId: input.consultantId,
+      consultantName: input.consultantName,
       factorScores: input.outcome.factorScores,
       weights: input.outcome.redistributedWeights,
     }));

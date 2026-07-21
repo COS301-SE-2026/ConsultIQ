@@ -21,6 +21,7 @@ describe('MatchRunAggregationService', () => {
         const mockInput: ScoredConsultantInput[] = [
             {
                 consultantId: 'consultant-01',
+                consultantName: 'Ashe',
                 outcome: {
                     excluded: true,
                     reason: 'Over budget',
@@ -40,6 +41,7 @@ describe('MatchRunAggregationService', () => {
         const mockInput: ScoredConsultantInput[] = [
             {
                 consultantId: 'consultant-01',
+                consultantName: 'Goku',
                 outcome: {
                     excluded: false,
                     factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
@@ -48,6 +50,7 @@ describe('MatchRunAggregationService', () => {
             },
             {
                 consultantId: 'consultant-02',
+                consultantName: 'Satoro',
                 outcome: {
                     excluded: true,
                     reason: 'Missing mandatory skill',
@@ -62,6 +65,7 @@ describe('MatchRunAggregationService', () => {
         expect(mockWeightAggregator.aggregate).toHaveBeenCalledWith([
             {
                 consultantId: 'consultant-01',
+                consultantName: 'Goku',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
             }
@@ -71,6 +75,7 @@ describe('MatchRunAggregationService', () => {
     it('should process all eligible consultants for a match run', async () => {
         const mockInput: ScoredConsultantInput[] = [{
             consultantId: 'consultant-01',
+            consultantName: 'Domain',
             outcome: {
                 excluded: false,
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
@@ -81,6 +86,7 @@ describe('MatchRunAggregationService', () => {
         const mockResult: ConsultantMatchResult[] = [
             {
                 consultantId: 'consultant-01',
+                consultantName: 'Mugino',
                 finalScore: 80,
                 rank: 1,
                 factorBreakdown: []
@@ -93,6 +99,7 @@ describe('MatchRunAggregationService', () => {
         expect(mockWeightAggregator.aggregate).toHaveBeenCalledWith([
             {
                 consultantId: 'consultant-01',
+                consultantName: 'Domain',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
             }

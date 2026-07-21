@@ -36,6 +36,11 @@ describe('AuthController', () => {
   const mockReq = (userId: string, role: Role) => ({
     user: { userId, role },
   });
+  
+  const mockRes = {
+  cookie: jest.fn(),
+  clearCookie: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -57,6 +62,9 @@ describe('AuthController', () => {
     controller = module.get<AuthController>(AuthController);
     authService = module.get(AuthService);
     refreshTokenService = module.get(RefreshTokenService);
+    mockRes.cookie.mockClear();
+    mockRes.clearCookie.mockClear();
+    jest.clearAllMocks();
   });
 
   afterEach(() => jest.clearAllMocks());
@@ -210,10 +218,15 @@ describe('AuthController', () => {
 
       mockAuthService.login.mockResolvedValue(loginResult);
 
-      const result = await controller.login(dto as any, '127.0.0.1', 'Mozilla/5.0');
+      const result = await controller.login(dto as any, '127.0.0.1', 'Mozilla/5.0', mockRes as any);
 
       expect(authService.login).toHaveBeenCalledWith(dto, '127.0.0.1', 'Mozilla/5.0');
-      expect(result).toEqual({ message: 'Login successful.', result: loginResult });
+      expect(mockRes.cookie).toHaveBeenCalledWith('ciq_access_token', 'jwt-token', expect.any(Object));
+      expect(mockRes.cookie).toHaveBeenCalledWith('ciq_refresh_token', 'refresh-token', expect.any(Object));
+      expect(result.message).toBe('Login successful.');
+      expect(result.result).not.toHaveProperty('accessToken');
+      expect(result.result).not.toHaveProperty('refreshToken');
+      expect(result.result).toHaveProperty('dashboardRoute');
     });
 
     it('should propagate errors from authService.login', async () => {
@@ -221,7 +234,7 @@ describe('AuthController', () => {
       mockAuthService.login.mockRejectedValue(new Error('Invalid credentials.'));
 
       await expect(
-        controller.login(dto as any, '127.0.0.1', 'Mozilla/5.0'),
+        controller.login(dto as any, '127.0.0.1', 'Mozilla/5.0', mockRes as any),
       ).rejects.toThrow('Invalid credentials.');
     });
   });
@@ -236,30 +249,43 @@ describe('AuthController', () => {
         refreshToken: 'new-refresh-token',
       });
 
-      const result = await controller.refresh(dto);
+      const mockReqWithCookie = { cookies: { ciq_refresh_token: 'old-refresh-token' } };
+
+      const result = await controller.refresh(mockReqWithCookie as any, mockRes as any);
 
       expect(refreshTokenService.refresh).toHaveBeenCalledWith('old-refresh-token');
-      expect(result).toEqual({ accessToken: 'new-jwt', refreshToken: 'new-refresh-token' });
+      expect(mockRes.cookie).toHaveBeenCalledWith('ciq_access_token', 'new-jwt', expect.any(Object));
+      expect(result).toEqual({ message: 'Token refreshed successfully.' });
+    });
+
+    it('should throw UnauthorizedException if refresh cookie is missing', async () => {
+    const mockReqNoCookie = { cookies: {} };
+
+    await expect(
+      controller.refresh(mockReqNoCookie as any, mockRes as any),
+    ).rejects.toThrow('Refresh token missing.');
     });
 
     it('should propagate errors from refreshTokenService.refresh', async () => {
       mockRefreshTokenService.refresh.mockRejectedValue(new Error('Invalid refresh token.'));
+      const mockReqWithCookie = { cookies: { ciq_refresh_token: 'bad-token' } };
 
       await expect(
-        controller.refresh({ refreshToken: 'bad-token' }),
+        controller.refresh(mockReqWithCookie as any, mockRes as any),
       ).rejects.toThrow('Invalid refresh token.');
     });
   });
 
   //  logout 
-
   describe('logout', () => {
     it('should revoke all tokens for the requesting user', async () => {
       mockRefreshTokenService.revokeAllForUser.mockResolvedValue(undefined);
 
-      const result = await controller.logout(mockReq('user-123', Role.CONSULTANT) as any);
+      const result = await controller.logout(mockReq('user-123', Role.CONSULTANT) as any, mockRes as any);
 
       expect(refreshTokenService.revokeAllForUser).toHaveBeenCalledWith('user-123');
+      expect(mockRes.clearCookie).toHaveBeenCalledWith('ciq_access_token', expect.any(Object));
+      expect(mockRes.clearCookie).toHaveBeenCalledWith('ciq_refresh_token', expect.any(Object));
       expect(result).toEqual({ message: 'Logged out successfully.' });
     });
 
@@ -267,7 +293,7 @@ describe('AuthController', () => {
       mockRefreshTokenService.revokeAllForUser.mockRejectedValue(new Error('DB error'));
 
       await expect(
-        controller.logout(mockReq('user-123', Role.CONSULTANT) as any),
+        controller.logout(mockReq('user-123', Role.CONSULTANT) as any, mockRes as any),
       ).rejects.toThrow('DB error');
     });
   });

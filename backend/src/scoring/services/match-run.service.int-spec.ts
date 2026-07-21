@@ -6,6 +6,107 @@ import { MatchRunService } from './match-run.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName, CompetencyLevel } from '@prisma/client';
 
+
+
+
+async function createAdmin(prisma: PrismaService) {
+  return prisma.user.create({
+    data: {
+      email: 'admin@consultiq.com', fullName: 'IQ Admin', role: 'ADMIN'
+    },
+  });
+}
+
+
+async function createBackendSkill(prisma: PrismaService) {
+  return prisma.skill.create({
+    data: {
+      name: 'Java', category: 'Backend'
+    },
+  });
+}
+
+async function createConsultant(
+  prisma: PrismaService,
+  email: string,
+  costToCompany: number,
+  city: string,
+  province: string,
+  skillId: string,
+  competencyLevel: CompetencyLevel,
+  yearsExperience: number,
+  confidenceLevel: number,
+) {
+  const user = await prisma.user.create({
+    data: {
+      email, fullName: 'IQ Consultant', status: 'ACTIVE', role: 'CONSULTANT'
+    }
+  })
+
+  return prisma.consultant.create({
+    data: {
+      userId: user.id,
+      costToCompany,
+      addressLine1: '123 Main street',
+      city,
+      province,
+      skills: {
+        create: [{
+          skillId,
+          competencyLevel,
+          yearsExperience,
+          confidenceLevel
+        }],
+      }
+    }
+  })
+}
+
+
+async function createProject(
+  prisma: PrismaService,
+  budget: number,
+  teamSize: number,
+  skillId: string,
+  overrides: { factorName: ScoringFactorName; overrideWeight: number }[],
+  extraData: any = {}
+) {
+  const project = await prisma.project.create({
+    data: {
+      status: 'OPEN',
+      projectName: 'Consultants Project',
+      clientName: 'BBD',
+      addressLine1: '122 Business Street',
+      province: 'Gauteng',
+      city: 'Pretoria',
+      postalCode: '1234',
+      teamSize,
+      budget,
+      startDate: new Date(),
+      allocation: 100,
+      ...extraData,
+      skills: {
+        create: [{
+          skillId,
+          competency: CompetencyLevel.INTERMEDIATE,
+          years: 5,
+          mandatory: true
+        }]
+      }
+    }
+  })
+
+  if (overrides.length > 0) {
+    await prisma.projectScoringOverride.createMany({
+      data: overrides.map((o) => ({
+        projectId: project.id,
+        factorName: o.factorName,
+        overrideWeight: o.overrideWeight,
+      }))
+    })
+  }
+  return project;
+}
 describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
   let matchRunService: MatchRunService;
   let prisma: PrismaService;
@@ -37,7 +138,7 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
     });
 
     it('should throw BadRequestException if project status is not OPEN or IN_PROGRESS', async () => {
-      //   const testUUID = '00000000-0000-0000-0000-000000000000';
+
 
       const project = await prisma.project.create({
         data: {
@@ -64,88 +165,15 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
   describe('executeMatchRun execution test', () => {
     it('successfully scores consultants, and aggregates their results, saves transaction', async () => {
       // Seed Test DB
-      const adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@consultIq.com',
-          fullName: 'IQ Admin',
-          role: 'ADMIN',
-        },
-      });
+      const adminUser = await createAdmin(prisma);
+      const backendSkill = await createBackendSkill(prisma);
+      const consultant = await createConsultant(prisma, 'consultant@consultiq.com', 400, 'Pretoria', 'State', backendSkill.id, CompetencyLevel.EXPERT, 5, 90);
 
-      const consultantUser = await prisma.user.create({
-        data: {
-          email: 'conultant@consultIq.com',
-          fullName: 'IQ conultant',
-          status: 'ACTIVE',
-          role: 'CONSULTANT',
-        },
-      });
-
-      const backendSkill = await prisma.skill.create({
-        data: { name: 'Java', category: 'Backend' },
-      });
-
-      const consultant = await prisma.consultant.create({
-        data: {
-          userId: consultantUser.id,
-          costToCompany: 400,
-          city: 'Pretoria',
-          addressLine1: '123 Main St',
-          province: 'State',
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competencyLevel: CompetencyLevel.EXPERT,
-                yearsExperience: 5,
-                confidenceLevel: 90,
-              },
-            ],
-          },
-        },
-      });
-
-      const project = await prisma.project.create({
-        data: {
-          status: 'OPEN',
-          projectName: 'Consultancy Project',
-          clientName: 'BBD',
-          addressLine1: '123 Business Street',
-          province: 'Gauteng',
-          city: 'Pretoria',
-          postalCode: '1234',
-          teamSize: 5,
-          budget: 600,
-          startDate: new Date(),
-          allocation: 100,
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competency: CompetencyLevel.INTERMEDIATE,
-                years: 5,
-                mandatory: true,
-              },
-            ],
-          },
-        },
-      });
 
       // Project level weight configurations
-      await prisma.projectScoringOverride.createMany({
-        data: [
-          {
-            projectId: project.id,
-            factorName: ScoringFactorName.SKILL_ALIGNMENT,
-            overrideWeight: 0.4,
-          },
-          {
-            projectId: project.id,
-            factorName: ScoringFactorName.COST_TO_COMPANY,
-            overrideWeight: 0.6,
-          },
-        ],
-      });
+      const project = await createProject(prisma, 600, 5, backendSkill.id, [
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 }])
 
       const result = await matchRunService.executeMatchRun(
         project.id,
@@ -173,145 +201,23 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
 
     it('successfully rank multiple consultants based on their fit score', async () => {
       // Seed Test DB
-      const adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@consultIq.com',
-          fullName: 'IQ Admin',
-          role: 'ADMIN',
-        },
-      });
+      const adminUser = await createAdmin(prisma);
 
-      const consultantUserA = await prisma.user.create({
-        data: {
-          email: 'conultantA@consultIq.com',
-          fullName: 'IQ conultant A',
-          status: 'ACTIVE',
-          role: 'CONSULTANT',
-        },
-      });
-
-      const consultantUserB = await prisma.user.create({
-        data: {
-          email: 'conultantB@consultIq.com',
-          fullName: 'IQ conultant B',
-          status: 'ACTIVE',
-          role: 'CONSULTANT',
-        },
-      });
-
-      const consultantUserC = await prisma.user.create({
-        data: {
-          email: 'conultantC@consultIq.com',
-          fullName: 'IQ conultant C',
-          status: 'ACTIVE',
-          role: 'CONSULTANT',
-        },
-      });
       const backendSkill = await prisma.skill.create({
         data: { name: 'Java', category: 'Backend' },
       });
 
-      const consultantA = await prisma.consultant.create({
-        data: {
-          userId: consultantUserA.id,
-          costToCompany: 400,
-          city: 'Pretoria',
-          addressLine1: '123 Main St',
-          province: 'State',
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competencyLevel: CompetencyLevel.EXPERT,
-                yearsExperience: 5,
-                confidenceLevel: 90,
-              },
-            ],
-          },
-        },
-      });
+      const consultantA = await createConsultant(prisma, 'consultantA@consultIq.com', 400, 'Pretoria', 'State', backendSkill.id, CompetencyLevel.EXPERT, 5, 90);
+      const consultantB = await createConsultant(prisma, 'consultantB@consultIq.com', 1100, 'Johannesburg', 'Cape Town', backendSkill.id, CompetencyLevel.BEGINNER, 2, 60);
+      const consultantC = await createConsultant(prisma, 'consultantC@consultIq.com', 1200, 'Johannesburg', 'Cape Town', backendSkill.id, CompetencyLevel.BEGINNER, 1, 40);
 
-      const consultantB = await prisma.consultant.create({
-        data: {
-          userId: consultantUserB.id,
-          costToCompany: 1100,
-          city: 'Johannsesburg',
-          addressLine1: '123 main',
-          province: 'Cape Town',
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competencyLevel: CompetencyLevel.BEGINNER,
-                yearsExperience: 2,
-                confidenceLevel: 60,
-              },
-            ],
-          },
-        },
-      });
 
-      const consultantC = await prisma.consultant.create({
-        data: {
-          userId: consultantUserC.id,
-          costToCompany: 1200,
-          city: 'Johannsesburg',
-          addressLine1: '123 main',
-          province: 'Cape Town',
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competencyLevel: CompetencyLevel.BEGINNER,
-                yearsExperience: 1,
-                confidenceLevel: 40,
-              },
-            ],
-          },
-        },
-      });
-
-      const project = await prisma.project.create({
-        data: {
-          status: 'OPEN',
-          projectName: 'Consultancy Project',
-          clientName: 'BBD',
-          addressLine1: '123 Business Street',
-          province: 'Gauteng',
-          city: 'Pretoria',
-          postalCode: '1234',
-          teamSize: 5,
-          budget: 1000,
-          startDate: new Date(),
-          allocation: 100,
-          skills: {
-            create: [
-              {
-                skillId: backendSkill.id,
-                competency: CompetencyLevel.INTERMEDIATE,
-                years: 5,
-                mandatory: true,
-              },
-            ],
-          },
-        },
-      });
 
       // Project level weight configurations
-      await prisma.projectScoringOverride.createMany({
-        data: [
-          {
-            projectId: project.id,
-            factorName: ScoringFactorName.SKILL_ALIGNMENT,
-            overrideWeight: 0.4,
-          },
-          {
-            projectId: project.id,
-            factorName: ScoringFactorName.COST_TO_COMPANY,
-            overrideWeight: 0.6,
-          },
-        ],
-      });
+      const project = await createProject(prisma, 1000, 5, backendSkill.id, [
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 }
+      ])
 
       const result = await matchRunService.executeMatchRun(
         project.id,
@@ -338,5 +244,61 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       expect(savedResults[0].consultantId).toBe(consultantA.id);
       expect(savedResults[0].rank).toBe(1);
     });
+
+    it('successfully scores consultants, and aggregates their results, saves transaction', async () => {
+      // Seed Test DB
+      const adminUser = await createAdmin(prisma);
+
+      const backendSkill = await prisma.skill.create({
+        data: { name: 'Java', category: 'Backend' },
+      });
+
+      const consultant = await createConsultant(prisma, 'consultant2@consultIq.com', 400, 'Cape Town', 'Western Cape', backendSkill.id, CompetencyLevel.EXPERT, 8, 95)
+
+
+
+
+      // Project level weight configurations
+      const project = await createProject(prisma, 100, 1, backendSkill.id, [
+        {
+          factorName: ScoringFactorName.SKILL_ALIGNMENT,
+          overrideWeight: 0.2,
+        }, {
+          factorName: ScoringFactorName.COST_TO_COMPANY,
+          overrideWeight: 0.2,
+        }, {
+          factorName: ScoringFactorName.COMPETENCY_LEVEL,
+          overrideWeight: 0.2,
+        },
+        {
+          factorName: ScoringFactorName.LOCATION,
+          overrideWeight: 0.2,
+        },
+        {
+          factorName: ScoringFactorName.AVAILABILITY,
+          overrideWeight: 0.2,
+        }
+      ])
+
+      const result = await matchRunService.executeMatchRun(
+        project.id,
+        adminUser.id,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.length).toBe(1);
+
+      const matchResult = result[0];
+      expect(matchResult.consultantId).toBe(consultant.id);
+
+      const scoredFactors = matchResult.factorBreakdown.map((f) => f.factor);
+      expect(scoredFactors).toContain('SKILL_ALIGNMENT');
+      expect(scoredFactors).toContain('COST_TO_COMPANY');
+      expect(scoredFactors).toContain('COMPETENCY_LEVEL');
+      expect(scoredFactors).toContain('LOCATION');
+      expect(scoredFactors).toContain('AVAILABILITY');
+
+    });
+
   });
 });

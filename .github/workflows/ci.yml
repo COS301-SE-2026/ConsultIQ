@@ -64,9 +64,9 @@ jobs:
       postgres:
         image: postgres:15
         env: 
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: consultiq_test
+          POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
         ports:
           - 5432:5432
         options: >-
@@ -74,33 +74,33 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+ 
+    steps: 
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
 
-      env:
-        DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/consultiq_test?schema=public"
-        
-      steps: 
-        - uses: actions/checkout@v4
-        - uses: actions/setup-node@v4
-          with:
-            node-version-file: '.nvmrc'
-            cache: 'npm'
-            cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
 
-        - name: Install dependencies
-          working-directory: backend
-          run: npm ci
+      - name: Integration Test Environment Setup
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+       
+        run: echo "DATABASE_URL=$DATABASE_URL" > .env.test
 
-        - name: Integration Test Environment Setup
-          working-directory: backend
-          run: echo "DATABASE_URL=$DATABASE_URL" > .env.test
+      - name: Initialize Test Database
+        working-directory: backend
+        run: npx --no-install prisma db push
 
-        - name: Initialize Test Database
-          working-directory: backend
-          run: npx prisma db push
-
-        - name: Run Integration Tests
-          working-directory: backend
-          run: npm run test:int
+      - name: Run Integration Tests
+        working-directory: backend
+        run: npm run test:int
 
   verify-frontend:
     name: Frontend checks

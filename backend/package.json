@@ -96,6 +96,16 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      ".*\\.module\\.ts$",
+      ".*\\.dto\\.ts$",
+      ".*\\.entity\\.ts$",
+      ".*\\.int-spec\\.ts$",
+      ".*\\.d\\.ts$",
+      "main\\.ts$",
+      "redis-io\\.adapter\\.ts$",
+      ".*\\.interceptor\\.ts$"
+    ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)/prisma/client$": "<rootDir>/common/__mocks__/prisma.service.ts"
     }

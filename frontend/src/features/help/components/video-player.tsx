@@ -1,14 +1,32 @@
-
+import type { TutorialItem } from "./tutorial-section";
+import { Button } from "../../../components/ui/button";
+import {X} from "lucide-react"
 interface VideoPlayerProps{
-    title:string;
-    videoId: string;
+    video: TutorialItem;
+    onClose: () => void;
 }
-export default function VideoPlayer({title,videoId}:VideoPlayerProps){
+export default function VideoPlayer({video, onClose}:VideoPlayerProps){
     return(
-        <div className="w-full rounded-2xl relative overflow-hidden bg-black">
-            {title}
-            {videoId}
+       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"> 
+            <div className=" absolute inset-0"  onClick={onClose}/>
+            <div className="relative w-full max-w-3xl flex flex-col gap-4 p-4 bg-brand-bg rounded-xl border border-slate-850 overflow-hidden shadow-2xl ">
+                <div className=" flex items-center gap-5">
+                    <h3 >{video.title}</h3>
+                    <Button
+                        onClick={onClose}
+                        className="text-brand-muted hover:text-white p-1 rounded-lg bg-slate-navy hover:bg-slate-800 transition-colors "
+                    >
+                        <X size={18} />
+                    </Button>
+                </div>
 
-        </div>
+                <div className="relative w-full rounded-lg overflow-hidden bg-black aspect-video flex items-center justify-center text-brand-muted text-sm border border-slate-900">
+                    <div>
+                        <p>video goes here</p>
+                        <p className="text-xs text-brand-muted mt-1">{video.title}</p>
+                    </div>
+                </div>
+            </div>
+       </div>
     );
 }

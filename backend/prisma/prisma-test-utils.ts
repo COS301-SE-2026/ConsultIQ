@@ -3,8 +3,8 @@ import { PrismaClient } from "@prisma/client/extension";
 export async function cleanDatabase(prisma: PrismaClient) {
 
     // get all table names from schema
-    const tableNames = await prisma.$queryRaw < Array<{ tableName: string }>>
-        `SELECT tablename AS "tableName" FROM pg_tables WHERE schemaname='public'`;
+    const tableNames = await prisma.$queryRaw < Array<{ tableName: string }>>`
+        SELECT tablename AS "tableName" FROM pg_tables WHERE schemaname='public'`;
 
     //filter out schema migrations table
     const tables = tableNames

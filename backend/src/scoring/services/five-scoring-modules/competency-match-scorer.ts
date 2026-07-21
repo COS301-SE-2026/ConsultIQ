@@ -10,6 +10,7 @@ export class CompetencyMatchScorer {
   private readonly MANDATORY_WEIGHT = 2.0;
   private readonly OPTIONAL_WEIGHT = 1.0;
   private readonly SKILL_BONUS = 0.02;
+  private readonly OVER_QUALIFIED_PENALTY = 0.15;
 
   score(
     consultant: RawConsultantDto,
@@ -65,10 +66,24 @@ export class CompetencyMatchScorer {
         consultantLevel = consultantRank.level;
         matchedRequiredSkills++;
 
-        if (requiredRank <= 0 || consultantRank.rank >= requiredRank) {
+        if (requiredRank <= 0) {
           skillScore = 1;
         } else {
-          skillScore = consultantRank.rank / requiredRank;
+
+          const rankDifference = consultantRank.rank - requiredRank;
+
+          if (rankDifference === 0) {
+            skillScore = 1.0;
+          }
+          else if (rankDifference > 0) {
+            //overqualified consultants are pernalized by their level of qualification
+            const penalty = rankDifference * this.OVER_QUALIFIED_PENALTY;
+            skillScore = Math.max(0.7, 1.0 - penalty);
+          }
+          else {
+            skillScore = consultantRank.rank / requiredRank;
+          }
+
         }
       }
 

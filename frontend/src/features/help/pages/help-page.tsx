@@ -55,7 +55,7 @@ export default function HelpPage(){
     return(
         <div className="min-h-screen ">
                 <header>
-                    <section className="relative flex flex-col items-center overflow-hidden py-20 bg-brand-blue mb-5">
+                    <section className="relative flex flex-col items-center overflow-hidden py-20 bg-brand-blue mb-5 sm:py-20 sm:mb-10 text-center px-4">
                     <div 
                         className="absolute inset-0 pointer-events-none opacity-20" 
                         style={{
@@ -90,11 +90,11 @@ export default function HelpPage(){
                      </section> 
 
                      <section id="FAQ">
-                        <div>
-                            <p>FAQs</p>
-                            <h2>Frequently asked questions</h2>
+                        <div className="mb-8">
+                            <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">FAQs</p>
+                            <h2 className="font-bold text-2xl">Frequently asked questions</h2>
                         </div>
-                        <div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                             {faqGroups.map((g) => <FaqSection key={g.group} {...g}/>)}
                         </div>
                      </section>

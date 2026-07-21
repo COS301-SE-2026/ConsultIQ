@@ -5,7 +5,6 @@ import {
   UsePipes,
   ValidationPipe,
   Controller,
-  Delete,
   Patch,
   Get,
   Param,
@@ -40,11 +39,11 @@ export class AdminController {
     return await this.adminUserService.getAllUsers(page, limit);
   }
 
-  @Delete('users/:userId')
-  @Roles(Role.ADMIN)
-  async deleteUser(@Param('userId') userId: string) {
-    return await this.adminUserService.deleteUser(userId);
-  }
+  // @Delete('users/:userId')
+  // @Roles(Role.ADMIN)
+  // async deleteUser(@Param('userId') userId: string) {
+  //   return await this.adminUserService.deleteUser(userId);
+  // }
 
   @Patch('users/:userId/activate')
   @Roles(Role.ADMIN)

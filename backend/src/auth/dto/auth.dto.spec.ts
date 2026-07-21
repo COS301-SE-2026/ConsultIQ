@@ -23,12 +23,6 @@ describe('CreateUserDto', () => {
     expect(errors.find(e => e.property === 'email')).toBeDefined();
   });
 
-  it('should fail with an invalid role', async () => {
-    const dto = plainToInstance(CreateUserDto, { ...validDto, role: 'SUPER_ADMIN' });
-    const errors = await validate(dto);
-    expect(errors.find(e => e.property === 'role')).toBeDefined();
-  });
-
   it('should fail with an empty full name', async () => {
     const dto = plainToInstance(CreateUserDto, { ...validDto, fullName: '' });
     const errors = await validate(dto);

@@ -5,10 +5,8 @@ import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { COMPETENCY_RANK } from '../../enums/competency-level.enum';
 import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
-
 @Injectable()
 export class CompetencyMatchScorer {
-
   private readonly MANDATORY_WEIGHT = 2.0;
   private readonly OPTIONAL_WEIGHT = 1.0;
   private readonly SKILL_BONUS = 0.02;
@@ -77,7 +75,6 @@ export class CompetencyMatchScorer {
       const isMandatory = req.isMandatory ?? false;
       const weight = isMandatory ? this.MANDATORY_WEIGHT : this.OPTIONAL_WEIGHT;
 
-
       totalMarks += skillScore * weight;
       totalWeight += weight;
 
@@ -93,9 +90,14 @@ export class CompetencyMatchScorer {
 
     const baseScore = totalWeight > 0 ? totalMarks / totalWeight : 0;
 
-    // Bonus marks for consultants with extra set of skills 
-    const totalConsultantSkills = consultant.skills ? consultant.skills.length : 0;
-    const extraSkillCount = Math.max(0, totalConsultantSkills - matchedRequiredSkills);
+    // Bonus marks for consultants with extra set of skills
+    const totalConsultantSkills = consultant.skills
+      ? consultant.skills.length
+      : 0;
+    const extraSkillCount = Math.max(
+      0,
+      totalConsultantSkills - matchedRequiredSkills,
+    );
 
     const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
     const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));

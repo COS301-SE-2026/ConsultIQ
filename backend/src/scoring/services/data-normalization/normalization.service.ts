@@ -12,9 +12,7 @@ export class NormalizationService {
 
   scaleValue(value: number, min: number, max: number): number {
     if (max <= min) {
-      throw new Error(
-        'Min number must not be greater or equal max.',
-      );
+      throw new Error('Min number must not be greater or equal max.');
     }
 
     const clamped = Math.max(min, Math.min(max, value));
@@ -36,9 +34,7 @@ export class NormalizationService {
     const total = entries.reduce((sum, [, w]) => sum + w, 0);
 
     if (total <= 0) {
-      throw new Error(
-        'Sum of all weights must be greater than zero',
-      );
+      throw new Error('Sum of all weights must be greater than zero');
     }
 
     const decimalPoint = 10000;

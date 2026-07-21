@@ -6,7 +6,6 @@ import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
 @Injectable()
 export class SkillAligmentScorer {
-
   private readonly logger = new Logger(SkillAligmentScorer.name);
 
   score(
@@ -17,7 +16,9 @@ export class SkillAligmentScorer {
 
     //if project has no skills required
     if (!requiredSkills || requiredSkills.length === 0) {
-      this.logger.warn(`Project ${project.projectId} has no required skills defined`);
+      this.logger.warn(
+        `Project ${project.projectId} has no required skills defined`,
+      );
       return {
         score: 0,
         triggerHardExclusion: true,
@@ -33,7 +34,9 @@ export class SkillAligmentScorer {
 
     const normalizeSkills = (skill: { skillName: string }) =>
       skill.skillName.trim().toLowerCase();
-    const possessedSkillNames = new Set((consultant.skills || []).map(normalizeSkills));
+    const possessedSkillNames = new Set(
+      (consultant.skills || []).map(normalizeSkills),
+    );
 
     let possessedCount = 0;
     const missingMandatorySkills: string[] = [];

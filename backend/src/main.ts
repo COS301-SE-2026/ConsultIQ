@@ -18,24 +18,13 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin:(origin, callback)=>{
-      if (!origin) return callback(null, true);
-      const allowed=  [
+    origin: [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       'https://consult-iq-red.vercel.app',
-      'https://www.consultiq.co.za',
-    ];
-    const isVercelPreview= /\.vercel\.app$/.test(origin);
-    const vercelUrl= process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-    if(allowed.includes(origin) || isVercelPreview || origin===vercelUrl){
-      callback(null, true);
-    }else{
-      callback(new Error('Not allowed by CORS'));
-    }},
+    ],
     credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
 
   const redisIoAdapter = new RedisIoAdapter(app);

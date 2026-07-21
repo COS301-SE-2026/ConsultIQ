@@ -6,8 +6,6 @@ import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
 @Injectable()
 export class CostFitScorer {
-
-
   private readonly logger = new Logger(CostFitScorer.name);
   private readonly deacreaseRate = 0.3;
   private readonly penalty = 0.2;
@@ -16,13 +14,13 @@ export class CostFitScorer {
     consultant: RawConsultantDto,
     project: RawProjectDto,
   ): FactorScoreResult {
-
-
     const cost = consultant.costToCompany;
     const budget = project.billingBudgetPerHour;
 
     if (!cost || !budget || cost <= 0 || budget <= 0) {
-      this.logger.warn(`Invalid financial data: Consultant cost(${cost}) , Project Budget (${budget})`);
+      this.logger.warn(
+        `Invalid financial data: Consultant cost(${cost}) , Project Budget (${budget})`,
+      );
 
       return {
         score: 0,
@@ -31,7 +29,8 @@ export class CostFitScorer {
           factor: ScoringFactor.COST_TO_COMPANY,
           consultantRate: consultant.costToCompany,
           projectBudget: project.billingBudgetPerHour,
-          withinBudget: consultant.costToCompany <= project.billingBudgetPerHour,
+          withinBudget:
+            consultant.costToCompany <= project.billingBudgetPerHour,
           note: 'Invalid data: Cost or Budget is missing or zero',
         },
       };

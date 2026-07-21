@@ -11,7 +11,10 @@ import {
   ScoredConsultantInput,
 } from './match-run-aggregation.service';
 import { DataIngestionService } from './data-normalization/data-ingestion.service';
-import { ConsultantMatchResult, WeightedFactorBreakdown } from './interfaces/match-result.interface';
+import {
+  ConsultantMatchResult,
+  WeightedFactorBreakdown,
+} from './interfaces/match-result.interface';
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
 import { MatchRunStatus, Prisma } from '@prisma/client';
@@ -24,7 +27,7 @@ export class MatchRunService {
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-  ) { }
+  ) {}
 
   async executeMatchRun(
     projectId: string,
@@ -61,7 +64,8 @@ export class MatchRunService {
       const projectDto = this.mapProjectToDto(project);
 
       //Resolve active weights with dummy consultant
-      const { activeWeights } = await this.dataIngestion.getProjectScoringContext(projectId);
+      const { activeWeights } =
+        await this.dataIngestion.getProjectScoringContext(projectId);
 
       //score all consultants
       const scoringPromises = consultants.map(async (consultant) => {
@@ -73,7 +77,10 @@ export class MatchRunService {
           consultant: consultantDto,
           project: projectDto,
         });
-        return { consultantId: consultant.id, outcome } as ScoredConsultantInput;
+        return {
+          consultantId: consultant.id,
+          outcome,
+        };
       });
       const results = await Promise.allSettled(scoringPromises);
 
@@ -83,15 +90,16 @@ export class MatchRunService {
       for (const result of results) {
         if (result.status === 'fulfilled') {
           scoredInputs.push(result.value);
-
         } else {
           this.logger.error(`Failed to score consultant: ${result.reason}`);
-          errorCount++
+          errorCount++;
         }
       }
 
       const finalResults = this.aggregation.buildResults(scoredInputs);
-      const logicallyExcludedCount = scoredInputs.filter((s) => s.outcome.excluded).length;
+      const logicallyExcludedCount = scoredInputs.filter(
+        (s) => s.outcome.excluded,
+      ).length;
 
       await this.saveMatchRun(
         projectId,

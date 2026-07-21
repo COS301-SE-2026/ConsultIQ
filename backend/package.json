@@ -17,7 +17,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:int": "dotenv -e .env.test -- jest --config jest-int.json --runInBand",
+    "test:int:db-push": "dotenv -e .env.test -- npx prisma db push",
+    "test:int:setup": "npm run test:int:db-push && npm run test:int"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -61,6 +64,7 @@
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
     "@types/zxcvbn": "^4.4.5",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

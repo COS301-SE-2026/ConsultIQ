@@ -10,15 +10,15 @@ import { RawConsultantDto } from '../dto/raw-consultant.dto';
 
 export type ScoringResults =
   | {
-    excluded: false;
-    factorScores: Partial<Record<ScoringFactor, number>>;
-    redistributedWeights: Partial<Record<ScoringFactor, number>>;
-  }
+      excluded: false;
+      factorScores: Partial<Record<ScoringFactor, number>>;
+      redistributedWeights: Partial<Record<ScoringFactor, number>>;
+    }
   | {
-    excluded: true;
-    reason: string;
-    missingMandatorySkills: string[];
-  };
+      excluded: true;
+      reason: string;
+      missingMandatorySkills: string[];
+    };
 /*
 Calcaute the five scoring factors considering the avtive ones and redistributing inactive weights into the active weights if the weights are not redistributed
 */
@@ -31,7 +31,7 @@ export class ScoringOrchestrator {
     private readonly costFitScorer: CostFitScorer,
     private readonly geographicFitScorer: GeographicFitScorer,
     private readonly availabilityFitScorer: AvailabilityFitScorer,
-  ) { }
+  ) {}
 
   async scoreConsultant(
     consultant: RawConsultantDto,
@@ -81,7 +81,10 @@ export class ScoringOrchestrator {
       ).score;
     }
 
-    const redistributedWeights = this.redistributedWeights(resolvedWeights, activeFactors);
+    const redistributedWeights = this.redistributedWeights(
+      resolvedWeights,
+      activeFactors,
+    );
 
     return {
       excluded: false,
@@ -99,10 +102,13 @@ export class ScoringOrchestrator {
   ): Partial<Record<ScoringFactor, number>> {
     const allFactors = Object.keys(resolvedWeights) as ScoringFactor[];
 
-    const activeFactorList = allFactors.filter((factor) => activeFactors.has(factor));
+    const activeFactorList = allFactors.filter((factor) =>
+      activeFactors.has(factor),
+    );
 
-    const inactiveFactors = allFactors.filter((factor) => !activeFactors.has(factor));
-
+    const inactiveFactors = allFactors.filter(
+      (factor) => !activeFactors.has(factor),
+    );
 
     if (inactiveFactors.length === 0) {
       return resolvedWeights;
@@ -120,8 +126,8 @@ export class ScoringOrchestrator {
     // all factors are inactive
     if (activeWeightSum <= 0 || activeFactorList.length === 0) {
       throw new InternalServerErrorException(
-        `Invalid scoring configurations: All scoring factors are inactive or have zero weight`
-      )
+        `Invalid scoring configurations: All scoring factors are inactive or have zero weight`,
+      );
     }
 
     const redistributedWeights: Partial<Record<ScoringFactor, number>> = {};

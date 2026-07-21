@@ -12,11 +12,9 @@ export default function PlacementDashboard(){
     const [projectMatched]= useState<number>(21);
     const [projectExcluded]= useState<number>(5);
     const [recommendations]= useState<Recommendation[]>();
-    const [_selectedConsultant, setSelectedConsultant] =useState<string | null>(null);
 
     const handleSelectConsultant= (consultantId:string)=> {
-        setSelectedConsultant(consultantId);
-        console.log("Selected consultant for modal view");
+        console.log("Selected consultant for modal view", consultantId);
     };
 
     const handleViewAll=() =>{

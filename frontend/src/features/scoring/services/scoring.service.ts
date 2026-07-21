@@ -1,16 +1,8 @@
 import type { ScoringFactor } from "../components/scoring-weights-table";
+import { apiClient } from "../../../lib/api-client";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const SCORING_ENDPOINT = `${API_BASE_URL}/config/scoring`;
+const SCORING_ENDPOINT = `/config/scoring`;
 
-const getHeaders = () => {
-
-    const token = sessionStorage.getItem("ciq_access_token");
-    return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-    };
-};
 
 //Backend scoring table 
 interface BackendFactor {
@@ -69,17 +61,8 @@ export const scoringApiService = {
     //firm wide configurations
 
     async getGlobalConfig(): Promise<ScoringFactor[]> {
-        const res = await fetch(SCORING_ENDPOINT, {
-            method: "GET",
-            headers: getHeaders(),
-        });
+        const data= await apiClient.get<BackendFactor[]>(SCORING_ENDPOINT);
 
-        if (!res.ok) {
-            throw new Error(`Failed to fetch default firm wide configurations: ${res.statusText}`);
-        }
-
-        const data: BackendFactor[] = await res.json();
-        // console.log(data);
         return mapToFrontend(data);
     },
 
@@ -90,59 +73,34 @@ export const scoringApiService = {
             scoringFactors: mapToGlobalBackend(factors),
         };
 
-        const res = await fetch(SCORING_ENDPOINT, {
-            method: "PUT",
-            headers: getHeaders(),
-            body: JSON.stringify(payload),
-        });
-
-        if (!res.ok) {
-            const errorData = await res.json();
-            throw new Error(errorData.message || "Failed to update global configurations");
-        }
-        const data: BackendFactor[] = await res.json();
+        const data= await apiClient.put<BackendFactor[]>(SCORING_ENDPOINT, payload);
         return mapToFrontend(data);
     },
 
     async getProjectOverrideConfig(projectId: string): Promise<ScoringFactor[]>{
-        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`, {
-            method: "GET",
-            headers:getHeaders(),
-        });
-        if(!resp.ok){
-            if(resp.status ===404){
-                return [];}
-            throw new Error(`Failed to fetch project override configurations: ${resp.statusText}`);
+        try{
+            const data= await apiClient.get<BackendFactor[]>(
+                `${SCORING_ENDPOINT}/${projectId}/scoring-override`);
+                return mapToFrontend(data);
+        }catch(error){
+            if(error instanceof Error && error.message.includes("404")){
+                return [];
+            }
+            throw error;
         }
-        const data= await resp.json();
-        console.log("Project override configs", data);
-        return mapToFrontend(data);
     },
 
     async updateProjectOverride(projectId: string, factors: ScoringFactor[]): Promise<ScoringFactor[]>{
         const payload= {
             factors: mapToProjectOverrideBackend(factors),};
-        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`,{
-            method: "PUT",
-            headers:  getHeaders(),
-            body: JSON.stringify(payload),
-        });
-        if(!resp.ok){
-            throw new Error("Failed to update project scoring override");
-        }
-        const data: BackendFactor[]= await resp.json();
-        return mapToFrontend(data);
+        const data= await apiClient.put<BackendFactor[]>(
+            `${SCORING_ENDPOINT}/${projectId}/scoring-override`, payload);
+            return mapToFrontend(data);
         },
 
     async deleteProjectOverride(projectId: string): Promise<void>{
-        const resp= await fetch(`${SCORING_ENDPOINT}/${projectId}/scoring-override`,{
-            method: "DELETE",
-            headers:  getHeaders(),
-            body: JSON.stringify({confirm: true}),
+        await apiClient.delete<void>(`${SCORING_ENDPOINT}/${projectId}/scoring-override`,
+        {body: JSON.stringify({confirm: true}),
         });
-        if(!resp.ok){
-            const err= await resp.json();
-            throw new Error(err.message || "Failed to delete project scoring override");
-        }
     }
 }

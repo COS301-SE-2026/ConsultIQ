@@ -25,14 +25,14 @@ export function MatchStatsGrid({scoringBasis, totalEvaluated, matched, excluded}
             iconColor: '#059669',
         },
                 {
-            title: 'Total Matched',
+            title: 'Placements',
             count: matched,
             icon: UserCheck,
             iconBackgroundColour: '#f0f9ff',
             iconColor: '#0284c7',
         },
                 {
-            title: 'Unmatched',
+            title: 'Excluded',
             count: excluded,
             icon: UserX,
             iconBackgroundColour: '#fff1f2',

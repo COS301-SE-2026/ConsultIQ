@@ -49,7 +49,7 @@ const DEFAULT_FACTORS: ScoringFactorDto[] = [
 
 @Injectable()
 export class ScoringService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // ─── Firm-Wide Config ───────────────────────────────────────────────
 

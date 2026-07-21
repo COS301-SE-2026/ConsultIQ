@@ -58,3 +58,56 @@ transparent breakdown of each candidate's score.
 | **Infrastructure & Hosting** | AWS (Backend Hosting)|
 | **CI/CD** | GitHub Actions |
 | **Testing** | Jest, Supertest, React Testing Library |
+
+
+## Live System
+
+| Environment | URL |
+|---|---|
+| Production (Frontend) | https://consult-iq-red.vercel.app |
+| Production (Backend API) | http://13.247.189.149:3000 |
+| Staging (Backend API) | http://13.247.189.149:3001 |
+
+## Rollback Strategy
+
+ConsultIQ uses image tag pinning for rollback. Every deployment produces two Docker image tags:
+- `latest` / `staging` — the current deployed version
+- `{commit-sha}` — a permanent reference to that exact build
+
+**To roll back a failed production deployment:**
+
+1. Find the last working commit SHA in the [GitHub Actions history](https://github.com/COS301-SE-2026/ConsultIQ/actions)
+2. SSH into EC2:
+```bash
+   ssh -i consultiq-key.pem ubuntu@13.247.189.149
+```
+3. Edit the production compose file to pin to the previous SHA:
+```bash
+   nano /home/ubuntu/ConsultIQ/docker-compose.prod.yml
+```
+   Change:
+```yaml
+   image: ghcr.io/cos301-se-2026/consultiq-backend:latest
+```
+   To:
+```yaml
+   image: ghcr.io/cos301-se-2026/consultiq-backend:{previous-sha}
+```
+4. Redeploy:
+```bash
+   docker-compose -f docker-compose.prod.yml up -d
+```
+
+**To roll back staging**, follow the same steps using `docker-compose.staging.yml`.
+
+## Environment Variables
+
+See `backend/.env.example` and `frontend/.env.example` for required environment variables.
+
+## Local Development with Docker
+
+```bash
+docker-compose up
+```
+
+This starts PostgreSQL, Redis, backend, and frontend together.

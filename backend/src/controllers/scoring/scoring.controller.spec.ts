@@ -45,7 +45,7 @@ describe('ScoringController', () => {
     });
 
     describe('updateScoringConfig', () => {
-        it('should update the scoring config and return the result', async () => {
+        it('should update the project scoring override and return the result', async () => {
             const dto = {
                 weights: { skillMatch: 0.6, availability: 0.2, location: 0.2 },
             };
@@ -76,7 +76,34 @@ describe('ScoringController', () => {
         
             await expect(controller.updateScoringConfig({} as any, req)).rejects.toThrow('Service error');
         });
+    });
 
+    describe('updateProjectScoringOverride', () => {
+        it('should update the project scoring override and return the result', async () => {
+            const projectId = 'project-1';
+            const dto = { weights: { skillMatch: 0.7 } };
+            const req = { user: { userId: 'user-123' } };
         
+            mockScoringService.updateProjectScoringOverride.mockResolvedValue({
+                message: 'Override updated successfully',
+            });
+        
+            const result = await controller.updateProjectScoringOverride(projectId, dto as any, req);
+        
+            expect(result).toEqual({ message: 'Override updated successfully' });
+            expect(mockScoringService.updateProjectScoringOverride).toHaveBeenCalledWith(
+                projectId,
+                dto,
+                'user-123',
+            );
+        });
+
+        it('should propagate errors from the service', async () => {
+            const req = { user: { userId: 'user-123' } };
+            mockScoringService.updateProjectScoringOverride.mockRejectedValue(new Error('Service error'));
+            await expect(
+                controller.updateProjectScoringOverride('project-1', {} as any, req),
+            ).rejects.toThrow('Service error');
+        });
     });
 });

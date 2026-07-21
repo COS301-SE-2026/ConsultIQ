@@ -92,9 +92,7 @@ describe('ScoringController', () => {
         
             expect(result).toEqual({ message: 'Override updated successfully' });
             expect(mockScoringService.updateProjectScoringOverride).toHaveBeenCalledWith(
-                projectId,
-                dto,
-                'user-123',
+                projectId, dto, 'user-123',
             );
         });
 
@@ -103,6 +101,34 @@ describe('ScoringController', () => {
             mockScoringService.updateProjectScoringOverride.mockRejectedValue(new Error('Service error'));
             await expect(
                 controller.updateProjectScoringOverride('project-1', {} as any, req),
+            ).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('deleteProjectScoringOverrider', () =>{
+        it('should delete the project scoring override and return the result', async () => {
+            const projectId = 'projectId';
+            const req = { user : { userId : 'user-123'}};
+            const dto = { reason: 'No longer needed'};
+
+            mockScoringService.deleteProjectScoringOverride.mockResolvedValue({
+                message: 'Override deleted successfully',
+            });
+
+            const result = await controller.deleteProjectScoringOverride(projectId, dto as any, req);
+
+            expect(result).toEqual({ message: 'Override deleted successfully' });
+            expect(mockScoringService.deleteProjectScoringOverride).toHaveBeenCalledWith(
+                projectId, dto, 'user-123',
+            );
+        });
+
+        it('should propagate errors from the service', async () => {
+            const req = { user: { userId: 'user-123' } };
+            mockScoringService.deleteProjectScoringOverride.mockRejectedValue(new Error('Service error'));
+ 
+            await expect(
+                controller.deleteProjectScoringOverride('project-1', {} as any, req),
             ).rejects.toThrow('Service error');
         });
     });

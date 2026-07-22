@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
 import { Button } from "../../../components/ui/button";
-import { useState,useRef, useEffect } from "react";
+import { useState,useRef } from "react";
 import { HelpCircle,X,Menu } from "lucide-react";
 import HeroLandingPage from "../components/hero"
 import PlacementSection from "../components/placement-section";
@@ -149,7 +149,7 @@ function LandingPage(){
             <main >
                
                 {/*Hero*/}
-                <section className="flex items-center flex-col relative overflow-hidden !bg-brand-blue">
+                <section className="flex items-center flex-col relative overflow-hidden bg-brand-blue!">
                     <HeroLandingPage/>
                      
                 </section>

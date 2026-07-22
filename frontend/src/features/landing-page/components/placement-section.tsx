@@ -1,4 +1,4 @@
-import { Target, Sliders,LayoutDashboard, Icon, 
+import { Target, Sliders,LayoutDashboard, 
     BookOpen, TrendingUp,MapPin,DollarSign,Clock } from "lucide-react";
 import ScoringFeatureCard from "./scoring-feature-card";
 

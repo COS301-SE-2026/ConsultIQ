@@ -4,6 +4,7 @@ import { projectManagerSidebarItems } from "../../../components/layout/sidebar/s
 import ProjectBasicInfoCard from "../components/project-basic-info-card";
 import ProjectLocationCard from "../components/project-location-card";
 import ProjectSkillsCard from "../components/project-skills-card";
+import type {ProjectLocation} from "../types/project.types"
 import { useState } from "react";
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
@@ -12,6 +13,7 @@ import axios from 'axios';
 
 
 export interface ProjectSkillData {
+  id?: string;
   name: string;
   competency: string;
   years: number;
@@ -40,7 +42,7 @@ export interface ProjectFormData {
 function ProjectSpecificationPage() {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [editingIndex, setEditingIndex]= useState<number | null>(null);
   const [formData, setFormData] = useState<ProjectFormData>({
     projectName: "",
     clientName: "",
@@ -61,8 +63,20 @@ function ProjectSpecificationPage() {
 
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  };  
+  const handleEditSkill= (_skill: ProjectSkillData, idx: number)=>{setEditingIndex(idx);}
+  
+  const handleCancelEditSkill=() =>{setEditingIndex(null);}
 
+  const handleSaveSkill= (updatedSkill: ProjectSkillData)=> {
+    if(editingIndex ===null) return;
+    const skillUpdated= [...formData.skills];
+    skillUpdated[editingIndex]=updatedSkill;
+    updateForm("skills" , skillUpdated);};
+
+  const updateLocation= <K extends keyof ProjectLocation>(field: K, value: ProjectLocation[K]) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = async () => {
     try {
@@ -138,12 +152,17 @@ function ProjectSpecificationPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-              <ProjectLocationCard data={formData} onChange={updateForm} />
-
+              <ProjectLocationCard data={formData} onChange={updateLocation} />
 
               <ProjectSkillsCard
+                key={editingIndex ?? "new-skill"}
                 skills={formData.skills}
                 onSkillsChange={(newSkills) => updateForm("skills", newSkills)}
+                editingSkill= {editingIndex !== null ? formData.skills[editingIndex] :null}
+                onCancelEdit= {handleCancelEditSkill}
+                editingIndex = {editingIndex}
+                onSkillSave ={handleSaveSkill}
+                onEditSkill= { handleEditSkill}
               />
             </div>
           </div>

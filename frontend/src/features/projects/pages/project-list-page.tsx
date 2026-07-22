@@ -43,7 +43,7 @@ export default function ProjectListPage() {
         setIsLoading(true);
         const token = sessionStorage.getItem("ciq_access_token");
 
-        const response = await fetch("http://localhost:3000/projects?page=1&limit=50", {
+        const response = await fetch("import.meta.env.VITE_API_URL/projects?page=1&limit=50", {
           headers: {
             "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -119,6 +119,10 @@ export default function ProjectListPage() {
     });
   }, [search, budgetFilter, teamSizeFilter, locationFilter, projects]);
 
+  const handleConfigureScore= (project: Project)=>{
+    navigate(`/project-scoring-config/${project.id}`);
+  };
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems} />
@@ -153,6 +157,7 @@ export default function ProjectListPage() {
                 onFilterClick={() => setShowFilters((prev) => !prev)}
               />
             </div>
+            <div className="h-6"/>
 
             {showFilters && (
               <div className="mt-6">
@@ -168,6 +173,7 @@ export default function ProjectListPage() {
             )}
 
             <div className="mt-10">
+            <div className="h-6" />
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -177,7 +183,7 @@ export default function ProjectListPage() {
                   {error}
                 </div>
               ) : filteredProjects.length > 0 ? (
-                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} />
+                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} onConfigureScore={handleConfigureScore}/>
               ) : (
                 <EmptyProjectState />
               )}

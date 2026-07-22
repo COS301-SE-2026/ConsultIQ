@@ -96,7 +96,25 @@ export class CreateConsultantDto {
   nationality!: string;
 
   @IsString()
-  location!: string;
+  addressLine1!: string;
+
+  @IsString()
+  @IsOptional()
+  addressLine2?: string;
+
+  @IsString()
+  @IsOptional()
+  suburb?: string;
+
+  @IsString()
+  city!: string;
+
+  @IsString()
+  province!: string;
+
+  @IsString()
+  @IsOptional()
+  postalCode?: string;
 
   @IsNumber()
   @Min(0)
@@ -128,7 +146,12 @@ export class ConsultantListItemDto {
   id!: string;
   fullName!: string;
   email!: string;
-  location!: string;
+  addressLine1!: string;
+  addressLine2?: string | null;
+  suburb?: string | null;
+  city!: string;
+  province!: string;
+  postalCode?: string | null;
   availabilityStatus!: string;
   primarySkills!: string[];
   costToCompanyRate?: number;

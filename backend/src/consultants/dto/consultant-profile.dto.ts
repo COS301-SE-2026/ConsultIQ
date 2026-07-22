@@ -1,17 +1,17 @@
 export class ConsultantSkillsDto {
-    id!: string;
-    skillName!: string;
-    competencyLevel!: string;
-    yearsExperience!: number;
-    confidenceLevel!: number;
+  id!: string;
+  skillName!: string;
+  competencyLevel!: string;
+  yearsExperience!: number;
+  confidenceLevel!: number;
 }
 
 export class ConsultantCertificationsDto {
   id!: string;
-  title!: string; 
-  issuingBody!: string; 
+  title!: string;
+  issuingBody!: string;
   startDate!: Date;
-    endDate!: Date;
+  endDate!: Date;
   uploadedAt!: Date;
 }
 
@@ -33,7 +33,12 @@ export class ConsultantProfileDto {
   phoneNumber!: string;
   idNumber!: string;
   nationality!: string;
-  location!: string;
+  addressLine1!: string;
+  addressLine2?: string | null;
+  suburb?: string | null;
+  city!: string;
+  province!: string;
+  postalCode?: string | null;
   costToCompany!: number;
   availability!: string;
   skills!: ConsultantSkillsDto[];

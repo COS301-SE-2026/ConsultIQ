@@ -3,9 +3,7 @@ import { useEffect, useState } from "react";
 import type { Project } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
-import ProjectSkillsTable from "./project-skills-table";
-import { Card } from "../../../components/ui/card";
-
+import ProjectSkillsSection from "./project-skills-section";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
@@ -14,7 +12,8 @@ interface ProjectDetailsModalProps {
 
 
 interface ApiProjectSkill {
-  skillId: string | number;
+  id: string;
+  skillId?: string | number;
   skill: {
     name: string;
   };
@@ -31,6 +30,97 @@ export default function ProjectDetailsModal({
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
+  
+  const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
+      "project-overview": (fields) =>({
+      ...(fields.projectName !==undefined && {projectName: fields.projectName}),
+      ...(fields.clientName !==undefined && {clientName: fields.clientName}),
+      ...(fields.description !==undefined && {description: fields.description}),
+      ...(fields.teamSize !==undefined && {teamSize: fields.teamSize}),
+      ...(fields.budget !==undefined && {budget: fields.budget}),
+      ...(fields.startDate !==undefined && {startDate: fields.startDate}),
+      ...(fields.endDate !==undefined && {endDate: fields.endDate}),
+      ...(fields.status !==undefined && {status: fields.status}),
+  }),
+  "project-location": (fields) => ({
+      ...(fields.location?.addressLine1 !==undefined && {addressLine1: fields.location.addressLine1}),
+      ...(fields.location?.addressLine2 !==undefined && {addressLine2: fields.location.addressLine2}),
+      ...(fields.location?.suburb !==undefined && {suburb: fields.location.suburb}),
+      ...(fields.location?.city !==undefined && {city: fields.location.city}),
+      ...(fields.location?.province !==undefined && {province: fields.location.province}),
+      ...(fields.location?.postalCode !==undefined && {postalCode: fields.location.postalCode}),
+    }),
+  "project-skills": (fields) =>({
+      skills: (fields.skills ?? []).map((skill)=> ({
+        id: skill.id,
+        name: skill.name,
+        competency: skill.competency, 
+        years: skill.years, 
+        mandatory: skill.mandatory,})),
+      }),
+    };  
+  const mapStates: Record<string, (currProject :Project ,fields: Partial<Project>)=> Project> ={
+      "project-overview": (currProject, fields) =>({...currProject,
+      name: fields.name ?? currProject.name,
+      projectName: fields.projectName ?? currProject.projectName,     
+      clientName: fields.clientName ?? currProject.clientName,
+      description: fields.description ?? currProject.description,
+      teamSize: fields.teamSize ?? currProject.teamSize,
+      budget: fields.budget ?? currProject.budget,
+      startDate: fields.startDate ?? currProject.startDate,
+      endDate: fields.endDate ??  currProject.endDate,
+      status : fields.status ?? currProject.status,
+  }),
+  "project-location": (currProject,fields) => ({...currProject,
+      addressLine1: fields.location?.addressLine1 ?? currProject.addressLine1,
+      addressLine2 : fields.location?.addressLine2 ?? currProject.addressLine2,
+      suburb: fields.location?.suburb?? currProject.suburb,
+      city: fields.location?.city ?? currProject.city,
+      province: fields.location?.province ?? currProject.province,
+      postalCode: fields.location?.postalCode ?? currProject.postalCode,
+      location: {...currProject.location, ...fields.location},
+    }),
+  "project-skills": (currProject, fields) =>({...currProject,
+      skills: fields.skills ?? currProject.skills,
+      }),
+    }; 
+
+  const handleSaveSection = async (section: string, updatedFields:Partial<Project>) =>{
+  if (!fullProject) return;
+
+  const pMapper= mapPayload[section];
+  const payload= pMapper ? pMapper(updatedFields) : {};
+
+  
+  if(Object.keys(payload).length===0){ 
+    setActiveEditSection(null);
+    return;}
+    const formatState= mapStates[section];
+    const updatedProject= formatState ? formatState(fullProject, updatedFields) : fullProject;
+
+  try {
+    const token = sessionStorage.getItem("ciq_access_token");
+    
+    const resp = await fetch(`import.meta.env.VITE_API_URL/projects/${fullProject.id}`,
+      {
+        method: "PATCH", 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",},
+          body: JSON.stringify(payload),
+        });
+        if(!resp.ok){
+          throw new Error ("Failed to update project");
+        }
+          setFullProject(updatedProject);
+
+        }catch (error){
+          console.error("Failed to update project section: " + error);
+          setFullProject((currentProject) => currentProject);
+        }
+        setActiveEditSection(null);
+      };
 
   useEffect(() => {
     if (!open || !project?.id) return;
@@ -39,7 +129,7 @@ export default function ProjectDetailsModal({
       setIsLoading(true);
       try {
         const token = sessionStorage.getItem("ciq_access_token");
-        const response = await fetch(`http://localhost:3000/projects/${project.id}`, {
+        const response = await fetch(`import.meta.env.VITE_API_URL/projects/${project.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -61,6 +151,7 @@ export default function ProjectDetailsModal({
             budget: data.budget,
             startDate: data.startDate,
             endDate: data.endDate,
+            status: data.status,
 
             // Add these missing root-level fields to satisfy TypeScript
             addressLine1: data.addressLine1,
@@ -82,7 +173,7 @@ export default function ProjectDetailsModal({
 
 
             skills: data.skills.map((ps: ApiProjectSkill) => ({
-              id: String(ps.skillId),
+              id: ps.id,
               name: ps.skill.name,
               competency: ps.competency,
               years: ps.years,
@@ -128,30 +219,32 @@ export default function ProjectDetailsModal({
         <div className="h-4" />
 
         <div className="flex flex-col gap-8">
-          <ProjectOverviewSection project={displayData} />
+          <ProjectOverviewSection project={displayData} 
+          isEditing = {activeEditSection === "project-overview"}
+          isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
+          onEdit = {() => setActiveEditSection("project-overview") }
+          onCancel = { () => setActiveEditSection(null) }
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-overview", fields)}
+          />
 
-          <ProjectLocationSection project={displayData} />
+          <ProjectLocationSection project={displayData} 
+          isEditing = {activeEditSection === "project-location"}
+          isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
+          onEdit = {() => setActiveEditSection("project-location") }
+          onCancel = { () => setActiveEditSection(null) }
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
+          />
 
-          <Card style={{ padding: "20px", border: "none" }}>
-            <h3
-              className="text-3xl font-bold mb-8"
-              style={{ color: "var(--color-primary)" }}
-            >
-              Skills
-            </h3>
-            <div className="h-4" />
-
-            <ProjectSkillsTable
-              skills={displayData.skills.map((skill) => ({
-                id: String(skill.id),
-                name: skill.name,
-                competency: skill.competency,
-                years: skill.years,
-                mandatory: skill.mandatory,
-              }))}
+            <ProjectSkillsSection skills={[...(displayData.skills ?? [])]}
+              isEditing = {activeEditSection === "project-skills"}
+              isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
+              onEdit = {() => setActiveEditSection("project-skills") }
+              onCancel = { () => setActiveEditSection(null) }
+              onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
             />
-          </Card>
         </div>
+        <div className="h-6" />
+        <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
       </div>
     </div>
   );

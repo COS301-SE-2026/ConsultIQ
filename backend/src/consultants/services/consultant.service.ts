@@ -19,10 +19,13 @@ import {
   JobType,
   WorkModel,
 } from '@prisma/client';
-
+import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class ConsultantService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) { }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -64,7 +67,12 @@ export class ConsultantService {
         const consultant = await tx.consultant.create({
           data: {
             userId: dto.consultantUserId,
-            location: dto.location,
+            addressLine1: dto.addressLine1,
+            addressLine2: dto.addressLine2,
+            suburb: dto.suburb,
+            city: dto.province,
+            province: dto.province,
+            postalCode: dto.postalCode,
             phone: dto.phone,
             idNumber: dto.idNumber,
             nationality: dto.nationality,
@@ -133,10 +141,20 @@ export class ConsultantService {
 
         return { consultantId: consultant.id };
       })
-      .then((result) => ({
-        message: 'Consultant profile created successfully.',
-        consultantId: result.consultantId,
-      }));
+      .then(async (result) => {
+        //send notification to consultant
+        await this.notificationService.createAndSendNotification(
+          dto.consultantUserId,
+          'Profile creation! 🎉',
+          'Your consultant profile has been completed.',
+        );
+
+        // Return the final response to the controller
+        return {
+          message: 'Consultant profile created successfully.',
+          consultantId: result.consultantId,
+        };
+      });
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -174,6 +192,12 @@ export class ConsultantService {
       this.prisma.consultant.findMany({
         skip,
         take: limit,
+        where: {
+          user: {
+            deletedAt: null,
+            status: { not: 'ARCHIVED' },
+          },
+        },
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },
@@ -198,7 +222,12 @@ export class ConsultantService {
         id: c.id,
         fullName: c.user.fullName,
         email: c.user.email,
-        location: c.location,
+        addressLine1: c.addressLine1,
+        addressLine2: c.addressLine2,
+        suburb: c.suburb,
+        city: c.province,
+        province: c.province,
+        postalCode: c.postalCode,
         availabilityStatus: c.availability,
         primarySkills: c.skills.map((cs) => cs.skill.name),
         phone: c.phone,
@@ -237,7 +266,9 @@ export class ConsultantService {
     });
 
     if (!consultant) {
-      throw new NotFoundException(`Consultant with userId ${userId} not found.`);
+      throw new NotFoundException(
+        `Consultant with userId ${userId} not found.`,
+      );
     }
 
     return this.mapToProfileDto(consultant);
@@ -258,10 +289,26 @@ export class ConsultantService {
         },
       },
       certificates: {
-        select: { id: true, title: true, issuingBody: true, startDate: true, endDate: true, uploadedAt: true }
+        select: {
+          id: true,
+          title: true,
+          issuingBody: true,
+          startDate: true,
+          endDate: true,
+          uploadedAt: true,
+        },
       },
       consultantExperiences: {
-        select: { id: true, companyName: true, jobTitle: true, jobType: true, startDate: true, endDate: true, description: true, workModel: true }
+        select: {
+          id: true,
+          companyName: true,
+          jobTitle: true,
+          jobType: true,
+          startDate: true,
+          endDate: true,
+          description: true,
+          workModel: true,
+        },
       },
     };
   }
@@ -274,7 +321,12 @@ export class ConsultantService {
       phoneNumber: consultant.phone ?? '',
       idNumber: consultant.idNumber ?? '',
       nationality: consultant.nationality ?? '',
-      location: consultant.location,
+      addressLine1: consultant.addressLine1,
+      addressLine2: consultant.addressLine2,
+      suburb: consultant.suburb,
+      city: consultant.city,
+      province: consultant.province,
+      postalCode: consultant.postalCode,
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
       skills: consultant.skills.map((cs: any) => ({
@@ -302,6 +354,130 @@ export class ConsultantService {
         endDate: cert.endDate,
         uploadedAt: cert.uploadedAt,
       })),
+    };
+  }
+
+  //-----------------Consultant get assigned projects-------------------
+  async getAssignedProjects(userId: string) {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`No consultant profile for this user.`);
+    }
+
+    const placement = await this.prisma.projectPlacement.findMany({
+      where: { consultantId: consultant.id },
+      include: {
+        project: {
+          select: {
+            id: true,
+            projectName: true,
+            clientName: true,
+            description: true,
+            suburb: true,
+            city: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            allocation: true,
+          },
+        },
+      },
+    });
+
+    return placement.map((p) => ({
+      placementId: p.id,
+      placementStatus: p.status,
+      placementAllocation: p.allocation,
+      startDate: p.startDate,
+      endDate: p.endDate,
+      project: p.project,
+    }));
+  }
+
+  //-----------------Consultant get assigned projects DETAIL-------------------
+  async getAssignedProjectDetails(userId: string, projectId: string) {
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { userId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(`No consultant profile for this user`);
+    }
+
+    const placement = await this.prisma.projectPlacement.findFirst({
+      where: { consultantId: consultant.id, projectId },
+      include: {
+        project: {
+          include: {
+            skills: {
+              include: {
+                skill: true,
+              },
+            },
+            placements: {
+              include: {
+                consultant: {
+                  include: {
+                    user: {
+                      select: {
+                        fullName: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!placement) {
+      throw new NotFoundException(
+        `You are not assigned to project with ID ${projectId}.`,
+      );
+    }
+
+    return {
+      placementId: placement.id,
+      placementStatus: placement.status,
+      placementAllocation: placement.allocation,
+      startDate: placement.startDate,
+      endDate: placement.endDate,
+      project: {
+        id: placement.project.id,
+        projectName: placement.project.projectName,
+        clientName: placement.project.clientName,
+        description: placement.project.description,
+        addressLine1: placement.project.addressLine1,
+        addressLine2: placement.project.addressLine2,
+        suburb: placement.project.suburb,
+        city: placement.project.city,
+        province: placement.project.province,
+        postalCode: placement.project.postalCode,
+        status: placement.project.status,
+        startDate: placement.project.startDate,
+        endDate: placement.project.endDate,
+        teamSize: placement.project.teamSize,
+        allocation: placement.project.allocation,
+        budget: placement.project.budget,
+        skills: placement.project.skills.map((ps) => ({
+          skillName: ps.skill.name,
+          competency: ps.competency,
+          years: ps.years,
+          mandatory: ps.mandatory,
+        })),
+        teamMembers: placement.project.placements
+          .filter((pl) => pl.consultantId !== consultant.id)
+          .map((pl) => ({
+            fullName: pl.consultant.user.fullName,
+            email: pl.consultant.user.email,
+          })),
+      },
     };
   }
 }

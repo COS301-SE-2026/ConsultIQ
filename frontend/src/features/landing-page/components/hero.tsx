@@ -1,10 +1,14 @@
 import { Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { BlueOutlineButton } from "../pages/landing-page";
+
 
 
 export default function HeroLandingPage(){
+    const navigate= useNavigate();
     return(
-        <div className="relative min-h-175 flex items-center">
-            <div className="absolute inset-0 opacity-10 overflow-hidden">
+        <div className="relative min-h-175 w-full flex items-center">
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 overflow-hidden pointer-events-none">
                 <div 
                     className="absolute -inset-[50%] animate-[spin_20s_linear_infinite]" 
                     style={{
@@ -35,6 +39,7 @@ export default function HeroLandingPage(){
                     consultant against a project, resulting in a ranked list, with explainable recommondations
                     - so managers place faster and clients get better outcomes. 
                 </p>
+                <BlueOutlineButton title={"Log in"} onClick={()=> navigate("/login")}/>
 
 
             </div>  

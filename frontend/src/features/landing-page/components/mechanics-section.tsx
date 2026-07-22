@@ -39,11 +39,12 @@ export default function MechanicsSection(){
             </div> 
 
     
-             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-start gap-8 w-full max-w-6xl mx-auto relative">
+                
                     {STEPS.map(({number,title,description}) => (
                         <div
                             key={number}
-                            className="flex flex-col items-start"
+                            className="flex flex-col items-start relative z-10"
                         >
                             <div className="w-16 h-16 rounded-full bg-brand-gold text-white text-xl font-bold flex  items-center justify-center mb-5">
                                {number}

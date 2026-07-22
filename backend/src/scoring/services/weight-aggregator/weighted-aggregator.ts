@@ -7,6 +7,8 @@ import {
 
 export interface ScoredConsultant {
   consultantId: string;
+  consultantName: string;
+  consultantEmail: string;
   factorScores: Partial<Record<ScoringFactor, number>>;
   weights: Partial<Record<ScoringFactor, number>>;
 }
@@ -73,6 +75,8 @@ export class WeightedAggregator {
 
     return {
       consultantId: consultant.consultantId,
+      consultantName: consultant.consultantName,
+      consultantEmail: consultant.consultantEmail,
       finalScore: round(sum * 100, FINAL_SCORE_DECIMAL_PLACES),
       factorBreakdown,
     };

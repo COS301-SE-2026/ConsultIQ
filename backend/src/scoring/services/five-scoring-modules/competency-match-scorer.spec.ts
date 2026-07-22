@@ -35,6 +35,7 @@ describe('CompetencyMatchScorer', () => {
 
 
     let scorer: CompetencyMatchScorer;
+    const OVER_QUALIFIED_PENALTY = 0.15;
 
     beforeEach(() => {
         scorer = new CompetencyMatchScorer();
@@ -67,7 +68,7 @@ describe('CompetencyMatchScorer', () => {
             }]
         })
     })
-    it('scores are averaged across the required skills', async () => {
+    it('scores are averaged across the required skills appying over qualification penalties', async () => {
         const result = scorer.score(
             consultant([
                 { skillName: 'A', competencyLevel: CompetencyLevel.EXPERT },
@@ -79,9 +80,14 @@ describe('CompetencyMatchScorer', () => {
             ]),
         );
 
-        const markA = 1.0;
+        const reqquiredRankA = COMPETENCY_RANK[CompetencyLevel.INTERMEDIATE];
+        const consultantRankA = COMPETENCY_RANK[CompetencyLevel.EXPERT];
+        const rankDiff = consultantRankA - reqquiredRankA;
+
+        const markA = Math.max(0.7, 1.0 - (rankDiff * OVER_QUALIFIED_PENALTY))
         const markB = COMPETENCY_RANK[CompetencyLevel.BEGINNER] / COMPETENCY_RANK[CompetencyLevel.EXPERT];
         const markAverage = (markA + markB) / 2;
+
         expect(result.score).toBeCloseTo(markAverage, 5)
 
         expect(result.detail).toEqual({
@@ -124,6 +130,24 @@ describe('CompetencyMatchScorer', () => {
         expect(result.score).toBeCloseTo(mark, 5)
     })
 
+
+    it('applies a penalty for overqualified consultants exceeding the required skill level', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'A', competencyLevel: CompetencyLevel.EXPERT },
+            ]),
+            project([
+                { skillName: 'A', minimumCompetencyLevel: CompetencyLevel.BEGINNER, isMandatory: false },
+            ]),
+        );
+
+        const requiredRank = COMPETENCY_RANK[CompetencyLevel.BEGINNER];
+        const consultantsRank = COMPETENCY_RANK[CompetencyLevel.EXPERT];
+        const rankDiff = consultantsRank - requiredRank;
+        const expectedScore = Math.max(0.7, 1.0 - (rankDiff) * OVER_QUALIFIED_PENALTY);
+
+        expect(result.score).toBeCloseTo(expectedScore, 5)
+    })
 
     it('scores 0.02 when a consultant doesnt have the required skill but they still have a skill', async () => {
         const result = scorer.score(
@@ -196,4 +220,7 @@ describe('CompetencyMatchScorer', () => {
 
 
     })
+
+
+
 })

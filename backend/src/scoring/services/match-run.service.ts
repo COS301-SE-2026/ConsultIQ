@@ -27,7 +27,7 @@ export class MatchRunService {
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-  ) {}
+  ) { }
 
   async executeMatchRun(
     projectId: string,
@@ -51,7 +51,7 @@ export class MatchRunService {
         where: { user: { status: 'ACTIVE' } },
         include: {
           skills: { include: { skill: true } },
-          user: { select: { fullName: true } },
+          user: { select: { fullName: true, email: true } },
         },
       });
 
@@ -79,6 +79,8 @@ export class MatchRunService {
         });
         return {
           consultantId: consultant.id,
+          consultantName: consultant.user?.fullName || 'Unknown consultant name',
+          consultantEmail: consultant.user?.email || 'Unknown consultant email',
           outcome,
         };
       });
@@ -181,7 +183,22 @@ export class MatchRunService {
   ): Promise<ConsultantMatchResult[]> {
     const matchRun = await this.prisma.matchRun.findFirst({
       where: { id: runId, projectId },
-      include: { results: true },
+      include: {
+        results: {
+          include: {
+            consultant: {
+              include: {
+                user: {
+                  select: {
+                    fullName: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
     });
 
     if (!matchRun) {
@@ -192,6 +209,8 @@ export class MatchRunService {
 
     return matchRun.results.map((r) => ({
       consultantId: r.consultantId,
+      consultantName: r.consultant?.user?.fullName || 'Unknown',
+      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com..',
       finalScore: r.totalScore,
       rank: r.rank,
       factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],

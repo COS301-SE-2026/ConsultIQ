@@ -144,48 +144,66 @@ describe('ScoringService - Two Teir Config Integration Test', () => {
     });
 
     it('should ignore inactive project overrides and fall back to firm-wide config', async () => {
-        const project = await prisma.project.create({
-            data: {
-            projectName: 'Inactive Override Project',
-            clientName: 'BBD',
-            addressLine1: '123 Good St',
-            city: 'Pretoria',
-            province: 'Gauteng',
-            postalCode: '0001',
-            startDate: new Date(),
-            teamSize: 3,
-            budget: 500000,
-            allocation: 100,
-            status: 'OPEN',
-            },
-        });
+      const project = await prisma.project.create({
+        data: {
+          projectName: 'Inactive Override Project',
+          clientName: 'BBD',
+          addressLine1: '123 Good St',
+          city: 'Pretoria',
+          province: 'Gauteng',
+          postalCode: '0001',
+          startDate: new Date(),
+          teamSize: 3,
+          budget: 500000,
+          allocation: 100,
+          status: 'OPEN',
+        },
+      });
 
-        await prisma.consultancyScoringConfig.createMany({
-            data: [
-                { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true },
-                { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true },
-                { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true },
-                { factorName: ScoringFactorName.LOCATION, weight: 10, active: true },
-                { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true },
-            ],
-        });
+      await prisma.consultancyScoringConfig.createMany({
+        data: [
+          {
+            factorName: ScoringFactorName.SKILL_ALIGNMENT,
+            weight: 35,
+            active: true,
+          },
+          {
+            factorName: ScoringFactorName.COMPETENCY_LEVEL,
+            weight: 30,
+            active: true,
+          },
+          {
+            factorName: ScoringFactorName.AVAILABILITY,
+            weight: 15,
+            active: true,
+          },
+          { factorName: ScoringFactorName.LOCATION, weight: 11, active: true },
+          {
+            factorName: ScoringFactorName.COST_TO_COMPANY,
+            weight: 8,
+            active: true,
+          },
+        ],
+      });
 
-        await prisma.projectScoringOverride.createMany({
-            data: [
-                {
-                    projectId: project.id,
-                    factorName: ScoringFactorName.SKILL_ALIGNMENT,
-                    overrideWeight: 60,
-                    active: false,
-                },
-            ],
-        });
+      await prisma.projectScoringOverride.createMany({
+        data: [
+          {
+            projectId: project.id,
+            factorName: ScoringFactorName.SKILL_ALIGNMENT,
+            overrideWeight: 60,
+            active: false,
+          },
+        ],
+      });
 
-        const result = await scoringService.resolveProjectWeights(project.id);
+      const result = await scoringService.resolveProjectWeights(project.id);
 
-        expect(result).toHaveLength(5);
-        expect(result.every((r: any) => 'weight' in r)).toBe(true);
-        expect(result.every((r: any) => !('projectId' in r) || r.projectId === null),).toBe(true);
+      expect(result).toHaveLength(5);
+      expect(result.every((r: any) => 'weight' in r)).toBe(true);
+      expect(
+        result.every((r: any) => !('projectId' in r) || r.projectId === null),
+      ).toBe(true);
     });
 
     it('should return firm-wide config when no overrides and no firm config seeded returns empty', async () => {

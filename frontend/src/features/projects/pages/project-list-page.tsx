@@ -81,9 +81,19 @@ export default function ProjectListPage() {
 
       // Budget Filter
       let matchesBudget = true;
-      if (budgetFilter === "small") matchesBudget = project.budget < 50000;
-      else if (budgetFilter === "medium") matchesBudget = project.budget >= 50000 && project.budget <= 200000;
-      else if (budgetFilter === "large") matchesBudget = project.budget > 200000;
+      if(budgetFilter){
+        const budget = project.budget;
+        if(budget === undefined){
+          matchesBudget=false;
+        }else if (budgetFilter === "small") {
+          matchesBudget = budget < 50000;
+        } else if(budgetFilter === "medium"){
+          matchesBudget = budget >= 50000 && budget <= 200000;
+        }else if(budgetFilter === "large"){
+          matchesBudget = budget > 200000;
+        }
+      }
+      
 
       // Team Size Filter
       let matchesTeamSize = true;

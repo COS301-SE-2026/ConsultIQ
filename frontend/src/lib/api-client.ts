@@ -1,5 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+export class ApiError extends Error{
+    status: number;
+    constructor(message:string, status: number){
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 
     const headers = new Headers(options.headers);
@@ -24,20 +33,29 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         // If parsing fails
     }
 
+
     if (!response.ok) {
         if (response.status === 401 && !endpoint.includes('/auth/me')) {
-            window.location.href = '/login';
+            
+           const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
+
+            if (!isAlreadyOnLoginPage) {
+                window.location.href = '/login';
+            }
         }
 
         let errorMessage = `Request failed (${response.status})`;
+
 
         if (responseData && responseData.message) {
             const msg = responseData.message;
             errorMessage = Array.isArray(msg) ? msg.join(', ') : String(msg);
         }
 
-        throw new Error(errorMessage);
+
+        throw new ApiError(errorMessage,response.status);
     }
+
 
     return responseData as T;
 }

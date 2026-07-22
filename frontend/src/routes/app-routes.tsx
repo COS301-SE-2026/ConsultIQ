@@ -15,6 +15,7 @@ import ConsultantsPage from "../features/consultants/pages/consultant-list-page"
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
+import ConsultantProjects from "../features/consultants/pages/consultant-projects";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
@@ -55,6 +56,7 @@ function AnimatedRoutes() {
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
+                    <Route path="/consultant-projects" element={<PageTransition><ConsultantProjects/></PageTransition>}></Route> 
                     <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    

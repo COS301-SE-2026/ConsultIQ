@@ -24,6 +24,8 @@ services:
         condition: service_healthy
     env_file:
       - /home/ubuntu/.env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   redis_data:

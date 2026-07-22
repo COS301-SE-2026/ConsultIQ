@@ -155,30 +155,27 @@ model RolePermission {
 // ---------------------------------------- Models -----------------------------
 
 model User {
-  id              String          @id @default(uuid())
-  fullName        String
-  email           String          @unique
-  passwordHash    String?
-  role            Role
-  roleId          String?         @map("role_id")
-  roleDefinition  RoleDefinition? @relation(fields: [roleId], references: [id])
-  status          UserStatus      @default(PENDING)
-  failedAttempts  Int             @default(0)
-  lockedUntil     DateTime?
-  isLocked        Boolean         @default(false)
-  termsAcceptedAt DateTime?
-  tenantId        String?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  deletedAt       DateTime?        @map("delete_at")
-  tokens             Token[]
-  auditLogs          authAuditLog[]
-  consultant         Consultant?
-  managedProjects    ProjectManager[]
-  managedConsultants ConsultantManager[]
-
-  adminActionsPerformed AdminAuditLog[] @relation("AdminActions")
-  adminActionsReceived  AdminAuditLog[] @relation("AdminTargets")
+  id                  String               @id @default(uuid())
+  fullName            String
+  email               String               @unique
+  passwordHash        String?
+  role                Role
+  roleId              String?              @map("role_id")
+  roleDefinition      RoleDefinition?      @relation(fields: [roleId], references: [id])
+  status              UserStatus           @default(PENDING)
+  failedAttempts      Int                  @default(0)
+  lockedUntil         DateTime?
+  isLocked            Boolean              @default(false)
+  termsAcceptedAt     DateTime?
+  tenantId            String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?            @map("delete_at")
+  tokens              Token[]
+  auditLogs           authAuditLog[]
+  consultant          Consultant?
+  managedProjects     ProjectManager[]
+  managedConsultants  ConsultantManager[]
   scoringConfigAudits ScoringConfigAudit[]
   notifications       Notification[]
   matchRuns           MatchRun[]

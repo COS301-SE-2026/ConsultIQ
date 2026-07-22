@@ -8,7 +8,7 @@ import {useState } from "react";
 import ProjectDetailsModal from "../../projects/components/project-details-modal";
 import {consultantSidebarItems,} from "../../../components/layout/sidebar/sidebar.config";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-import { mockProjects } from "./mock-projects";
+
 
 
 
@@ -18,8 +18,9 @@ function ConsultantProjects(){
       const { user } = useAuth();
 
       
-      const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
+    const [projects] = useState<Project[] >([]);
 
     const { profile, error } = useFetchConsultantProfile(
     targetConsultantId,
@@ -72,10 +73,10 @@ function ConsultantProjects(){
               
                 <div className="flex items-center gap-3 p-2 justify-start ">
                     <h2>Assigned Projects</h2>
-                    <span className="bg-brand-blue text-white font-bold rounded-full flex items-center justify-center w-6 h-6">{mockProjects.length}</span>
+                    <span className="bg-brand-blue text-white font-bold rounded-full flex items-center justify-center w-6 h-6">{projects.length}</span>
                 </div> 
-                {mockProjects.length > 0 ? (
-                    <ProjectGrid projects={mockProjects} onViewDetails={setSelectedProject} />
+                {projects.length >0 ? (
+                    <ProjectGrid projects={projects} onViewDetails={setSelectedProject} />
                     ) : (
                     <div>
                         No projects assigned

@@ -2,10 +2,10 @@ import CountCard from "../../admin/components/count-card";
 import {Settings2, Users, UserCheck, UserX} from "lucide-react";
 
 interface MatchStatsGridProps{
-    scoringBasis: 'Override' | 'Default';
-    totalEvaluated: number;
-    matched: number;
-    excluded: number;
+   readonly scoringBasis: 'Override' | 'Default';
+   readonly totalEvaluated: number;
+   readonly matched: number;
+   readonly excluded: number;
 }
 
 export function MatchStatsGrid({scoringBasis, totalEvaluated, matched, excluded}: MatchStatsGridProps){

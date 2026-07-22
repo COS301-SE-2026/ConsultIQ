@@ -5,8 +5,8 @@ import {ChevronDown, ChevronUp } from "lucide-react"
 
 
 interface RecommendationRowProps{
-    recommendation: Recommendation;
-    onSelectConsultant: (id:string) => void;
+    readonly recommendation: Recommendation;
+    readonly onSelectConsultant: (id:string) => void;
 }
 
 export function RecommendationRow({recommendation, onSelectConsultant }: RecommendationRowProps){
@@ -23,7 +23,7 @@ export function RecommendationRow({recommendation, onSelectConsultant }: Recomme
         </td>
 
         <td>
-            <button onClick={() =>onSelectConsultant(recommendation.consultantId)}
+            <button  type="button" onClick={() =>onSelectConsultant(recommendation.consultantId)}
                 className="font-bold text-primary text-base cursor-pointer block">
                 {recommendation.consultantName}
             </button>
@@ -44,14 +44,12 @@ export function RecommendationRow({recommendation, onSelectConsultant }: Recomme
         </td>
 
         <td>
-            <button onClick={() => setIsExpanded(!isExpanded)}
+            <button type="button" onClick={() => setIsExpanded(!isExpanded)}
                 className="inline-flex items-center gap 2 px-4 py-2 border-slate-700 rounded-md text-sm font-bold text-slate-800 cursor-pointer">
                 Score Breakdown
                 {isExpanded? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
-            <button>
-                
-            </button>
+
         </td>
     </tr>
     {isExpanded &&(

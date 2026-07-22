@@ -1,9 +1,8 @@
 import { RecommendationRow } from "./recommendation-row";
-import type{ Recommendation, ScoringConfigSummary } from "../types/placements.types";
+import type{ Recommendation } from "../types/placements.types";
 
 interface RecommendationTableProps{
     readonly recommendations: Recommendation[];
-    readonly scoringConfig?: ScoringConfigSummary;
     readonly onSelectConsultant: (id: string)=> void;
     readonly onViewAll?: ()=> void;
 }
@@ -35,7 +34,7 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onVie
                 </table>
             </div>
             <div className="mt-6 pt-4 text-center">
-                <button onClick={onViewAll}
+                <button type="button" onClick={onViewAll}
                 className="text-sm font-semibold text-slate-600 inline-flex items-center gap-1 cursor-pointer">
                     View all Consultants
                 </button>

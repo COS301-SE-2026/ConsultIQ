@@ -21,11 +21,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Generate Prisma client
         working-directory: backend
-        run: npx prisma generate
+        run: npx --no-install prisma generate
 
 
       - name: Run tests with coverage
@@ -51,11 +51,56 @@ jobs:
 
       - name: Run type check
         working-directory: backend
-        run: npx tsc --noEmit
+        run: ./node_modules/.bin/tsc --noEmit
 
       - name: Build
         working-directory: backend
         run: npm run build
+
+  verify-backend-integration:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    services: #Spin up testing DB
+      postgres:
+        image: postgres:15
+        env: 
+          POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+ 
+    steps: 
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
+
+      - name: Integration Test Environment Setup
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+       
+        run: echo "DATABASE_URL=$DATABASE_URL" > .env
+
+      - name: Initialize Test Database
+        working-directory: backend
+        run: npx --no-install prisma db push
+
+      - name: Run Integration Tests
+        working-directory: backend
+        run: npm run test:int
 
   verify-frontend:
     name: Frontend checks
@@ -73,7 +118,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run linter
         working-directory: frontend

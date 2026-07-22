@@ -44,6 +44,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         icon:Cog
     },
     {
+        label: "Placements",
+        path:"/placement-dashboard",
+        icon:Users
+    },
+    {
         label: "Notifications",
         path:"/notifications",
         icon:Bell

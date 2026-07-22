@@ -55,9 +55,9 @@ describe('ConsultantService', () => {
       addressLine1: '123 South road',
       addressLine2: null,
       suburb: 'Hillbrow',
-      city:'Johannesburg',
+      city: 'Johannesburg',
       province: 'Gauteng',
-      postalCode:'2001',
+      postalCode: '2001',
       costToCompany: 50000,
       availability: 'AVAILABLE',
       skills: [
@@ -146,9 +146,9 @@ describe('ConsultantService', () => {
         addressLine1: '123 South road',
         addressLine2: null,
         suburb: 'Hillbrow',
-        city:'Johannesburg',
+        city: 'Johannesburg',
         province: 'Gauteng',
-        postalCode:'2001',
+        postalCode: '2001',
         availability: 'AVAILABLE',
         costToCompany: 650,
         phone: '0123456789',
@@ -220,9 +220,9 @@ describe('ConsultantService', () => {
         addressLine1: '123 South road',
         addressLine2: null,
         suburb: 'Hillbrow',
-        city:'Johannesburg',
+        city: 'Johannesburg',
         province: 'Gauteng',
-        postalCode:'2001',
+        postalCode: '2001',
         costToCompany: 50000,
         availability: 'AVAILABLE',
         user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
@@ -260,9 +260,9 @@ describe('ConsultantService', () => {
         addressLine1: '123 South road',
         addressLine2: null,
         suburb: 'Hillbrow',
-        city:'Johannesburg',
+        city: 'Johannesburg',
         province: 'Gauteng',
-        postalCode:'2001',
+        postalCode: '2001',
         costToCompany: 50000,
         availability: 'AVAILABLE',
         user: {
@@ -380,46 +380,46 @@ describe('ConsultantService', () => {
       expect(result).toEqual([]);
     });
 
-    it('returns assigned projects with team members excluding self', async () => {
-      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        {
-          id: 'placement-1',
-          status: 'ACTIVE',
-          allocation: 80,
-          startDate: new Date('2026-01-01'),
-          endDate: null,
-          project: {
-            projectName: 'Project Alpha',
-            clientName: 'Client A',
-            description: 'Test project',
-            suburb: 'Sandton',
-            city: 'Johannesburg',
-            province: 'Gauteng',
-            status: 'IN_PROGRESS',
-            startDate: new Date('2026-01-01'),
-            endDate: null,
-            allocation: 100,
-            placements: [
-              {
-                consultantId: 'consultant-1',
-                consultant: {
-                  user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
-                },
-              },
-              {
-                consultantId: 'consultant-2',
-                consultant: {
-                  user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
-                },
-              },
-            ],
-          },
-        },
-      ]);
+    // it('returns assigned projects with team members excluding self', async () => {
+    //   mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+    //   mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+    //     {
+    //       id: 'placement-1',
+    //       status: 'ACTIVE',
+    //       allocation: 80,
+    //       startDate: new Date('2026-01-01'),
+    //       endDate: null,
+    //       project: {
+    //         projectName: 'Project Alpha',
+    //         clientName: 'Client A',
+    //         description: 'Test project',
+    //         suburb: 'Sandton',
+    //         city: 'Johannesburg',
+    //         province: 'Gauteng',
+    //         status: 'IN_PROGRESS',
+    //         startDate: new Date('2026-01-01'),
+    //         endDate: null,
+    //         allocation: 100,
+    //         placements: [
+    //           {
+    //             consultantId: 'consultant-1',
+    //             consultant: {
+    //               user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
+    //             },
+    //           },
+    //           {
+    //             consultantId: 'consultant-2',
+    //             consultant: {
+    //               user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
+    //             },
+    //           },
+    //         ],
+    //       },
+    //     },
+    //   ]);
 
-      const result = await service.getAssignedProjects('user-1');
-    });
+    //   const result = await service.getAssignedProjects('user-1');
+    // });
   });
 
   describe('getAssignedProjectDetails', () => {

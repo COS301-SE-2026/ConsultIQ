@@ -37,7 +37,6 @@ export interface LoginResult {
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
   SUPER_ADMIN: '/admin',
   ADMIN: '/admin-dashboard',
-  SUPER_ADMIN: '/admin-dashboard',
   PROJECT_MANAGER: '/projects',
   CONSULTANT_MANAGER: '/consultants-manager',
   CONSULTANT: '/under-construction',

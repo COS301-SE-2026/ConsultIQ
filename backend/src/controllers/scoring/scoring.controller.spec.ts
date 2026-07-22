@@ -21,7 +21,7 @@ describe('ScoringController', () => {
             ],
         }).compile();
 
-        controller = module.get<ScoringController>(ScoringController)
+        controller = module.get<ScoringController>(ScoringController);
         jest.clearAllMocks();
     });
 
@@ -79,7 +79,7 @@ describe('ScoringController', () => {
     });
 
     describe('updateProjectScoringOverride', () => {
-        it('should update the project scoring override and return the result', async () => {
+        it('should update the scoring config and return the result', async () => {
             const projectId = 'project-1';
             const dto = { weights: { skillMatch: 0.7 } };
             const req = { user: { userId: 'user-123' } };
@@ -105,7 +105,7 @@ describe('ScoringController', () => {
         });
     });
 
-    describe('deleteProjectScoringOverrider', () =>{
+    describe('deleteProjectScoringOverride', () =>{
         it('should delete the project scoring override and return the result', async () => {
             const projectId = 'projectId';
             const req = { user : { userId : 'user-123'}};
@@ -130,6 +130,28 @@ describe('ScoringController', () => {
             await expect(
                 controller.deleteProjectScoringOverride('project-1', {} as any, req),
             ).rejects.toThrow('Service error');
+        });
+    });
+
+    describe('getProjectScoringOverride', () => {
+        it('should return the project scoring override', async () => {
+            const projectId = 'project-1';
+            const mockOverride = { projectId, weights: { skillMatch: 70 } };
+        
+            mockScoringService.getProjectScoringOverride.mockResolvedValue(mockOverride);
+        
+            const result = await controller.getProjectScoringOverride(projectId);
+        
+            expect(result).toEqual(mockOverride);
+            expect(mockScoringService.getProjectScoringOverride).toHaveBeenCalledWith(projectId);
+        });
+    
+        it('should propagate errors from the service', async () => {
+            mockScoringService.getProjectScoringOverride.mockRejectedValue(new Error('Service error'));
+
+            await expect(controller.getProjectScoringOverride('project-1')).rejects.toThrow(
+                'Service error',
+            );
         });
     });
 });

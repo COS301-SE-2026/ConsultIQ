@@ -21,6 +21,9 @@ export class ScoringFactorDto {
 
   @IsBoolean()
   active!: boolean;
+
+  @IsBoolean()
+  hardExclusionEnabled!: boolean;
 }
 
 export class UpdateScoringConfigDto {

@@ -9,19 +9,8 @@ import ProjectGrid from "../components/project-grid";
 import ProjectDetailsModal from "../components/project-details-modal";
 import EmptyProjectState from "../components/empty-project-state";
 import type { Project } from "../types/project.types";
-
-interface ApiProject {
-  id: string;
-  projectName: string;
-  clientName: string;
-  teamSize: number;
-  requiredAllocationPercentage: number;
-  clientBillingBudget: number;
-  startDate: string;
-  endDate?: string;
-  city: string;
-  province: string;
-}
+import type {ApiProject} from "../services/project.service"
+import { getProjects } from "../services/project.service";
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -41,23 +30,9 @@ export default function ProjectListPage() {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        const token = sessionStorage.getItem("ciq_access_token");
+        const response= await getProjects(1,50);
 
-        const response = await fetch("http://localhost:3000/projects?page=1&limit=50", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch projects");
-        }
-
-        const data = await response.json();
-
-        // 2. Replace 'any' with the 'ApiProject' interface
-        const mappedProjects: Project[] = data.projects.map((p: ApiProject) => ({
+        const mappedProjects: Project[] = response.projects.map((p: ApiProject) => ({
           id: p.id,
           name: p.projectName,
           projectName: p.projectName,
@@ -68,6 +43,7 @@ export default function ProjectListPage() {
           budget: p.clientBillingBudget,
           startDate: p.startDate,
           endDate: p.endDate || "",
+          status: p.status,
           location: {
             addressLine1: "",
             addressLine2: "",
@@ -76,7 +52,13 @@ export default function ProjectListPage() {
             province: p.province,
             postalCode: "",
           },
-          skills: [],
+            addressLine1: "",
+            addressLine2: "",
+            suburb: "",
+            city: p.city,
+            province: p.province,
+            postalCode: "",
+          skills:[],
         }));
 
         setProjects(mappedProjects);

@@ -84,6 +84,7 @@ const PERMISSIONS: { name: string; description: string }[] = [
 // =============================================================================
 
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
+    [Role.SUPER_ADMIN]: PERMISSIONS.map((p) => p.name),
 
     // ADMIN — unrestricted access to everything
     [Role.ADMIN]: PERMISSIONS.map((p) => p.name),
@@ -129,6 +130,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
 // =============================================================================
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
+    [Role.SUPER_ADMIN]: 'Super Administrator with unrestricted system access and ability to manage admin accounts.',
     [Role.ADMIN]:
         'Full system access. Manages users, roles, permissions, and all data.',
     [Role.PROJECT_MANAGER]:

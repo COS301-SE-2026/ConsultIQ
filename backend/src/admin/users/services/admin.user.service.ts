@@ -5,35 +5,41 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class AdminUserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async deleteUser(userId: string) {
-    try {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          deletedAt: new Date(),
-          status: 'ARCHIVED',
-        },
-      });
+  // async deleteUser(userId: string) {
+  //   try {
+  //     await this.prisma.user.update({
+  //       where: { id: userId },
+  //       data: {
+  //         deletedAt: new Date(),
+  //         status: 'ARCHIVED',
+  //       },
+  //     });
 
-      return { message: 'User deleted successfully' };
-    } catch (error) {
-      if (
-        error instanceof Object &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException('User does not exist');
-      } else {
-        throw error;
-      }
-    }
-  }
+  //     return { message: 'User deleted successfully' };
+  //   } catch (error) {
+  //     if (
+  //       error instanceof Object &&
+  //       'code' in error &&
+  //       error.code === 'P2025'
+  //     ) {
+  //       throw new NotFoundException('User does not exist');
+  //     } else {
+  //       throw error;
+  //     }
+  //   }
+  // }
 
   async getAllUsers(page: number = 1, limit: number = 10) {
-    const [consultants, filteredTotal, total, activeUsers, suspendedUsers] =
+    const where = {
+      deletedAt: null,
+      status: { not: 'ARCHIVED' as const },
+      role: { not: 'ADMIN' as const },
+    };
+
+    const [users, filteredTotal, activeUsers, suspendedUsers] =
       await this.prisma.$transaction([
         this.prisma.user.findMany({
-          where: { deletedAt: null, status: { not: 'ARCHIVED' } },
+          where,
           skip: (page - 1) * limit,
           take: limit,
           select: {
@@ -46,30 +52,33 @@ export class AdminUserService {
           },
         }),
 
+        this.prisma.user.count({ where }),
+
         this.prisma.user.count({
-          where: { deletedAt: null, status: { not: 'ARCHIVED' } },
+          where: {
+            deletedAt: null,
+            status: 'ACTIVE',
+            role: { not: 'ADMIN' as const },
+          },
         }),
 
-        this.prisma.user.count(),
-
         this.prisma.user.count({
-          where: { deletedAt: null, status: 'ACTIVE' },
-        }),
-
-        this.prisma.user.count({
-          where: { deletedAt: null, status: 'SUSPENDED' },
+          where: {
+            deletedAt: null,
+            status: 'SUSPENDED',
+            role: { not: 'ADMIN' as const },
+          },
         }),
       ]);
 
     return {
-      data: consultants,
+      data: users,
       meta: {
         totalRecords: filteredTotal,
-        absoluteTotalRecords: total,
-        activeUsers: activeUsers,
-        suspendedUsers: suspendedUsers,
         currentPage: page,
         totalPages: Math.ceil(filteredTotal / limit),
+        activeUsers,
+        suspendedUsers,
       },
     };
   }

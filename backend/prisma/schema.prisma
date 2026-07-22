@@ -11,6 +11,7 @@ datasource db {
 
 enum Role {
   SUPER_ADMIN
+  SUPER_ADMIN
   ADMIN
   PROJECT_MANAGER
   CONSULTANT_MANAGER
@@ -50,6 +51,7 @@ enum PlacementStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  TERMINATED
 }
 
 enum ProjectStatus {
@@ -102,6 +104,12 @@ enum ExtractionStatus {
   COMPLETED
   FAILED
   REVIEW_REQUIRED
+}
+
+enum MatchRunStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }
 
 // ---------------------------------------- RBAC Models------------------------------------
@@ -172,7 +180,8 @@ model User {
   adminActionsPerformed AdminAuditLog[] @relation("AdminActions")
   adminActionsReceived  AdminAuditLog[] @relation("AdminTargets")
   scoringConfigAudits ScoringConfigAudit[]
-  notifications Notification[]
+  notifications       Notification[]
+  matchRuns           MatchRun[]
 
   @@map("users")
 }
@@ -216,6 +225,7 @@ model Consultant {
   cvFiles               CvFile[]
   managers              ConsultantManager[]
   consultantExperiences ConsultantExperience[]
+  matchRunResults       MatchRunResult[]
 
   @@map("consultants")
 }
@@ -291,32 +301,34 @@ model CvFile {
 }
 
 model Project {
-  id           String        @id @default(uuid())
-  projectName  String
-  clientName   String
-  description  String?
-  addressLine1 String
-  addressLine2 String?
-  suburb       String?
-  city         String
-  province     String
-  postalCode   String
-  startDate    DateTime
-  endDate      DateTime?
-  teamSize     Int
-  allocation   Int // Renamed from requiredAllocationPercentage
-  budget       Float // Renamed from clientBillingBudget
-  status       ProjectStatus @default(OPEN)
-  tenantId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  archivedAt   DateTime?      @map("archived_at")
-  skills     ProjectSkill[]
-  managers   ProjectManager[]
-  placements ProjectPlacement[]
+  id               String                   @id @default(uuid())
+  projectName      String
+  clientName       String
+  description      String?
+  addressLine1     String
+  addressLine2     String?
+  suburb           String?
+  city             String
+  province         String
+  postalCode       String
+  startDate        DateTime
+  endDate          DateTime?
+  teamSize         Int
+  allocation       Int // Renamed from requiredAllocationPercentage
+  budget           Float // Renamed from clientBillingBudget
+  status           ProjectStatus            @default(OPEN)
+  tenantId         String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  archivedAt       DateTime?                @map("archived_at")
+  skills           ProjectSkill[]
+  managers         ProjectManager[]
+  placements       ProjectPlacement[]
   scoringOverrides ProjectScoringOverride[]
 
- auditLogs ProjectAuditLog[]
+  auditLogs ProjectAuditLog[]
+  matchRuns MatchRun[]
+
   @@map("projects")
 }
 
@@ -363,14 +375,14 @@ model ProjectPlacement {
 
 // Currently used to track archiving and unarchiving projects (can be used to track project status changes)
 model ProjectAuditLog {
-  id          String   @id @default(uuid())
-  projectId   String
-  action      String   // "ARCHIVED", "UNARCHIVED"
-  userId      String   // Admin or PM 
-  createdAt   DateTime @default(now()) 
+  id        String   @id @default(uuid())
+  projectId String
+  action    String // "ARCHIVED", "UNARCHIVED"
+  userId    String // Admin or PM 
+  createdAt DateTime @default(now())
 
-  project     Project  @relation(fields: [projectId], references: [id])
-  
+  project Project @relation(fields: [projectId], references: [id])
+
   @@map("project_audit_logs")
 }
 
@@ -424,6 +436,7 @@ model ConsultancyScoringConfig {
   factorName  ScoringFactorName @unique
   weight      Float
   active      Boolean @default(true)
+  hardExclusionEnabled   Boolean           @default(false)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -436,6 +449,7 @@ model ProjectScoringOverride {
   factorName     ScoringFactorName
   overrideWeight Float
   active         Boolean           @default(true)
+  hardExclusionEnabled   Boolean           @default(false)
   createdAt      DateTime          @default(now())
 
   project        Project           @relation(fields: [projectId], references: [id])
@@ -469,4 +483,32 @@ model Notification {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model MatchRun {
+  id                     String           @id @default(uuid())
+  projectId              String
+  project                Project          @relation(fields: [projectId], references: [id])
+  executedByUserId       String         
+  executedByUser         User             @relation(fields: [executedByUserId], references: [id])
+  status                 MatchRunStatus  
+  totalConsultantsScored Int              @default(0)
+  totalConsultantsExcluded Int              @default(0)
+  results                MatchRunResult[]
+  configurationSnapshot  Json
+  
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+}
+
+model MatchRunResult {
+  id           String     @id @default(uuid())
+  matchRunId   String
+  matchRun     MatchRun   @relation(fields: [matchRunId], references: [id], onDelete: Cascade)
+  consultantId String
+  totalScore   Float
+  rank         Int
+  factorScores Json
+  consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
 }

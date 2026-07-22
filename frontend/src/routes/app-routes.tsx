@@ -20,6 +20,7 @@ import CreateProfilePage from "../features/consultants/pages/create-profile-page
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
+import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
@@ -61,6 +62,7 @@ function AnimatedRoutes() {
                     <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/> 
                     <Route path="/notifications" element={<PageTransition><NotificationPage/></PageTransition>}/>  
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
+                    <Route path="/placement-dashboard" element={<PageTransition><PlacementDashboard/></PageTransition>}></Route>                
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

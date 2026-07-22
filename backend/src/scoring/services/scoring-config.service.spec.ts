@@ -4,19 +4,19 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringFactorName } from '@prisma/client';
 
 const validFactors = [
-  { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true },
-  { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true },
-  { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true },
-  { factorName: ScoringFactorName.LOCATION, weight: 10, active: true },
-  { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true },
+  { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true, hardExclusionEnabled: false },
 ];
 
 const validOverrideFactors = [
-  { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 40, active: true },
-  { factorName: ScoringFactorName.COMPETENCY_LEVEL, overrideWeight: 30, active: true },
-  { factorName: ScoringFactorName.AVAILABILITY, overrideWeight: 15, active: true },
-  { factorName: ScoringFactorName.LOCATION, overrideWeight: 10, active: true },
-  { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 5, active: true },
+  { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 40, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.COMPETENCY_LEVEL, overrideWeight: 30, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.AVAILABILITY, overrideWeight: 15, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.LOCATION, overrideWeight: 10, active: true, hardExclusionEnabled: false },
+  { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 5, active: true, hardExclusionEnabled: false },
 ];
 
 const buildMockPrisma = () => ({
@@ -65,11 +65,11 @@ describe('ScoringService', () => {
 
     it('throws BadRequestException when active weights do not sum to 100', async () => {
       const invalidFactors = [
-        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 50, active: true },
-        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true },
-        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true },
-        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true },
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 50, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: true, hardExclusionEnabled: false },
       ];
 
       await expect(
@@ -95,11 +95,11 @@ describe('ScoringService', () => {
 
     it('excludes inactive factors from weight sum validation', async () => {
       const mixedFactors = [
-        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true },
-        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true },
-        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true },
-        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: false },
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 40, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: false, hardExclusionEnabled: false },
       ];
 
       await expect(
@@ -113,11 +113,11 @@ describe('ScoringService', () => {
       mockPrisma.scoringConfigAudit.create.mockResolvedValue({});
 
       const mixedFactors = [
-        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 45, active: true },
-        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true },
-        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true },
-        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: false },
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, weight: 45, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COMPETENCY_LEVEL, weight: 30, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.AVAILABILITY, weight: 15, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.LOCATION, weight: 10, active: true, hardExclusionEnabled: false },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, weight: 5, active: false, hardExclusionEnabled: false },
       ];
 
       await expect(

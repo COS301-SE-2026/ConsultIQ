@@ -1,22 +1,33 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import  {UnderConstructionCard}  from "../components/under-construction-card";
-
-//redirect to ConsultantProfileViewPage when profile is complete
-
-/* 
-   const [profile, setProfile] = useState<ConsultantProfile | null>(null);
-   useEffect(() => {
-    replace with real API call to fetch profile by ID
-   }; 
-*/
+import { useAuth } from "../../../hooks/useAuth";
+import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import ConsultantProfileViewPage from "./consultant-profile-view";
 
 
+function UnderConstructionPage() {
+  const {user} = useAuth();
 
+  const { profile, isLoading,notFound } = useFetchConsultantProfile(
+    undefined,
+    user?.userId
+  );
 
-function ConsultantProfilePage() {
- 
-  return (
+  if(isLoading){
+    return(
+      <div
+        className="flex h-screen items-center justify-center font-medium bg-brand-bg! text-brand-blue!"
+      >
+        Loading profile content
+      </div>
+    );
+  }
+
+  const hasNoProfile= notFound;
+
+  if(hasNoProfile){
+     return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
 
@@ -32,12 +43,15 @@ function ConsultantProfilePage() {
         </header>
 
         {/* Main */}
-        <main className="flex-1 flex items-center justify-center ">
+        <main className="flex-1 flex p-8  items-center justify-center ">
           <UnderConstructionCard />
         </main>
       </div>
     </div>
-  );
+     );
+  }
+
+ return <ConsultantProfileViewPage/>
 }
 
-export default ConsultantProfilePage;
+export default UnderConstructionPage;

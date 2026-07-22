@@ -8,7 +8,7 @@ import {
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
 
-import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { useFetchConsultantProfile, type MappedConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 
 import {
   ProfileHeroCard,
@@ -39,7 +39,11 @@ export interface Profile {
   education: Education[];
 }
 
-function ConsultantProfileViewPage() {
+interface ConsultantProfileViewPageProps{
+  consultantViewProfile?: MappedConsultantProfile;
+}
+
+function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileViewPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,10 +51,16 @@ function ConsultantProfileViewPage() {
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile, isLoading, error } = useFetchConsultantProfile(
-    targetConsultantId,
-    user?.userId
+  const shouldFetch= !consultantViewProfile;
+
+
+  const { profile : fetchedProfile, isLoading, error } = useFetchConsultantProfile(
+    shouldFetch ? targetConsultantId :undefined,
+    shouldFetch ? user?.userId : undefined
   );
+
+  const profile= consultantViewProfile ?? fetchedProfile;
+  const loading = consultantViewProfile ? false: isLoading;
 
   // Dynamically select the sidebar based on the user's role
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
@@ -61,7 +71,7 @@ function ConsultantProfileViewPage() {
 
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
         Loading profile content...
@@ -69,9 +79,8 @@ function ConsultantProfileViewPage() {
     );
   }
 
-  console.log("profile data: ", profile);
 
-  if (error || !profile) {
+  if (!consultantViewProfile &&(error || !profile)) {
     let errorMessage = "profile not found";
 
     if (error){
@@ -88,6 +97,10 @@ function ConsultantProfileViewPage() {
     );
   }
 
+  if(!profile){
+    return null;
+  }
+  
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Inject the dynamic sidebar here */}

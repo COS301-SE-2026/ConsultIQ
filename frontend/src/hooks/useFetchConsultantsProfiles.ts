@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { getConsultantProfileById, getConsultantProfileByUserId } from "../api/consultants.api";
+import { getConsultantProfileById, getConsultantProfileByUserId } from "../features/consultants/services/consultant.service";
+import { ApiError } from "../lib/api-client";
 
 
 interface ExperienceDto {
@@ -120,6 +121,7 @@ export function useFetchConsultantProfile(
   const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | string | null>(null);
+  const [notFound,setNotFound]= useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -140,11 +142,20 @@ export function useFetchConsultantProfile(
           setProfile(mapDtoToProfile(rawData));
         }
         setError(null);
+        setNotFound(false);
       } catch (err) {
         console.error("Profile Fetch Hook Error:", err);
         
-        const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
-        setError(errorMessage);
+        if(err instanceof ApiError && err.status == 404){
+          setProfile(null);
+          setError(null);
+          setNotFound(true);
+        }else{
+          const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
+          setError(errorMessage);
+          setNotFound(false);
+        }
+        
       } finally {
         setIsLoading(false);
       }
@@ -153,5 +164,5 @@ export function useFetchConsultantProfile(
     fetchProfile();
   }, [targetConsultantId, loggedInUserId]);
 
-  return { profile, isLoading, error };
+  return { profile, isLoading, error, notFound };
 }

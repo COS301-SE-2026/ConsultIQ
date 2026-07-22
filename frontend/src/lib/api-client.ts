@@ -1,5 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+export class ApiError extends Error{
+    status: number;
+    constructor(message:string, status: number){
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+    }
+}
+
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const token = sessionStorage.getItem('ciq_access_token');
 
@@ -45,7 +54,7 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         }
 
 
-        throw new Error(errorMessage);
+        throw new ApiError(errorMessage,response.status);
     }
 
 

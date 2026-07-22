@@ -22,6 +22,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-01',
                 consultantName: 'Ashe',
+                consultantEmail: 'Ashe@gmail.com',
                 outcome: {
                     excluded: true,
                     reason: 'Over budget',
@@ -42,6 +43,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-01',
                 consultantName: 'Goku',
+                consultantEmail: 'Goku@gmail.com',
                 outcome: {
                     excluded: false,
                     factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
@@ -51,6 +53,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-02',
                 consultantName: 'Satoro',
+                consultantEmail: 'Satoro@gmail.com',
                 outcome: {
                     excluded: true,
                     reason: 'Missing mandatory skill',
@@ -66,6 +69,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-01',
                 consultantName: 'Goku',
+                consultantEmail: 'Goku@gmail.com',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
             }
@@ -76,6 +80,7 @@ describe('MatchRunAggregationService', () => {
         const mockInput: ScoredConsultantInput[] = [{
             consultantId: 'consultant-01',
             consultantName: 'Domain',
+            consultantEmail: 'Domain@gmail.com',
             outcome: {
                 excluded: false,
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
@@ -87,6 +92,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-01',
                 consultantName: 'Mugino',
+                consultantEmail: 'Mugino@gmail.com',
                 finalScore: 80,
                 rank: 1,
                 factorBreakdown: []
@@ -100,6 +106,7 @@ describe('MatchRunAggregationService', () => {
             {
                 consultantId: 'consultant-01',
                 consultantName: 'Domain',
+                consultantEmail: 'Domain@gmail.com',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
             }

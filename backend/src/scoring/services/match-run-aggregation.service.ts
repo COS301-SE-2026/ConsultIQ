@@ -9,6 +9,7 @@ import { ConsultantMatchResult } from './interfaces/match-result.interface';
 export interface ScoredConsultantInput {
   consultantId: string;
   consultantName: string;
+  consultantEmail: string;
   outcome: ScoringResults;
 }
 //pointer to consultant that passed all hard exclusion checks
@@ -43,6 +44,7 @@ export class MatchRunAggregationService {
     return inputs.map((input) => ({
       consultantId: input.consultantId,
       consultantName: input.consultantName,
+      consultantEmail: input.consultantEmail,
       factorScores: input.outcome.factorScores,
       weights: input.outcome.redistributedWeights,
     }));

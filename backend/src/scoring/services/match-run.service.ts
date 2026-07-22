@@ -51,7 +51,7 @@ export class MatchRunService {
         where: { user: { status: 'ACTIVE' } },
         include: {
           skills: { include: { skill: true } },
-          user: { select: { fullName: true } },
+          user: { select: { fullName: true, email: true } },
         },
       });
 
@@ -80,6 +80,7 @@ export class MatchRunService {
         return {
           consultantId: consultant.id,
           consultantName: consultant.user?.fullName || 'Unknown consultant name',
+          consultantEmail: consultant.user?.email || 'Unknown consultant email',
           outcome,
         };
       });
@@ -189,7 +190,8 @@ export class MatchRunService {
               include: {
                 user: {
                   select: {
-                    fullName: true
+                    fullName: true,
+                    email: true,
                   }
                 }
               }
@@ -208,6 +210,7 @@ export class MatchRunService {
     return matchRun.results.map((r) => ({
       consultantId: r.consultantId,
       consultantName: r.consultant?.user?.fullName || 'Unknown',
+      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com..',
       finalScore: r.totalScore,
       rank: r.rank,
       factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],

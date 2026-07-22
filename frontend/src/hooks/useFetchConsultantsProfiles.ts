@@ -122,8 +122,13 @@ export function useFetchConsultantProfile(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | string | null>(null);
   const [notFound,setNotFound]= useState(false);
+  const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
   useEffect(() => {
+    if(!hasParams){
+          return;
+    }
+
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
@@ -134,19 +139,18 @@ export function useFetchConsultantProfile(
           rawData = await getConsultantProfileById(targetConsultantId);
         } else if (loggedInUserId) {
           rawData = await getConsultantProfileByUserId(loggedInUserId);
-        } else {
-          throw new Error("No usable identifier found to load profile.");
-        }
+        } 
 
         if (rawData) {
           setProfile(mapDtoToProfile(rawData));
+          setError(null);
+          setNotFound(false);
         }
-        setError(null);
-        setNotFound(false);
+        
       } catch (err) {
         console.error("Profile Fetch Hook Error:", err);
         
-        if(err instanceof ApiError && err.status == 404){
+        if(err instanceof ApiError && err.status === 404){
           setProfile(null);
           setError(null);
           setNotFound(true);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {type ScoringFactor, ScoringWeightsTable } from "../../scoring/components/scoring-weights-table";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
@@ -8,12 +8,14 @@ import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCou
 
 export default function ProjectScoringOverridePage(){
     const {projectId} =useParams<{ projectId: string}>();
+    const navigate= useNavigate();
     const [factors, setFactors] = useState<ScoringFactor[]>([]);
     const [isUsingDefaultWeights, setIsUsingDefaultWeights]= useState(true);
     const [showConfirmationModal, setshowConfirmationModal]= useState(false);
     const [isLoading, setIsLoading]= useState(true);
     const [errMessage, setErrMessage]= useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [isMatching]= useState(false);
 
     const{count: unreadCount} = useUnreadNotificationCount();
 
@@ -81,6 +83,11 @@ export default function ProjectScoringOverridePage(){
         }
     };
 
+    const handleRunMatch=async()=>{
+        //@Ofentse360, hadle run match in here
+        navigate(`/placement-dashboard`);
+    }
+
     return(
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="h-screen shrink-0">
@@ -111,7 +118,8 @@ export default function ProjectScoringOverridePage(){
                 Loading scoring configuration...
             </div>
         ):(
-        <ScoringWeightsTable initialFactors={factors} isProjectOverride={true} isUsingDefaultWeights={isUsingDefaultWeights} onSave={handleOverrideSave} onRevertToDefaultWeights={() => setshowConfirmationModal(true)}/>
+        <ScoringWeightsTable initialFactors={factors} isProjectOverride={true} isUsingDefaultWeights={isUsingDefaultWeights} onSave={handleOverrideSave} onRevertToDefaultWeights={() => setshowConfirmationModal(true)}
+        onRunMatch={handleRunMatch} isMatching={isMatching}/>
         )}
 
         {showConfirmationModal &&(

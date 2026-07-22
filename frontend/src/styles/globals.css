@@ -15,21 +15,38 @@
   --color-brand-bg: #F4F6FA;
   --color-white: #FFFFFF;
 
-  --font-calibri: "Calibri", "Candara", "Segoe UI", "Optima", "Arial", sans-serif;
-  
-  --text-h1: var(--text-h1);
-  --text-h2: var(--text-h2);
-  --text-h3: var(--text-h3);
-  --text-body: var(--text-body);
+  /*Primary colours*/
+  --color-primary: #002D62;
+  --color-secondary: #3c5a8afd;
+  --color-accent: #C9A84C;
 
-  --radius-sm: var(--radius-sm);
+  /*Neutral and surface colors*/
+  --color-surface: #F4F6FA;
+  --color-border: #E2E8F0;
+  --color-dark-grey: #4A5568;
+
+  /*text colours*/
+  --color-text-primary: #1F2937;
+  --color-text-secondary: #6B7280;
+
+  /* base colours */
+  --color-white: #FFFFFF;
+
+  --font-primary: "Calibri", "Candara", "Segoe UI", "Optima", "Arial", sans-serif;
+  
+  --text-h1: 32px;
+  --text-h2: 24px;
+  --text-h3: 18px;
+  --text-body: 12px;
+
+  --radius-sm: 6px;
 
 
 
 }
 
 * {
-  margin: 0;
+  
   box-sizing: border-box;
 }
 
@@ -87,7 +104,6 @@ a {
 button {
   font-family: var(--font-primary);
   cursor: pointer;
-  border: none;
 }
 
 /* Inputs */

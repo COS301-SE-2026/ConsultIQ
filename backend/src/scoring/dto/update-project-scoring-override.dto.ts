@@ -21,6 +21,9 @@ export class ProjectScoringFactorDto {
 
   @IsBoolean()
   active!: boolean;
+
+  @IsBoolean()
+  hardExclusionEnabled!: boolean;
 }
 
 export class UpdateProjectScoringOverrideDto {

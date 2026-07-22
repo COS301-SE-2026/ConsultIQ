@@ -5,7 +5,7 @@ import type { Project } from "../types/project.types";
 interface ProjectGridProps {
   readonly projects: readonly Project[];
   readonly onViewDetails: (project: Project) => void;
-  readonly onConfigureScore: (project: Project) =>void;
+  readonly onConfigureScore?: (project: Project) =>void;
 }
 
 export default function ProjectGrid({

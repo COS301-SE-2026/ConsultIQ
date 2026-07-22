@@ -232,16 +232,16 @@ describe('JwtAuthGuard', () => {
             expect(() => guard.canActivate(ctx)).toThrow('malformed');
         });
 
-        it('should throw 401 when role in payload is not a recognised ConsultIQ role', () => {
+       it('should throw 401 when role in payload is not a recognised ConsultIQ role', () => {
             const token = jwt.sign( // NOSONAR
-                { userId: 'uuid-x', role: 'SUPER_ADMIN' },
+                { userId: 'uuid-x', role: 'HACKER' },
                 TEST_SECRET,
             );
             const ctx = buildContext({ authHeader: `Bearer ${token}` });
 
             expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
             expect(() => guard.canActivate(ctx)).toThrow('unrecognised role');
-        });
+    });
     });
 
     // -------------------------------------------------------------------------

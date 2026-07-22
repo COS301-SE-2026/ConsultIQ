@@ -25,7 +25,7 @@ export interface Project {
   readonly description: string;
   readonly teamSize: number;
   readonly allocation: number;
-  readonly budget: number;
+  readonly budget?: number;
   readonly startDate: string;
   readonly endDate: string;
   readonly status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "COMPLETED";

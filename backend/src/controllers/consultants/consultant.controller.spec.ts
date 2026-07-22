@@ -3,18 +3,20 @@ import { NotFoundException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { NotificationService } from '../../notification/service/notification.service';
+
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
   getAssignedProjects: jest.fn(),
+  updateConsultantProfile: jest.fn(),
+  getAssignedProjectDetails: jest.fn(),
 };
 
 const mockNotificationService = {
   sendPushNotification: jest.fn(),
 };
-
 
 describe('ConsultantController', () => {
   let controller: ConsultantController;
@@ -171,6 +173,68 @@ describe('ConsultantController', () => {
 
       expect(result).toEqual([]);
       expect(mockConsultantService.getAssignedProjects).toHaveBeenCalledWith('user-123');
+    });
+  });
+
+  describe('updateConsultantProfile', () => {
+    it('should call service with correct id and dto and return result', async () => {
+      mockConsultantService.updateConsultantProfile.mockResolvedValue({
+        message: 'Consultant profile updated successfully.',
+      });
+
+      const dto = { phone: '0821234567', nationality: 'South African' };
+      const result = await controller.updateConsultantProfile('consultant-uuid-1', dto as any);
+
+      expect(mockConsultantService.updateConsultantProfile).toHaveBeenCalledWith(
+        'consultant-uuid-1',
+        dto,
+      );
+      expect(result.message).toBe('Consultant profile updated successfully.');
+    });
+
+    it('should propagate NotFoundException from service', async () => {
+      mockConsultantService.updateConsultantProfile.mockRejectedValue(
+        new NotFoundException('Consultant with id uuid-999 not found.'),
+      );
+
+      await expect(
+        controller.updateConsultantProfile('uuid-999', {} as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getAssignedProjectDetails', () => {
+    it('should call service with userId and projectId and return result', async () => {
+      const mockDetails = {
+        placementId: 'placement-1',
+        placementStatus: 'ACTIVE',
+        placementAllocation: 80,
+        startDate: new Date('2026-01-01'),
+        endDate: null,
+        project: {
+          projectName: 'Project Alpha',
+          skills: [],
+          teamMembers: [],
+        },
+      };
+      mockConsultantService.getAssignedProjectDetails.mockResolvedValue(mockDetails);
+
+      const req = { user: { userId: 'user-123' } };
+      const result = await controller.getAssignedProjectDetails('project-1', req as any);
+
+      expect(result).toEqual(mockDetails);
+      expect(mockConsultantService.getAssignedProjectDetails).toHaveBeenCalledWith('user-123', 'project-1');
+    });
+
+    it('should propagate NotFoundException when consultant is not assigned to project', async () => {
+      mockConsultantService.getAssignedProjectDetails.mockRejectedValue(
+        new NotFoundException('You are not assigned to project with ID project-999.'),
+      );
+
+      const req = { user: { userId: 'user-123' } };
+      await expect(
+        controller.getAssignedProjectDetails('project-999', req as any),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

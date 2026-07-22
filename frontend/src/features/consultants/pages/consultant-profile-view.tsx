@@ -82,6 +82,7 @@ function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileView
     );
   }
 
+ 
 
   if (!consultantViewProfile &&(error || !profile)) {
     let errorMessage = "profile not found";

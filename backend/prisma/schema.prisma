@@ -178,6 +178,8 @@ model User {
   scoringConfigAudits ScoringConfigAudit[]
   notifications       Notification[]
   matchRuns           MatchRun[]
+  adminActionsPerformed AdminAuditLog[]    @relation("AdminActions")
+  adminActionsReceived  AdminAuditLog[]    @relation("AdminTargets")
 
   @@map("users")
 }

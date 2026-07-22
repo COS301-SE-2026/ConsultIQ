@@ -46,9 +46,10 @@ export class AuthController {
     const requestingUser = req.user;
     // Consultant managers can only register CONSULTANTs
     if (
-    (requestingUser?.role as string) === (Role.CONSULTANT_MANAGER as string) &&
-    (dto.role as string) !== 'CONSULTANT'
-    ){
+      (requestingUser?.role as string) ===
+        (Role.CONSULTANT_MANAGER as string) &&
+      (dto.role as string) !== 'CONSULTANT'
+    ) {
       throw new ForbiddenException(
         'Consultant managers can only register Consultant accounts',
       );

@@ -275,32 +275,41 @@ export class ConsultantService {
     return this.mapToProfileDto(consultant);
   }
 
-  async updateConsultantProfile(consultantId: string, dto: UpdateConsultantDto,): Promise<{message: string}> {
+  async updateConsultantProfile(
+    consultantId: string,
+    dto: UpdateConsultantDto,
+  ): Promise<{ message: string }> {
     //Verify consultant exists
     const existing = await this.prisma.consultant.findUnique({
-      where: {id: consultantId}
+      where: { id: consultantId },
     });
 
-    if(!existing){
-      throw new NotFoundException(`Consultant with id ${consultantId} not found.`)
+    if (!existing) {
+      throw new NotFoundException(
+        `Consultant with id ${consultantId} not found.`,
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.consultant.update({
-        where: {id: consultantId},
+        where: { id: consultantId },
         data: {
-          ...(dto.phone !== undefined && {phone: dto.phone}),
+          ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
-          ...(dto.nationality !== undefined && { nationality: dto.nationality }),
+          ...(dto.nationality !== undefined && {
+            nationality: dto.nationality,
+          }),
           ...(dto.location !== undefined && { location: dto.location }),
-          ...(dto.costToCompany !== undefined && { costToCompany: dto.costToCompany }),
+          ...(dto.costToCompany !== undefined && {
+            costToCompany: dto.costToCompany,
+          }),
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
-        }),
+          }),
         },
       });
 
-      if(dto.skills !== undefined){
+      if (dto.skills !== undefined) {
         await tx.consultantSkill.deleteMany({
           where: { consultantId },
         });
@@ -328,7 +337,7 @@ export class ConsultantService {
               confidenceLevel: skill.confidenceLevel,
             },
           });
-        } 
+        }
       }
 
       if (dto.experiences !== undefined) {
@@ -352,25 +361,25 @@ export class ConsultantService {
         }
       }
 
-      if(dto.certifications !== undefined){
+      if (dto.certifications !== undefined) {
         await tx.certificate.deleteMany({
-          where: {consultantId},
+          where: { consultantId },
         });
 
-        for(const cert of dto.certifications) {
+        for (const cert of dto.certifications) {
           await tx.certificate.create({
             data: {
-            consultantId,
-            title: cert.title,
-            issuingBody: cert.issuingBody,
-            startDate: cert.startDate ? new Date(cert.startDate) : null,
-          },
+              consultantId,
+              title: cert.title,
+              issuingBody: cert.issuingBody,
+              startDate: cert.startDate ? new Date(cert.startDate) : null,
+            },
           });
         }
       }
     });
 
-    return {message: 'Consultant profile updated successfully.'};
+    return { message: 'Consultant profile updated successfully.' };
   }
 
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
@@ -456,16 +465,19 @@ export class ConsultantService {
     };
   }
 
-  private inferCompetencyLevel(yearsExperience: number, confidenceLevel: number): CompetencyLevel{
-    if(yearsExperience >= 5 && confidenceLevel >= 4){
-      return CompetencyLevel.EXPERT
+  private inferCompetencyLevel(
+    yearsExperience: number,
+    confidenceLevel: number,
+  ): CompetencyLevel {
+    if (yearsExperience >= 5 && confidenceLevel >= 4) {
+      return CompetencyLevel.EXPERT;
     }
 
-    if(yearsExperience >= 2 && confidenceLevel >= 3){
-      return CompetencyLevel.INTERMEDIATE
+    if (yearsExperience >= 2 && confidenceLevel >= 3) {
+      return CompetencyLevel.INTERMEDIATE;
     }
 
-    return CompetencyLevel.BEGINNER
+    return CompetencyLevel.BEGINNER;
   }
 
   //-----------------Consultant get assigned projects-------------------
@@ -487,12 +499,16 @@ export class ConsultantService {
             projectName: true,
             clientName: true,
             description: true,
+            addressLine1: true,
             suburb: true,
             city: true,
+            province: true,
+            postalCode: true,
             status: true,
             startDate: true,
             endDate: true,
             allocation: true,
+            teamSize: true,
           },
         },
       },

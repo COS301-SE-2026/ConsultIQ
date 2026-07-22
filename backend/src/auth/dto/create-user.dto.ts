@@ -10,8 +10,16 @@ export class CreateUserDto {
   email!: string;
 
   @IsEnum(
-    [Role.ADMIN, Role.CONSULTANT_MANAGER, Role.PROJECT_MANAGER, Role.CONSULTANT],
-    { message: 'Role must be one of: ADMIN, CONSULTANT_MANAGER, PROJECT_MANAGER, CONSULTANT.' },
+    [
+      Role.ADMIN,
+      Role.CONSULTANT_MANAGER,
+      Role.PROJECT_MANAGER,
+      Role.CONSULTANT,
+    ],
+    {
+      message:
+        'Role must be one of: ADMIN, CONSULTANT_MANAGER, PROJECT_MANAGER, CONSULTANT.',
+    },
   )
   role!: Role;
 }

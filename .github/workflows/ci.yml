@@ -51,7 +51,7 @@ jobs:
 
       - name: Run type check
         working-directory: backend
-        run: npx tsc --noEmit
+        run: ./node_modules/.bin/tsc --noEmit
 
       - name: Build
         working-directory: backend

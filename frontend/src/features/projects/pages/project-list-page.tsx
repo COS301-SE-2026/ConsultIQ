@@ -9,6 +9,7 @@ import ProjectGrid from "../components/project-grid";
 import ProjectDetailsModal from "../components/project-details-modal";
 import EmptyProjectState from "../components/empty-project-state";
 import type { Project } from "../types/project.types";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 interface ApiProject {
   id: string;
@@ -35,6 +36,8 @@ export default function ProjectListPage() {
   const [locationFilter, setLocationFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+
+  const{count: unreadCount} = useUnreadNotificationCount();
 
   // Fetch projects from the backend
   useEffect(() => {
@@ -125,7 +128,7 @@ export default function ProjectListPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={projectManagerSidebarItems} />
+      <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount}/>
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"

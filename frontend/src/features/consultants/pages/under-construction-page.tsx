@@ -4,10 +4,13 @@ import  {UnderConstructionCard}  from "../components/under-construction-card";
 import { useAuth } from "../../../hooks/useAuth";
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import ConsultantProfileViewPage from "./consultant-profile-view";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 
 function UnderConstructionPage() {
   const {user} = useAuth();
+
+  const{count: unreadCount} = useUnreadNotificationCount();
  
   const { profile, isLoading,notFound } = useFetchConsultantProfile(
     undefined,
@@ -24,13 +27,18 @@ function UnderConstructionPage() {
     );
   }
 
-  const hasNoProfile= notFound || !profile ;
+  let hasNoProfile= notFound || !profile ;
+  console.log("profile?",hasNoProfile);
+
+  if(user?.role === "CONSULTANT_MANAGER"){
+    hasNoProfile = false;
+  }
   
 
   if(hasNoProfile){
      return (
     <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantSidebarItems} />
+      <Sidebar items={consultantSidebarItems} notificationCount={unreadCount}/>
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}

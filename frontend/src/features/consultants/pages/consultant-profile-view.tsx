@@ -7,6 +7,7 @@ import {
   consultantManagerSidebarItems
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
+import  useUnreadNotificationsCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
 import { useFetchConsultantProfile, type MappedConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 
@@ -62,6 +63,8 @@ function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileView
   const profile= consultantViewProfile ?? fetchedProfile;
   const loading = consultantViewProfile ? false: isLoading;
 
+    const{count: unreadCount} = useUnreadNotificationsCount();
+
   // Dynamically select the sidebar based on the user's role
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
@@ -104,9 +107,9 @@ function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileView
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Inject the dynamic sidebar here */}
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-y-auto overscroll-none">
         <header
           className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
@@ -136,7 +139,7 @@ function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileView
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10">
+        <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overflow-hidden">
           <div className="flex flex-col gap-8 w-full max-w-[1024px]">
             <div className="h-1" />
 

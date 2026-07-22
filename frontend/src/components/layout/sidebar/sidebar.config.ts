@@ -54,7 +54,7 @@ export const projectManagerSidebarItems: SidebarItem[] = [
 export const consultantSidebarItems: SidebarItem[] = [
     {
         label: "Profile",
-        path: "/consultant-FAQ",
+        path: "/under-construction",
         icon: UserCheck
     },
     {

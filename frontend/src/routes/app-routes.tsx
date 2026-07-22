@@ -54,8 +54,8 @@ function AnimatedRoutes() {
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
-                    <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
-                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
+                    <Route path="/under-construction" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
+                    <Route path="/profile-view" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    
                     <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage/></PageTransition>}/>   
                     <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/> 

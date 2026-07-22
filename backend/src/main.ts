@@ -22,6 +22,8 @@ async function bootstrap() {
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       'https://consult-iq-red.vercel.app',
+      'https://www.consultiq.co.za',
+
     ],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',

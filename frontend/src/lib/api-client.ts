@@ -10,20 +10,16 @@ export class ApiError extends Error{
 }
 
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = sessionStorage.getItem('ciq_access_token');
 
     const headers = new Headers(options.headers);
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
         headers.set('Content-Type', 'application/json');
     }
 
-    if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-    }
-
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
+        credentials: 'include'
     });
 
 
@@ -39,9 +35,8 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
 
     if (!response.ok) {
-        if (response.status === 401) {
-            sessionStorage.removeItem('ciq_access_token');
-            sessionStorage.removeItem('ciq_refresh_token');
+        if (response.status === 401 && !endpoint.includes('/auth/me')) {
+            
            const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
 
             if (!isAlreadyOnLoginPage) {

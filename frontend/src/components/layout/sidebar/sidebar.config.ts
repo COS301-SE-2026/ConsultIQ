@@ -69,7 +69,7 @@ export const consultantSidebarItems: SidebarItem[] = [
     },
     {
         label: " My Projects",
-        path: "/projects",
+        path: "/consultant-projects",
         icon: Briefcase
     },
 ];

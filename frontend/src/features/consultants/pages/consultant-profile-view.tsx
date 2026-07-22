@@ -69,7 +69,7 @@ function ConsultantProfileViewPage() {
     );
   }
 
-  console.log("profile data: ", profile);
+ 
 
   if (error || !profile) {
     let errorMessage = "profile not found";

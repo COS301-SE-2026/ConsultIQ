@@ -102,11 +102,11 @@ function ConsultantProjects(){
       const navigate = useNavigate();
       const { user } = useAuth();
 
-      const [projects, setProjects] = useState<Project[]>([]);
+      
       const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
 
-    const { profile, isLoading, error } = useFetchConsultantProfile(
+    const { profile, error } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
     );

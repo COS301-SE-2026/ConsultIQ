@@ -122,10 +122,10 @@ export function useFetchConsultantProfile(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | string | null>(null);
   const [notFound,setNotFound]= useState(false);
+  const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
   useEffect(() => {
-    if(!targetConsultantId && !loggedInUserId){
-          setIsLoading(false);
+    if(!hasParams){
           return;
     }
 

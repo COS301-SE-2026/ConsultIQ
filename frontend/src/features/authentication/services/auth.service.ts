@@ -1,7 +1,7 @@
 import type { LoginPayload, LoginResult } from '../types/auth.types';
 import { apiClient } from '../../../lib/api-client';
 
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 
 export class ApiError extends Error {
@@ -42,8 +42,13 @@ export const authService = {
             body: JSON.stringify(payload),
         }).then((res) => handleResponse<LoginResult>(res)),
     getProfile: async () => {
-
         const response = await apiClient.get<Record<string, unknown>>('/auth/me');
         return response?.result ? response.result : response;
+    },
+    logout: async (): Promise<void> => {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+        });
     },
 };

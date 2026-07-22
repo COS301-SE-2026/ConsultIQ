@@ -5,7 +5,7 @@ import type { Project } from "../types/project.types";
 interface ProjectCardProps {
   readonly project: Project;
   readonly onViewDetails: (project: Project) => void;
-  readonly onConfigureScore: (project: Project)=> void;
+  readonly onConfigureScore?: (project: Project)=> void;
 }
 
 export default function ProjectCard({
@@ -51,19 +51,24 @@ export default function ProjectCard({
         </p>
         {/* Footer */}
         <div className="items-wrap items-center justify-between mt-auto pt-4 gap-3">
-          <div className="flex items-center gap-2">
-            <p className="text-[16px] font-semibold">
-              R{project.budget.toLocaleString()}
-            </p>
-          </div>
-          <div className="h-4" />
+          {project.budget !== undefined && (
+            <>
+            <div className="flex items-center gap-2">
+              <p className="text-[16px] font-semibold">
+                R{project.budget.toLocaleString()}
+              </p>
+            </div>
+            <div className="h-4" />
+           </>
+          )}
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() =>onConfigureScore(project)}
-              className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"
-              style={{ backgroundColor: "var(--color-primary)"}}>
-                Configure Scoring
+            {onConfigureScore && (
+              <button type="button" onClick={() =>onConfigureScore(project)}
+                className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"
+                style={{ backgroundColor: "var(--color-primary)"}}>
+                  Configure Scoring
             </button>
-
+            )}
           <button
             type="button"
             onClick={() => onViewDetails(project)}

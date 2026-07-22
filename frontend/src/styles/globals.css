@@ -104,7 +104,6 @@ a {
 button {
   font-family: var(--font-primary);
   cursor: pointer;
-  border: none;
 }
 
 /* Inputs */

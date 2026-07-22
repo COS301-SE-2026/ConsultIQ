@@ -6,10 +6,12 @@ import {
   HttpStatus,
   ForbiddenException,
   Req,
+  Res,
   UnauthorizedException,
   Get,
   Request,
 } from '@nestjs/common';
+import * as express from 'express';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
@@ -44,9 +46,9 @@ export class AuthController {
     const requestingUser = req.user;
     // Consultant managers can only register CONSULTANTs
     if (
-      requestingUser?.role === Role.CONSULTANT_MANAGER &&
-      dto.role !== 'CONSULTANT'
-    ) {
+    (requestingUser?.role as string) === (Role.CONSULTANT_MANAGER as string) &&
+    (dto.role as string) !== 'CONSULTANT'
+    ){
       throw new ForbiddenException(
         'Consultant managers can only register Consultant accounts',
       );
@@ -86,13 +88,35 @@ export class AuthController {
     @Body() dto: LoginDto,
     @ClientIp() ip: string,
     @UserAgent() userAgent: string,
+    @Res({ passthrough: true }) res: any,
   ) {
     const result = await this.authService.login(dto, ip, userAgent);
 
-    // Transormer service formats the shape
+    // Set tokens as HTTP-only cookies
+    res.cookie('ciq_access_token', result.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie('ciq_refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Return user data only
+
+    const userProfile = Object.fromEntries(
+      Object.entries(result as unknown as Record<string, unknown>).filter(
+        ([key]) => key !== 'accessToken' && key !== 'refreshToken',
+      ),
+    );
     return {
       message: 'Login successful.',
-      result,
+      result: userProfile,
     };
   }
 
@@ -101,16 +125,55 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
-    @Body() dto: { refreshToken: string },
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    return await this.refreshTokenService.refresh(dto.refreshToken);
+    @Req() req: express.Request,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const refreshToken = req.cookies['ciq_refresh_token'];
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token missing.');
+    }
+
+    const tokens = await this.refreshTokenService.refresh(refreshToken);
+
+    res.cookie('ciq_access_token', tokens.accessToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 15 * 60 * 1000,
+    });
+
+    res.cookie('ciq_refresh_token', tokens.refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return { message: 'Token refreshed successfully.' };
   }
 
   // Revokes all refresh tokens for the requesting user
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Req() req: Express.Request): Promise<{ message: string }> {
+  async logout(
+    @Req() req: any,
+    @Res({ passthrough: true }) res: any,
+  ): Promise<{ message: string }> {
     await this.refreshTokenService.revokeAllForUser(req.user!.userId);
+
+    // Clear both cookies
+    res.clearCookie('ciq_access_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+    res.clearCookie('ciq_refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+
     return { message: 'Logged out successfully.' };
   }
 

@@ -15,11 +15,13 @@ import ConsultantsPage from "../features/consultants/pages/consultant-list-page"
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
+import ConsultantProjects from "../features/consultants/pages/consultant-projects";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
+import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
@@ -54,6 +56,7 @@ function AnimatedRoutes() {
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
+                    <Route path="/consultant-projects" element={<PageTransition><ConsultantProjects/></PageTransition>}></Route> 
                     <Route path="/consultant-FAQ" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                     <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />    
@@ -61,6 +64,7 @@ function AnimatedRoutes() {
                     <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/> 
                     <Route path="/notifications" element={<PageTransition><NotificationPage/></PageTransition>}/>  
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage/></PageTransition>}/>   
+                    <Route path="/placement-dashboard" element={<PageTransition><PlacementDashboard/></PageTransition>}></Route>                
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

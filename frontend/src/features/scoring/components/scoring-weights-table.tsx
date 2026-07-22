@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, AlertCircle, RotateCcw, Info } from "lucide-react";
+import { CheckCircle, AlertCircle, RotateCcw, Info, Loader2 } from "lucide-react";
 
 export interface ScoringFactor {
     factorName: string;
@@ -16,6 +16,8 @@ interface ScoringWeightTableProps {
     isUsingDefaultWeights?: boolean;
     onSave: (factor: ScoringFactor[]) => Promise<void>;
     onRevertToDefaultWeights?: () => void;
+    onRunMatch?:() =>Promise<void>;
+    isMatching?: boolean;
 }
 
 function ViewInfo({ label, description }: { readonly label: string; readonly description: string }) {
@@ -37,7 +39,7 @@ function ViewInfo({ label, description }: { readonly label: string; readonly des
     );
 }
 
-export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsingDefaultWeights, onSave, onRevertToDefaultWeights }: ScoringWeightTableProps) {
+export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsingDefaultWeights, onSave, onRevertToDefaultWeights, onRunMatch, isMatching }: ScoringWeightTableProps) {
     const [factors, setFactors] = useState<ScoringFactor[]>(initialFactors ?? []);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -58,6 +60,11 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                             <span className={`h-5 w-5 rounded-full ${isUsingDefaultWeights ? 'bg-slate-400' : 'bg-green-500'}`} />
                             {isUsingDefaultWeights ? 'Using Consultancy Defaults' : 'Custom Override Active'}
                         </span>
+                        <button onClick={onRunMatch} disabled= {isMatching}
+                            className="h-9 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-primary rounded-lg ">
+                            {isMatching && <Loader2 className= "h-5 w-5 animate-spin"/>}
+                            {isMatching ? "Running..." : "Run Match"}
+                            </button>
                     </div>
 
                     {!isUsingDefaultWeights && onRevertToDefaultWeights && (

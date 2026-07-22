@@ -1,8 +1,15 @@
 import {
+  Body,
+  Put,
+  Req,
+  UsePipes,
+  ValidationPipe,
   Controller,
   Patch,
   Get,
   Param,
+  HttpCode,
+  HttpStatus,
   Request,
   UnauthorizedException,
   Query,
@@ -11,12 +18,15 @@ import { AdminUserService } from '../../admin/users/services/admin.user.service'
 import { Role } from '../../auth/enums/role.enum';
 import { Roles } from '../../common/guards/roles.guard';
 import { AdminProjectService } from '../../admin/projects/services/admin.projects.service';
+import { AdminService } from '../../admin/services/admin.service';
+import { AssignRoleDto } from '../../admin/dto/assign-role.dto';
 
 @Controller('admin')
 export class AdminController {
   constructor(
     private readonly adminUserService: AdminUserService,
     private readonly adminProjectService: AdminProjectService,
+    private readonly adminService: AdminService,
   ) {}
 
   // User management endpoints
@@ -87,5 +97,18 @@ export class AdminController {
       projectId,
       adminUserId,
     );
+  }
+
+  @Put('users/:userId/role')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @UsePipes(new ValidationPipe({ whitelist: true}))
+  async assignRole(
+      @Param('userId') targetUserId: string,
+      @Body() assignRoleDto: AssignRoleDto,
+      @Req() req: any,
+  ): Promise<{ message: string }> {
+      const performedById = req.user.userId as string;
+      return await this.adminService.assignRole(targetUserId, assignRoleDto, performedById);
   }
 }

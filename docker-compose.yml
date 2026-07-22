@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1011
-      POSTGRES_DB: consultiq
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-consultiq}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -34,12 +34,12 @@ services:
       target: builder
     command: sh -c "npx prisma migrate deploy && npm run start:dev"
     environment:
-      DATABASE_URL: postgresql://postgres:1011@postgres:5432/consultiq
-      JWT_SECRET: local-dev-secret-change-in-production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/consultiq}
+      JWT_SECRET: ${JWT_SECRET:-local-dev-secret-change-in-production}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      FRONTEND_URL: http://localhost:5173
-      APP_URL: http://localhost:5173
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      APP_URL: ${APP_URL:-http://localhost:5173}
     ports:
       - "3000:3000"
     depends_on:
@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile
       target: builder
       args:
-        VITE_API_URL: http://localhost:3000
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
     command: npm run dev -- --host
     ports:
       - "5173:5173"

@@ -37,7 +37,7 @@ function ConsultantProjects(){
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+        <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
           Go Back
         </button>
       </div>

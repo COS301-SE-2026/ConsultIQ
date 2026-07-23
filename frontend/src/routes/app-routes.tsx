@@ -31,6 +31,7 @@ import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
 
 import NotificationPage from "../features/notifications/pages/notifications-page"
+import LandingPage from "../features/landing-page/pages/landing-page";
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -46,6 +47,7 @@ function AnimatedRoutes() {
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
+                <Route path="/landing-page" element={<PageTransition><LandingPage /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
@@ -68,7 +70,7 @@ function AnimatedRoutes() {
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                <Route path="*" element={<Navigate to="/landing-page" replace />} />
             </Routes>
         </AnimatePresence>
     );

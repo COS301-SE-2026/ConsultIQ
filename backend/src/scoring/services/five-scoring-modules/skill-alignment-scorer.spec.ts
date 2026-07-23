@@ -2,7 +2,6 @@ import { RawConsultantDto } from "../../dto/raw-consultant.dto";
 import { RawProjectDto } from "../../dto/raw-project.dto";
 import { SkillAligmentScorer } from "./skill-alignment-scorer";
 import { CompetencyLevel } from "@prisma/client";
-import { ScoringFactor } from "../../enums/scoring-factor.enum";
 
 function consultant(skills: { skillName: string, competencyLevel: CompetencyLevel }[]): RawConsultantDto {
     return {
@@ -51,12 +50,7 @@ describe('SkillAligmentScorer', () => {
 
         expect(result.score).toBe(0.0)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.SKILL_ALIGNMENT,
-            requiredSkills: 1,
-            possessedSkills: 0,
-            missingSkills: ['A'],
-        })
+        expect(result.details).toBe('Matched 0 of 1 skills (Missing: A)')
     })
     it('scores 0.75 when consultant has 3 of required skills', async () => {
         const result = scorer.score(
@@ -75,12 +69,7 @@ describe('SkillAligmentScorer', () => {
 
         expect(result.score).toBe(0.75)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.SKILL_ALIGNMENT,
-            requiredSkills: 4,
-            possessedSkills: 3,
-            missingSkills: ['D'],
-        })
+        expect(result.details).toBe('Matched 3 of 4 skills (Missing: D)')
     })
 
 
@@ -96,12 +85,7 @@ describe('SkillAligmentScorer', () => {
 
         expect(result.score).toBe(1.0)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.SKILL_ALIGNMENT,
-            requiredSkills: 1,
-            possessedSkills: 1,
-            missingSkills: [],
-        })
+        expect(result.details).toBe('Matched 1 of 1 skills')
     })
 
 
@@ -115,30 +99,19 @@ describe('SkillAligmentScorer', () => {
         );
 
         expect(result.missingMandatorySkills).toEqual(['A', 'B']);
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.SKILL_ALIGNMENT,
-            requiredSkills: 2,
-            possessedSkills: 0,
-            missingSkills: ['A', 'B'],
-        })
+        expect(result.details).toBe('Matched 0 of 2 skills (Missing: A, B)')
     })
 
 
 
-    it('if there are no required skills consutant scores 1.0', async () => {
+    it('scores 0.0 and triggers hard exclusion if there are no required skills', async () => {
         const result = scorer.score(
             consultant([]),
             project([]),
         );
         expect(result.score).toBe(0.0);
         expect(result.triggerHardExclusion).toBe(true);
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.SKILL_ALIGNMENT,
-            requiredSkills: 0,
-            possessedSkills: 0,
-            missingSkills: [],
-            note: 'Invalid data: Project has no required skills defined'
-        })
+        expect(result.details).toBe('Invalid data: Project has no required skills defined')
     })
 
 })

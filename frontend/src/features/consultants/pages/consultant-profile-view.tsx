@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -7,9 +8,9 @@ import {
   consultantManagerSidebarItems
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
-import  useUnreadNotificationCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
-import { useFetchConsultantProfile, type MappedConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { updateConsultantProfile } from "../../../api/consultants.api";
 
 import {
   ProfileHeroCard,
@@ -40,55 +41,9 @@ export interface Profile {
   education: Education[];
 }
 
-interface ConsultantProfileViewPageProps{
-  readonly consultantViewProfile?: MappedConsultantProfile;
-}
+type UpdatePayload = Parameters<typeof updateConsultantProfile>[1];
 
-interface ProfileErrorStateProps{
-  readonly errorMessage:string;
-  readonly onBack: () => void;
-}
-
-function getSidebarItems(role:string | undefined){
-  
-  return role === "CONSULTANT_MANAGER"
-    ? consultantManagerSidebarItems
-    : consultantSidebarItems;
-
-}
-
-function ProfileLoadingState(){
-  return(
-    <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
-        Loading profile content...
-      </div>
-  );
-}
-
-function getErrorMessage(error: Error | string | null |undefined):string{
-  if(!error){
-    return "Profile not found";
-  }
-
-  if (typeof error === "string"){
-    return error;
-  }
-
-  return error.message || "error while loading profile";
-}
-
-function ProfileErrorState({errorMessage,onBack}:ProfileErrorStateProps){
-  return(
-    <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{errorMessage}</div>
-        <button onClick={onBack} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-          Go Back
-        </button>
-      </div>
-  );
-
-}
-function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileViewPageProps) {
+function ConsultantProfileViewPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -96,40 +51,65 @@ function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileVie
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const shouldFetch= !consultantViewProfile;
-
-
-  const { profile : fetchedProfile, isLoading, error } = useFetchConsultantProfile(
-    shouldFetch ? targetConsultantId :undefined,
-    shouldFetch ? user?.userId : undefined
+  const { profile: fetchedProfile, isLoading, error } = useFetchConsultantProfile(
+    targetConsultantId,
+    user?.userId
   );
 
-  const profile= consultantViewProfile ?? fetchedProfile;
-  const loading = consultantViewProfile ? false: isLoading;
+ const [overrides, setOverrides] = useState<Partial<Profile>>({});
+ const [lastConsultantId, setLastConsultantId] = useState(targetConsultantId);
+
+  if (targetConsultantId !== lastConsultantId) {
+    setLastConsultantId(targetConsultantId);
+    setOverrides({});
+  }
+
+const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
+
+  const sidebarItems = user?.role === "CONSULTANT_MANAGER"
+    ? consultantManagerSidebarItems
+    : consultantSidebarItems;
+
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
-  const{count: unreadCount} = useUnreadNotificationCount();
-  const sidebarItems=getSidebarItems(user?.role);
-
-  if(loading){
-    return <ProfileLoadingState/>
+  async function save(partial: UpdatePayload) {
+    if (!targetConsultantId) {
+      throw new Error("Missing consultant id");
+    }
+    await updateConsultantProfile(targetConsultantId, partial);
+    setOverrides((prev) => (prev ? { ...prev, ...(partial as Partial<Profile>) } : prev));
   }
 
-  if(!consultantViewProfile && (error || !profile)){
-    return <ProfileErrorState errorMessage={getErrorMessage(error)} onBack={() => navigate(-1)}/>
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+        Loading profile content...
+      </div>
+    );
   }
 
+  if (error || !profile) {
+    let errorMessage = "profile not found";
 
-  if(!profile){
-    return null;
+    if (error) {
+      errorMessage = typeof error === "string" ? error : (error.message || "error while loading profile");
+    }
+
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
+        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+          Go Back
+        </button>
+      </div>
+    );
   }
-  
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      {/* Inject the dynamic sidebar here */}
-      <Sidebar items={sidebarItems} notificationCount={unreadCount} />
+      <Sidebar items={sidebarItems} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto overscroll-none">
+      <div className="flex-1 flex flex-col overflow-y-auto">
         <header
           className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
@@ -154,12 +134,11 @@ function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileVie
             <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
-            {/* Empty div to balance the flexbox if the back button is present */}
             {fromDashboard && <div style={{ width: "70px" }}></div>}
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overflow-hidden">
+        <main className="flex-1 flex flex-col items-center p-10">
           <div className="flex flex-col gap-8 w-full max-w-[1024px]">
             <div className="h-1" />
 
@@ -167,9 +146,9 @@ function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileVie
               fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
-                onSave={() => {
-                  // API call goes here
-                }}
+              onSave={async (status) => {
+                await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+              }}
             />
 
             <PersonalInfoCard
@@ -179,51 +158,83 @@ function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileVie
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
-               onSave={() => {
-                // API call goes here
+              onSave={async (data) => {
+                // fullName/email aren't on UpdateConsultantDto yet — only these three persist
+                await save({
+                  phone: data.phone,
+                  idNumber: data.idNumber,
+                  nationality: data.nationality,
+                });
               }}
-             
             />
 
-            <LocationCard
-              addressLine1={profile.address1}
-              addressLine2={profile.address2}
-              suburb= {profile.suburb}
-              city= {profile.city}
+           <LocationCard
+              addressLine1={profile.addressLine1}
+              addressLine2={profile.addressLine2}
+              suburb={profile.suburb}
+              city={profile.city}
               province={profile.province}
               postalCode={profile.postalCode}
               canEdit={canEdit}
-              onSave={() =>{
-                
+              onSave={async (loc) => {
+                await save({
+                  addressLine1: loc.addressLine1,
+                  addressLine2: loc.addressLine2,
+                  suburb: loc.suburb,
+                  city: loc.city,
+                  province: loc.province,
+                  postalCode: loc.postalCode,
+                });
               }}
-             
             />
 
-            <ExperienceCard 
-              experiences={profile.experience} 
+            <ExperienceCard
+              experiences={profile.experience}
               canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+              onSave={async (experiences) => {
+                await save({
+                  experiences: experiences.map((e) => ({
+                    jobTitle: e.jobTitle,
+                    companyName: e.company,
+                    jobType: e.jobType,
+                    workModel: e.workModel,
+                    startDate: e.startDate,
+                    endDate: e.endDate,
+                    description: e.roleDescription,
+                  })),
+                });
               }}
             />
 
-            <SkillsCard 
+            <SkillsCard
               skills={profile.skills}
               canEdit={canEdit}
-              onSave={() => {
-                // call your API here, then update state
-              }}
-             />
-
-            <EducationCard 
-              educationList={profile.education} 
-              canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+              onSave={async (skills) => {
+                await save({
+                  skills: skills.map((s) => ({
+                    skillName: s.name,
+                    yearsExperience: s.yearsOfExperience,
+                    confidenceLevel: s.confidenceLevel,
+                  })),
+                });
               }}
             />
 
-
+            <EducationCard
+              educationList={profile.education}
+              canEdit={canEdit}
+              onSave={async (education) => {
+                await save({
+                  education: education.map((e) => ({
+                    institution: e.institution,
+                    qualification: e.qualification,
+                    startDate: e.startDate,
+                    endDate: e.endDate || undefined,
+                    fileName: e.fileName,
+                  })),
+                });
+              }}
+            />
           </div>
         </main>
       </div>

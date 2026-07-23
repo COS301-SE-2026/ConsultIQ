@@ -5,29 +5,29 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class AdminUserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async deleteUser(userId: string) {
-    try {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          deletedAt: new Date(),
-          status: 'ARCHIVED',
-        },
-      });
+  // async deleteUser(userId: string) {
+  //   try {
+  //     await this.prisma.user.update({
+  //       where: { id: userId },
+  //       data: {
+  //         deletedAt: new Date(),
+  //         status: 'ARCHIVED',
+  //       },
+  //     });
 
-      return { message: 'User deleted successfully' };
-    } catch (error) {
-      if (
-        error instanceof Object &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException('User does not exist');
-      } else {
-        throw error;
-      }
-    }
-  }
+  //     return { message: 'User deleted successfully' };
+  //   } catch (error) {
+  //     if (
+  //       error instanceof Object &&
+  //       'code' in error &&
+  //       error.code === 'P2025'
+  //     ) {
+  //       throw new NotFoundException('User does not exist');
+  //     } else {
+  //       throw error;
+  //     }
+  //   }
+  // }
 
   async getAllUsers(page: number = 1, limit: number = 10) {
     const where = {
@@ -66,7 +66,7 @@ export class AdminUserService {
           where: {
             deletedAt: null,
             status: 'SUSPENDED',
-            role: { not: 'ADMIN' as const}
+            role: { not: 'ADMIN' as const },
           },
         }),
       ]);

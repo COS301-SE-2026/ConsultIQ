@@ -7,8 +7,9 @@ import {
   consultantManagerSidebarItems
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
+import  useUnreadNotificationCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
-import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { useFetchConsultantProfile, type MappedConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 
 import {
   ProfileHeroCard,
@@ -39,7 +40,55 @@ export interface Profile {
   education: Education[];
 }
 
-function ConsultantProfileViewPage() {
+interface ConsultantProfileViewPageProps{
+  readonly consultantViewProfile?: MappedConsultantProfile;
+}
+
+interface ProfileErrorStateProps{
+  readonly errorMessage:string;
+  readonly onBack: () => void;
+}
+
+function getSidebarItems(role:string | undefined){
+  
+  return role === "CONSULTANT_MANAGER"
+    ? consultantManagerSidebarItems
+    : consultantSidebarItems;
+
+}
+
+function ProfileLoadingState(){
+  return(
+    <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+        Loading profile content...
+      </div>
+  );
+}
+
+function getErrorMessage(error: Error | string | null |undefined):string{
+  if(!error){
+    return "Profile not found";
+  }
+
+  if (typeof error === "string"){
+    return error;
+  }
+
+  return error.message || "error while loading profile";
+}
+
+function ProfileErrorState({errorMessage,onBack}:ProfileErrorStateProps){
+  return(
+    <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="text-red-500 font-semibold text-lg">{errorMessage}</div>
+        <button onClick={onBack} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+          Go Back
+        </button>
+      </div>
+  );
+
+}
+function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileViewPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -47,53 +96,40 @@ function ConsultantProfileViewPage() {
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile, isLoading, error } = useFetchConsultantProfile(
-    targetConsultantId,
-    user?.userId
+  const shouldFetch= !consultantViewProfile;
+
+
+  const { profile : fetchedProfile, isLoading, error } = useFetchConsultantProfile(
+    shouldFetch ? targetConsultantId :undefined,
+    shouldFetch ? user?.userId : undefined
   );
 
-  // Dynamically select the sidebar based on the user's role
-  const sidebarItems = user?.role === "CONSULTANT_MANAGER"
-    ? consultantManagerSidebarItems
-    : consultantSidebarItems;
-
-
-
+  const profile= consultantViewProfile ?? fetchedProfile;
+  const loading = consultantViewProfile ? false: isLoading;
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
-        Loading profile content...
-      </div>
-    );
+  const{count: unreadCount} = useUnreadNotificationCount();
+  const sidebarItems=getSidebarItems(user?.role);
+
+  if(loading){
+    return <ProfileLoadingState/>
   }
 
-  console.log("profile data: ", profile);
-
-  if (error || !profile) {
-    let errorMessage = "profile not found";
-
-    if (error){
-      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
-    }
-
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-          Go Back
-        </button>
-      </div>
-    );
+  if(!consultantViewProfile && (error || !profile)){
+    return <ProfileErrorState errorMessage={getErrorMessage(error)} onBack={() => navigate(-1)}/>
   }
 
+
+  if(!profile){
+    return null;
+  }
+  
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Inject the dynamic sidebar here */}
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-y-auto overscroll-none">
         <header
           className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
@@ -123,7 +159,7 @@ function ConsultantProfileViewPage() {
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10">
+        <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overflow-hidden">
           <div className="flex flex-col gap-8 w-full max-w-[1024px]">
             <div className="h-1" />
 

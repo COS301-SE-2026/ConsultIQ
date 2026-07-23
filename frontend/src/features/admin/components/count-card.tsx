@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 
 interface CountCardProps {
   readonly title: string;
-  readonly count: number;
+  readonly count: number | string;
   readonly icon: LucideIcon;
   readonly iconBackgroundColour: string;
   readonly iconColour: string;
@@ -53,13 +53,13 @@ function CountCard({title , count, icon: Icon, iconBackgroundColour,iconColour }
        >
         <p
           className="font-bold"
-          style={{ color: "var(--color-primary)", fontSize: "16px", whiteSpace: "nowrap"}}
+          style={{ color: "var(--color-primary)", fontSize: "18px", whiteSpace: "nowrap"}}
         >
           {title} 
         </p>
         <span
            className="font-bold"
-          style={{ color: "var(--color-primary)", fontSize: "32px", lineHeight: "1" }}
+          style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1" }}
         >
           {count}
         </span>

@@ -5,13 +5,13 @@ WORKDIR /app
 
 # Copy package files and install all dependencies (including dev)
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 # Copy source code and Prisma schema
 COPY . .
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN npx --no-install prisma generate
 
 # Build the NestJS application
 RUN npm run build
@@ -21,17 +21,17 @@ FROM node:20-alpine AS production
 
 # Install system dependencies needed for Tesseract OCR and PDF processing
 RUN apk add --no-cache \
-    tesseract-ocr \
-    tesseract-ocr-data-eng \
-    python3 \
+    g++ \
     make \
-    g++
+    python3 \
+    tesseract-ocr \
+    tesseract-ocr-data-eng
 
 WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
@@ -50,4 +50,4 @@ USER nestjs
 EXPOSE 3000
 
 # Run migrations then start the application
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy || true && node dist/main.js"]

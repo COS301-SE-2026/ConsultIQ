@@ -94,8 +94,9 @@ export default function ProjectScoringOverridePage() {
             navigate(`/placement-dashboard`, {
                 state: { rawMatchData }
             });
-        } catch (err: any) {
-            setErrMessage(err.message || 'Failed to execute match run.');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            setErrMessage(message || 'Failed to execute match run.');
         } finally {
             setIsMatching(false);
         }

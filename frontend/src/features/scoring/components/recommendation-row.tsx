@@ -61,7 +61,7 @@ export function RecommendationRow({ recommendation, onSelectConsultant }: Recomm
                                     Active Factor Distribution and Weights
                                 </h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    {recommendation.factorBreakdown.map((item: any) => {
+                                    {recommendation.factorBreakdown.map((item: Recommendation['factorBreakdown'][0]) => {
                                         const factorNameStr = item.factor || item.factorName;
                                         const weightPercentage = Math.round(item.weight * 100);
                                         const rawScorePercent = Math.round(item.rawScore * 100);

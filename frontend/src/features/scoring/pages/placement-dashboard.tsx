@@ -1,12 +1,27 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { MatchStatsGrid } from "../components/match-stats-grid";
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
 import { useParams } from "react-router-dom";
+
+
+interface RawMatchResult {
+    consultantId?: string;
+    id?: string;
+    consultantName?: string;
+    name?: string;
+    consultantEmail?: string;
+    email?: string;
+    finalScore?: number;
+    score?: number;
+    rank?: number;
+    factorBreakdown?: unknown[];
+    isPlaced?: boolean;
+}
 
 export default function PlacementDashboard() {
 
@@ -14,23 +29,26 @@ export default function PlacementDashboard() {
 
     const { projectId, runId } = useParams<{ projectId: string; runId: string }>();
     const [projectScoringBasis] = useState<'Override' | 'Default'>('Override');
-    const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
-    useEffect(() => {
-        const matchData = location.state?.rawMatchData;
 
-        if (matchData && Array.isArray(matchData)) {
-            const mappedRecommendations: Recommendation[] = matchData.map((result: any, index: number) => ({
-                consultantId: result.consultantId || result.id,
+    const [stats, setStats] = useState<MatchRunStats | null>(null);
+    const rawMatchData = location.state?.rawMatchData;
+
+    const recommendations = useMemo<Recommendation[]>(() => {
+        if (rawMatchData && Array.isArray(rawMatchData)) {
+            return rawMatchData.map((result: RawMatchResult, index: number) => ({
+                consultantId: result.consultantId || result.id || "",
                 consultantName: result.consultantName || result.name || "Unknown Consultant",
                 consultantEmail: result.consultantEmail || result.email || "",
                 finalScore: result.finalScore || result.score || 0,
                 rank: result.rank || index + 1,
-                factorBreakdown: result.factorBreakdown || [],
+                factorBreakdown: (result.factorBreakdown as Recommendation['factorBreakdown']) || [],
                 isPlaced: result.isPlaced || false
             }));
-
-            setRecommendations(mappedRecommendations);
         }
+        return [];
+    }, [rawMatchData]);
+
+    useEffect(() => {
         const fetchStats = async () => {
             if (projectId && runId) {
                 try {
@@ -42,10 +60,9 @@ export default function PlacementDashboard() {
             }
         };
         fetchStats();
-
     }, [location.state, projectId, runId])
 
-    const [stats, setStats] = useState<MatchRunStats | null>(null);
+
 
     const projectMatched = stats?.totalMatched ?? recommendations.length;
     const projectPlaced = stats?.totalPlaced ?? recommendations.filter(r => r.isPlaced === true).length;

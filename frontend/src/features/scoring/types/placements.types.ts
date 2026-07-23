@@ -2,6 +2,7 @@ export type ScoringFactorName = 'SKILL_ALIGNMENT' | 'COST_FIT' | 'COMPETENCY_MAT
 
 export interface FactorBreakdownItem {
     readonly factorName: string;
+    factor?: string;
     readonly rawScore: number;
     readonly weight: number;
     readonly weightScore: number;

@@ -41,10 +41,10 @@ export interface Profile {
 }
 
 interface ConsultantProfileViewPageProps{
-  consultantViewProfile?: MappedConsultantProfile;
+  readonly consultantViewProfile?: MappedConsultantProfile;
 }
 
-function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileViewPageProps) {
+function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileViewPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();

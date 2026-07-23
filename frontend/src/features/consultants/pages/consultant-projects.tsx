@@ -1,6 +1,6 @@
 import { ProfileHeroCard } from "../components/profile";
 import ProjectGrid from "../../projects/components/project-grid";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import type { Project } from "../../projects/types/project.types";

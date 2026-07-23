@@ -11,66 +11,73 @@ import {
     Matches
 } from 'class-validator';
 
-import { Type} from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsSAIdentityNumber } from '../../common/validators/is-sa-id.validator';
 
 export class UpdateConsultantSkillDto {
-    @IsString()
-    skillName!: string;
+  @IsString()
+  skillName!: string;
 
-    @IsNumber()
-    @Min(0)
-    @Max(50)
-    yearsExperience!: number;
+  @IsNumber()
+  @Min(0)
+  @Max(50)
+  yearsExperience!: number;
 
-    @IsNumber()
-    @Min(1)
-    @Max(4)
-    confidenceLevel!: number;
+  @IsNumber()
+  @Min(1)
+  @Max(4)
+  confidenceLevel!: number;
 }
 
 export class UpdateConsultantExperienceDto {
-    @IsString()
-    jobTitle!: string;
+  @IsString()
+  jobTitle!: string;
 
-    @IsString()
-    companyName!: string;
+  @IsString()
+  companyName!: string;
 
-    @IsEnum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE'], {
-        message: 'Job type must be one of: FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, FREELANCE.',
-    })
-    jobType!: string;
+  @IsEnum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE'], {
+    message:
+      'Job type must be one of: FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, FREELANCE.',
+  })
+  jobType!: string;
 
-    @IsEnum(['ONSITE', 'REMOTE', 'HYBRID'], {
-        message: 'Work model must be one of: ONSITE, REMOTE, HYBRID.',
-    })
-    workModel!: string;
+  @IsEnum(['ONSITE', 'REMOTE', 'HYBRID'], {
+    message: 'Work model must be one of: ONSITE, REMOTE, HYBRID.',
+  })
+  workModel!: string;
 
-    @IsDateString({}, { message: 'Start date must be a valid ISO 8601 date string.' })
-    startDate!: string;
+  @IsDateString(
+    {},
+    { message: 'Start date must be a valid ISO 8601 date string.' },
+  )
+  startDate!: string;
 
-    @IsOptional()
-    @IsDateString({}, { message: 'End date must be a valid ISO 8601 date string.' })
-    endDate?: string;
+  @IsOptional()
+  @IsDateString(
+    {},
+    { message: 'End date must be a valid ISO 8601 date string.' },
+  )
+  endDate?: string;
 
-    @IsString()
-    description!: string;
+  @IsString()
+  description!: string;
 }
 
 export class UpdateConsultantCertificationDto {
-    @IsString()
-    title!: string;
+  @IsString()
+  title!: string;
 
-    @IsString()
-    issuingBody!: string;
+  @IsString()
+  issuingBody!: string;
 
-    @IsOptional()
-    @IsDateString()
-    startDate?: string;
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
 
-    @IsOptional()
-    @IsDateString()
-    endDate?: string;
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 }
 
 export class UpdateConsultantEducationDto {

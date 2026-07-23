@@ -10,7 +10,7 @@ import {
   UsePipes,
   ValidationPipe,
   Param,
-  Patch
+  Patch,
 } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
@@ -87,8 +87,12 @@ export class ConsultantController {
   @Roles(Role.CONSULTANT_MANAGER)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateConsultantProfile(
-    @Param('id') consultantId: string, 
-    @Body() dto: UpdateConsultantDto,): Promise<{message: string}> {
-      return await this.consultantService.updateConsultantProfile(consultantId, dto);
-    } 
+    @Param('id') consultantId: string,
+    @Body() dto: UpdateConsultantDto,
+  ): Promise<{ message: string }> {
+    return await this.consultantService.updateConsultantProfile(
+      consultantId,
+      dto,
+    );
+  }
 }

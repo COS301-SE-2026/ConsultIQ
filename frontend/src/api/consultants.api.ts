@@ -29,3 +29,40 @@ export async function getConsultantProfileByUserId(userId: string): Promise<Cons
 
   return response.json() as Promise<ConsultantProfileDto>;
 }
+
+export async function updateConsultantProfile(
+  consultantId: string,
+  data: Partial<{
+    phone: string;
+    idNumber: string;
+    nationality: string;
+    location: string;
+    costToCompany: number;
+    availability: string;
+    skills: { skillName: string; yearsExperience: number; confidenceLevel: number }[];
+    experiences: {
+      jobTitle: string;
+      companyName: string;
+      jobType: string;
+      workModel: string;
+      startDate: string;
+      endDate?: string;
+      description: string;
+    }[];
+    certifications: { title: string; issuingBody: string; startDate?: string; endDate?: string }[];
+  }>
+): Promise<{ message: string }> {
+  const response = await fetch(`${API_URL}/consultants/${consultantId}`, {
+    method: "PATCH",
+    headers: getHeaders(),
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to update profile");
+  }
+
+  return response.json();
+}

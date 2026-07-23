@@ -166,7 +166,7 @@ export function useFetchConsultantProfile(
     };
 
     fetchProfile();
-  }, [targetConsultantId, loggedInUserId]);
+  }, [targetConsultantId, loggedInUserId,hasParams]);
 
   return { profile, isLoading, error, notFound };
 }

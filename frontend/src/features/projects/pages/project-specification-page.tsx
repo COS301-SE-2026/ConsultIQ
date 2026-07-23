@@ -8,6 +8,7 @@ import type {ProjectLocation} from "../types/project.types"
 import { useState } from "react";
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import axios from 'axios';
 
@@ -61,6 +62,8 @@ function ProjectSpecificationPage() {
     skills: [],
   });
 
+  const{count: unreadCount} = useUnreadNotificationCount();
+
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };  
@@ -109,7 +112,7 @@ function ProjectSpecificationPage() {
   };
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={projectManagerSidebarItems} />
+      <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <header

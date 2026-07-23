@@ -9,6 +9,7 @@ import CountCard from "../components/count-card";
 import {Users,UserCheck,UserX,Folder} from "lucide-react";
 import type { AdminUserItem,UserMeta,AdminProjectItem,ProjectMeta } from "../types/admin.types";
 import { getAllUsers, getAllProjects } from "../services/admin.service";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 export type adminTab = "Users" | "Projects";
 
@@ -33,6 +34,8 @@ function AdminPage(){
     const [isProjectLoading,setIsProjectLoading] = useState(false);
     const [projectError,setProjectError] = useState<string | null>(null);
     const [projectRefreshKey, setProjectRefreshKey] = useState(0);
+
+    const{count: unreadCount} = useUnreadNotificationCount();
 
     const handleTabChange = (tab: adminTab) => {
         setActiveTab(tab);
@@ -105,7 +108,7 @@ function AdminPage(){
 
     return(
          <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-             <Sidebar items={adminSidebarItems} />
+             <Sidebar items={adminSidebarItems}  notificationCount={unreadCount}/>
 
              <div className="flex-1 flex flex-col h-screen overflow-y-auto  gap-4">
                 <header

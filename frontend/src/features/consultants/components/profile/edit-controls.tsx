@@ -13,7 +13,7 @@ interface EditControlProps{
 const buttonStyle = {
      fontSize: "14px",
      padding: "6px 12px",
-     boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+     boxShadow: "2px 4px 6px rgba(211,211,211,0.8)",
 
 };
 
@@ -45,7 +45,7 @@ function EditControls({isEditing, isSaving, onEdit,onSave,onCancel}: EditControl
            ):(
             <Button 
               onClick={onEdit} 
-              variant="secondary" 
+              variant="ghost" 
               className="gap-2 font-bold px-4 py-2 border-b"
               style ={buttonStyle}
              >

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -9,6 +10,7 @@ import {
 import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { updateConsultantProfile } from "../../../api/consultants.api";
 
 import {
   ProfileHeroCard,
@@ -39,6 +41,8 @@ export interface Profile {
   education: Education[];
 }
 
+type UpdatePayload = Parameters<typeof updateConsultantProfile>[1];
+
 function ConsultantProfileViewPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,19 +51,30 @@ function ConsultantProfileViewPage() {
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile, isLoading, error } = useFetchConsultantProfile(
+  const { profile: fetchedProfile, isLoading, error } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
   );
 
-  // Dynamically select the sidebar based on the user's role
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    if (fetchedProfile) setProfile(fetchedProfile);
+  }, [fetchedProfile]);
+
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-
-
   const canEdit = fromDashboard && Boolean(targetConsultantId);
+
+  async function save(partial: UpdatePayload) {
+    if (!targetConsultantId) {
+      throw new Error("Missing consultant id");
+    }
+    await updateConsultantProfile(targetConsultantId, partial);
+    setProfile((prev) => (prev ? { ...prev, ...(partial as Partial<Profile>) } : prev));
+  }
 
   if (isLoading) {
     return (
@@ -69,13 +84,11 @@ function ConsultantProfileViewPage() {
     );
   }
 
-  console.log("profile data: ", profile);
-
   if (error || !profile) {
     let errorMessage = "profile not found";
 
-    if (error){
-      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
+    if (error) {
+      errorMessage = typeof error === "string" ? error : (error.message || "error while loading profile");
     }
 
     return (
@@ -90,7 +103,6 @@ function ConsultantProfileViewPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      {/* Inject the dynamic sidebar here */}
       <Sidebar items={sidebarItems} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
@@ -118,7 +130,6 @@ function ConsultantProfileViewPage() {
             <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
-            {/* Empty div to balance the flexbox if the back button is present */}
             {fromDashboard && <div style={{ width: "70px" }}></div>}
           </div>
         </header>
@@ -131,9 +142,9 @@ function ConsultantProfileViewPage() {
               fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
-                onSave={() => {
-                  // API call goes here
-                }}
+              onSave={async (status) => {
+                await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+              }}
             />
 
             <PersonalInfoCard
@@ -143,51 +154,83 @@ function ConsultantProfileViewPage() {
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
-               onSave={() => {
-                // API call goes here
+              onSave={async (data) => {
+                // fullName/email aren't on UpdateConsultantDto yet — only these three persist
+                await save({
+                  phone: data.phone,
+                  idNumber: data.idNumber,
+                  nationality: data.nationality,
+                });
               }}
-             
             />
 
-            <LocationCard
-              addressLine1={profile.address1}
-              addressLine2={profile.address2}
-              suburb= {profile.suburb}
-              city= {profile.city}
+           <LocationCard
+              addressLine1={profile.addressLine1}
+              addressLine2={profile.addressLine2}
+              suburb={profile.suburb}
+              city={profile.city}
               province={profile.province}
               postalCode={profile.postalCode}
               canEdit={canEdit}
-              onSave={() =>{
-                
+              onSave={async (loc) => {
+                await save({
+                  addressLine1: loc.addressLine1,
+                  addressLine2: loc.addressLine2,
+                  suburb: loc.suburb,
+                  city: loc.city,
+                  province: loc.province,
+                  postalCode: loc.postalCode,
+                });
               }}
-             
             />
 
-            <ExperienceCard 
-              experiences={profile.experience} 
+            <ExperienceCard
+              experiences={profile.experience}
               canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+              onSave={async (experiences) => {
+                await save({
+                  experiences: experiences.map((e) => ({
+                    jobTitle: e.jobTitle,
+                    companyName: e.company,
+                    jobType: e.jobType,
+                    workModel: e.workModel,
+                    startDate: e.startDate,
+                    endDate: e.endDate,
+                    description: e.roleDescription,
+                  })),
+                });
               }}
             />
 
-            <SkillsCard 
+            <SkillsCard
               skills={profile.skills}
               canEdit={canEdit}
-              onSave={() => {
-                // call your API here, then update state
-              }}
-             />
-
-            <EducationCard 
-              educationList={profile.education} 
-              canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+              onSave={async (skills) => {
+                await save({
+                  skills: skills.map((s) => ({
+                    skillName: s.name,
+                    yearsExperience: s.yearsOfExperience,
+                    confidenceLevel: s.confidenceLevel,
+                  })),
+                });
               }}
             />
 
-
+            <EducationCard
+              educationList={profile.education}
+              canEdit={canEdit}
+              onSave={async (education) => {
+                await save({
+                  education: education.map((e) => ({
+                    institution: e.institution,
+                    qualification: e.qualification,
+                    startDate: e.startDate,
+                    endDate: e.endDate || undefined,
+                    fileName: e.fileName,
+                  })),
+                });
+              }}
+            />
           </div>
         </main>
       </div>

@@ -84,9 +84,10 @@ function ExperienceInfo({exp}:{readonly exp: Experience}){
 }
 
 function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
-  const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
-  const [isEditing,setIsEditing]= useState(false);
-  const [localExperience,setLocalExperience]= useState(experiences);
+const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
+const [isEditing,setIsEditing]= useState(false);
+const [localExperience,setLocalExperience]= useState(experiences);
+const [isSaving, setIsSaving] = useState(false);
   
   
 
@@ -104,13 +105,18 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
   }
 
-  const handleSave = () => {
-
-    onSave?.([...localExperience]);
+const handleSave = async () => {
+  setIsSaving(true);
+  try {
+    await onSave?.([...localExperience]);
     setIsEditing(false);
     toast.success("Experience has been updated successfully");
-
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+  } finally {
+    setIsSaving(false);
   }
+};
 
   const addExperience = () => {
 
@@ -167,6 +173,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
             {canEdit && (
                 <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}

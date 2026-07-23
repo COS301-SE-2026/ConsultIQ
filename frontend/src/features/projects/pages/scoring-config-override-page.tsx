@@ -4,6 +4,7 @@ import {type ScoringFactor, ScoringWeightsTable } from "../../scoring/components
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { scoringApiService } from "../../scoring/services/scoring.service";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 export default function ProjectScoringOverridePage(){
     const {projectId} =useParams<{ projectId: string}>();
@@ -15,6 +16,8 @@ export default function ProjectScoringOverridePage(){
     const [errMessage, setErrMessage]= useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isMatching]= useState(false);
+
+    const{count: unreadCount} = useUnreadNotificationCount();
 
     useEffect(() =>{
         const loadConfigurations= async() =>{
@@ -88,7 +91,7 @@ export default function ProjectScoringOverridePage(){
     return(
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="h-screen shrink-0">
-        <Sidebar items={projectManagerSidebarItems} /></div>
+        <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount} /></div>
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"

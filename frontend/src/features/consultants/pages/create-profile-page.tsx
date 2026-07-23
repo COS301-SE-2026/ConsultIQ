@@ -8,6 +8,7 @@ import { createConsultantProfile } from "../services/consultant.service";
 import type { CreateConsultantProfilePayload } from "../services/consultant.service";
 import { toast } from "sonner";
 import { ConsultantProfileProvider, useConsultantProfile } from "../pages/consultant-profile.context";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import PersonalTab from "../layouts/personal-tab";
 import ExperienceTab from "../layouts/experience-tab";
@@ -22,6 +23,8 @@ function CreateProfileContent() {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { profileData, updateProfileData } = useConsultantProfile();
+
+  const{count: unreadCount} = useUnreadNotificationCount();
 
    useEffect(() => {
       if (userId) {
@@ -101,7 +104,7 @@ function CreateProfileContent() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantManagerSidebarItems} />
+      <Sidebar items={consultantManagerSidebarItems}  notificationCount={unreadCount}/>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header

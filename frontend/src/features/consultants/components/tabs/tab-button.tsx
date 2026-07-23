@@ -14,7 +14,6 @@ export default function TabButton({
             onClick={onClick}
             className={`
                 relative
-                pb-4
                 text-[18px]
                 font-semibold
                 transition-colors

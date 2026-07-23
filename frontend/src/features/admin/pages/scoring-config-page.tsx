@@ -3,6 +3,7 @@ import { type ScoringFactor, ScoringWeightsTable } from "../../scoring/component
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { scoringApiService } from "../../scoring/services/scoring.service";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 
 export default function AdminScoringConfigPage() {
@@ -11,6 +12,9 @@ export default function AdminScoringConfigPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+const{count: unreadCount} = useUnreadNotificationCount();
+
   // Fetch default configurations
   useEffect(() => {
     let mount = true;
@@ -57,7 +61,7 @@ export default function AdminScoringConfigPage() {
   }
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={adminSidebarItems} />
+      <Sidebar items={adminSidebarItems} notificationCount={unreadCount}/>
       <div className="flex-1 flex flex-col">
         <header
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"

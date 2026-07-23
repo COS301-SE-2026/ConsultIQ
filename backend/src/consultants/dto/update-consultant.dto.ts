@@ -1,13 +1,14 @@
 import {
-  IsString,
-  IsNumber,
-  IsArray,
-  IsOptional,
-  IsEnum,
-  Min,
-  Max,
-  IsDateString,
-  Matches,
+    IsString,
+    IsNumber,
+    IsArray,
+    IsNotEmpty,
+    IsOptional,
+    IsEnum,
+    Min,
+    Max,
+    IsDateString,
+    Matches
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
@@ -79,53 +80,96 @@ export class UpdateConsultantCertificationDto {
   endDate?: string;
 }
 
+export class UpdateConsultantEducationDto {
+  @IsString()
+  @IsNotEmpty()
+  institution!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  qualification!: string;
+
+  @IsDateString()
+  startDate!: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  fileName?: string;
+}
+
 export class UpdateConsultantDto {
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
-  phone?: string;
+    @IsOptional()
+    @IsString()
+    @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
+    phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @Matches(/^\d{13}$/, { message: 'ID number must be exactly 13 digits' })
-  @IsSAIdentityNumber()
-  idNumber?: string;
+    @IsOptional()
+    @IsString()
+    @Matches(/^\d{13}$/, { message: 'ID number must be exactly 13 digits' })
+    @IsSAIdentityNumber()
+    idNumber?: string;
 
-  @IsOptional()
-  @IsString()
-  @Matches(/^[a-zA-Z\s'-]+$/, {
-    message: 'Nationality must contain letters only',
-  })
-  nationality?: string;
+    @IsOptional()
+    @IsString()
+    @Matches(/^[a-zA-Z\s'-]+$/, { message: 'Nationality must contain letters only' })
+    nationality?: string;
 
-  @IsOptional()
-  @IsString()
-  location?: string;
+    @IsOptional()
+    @IsString()
+    addressLine1?: string;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  costToCompany?: number;
+    @IsOptional()
+    @IsString()
+    addressLine2?: string;
 
-  @IsOptional()
-  @IsEnum(['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'], {
-    message:
-      'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
-  })
-  availability?: string;
+    @IsOptional()
+    @IsString()
+    suburb?: string;
 
-  @IsOptional()
-  @IsArray()
-  @Type(() => UpdateConsultantSkillDto)
-  skills?: UpdateConsultantSkillDto[];
+    @IsOptional()
+    @IsString()
+    city?: string;
 
-  @IsOptional()
-  @IsArray()
-  @Type(() => UpdateConsultantExperienceDto)
-  experiences?: UpdateConsultantExperienceDto[];
+    @IsOptional()
+    @IsString()
+    province?: string;
 
-  @IsOptional()
-  @IsArray()
-  @Type(() => UpdateConsultantCertificationDto)
-  certifications?: UpdateConsultantCertificationDto[];
+    @IsOptional()
+    @IsString()
+    postalCode?: string;
+
+    @IsOptional()
+    @IsNumber()
+    @Min(0)
+    costToCompany?: number;
+
+    @IsOptional()
+    @IsEnum(['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'], {
+        message: 'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
+    })
+    availability?: string;
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => UpdateConsultantSkillDto)
+    skills?: UpdateConsultantSkillDto[];
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => UpdateConsultantExperienceDto)
+    experiences?: UpdateConsultantExperienceDto[];
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => UpdateConsultantCertificationDto)
+    certifications?: UpdateConsultantCertificationDto[];
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => UpdateConsultantEducationDto)
+    education?: UpdateConsultantEducationDto[];
 }

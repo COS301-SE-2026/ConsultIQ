@@ -32,6 +32,11 @@ import { ProtectedRoute } from "./protected-route";
 
 import NotificationPage from "../features/notifications/pages/notifications-page"
 
+//brand styling
+import BrandStyleHome from "../brand style guide/pages/style-guide-home.tsx"
+
+
+
 function AnimatedRoutes() {
     const location = useLocation();
 
@@ -46,6 +51,7 @@ function AnimatedRoutes() {
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
+                <Route path="/brand-style-home" element={<PageTransition><BrandStyleHome /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

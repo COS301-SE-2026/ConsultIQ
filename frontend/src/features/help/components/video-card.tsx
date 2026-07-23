@@ -1,10 +1,10 @@
-import type  {TutorialItem} from "./tutorial-section" 
+import type  {TutorialItem} from "./tutorials.data" 
 
 
 
 interface VideoCardProps{
-    tutorial:  TutorialItem;
-    onSelect: () => void;
+   readonly tutorial:  TutorialItem;
+    readonly onSelect: () => void;
 }
 
 export default function VideoCard({tutorial , onSelect}:VideoCardProps){

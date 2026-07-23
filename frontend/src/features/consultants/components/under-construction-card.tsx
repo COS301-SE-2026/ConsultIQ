@@ -13,7 +13,7 @@ const faqs = [
     id: 2,
     question: "How will I know my profile is ready ?",
     answer:
-      "You'll receive a notification by email once your profile has been reviewed and approved by your consultant manager. This page will also automatically update to show your full profile.",
+      "You'll receive a notification once your profile has been reviewed and approved by your consultant manager. This page will also automatically update to show your full profile.",
   },
   {
     id: 3,
@@ -104,7 +104,7 @@ export function UnderConstructionCard() {
 
   return (
     <div
-      className="bg-white rounded-2xl w-full max-w-145 mx-auto px-8 pt-14 pb-14 sm:px-12 sm:pt-16 sm:pb-16 flex flex-col gap-8 box-border"
+      className="bg-white rounded-2xl w-full max-w-2xl mx-auto px-8 pt-14 pb-14 sm:px-12 sm:pt-16 sm:pb-16 flex flex-col gap-8 box-border"
       style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.06)" }}
     >
       {/* Hero section */}

@@ -40,7 +40,7 @@ describe('MatchRunController', () => {
             const userId = 'user-01';
 
             const mockRequest = {
-                user: { id: userId },
+                user: { userId: userId },
             };
 
             const mockResult: ConsultantMatchResult[] = [

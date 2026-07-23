@@ -156,24 +156,23 @@ export class MatchRunService {
     await this.prisma.$transaction(async (tx) => {
       const matchRun = await tx.matchRun.create({
         data: {
-          projectId,
-          executedByUserId,
+          project: { connect: { id: projectId } },
+          executedByUser: { connect: { id: executedByUserId } },
           configurationSnapshot: activeWeights,
           totalConsultantsScored: results.length,
           totalConsultantsExcluded: excludedCount,
           status: MatchRunStatus.COMPLETED,
-        },
-      });
+        }
+      })
       await tx.matchRunResult.createMany({
         data: results.map((r) => ({
           matchRunId: matchRun.id,
           consultantId: r.consultantId,
           rank: r.rank,
           totalScore: r.finalScore,
-          // cast to prisma JSON type
-          factorScores: r.factorBreakdown as unknown as Prisma.InputJsonValue,
-        })),
-      });
+          factorScores: r.factorBreakdown as unknown as Prisma.InputJsonArray,
+        }))
+      })
     });
   }
 
@@ -210,7 +209,7 @@ export class MatchRunService {
     return matchRun.results.map((r) => ({
       consultantId: r.consultantId,
       consultantName: r.consultant?.user?.fullName || 'Unknown',
-      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com..',
+      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com',
       finalScore: r.totalScore,
       rank: r.rank,
       factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],

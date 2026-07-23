@@ -10,6 +10,7 @@ export interface WeightedFactorBreakdown {
   rawScore: number;
   weight: number;
   weightedContribution: number;
+  details?: string;
 }
 
 export interface ConsultantMatchResult {

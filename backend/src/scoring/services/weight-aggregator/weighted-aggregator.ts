@@ -11,6 +11,7 @@ export interface ScoredConsultant {
   consultantEmail: string;
   factorScores: Partial<Record<ScoringFactor, number>>;
   weights: Partial<Record<ScoringFactor, number>>;
+  factorDetails?: Partial<Record<ScoringFactor, string>>;
 }
 
 export interface ScoredConsultantsResult {
@@ -61,6 +62,8 @@ export class WeightedAggregator {
       const weight = consultant.weights[factor] ?? 0;
       const exactContribution = rawScore * weight;
 
+      const details = consultant.factorDetails?.[factor];
+
       sum += exactContribution;
       return {
         factor,
@@ -70,6 +73,7 @@ export class WeightedAggregator {
           exactContribution,
           FACTOR_BREAKDOWN_DECIMAL_PLACES,
         ),
+        details,
       };
     });
 

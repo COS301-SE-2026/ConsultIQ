@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -56,11 +56,15 @@ function ConsultantProfileViewPage() {
     user?.userId
   );
 
-  const [profile, setProfile] = useState<Profile | null>(null);
+ const [overrides, setOverrides] = useState<Partial<Profile>>({});
+ const [lastConsultantId, setLastConsultantId] = useState(targetConsultantId);
 
-  useEffect(() => {
-    if (fetchedProfile) setProfile(fetchedProfile);
-  }, [fetchedProfile]);
+  if (targetConsultantId !== lastConsultantId) {
+    setLastConsultantId(targetConsultantId);
+    setOverrides({});
+  }
+
+const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
@@ -73,7 +77,7 @@ function ConsultantProfileViewPage() {
       throw new Error("Missing consultant id");
     }
     await updateConsultantProfile(targetConsultantId, partial);
-    setProfile((prev) => (prev ? { ...prev, ...(partial as Partial<Profile>) } : prev));
+    setOverrides((prev) => (prev ? { ...prev, ...(partial as Partial<Profile>) } : prev));
   }
 
   if (isLoading) {

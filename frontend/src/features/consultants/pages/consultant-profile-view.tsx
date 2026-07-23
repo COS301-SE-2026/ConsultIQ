@@ -44,6 +44,50 @@ interface ConsultantProfileViewPageProps{
   readonly consultantViewProfile?: MappedConsultantProfile;
 }
 
+interface ProfileErrorStateProps{
+  readonly errorMessage:string;
+  readonly onBack: () => void;
+}
+
+function getSidebarItems(role:string | undefined){
+  
+  return role === "CONSULTANT_MANAGER"
+    ? consultantManagerSidebarItems
+    : consultantSidebarItems;
+
+}
+
+function ProfileLoadingState(){
+  return(
+    <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
+        Loading profile content...
+      </div>
+  );
+}
+
+function getErrorMessage(error: Error | string | null |undefined):string{
+  if(!error){
+    return "Profile not found";
+  }
+
+  if (typeof error === "string"){
+    return error;
+  }
+
+  return error.message || "error while loading profile";
+}
+
+function ProfileErrorState({errorMessage,onBack}:ProfileErrorStateProps){
+  return(
+    <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="text-red-500 font-semibold text-lg">{errorMessage}</div>
+        <button onClick={onBack} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+          Go Back
+        </button>
+      </div>
+  );
+
+}
 function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileViewPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,46 +106,19 @@ function ConsultantProfileViewPage({ consultantViewProfile}:ConsultantProfileVie
 
   const profile= consultantViewProfile ?? fetchedProfile;
   const loading = consultantViewProfile ? false: isLoading;
-
-    const{count: unreadCount} = useUnreadNotificationCount();
-    console.log("unread",unreadCount);
-    
-
-  // Dynamically select the sidebar based on the user's role
-  const sidebarItems = user?.role === "CONSULTANT_MANAGER"
-    ? consultantManagerSidebarItems
-    : consultantSidebarItems;
-
-
-
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
-        Loading profile content...
-      </div>
-    );
+  const{count: unreadCount} = useUnreadNotificationCount();
+  const sidebarItems=getSidebarItems(user?.role);
+
+  if(loading){
+    return <ProfileLoadingState/>
   }
 
- 
-
-  if (!consultantViewProfile &&(error || !profile)) {
-    let errorMessage = "profile not found";
-
-    if (error){
-      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
-    }
-
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-          Go Back
-        </button>
-      </div>
-    );
+  if(!consultantViewProfile && (error || !profile)){
+    return <ProfileErrorState errorMessage={getErrorMessage(error)} onBack={() => navigate(-1)}/>
   }
+
 
   if(!profile){
     return null;

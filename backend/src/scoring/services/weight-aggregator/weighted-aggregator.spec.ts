@@ -22,6 +22,9 @@ describe('WeightedAggregator', () => {
 
         const consultant: ScoredConsultant = {
             consultantId: 'consultant-01',
+            consultantName: 'Lethabo',
+            consultantEmail: 'lethabo@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 1,
                 [ScoringFactor.COMPETENCY_LEVEL]: 1,
@@ -40,6 +43,9 @@ describe('WeightedAggregator', () => {
 
         const consultant: ScoredConsultant = {
             consultantId: 'consultant-01',
+            consultantName: 'Kutlwano',
+            consultantEmail: 'kutlwano@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
                 [ScoringFactor.COMPETENCY_LEVEL]: 0.5,
@@ -58,6 +64,9 @@ describe('WeightedAggregator', () => {
 
         const c1: ScoredConsultant = {
             consultantId: 'c1',
+            consultantName: 'Benjamin',
+            consultantEmail: 'Benjamin@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -66,6 +75,9 @@ describe('WeightedAggregator', () => {
 
         const c2: ScoredConsultant = {
             consultantId: 'c2',
+            consultantName: 'Bruce',
+            consultantEmail: 'Bruce@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -74,6 +86,9 @@ describe('WeightedAggregator', () => {
 
         const c3: ScoredConsultant = {
             consultantId: 'c3',
+            consultantName: 'Lethabo',
+            consultantEmail: 'Lethabo@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -89,6 +104,9 @@ describe('WeightedAggregator', () => {
 
         const c1: ScoredConsultant = {
             consultantId: 'c1',
+            consultantName: 'Brook',
+            consultantEmail: 'Brook@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -97,6 +115,9 @@ describe('WeightedAggregator', () => {
 
         const c2: ScoredConsultant = {
             consultantId: 'c2',
+            consultantName: 'Chopper',
+            consultantEmail: 'Chopper@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },
@@ -105,6 +126,9 @@ describe('WeightedAggregator', () => {
 
         const c3: ScoredConsultant = {
             consultantId: 'c3',
+            consultantName: 'Luffy',
+            consultantEmail: 'Luffy@gmail.com',
+            isPlaced: false,
             factorScores: {
                 [ScoringFactor.SKILL_ALIGNMENT]: 0.75,
             },

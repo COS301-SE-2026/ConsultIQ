@@ -508,9 +508,10 @@ model MatchRun {
   status                 MatchRunStatus  
   totalConsultantsScored Int              @default(0)
   totalConsultantsExcluded Int              @default(0)
+  totalConsultantsPlaced Int      @default(0)
   results                MatchRunResult[]
   configurationSnapshot  Json
-  
+
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
 }
@@ -523,6 +524,7 @@ model MatchRunResult {
   totalScore   Float
   rank         Int
   factorScores Json
+  isPlaced Boolean @default(false)
   consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
 }

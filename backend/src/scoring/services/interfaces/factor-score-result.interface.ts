@@ -1,5 +1,3 @@
-import { ScorerDetail } from '../../enums/scoring-factor.enum';
-
 export interface FactorScoreResult {
   score: number;
 
@@ -9,5 +7,5 @@ export interface FactorScoreResult {
   //name of mandatory skills per project
   missingMandatorySkills?: string[];
 
-  detail?: ScorerDetail;
+  details?: string;
 }

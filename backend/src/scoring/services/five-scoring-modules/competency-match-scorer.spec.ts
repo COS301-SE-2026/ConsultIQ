@@ -1,7 +1,6 @@
 import { RawConsultantDto } from "../../dto/raw-consultant.dto";
 import { RawProjectDto } from "../../dto/raw-project.dto";
 import { COMPETENCY_RANK } from "../../enums/competency-level.enum";
-import { ScoringFactor } from "../../enums/scoring-factor.enum";
 import { CompetencyMatchScorer } from "./competency-match-scorer";
 import { CompetencyLevel } from "@prisma/client";
 
@@ -35,6 +34,7 @@ describe('CompetencyMatchScorer', () => {
 
 
     let scorer: CompetencyMatchScorer;
+    const OVER_QUALIFIED_PENALTY = 0.15;
 
     beforeEach(() => {
         scorer = new CompetencyMatchScorer();
@@ -53,21 +53,9 @@ describe('CompetencyMatchScorer', () => {
 
         expect(result.score).toBe(1.0)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_LEVEL,
-            baseScore: 1.0,
-            bonusApplied: 0,
-            perSkill: [{
-                skill: 'B',
-                consultantLevel: CompetencyLevel.INTERMEDIATE,
-                requiredLevel: CompetencyLevel.INTERMEDIATE,
-                score: 1.0,
-                weight: 1.0,
-                isMandatory: false
-            }]
-        })
+        expect(result.details).toBe('Competency Match: 100.0%.');
     })
-    it('scores are averaged across the required skills', async () => {
+    it('scores are averaged across the required skills appying over qualification penalties', async () => {
         const result = scorer.score(
             consultant([
                 { skillName: 'A', competencyLevel: CompetencyLevel.EXPERT },
@@ -79,34 +67,18 @@ describe('CompetencyMatchScorer', () => {
             ]),
         );
 
-        const markA = 1.0;
+        const reqquiredRankA = COMPETENCY_RANK[CompetencyLevel.INTERMEDIATE];
+        const consultantRankA = COMPETENCY_RANK[CompetencyLevel.EXPERT];
+        const rankDiff = consultantRankA - reqquiredRankA;
+
+        const markA = Math.max(0.7, 1.0 - (rankDiff * OVER_QUALIFIED_PENALTY))
         const markB = COMPETENCY_RANK[CompetencyLevel.BEGINNER] / COMPETENCY_RANK[CompetencyLevel.EXPERT];
         const markAverage = (markA + markB) / 2;
+
         expect(result.score).toBeCloseTo(markAverage, 5)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_LEVEL,
-            baseScore: markAverage,
-            bonusApplied: 0,
-            perSkill: [{
-                skill: 'A',
-                consultantLevel: CompetencyLevel.EXPERT,
-                requiredLevel: CompetencyLevel.INTERMEDIATE,
-                score: markA,
-                weight: 1.0,
-                isMandatory: false
-            },
-            {
-                skill: 'B',
-                consultantLevel: CompetencyLevel.BEGINNER,
-                requiredLevel: CompetencyLevel.EXPERT,
-                score: markB,
-                weight: 1.0,
-                isMandatory: false
-            }
-
-            ]
-        })
+        const expectedPercentage = (markAverage * 100).toFixed(1);
+        expect(result.details).toBe(`Competency Match: ${expectedPercentage}%.`)
     })
 
 
@@ -121,9 +93,29 @@ describe('CompetencyMatchScorer', () => {
         );
 
         const mark = COMPETENCY_RANK[CompetencyLevel.BEGINNER] / COMPETENCY_RANK[CompetencyLevel.EXPERT];
-        expect(result.score).toBeCloseTo(mark, 5)
+        const expectedPercentage = (mark * 100).toFixed(1);
+        expect(result.details).toBe(`Competency Match: ${expectedPercentage}%.`);
     })
 
+
+    it('applies a penalty for overqualified consultants exceeding the required skill level', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'A', competencyLevel: CompetencyLevel.EXPERT },
+            ]),
+            project([
+                { skillName: 'A', minimumCompetencyLevel: CompetencyLevel.BEGINNER, isMandatory: false },
+            ]),
+        );
+
+        const requiredRank = COMPETENCY_RANK[CompetencyLevel.BEGINNER];
+        const consultantsRank = COMPETENCY_RANK[CompetencyLevel.EXPERT];
+        const rankDiff = consultantsRank - requiredRank;
+        const expectedScore = Math.max(0.7, 1.0 - (rankDiff) * OVER_QUALIFIED_PENALTY);
+
+        const expectedPercentage = (expectedScore * 100).toFixed(1);
+        expect(result.details).toBe(`Competency Match: ${expectedPercentage}%.`);
+    })
 
     it('scores 0.02 when a consultant doesnt have the required skill but they still have a skill', async () => {
         const result = scorer.score(
@@ -136,19 +128,7 @@ describe('CompetencyMatchScorer', () => {
         );
         expect(result.score).toBeCloseTo(0.02, 5)
 
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COMPETENCY_LEVEL,
-            baseScore: 0.0,
-            bonusApplied: 0.02,
-            perSkill: [{
-                skill: 'B',
-                consultantLevel: 'NONE',
-                requiredLevel: CompetencyLevel.EXPERT,
-                score: 0.0,
-                weight: 1.0,
-                isMandatory: false,
-            }]
-        })
+        expect(result.details).toBe('Competency Match: 0.0%. Bonus applied for 1 extra skill(s): +2.0%.');
 
     })
 
@@ -163,6 +143,7 @@ describe('CompetencyMatchScorer', () => {
             ]),
         );
         expect(result.score).toEqual(1.0)
+        expect(result.details).toBe('Competency Match: 100.0%.');
     })
 
     it('if there are no required skills consutant scores 1.0', async () => {
@@ -172,6 +153,7 @@ describe('CompetencyMatchScorer', () => {
         );
         expect(result.score).toEqual(1);
         expect(result.triggerHardExclusion).toBe(false);
+        expect(result.details).toBe('No specific competency levels required by project.');
     })
 
     it('weighs mandatory skills more than optional skills', async () => {
@@ -193,7 +175,11 @@ describe('CompetencyMatchScorer', () => {
         const average = ((markA * 1.0) + (markB * 2.0)) / 3.0;
 
         expect(result.score).toBeCloseTo(average, 5)
-
+        const expectedPercentage = (average * 100).toFixed(1);
+        expect(result.details).toBe(`Competency Match: ${expectedPercentage}%.`);
 
     })
+
+
+
 })

@@ -20,7 +20,7 @@ export default function FaqSection({ group,icon : Icon,items} :FAQItems){
                     const isOpen= open === i;
                     return(
                       <div 
-                        key={i} 
+                        key={q} 
                         className={`rounded-lg overflow-hidden transition-all" ${isOpen ? "border border-slate-500" 
                             : "border border-slate-300"
                         } ` }

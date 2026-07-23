@@ -19,8 +19,8 @@ const faqGroups: FAQItems[] = [
     group: "Scoring & Recommendations",
     icon: BarChart2,
     items: [
-      { q: "How is the fit score calculated?", a: "ConsultIQ weighs five factors — skill alignment, competency level, geographic travel feasibility, cost-to-company vs billing rate, and real-time availability — using your configured weights to produce one auditable number between 0 and 100." },
-      { q: "Can I adjust the weight of each scoring factor?", a: "Yes. You can configure a consultancy-wide default in Settings → Scoring, and project managers can override individual factor weights per engagement. Project-level settings always take precedence." },
+      { q: "How is the fit score calculated?", a: "ConsultIQ weighs five factors — skill alignment, competency level, geographic travel feasibility, cost-to-company vs billing rate, and real-time availability — using your configured weights to produce one score." },
+      { q: "Can I adjust the weight of each scoring factor?", a: "Yes. You can configure a consultancy-wide default , and project managers can override individual factor weights per project. Project-level settings always take precedence." },
       
     ],
   },

@@ -16,7 +16,7 @@ interface ScoringWeightTableProps {
     isUsingDefaultWeights?: boolean;
     onSave: (factor: ScoringFactor[]) => Promise<void>;
     onRevertToDefaultWeights?: () => void;
-    onRunMatch?:() =>Promise<void>;
+    onRunMatch?: () => Promise<void>;
     isMatching?: boolean;
 }
 
@@ -60,11 +60,11 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                             <span className={`h-5 w-5 rounded-full ${isUsingDefaultWeights ? 'bg-slate-400' : 'bg-green-500'}`} />
                             {isUsingDefaultWeights ? 'Using Consultancy Defaults' : 'Custom Override Active'}
                         </span>
-                        <button onClick={onRunMatch} disabled= {isMatching}
-                            className="h-9 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-primary rounded-lg ">
-                            {isMatching && <Loader2 className= "h-5 w-5 animate-spin"/>}
+                        <button onClick={onRunMatch} disabled={isMatching}
+                            className="h-9 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-white rounded-lg" style={{ backgroundColor: "var(--color-primary)" }}>
+                            {isMatching && <Loader2 className="h-5 w-5 animate-spin" />}
                             {isMatching ? "Running..." : "Run Match"}
-                            </button>
+                        </button>
                     </div>
 
                     {!isUsingDefaultWeights && onRevertToDefaultWeights && (

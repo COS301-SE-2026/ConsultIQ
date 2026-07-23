@@ -4,6 +4,7 @@ import type { Project } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
 import ProjectSkillsSection from "./project-skills-section";
+import { getAssignedProjectDetails } from "../../consultants/services/consultant.service";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
@@ -131,6 +132,53 @@ export default function ProjectDetailsModal({
     const fetchProjectDetails = async () => {
       setIsLoading(true);
       try {
+
+        if (isConsultant) {
+          // consultant path ---
+          const data = await getAssignedProjectDetails(project.id);
+          const p = data.project;
+ 
+          const mappedProject: Project = {
+            id: p.id,
+            name: p.projectName,
+            projectName: p.projectName,
+            clientName: p.clientName,
+            description: p.description || "No description provided.",
+            teamSize: p.teamSize,
+            allocation: p.allocation,
+            budget: p.budget,
+            startDate: p.startDate,
+            endDate: p.endDate || "",
+            status: p.status,
+ 
+            addressLine1: p.addressLine1,
+            addressLine2: p.addressLine2 || undefined,
+            suburb: p.suburb || undefined,
+            city: p.city,
+            province: p.province,
+            postalCode: p.postalCode,
+ 
+            location: {
+              addressLine1: p.addressLine1,
+              addressLine2: p.addressLine2 || undefined,
+              suburb: p.suburb ?? "",
+              city: p.city,
+              province: p.province,
+              postalCode: p.postalCode,
+            },
+ 
+            skills: p.skills.map((s) => ({
+              name: s.skillName,
+              competency: s.competency,
+              years: s.years,
+              mandatory: s.mandatory,
+            })),
+          };
+ 
+          setFullProject(mappedProject);
+          return;
+        }
+
         const token = sessionStorage.getItem("ciq_access_token");
         const response = await fetch(`import.meta.env.VITE_API_URL/projects/${project.id}`, {
           headers: {

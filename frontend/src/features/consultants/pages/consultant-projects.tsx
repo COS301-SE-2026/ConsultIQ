@@ -8,7 +8,7 @@ import {useState } from "react";
 import ProjectDetailsModal from "../../projects/components/project-details-modal";
 import {consultantSidebarItems,} from "../../../components/layout/sidebar/sidebar.config";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-
+import { useFetchAssignedProject } from "../../../hooks/useFetchAssignedProjects";
 
 
 
@@ -20,7 +20,7 @@ function ConsultantProjects(){
       
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
-    const [projects] = useState<Project[] >([]);
+    const { projects, isLoading: projectsLoading, error: projectsError } = useFetchAssignedProject();
 
     const { profile, error } = useFetchConsultantProfile(
     targetConsultantId,
@@ -75,7 +75,11 @@ function ConsultantProjects(){
                     <h2>Assigned Projects</h2>
                     <span className="bg-brand-blue text-white font-bold rounded-full flex items-center justify-center w-6 h-6">{projects.length}</span>
                 </div> 
-                {projects.length >0 ? (
+                {projectsLoading ? (
+                  <div>Loading your projects...</div>
+                    ) : projectsError ? (
+                    <div className="text-red-500">{projectsError}</div>
+                    ) : projects.length >0 ? (
                     <ProjectGrid projects={projects} onViewDetails={setSelectedProject} />
                     ) : (
                     <div>

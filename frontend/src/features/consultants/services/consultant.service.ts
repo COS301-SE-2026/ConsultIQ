@@ -140,6 +140,7 @@ export interface AssignedProjectDetailDto {
   placementAllocation: number;
   startDate: string;
   endDate: string | null;
+  project: AssignedProjectDetail;
 }
 
 export const getAssignedProjects = async (): Promise<AssignedProjectListItem[]> => {

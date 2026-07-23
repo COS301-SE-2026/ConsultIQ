@@ -36,7 +36,12 @@ export async function updateConsultantProfile(
     phone: string;
     idNumber: string;
     nationality: string;
-    location: string;
+    addressLine1: string;
+    addressLine2: string;
+    suburb: string;
+    city: string;
+    province: string;
+    postalCode: string;
     costToCompany: number;
     availability: string;
     skills: { skillName: string; yearsExperience: number; confidenceLevel: number }[];
@@ -50,6 +55,13 @@ export async function updateConsultantProfile(
       description: string;
     }[];
     certifications: { title: string; issuingBody: string; startDate?: string; endDate?: string }[];
+    education: {
+      institution: string;
+      qualification: string;
+      startDate: string;
+      endDate?: string;
+      fileName?: string;
+    }[];
   }>
 ): Promise<{ message: string }> {
   const response = await fetch(`${API_URL}/consultants/${consultantId}`, {

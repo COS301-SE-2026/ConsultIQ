@@ -47,6 +47,7 @@ export class MatchRunAggregationService {
       consultantEmail: input.consultantEmail,
       factorScores: input.outcome.factorScores,
       weights: input.outcome.redistributedWeights,
+      factorDetails: input.outcome.factorDetails,
     }));
   }
 }

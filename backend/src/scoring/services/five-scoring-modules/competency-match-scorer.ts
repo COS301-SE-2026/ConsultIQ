@@ -3,7 +3,7 @@ import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { COMPETENCY_RANK } from '../../enums/competency-level.enum';
-import { ScoringFactor } from '../../enums/scoring-factor.enum';
+
 
 @Injectable()
 export class CompetencyMatchScorer {
@@ -22,10 +22,7 @@ export class CompetencyMatchScorer {
       return {
         score: 1,
         triggerHardExclusion: false,
-        detail: {
-          factor: ScoringFactor.COMPETENCY_LEVEL,
-          perSkill: [],
-        },
+        details: 'No specific competency levels required by project.',
       };
     }
 
@@ -116,18 +113,19 @@ export class CompetencyMatchScorer {
 
     const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
     const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));
+    const baseFormatted = (baseScore * 100).toFixed(1);
 
+    const bonusFormatted = (skillCountBonus * 100).toFixed(1);
+    let detailString = `Competency Match: ${baseFormatted}%.`
+
+    if (extraSkillCount > 0) {
+      detailString += ` Bonus applied for ${extraSkillCount} extra skill(s): +${bonusFormatted}%.`;
+    }
     return {
       score: finalScore,
       triggerHardExclusion: false,
 
-      detail: {
-        factor: ScoringFactor.COMPETENCY_LEVEL,
-        baseScore,
-        bonusApplied: skillCountBonus,
-
-        perSkill: perSkillDetails,
-      },
+      details: detailString,
     };
   }
 }

@@ -48,6 +48,7 @@ describe('MatchRunAggregationService', () => {
                     excluded: false,
                     factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                     redistributedWeights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
+                    factorDetails: { [ScoringFactor.SKILL_ALIGNMENT]: 'Match details here' }
                 }
             },
             {
@@ -72,6 +73,7 @@ describe('MatchRunAggregationService', () => {
                 consultantEmail: 'Goku@gmail.com',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
+                factorDetails: { [ScoringFactor.SKILL_ALIGNMENT]: 'Match details here' }
             }
         ]);
     })
@@ -84,7 +86,8 @@ describe('MatchRunAggregationService', () => {
             outcome: {
                 excluded: false,
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
-                redistributedWeights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 }
+                redistributedWeights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
+                factorDetails: { [ScoringFactor.SKILL_ALIGNMENT]: 'Match details here' }
             }
         }];
 
@@ -109,6 +112,7 @@ describe('MatchRunAggregationService', () => {
                 consultantEmail: 'Domain@gmail.com',
                 factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
                 weights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.4 },
+                factorDetails: { [ScoringFactor.SKILL_ALIGNMENT]: 'Match details here' }
             }
         ]);
         expect(result).toEqual(mockResult);

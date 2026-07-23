@@ -1,7 +1,7 @@
 import { RawConsultantDto } from "../../dto/raw-consultant.dto";
 import { RawProjectDto } from "../../dto/raw-project.dto";
 import { GeographicFitScorer } from "./geographic-fit.scorer";
-import { ScoringFactor } from "../../enums/scoring-factor.enum";
+
 function consultant(city: string, province: string): RawConsultantDto {
     return {
         consultantId: 'consutant-01',
@@ -39,13 +39,7 @@ describe('GeographicFitScorer', () => {
     it('scores 1.0 for a consultant in the same city and province', async () => {
         expect(scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng')).score).toBe(1.0);
         const result = scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng'));
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.LOCATION,
-            consultantCity: 'Johannesburg',
-            projectCity: 'Johannesburg',
-            consultantProvince: 'Gauteng',
-            projectProvince: 'Gauteng',
-        })
+        expect(result.details).toBe('Located in the exact project city (Johannesburg, Gauteng)');
     })
 
     it('scores 0.6 for a consultant in the same province but different city', async () => {
@@ -53,25 +47,13 @@ describe('GeographicFitScorer', () => {
 
 
         const result = scorer.score(consultant('Pretoria', 'Gauteng'), project('Johannesburg', 'Gauteng'));
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.LOCATION,
-            consultantCity: 'Pretoria',
-            projectCity: 'Johannesburg',
-            consultantProvince: 'Gauteng',
-            projectProvince: 'Gauteng',
-        })
+        expect(result.details).toBe('Located in the same province (Gauteng), but a different city (Pretoria vs Johannesburg)');
     })
 
     it('scores 0.2 for a consultant in a different province', async () => {
         expect(scorer.score(consultant('Cape Town', 'Western Cape'), project('Johannesburg', 'Gauteng')).score).toBe(0.2);
 
-        const result = scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng'));
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.LOCATION,
-            consultantCity: 'Johannesburg',
-            projectCity: 'Johannesburg',
-            consultantProvince: 'Gauteng',
-            projectProvince: 'Gauteng',
-        })
+        const result = scorer.score(consultant('Cape Town', 'Western Cape'), project('Johannesburg', 'Gauteng'));
+        expect(result.details).toBe('Located in (Western Cape, Cape Town). Project requires Gauteng (Johannesburg)');
     })
 })

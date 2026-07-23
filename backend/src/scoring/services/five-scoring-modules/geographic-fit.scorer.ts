@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
-import { ScoringFactor } from '../../enums/scoring-factor.enum';
 
 @Injectable()
 export class GeographicFitScorer {
@@ -20,24 +19,22 @@ export class GeographicFitScorer {
       consultant.province.toLowerCase() === project.province.toLowerCase();
 
     let score: number;
+    let detailString: string;
     if (sameCity) {
       score = GeographicFitScorer.SAME_CITY_SCORE;
+      detailString = `Located in the exact project city (${consultant.city}, ${consultant.province})`;
     } else if (sameProvince) {
       score = GeographicFitScorer.SAME_PROVINCE_SCORE;
+      detailString = `Located in the same province (${consultant.province}), but a different city (${consultant.city} vs ${project.city})`;
     } else {
       score = GeographicFitScorer.DIFFERENT_PROVINCE_SCORE;
+      detailString = `Located in (${consultant.province}, ${consultant.city}). Project requires ${project.province} (${project.city})`;
     }
     return {
       score,
       triggerHardExclusion: false,
 
-      detail: {
-        factor: ScoringFactor.LOCATION,
-        consultantCity: consultant.city,
-        projectCity: project.city,
-        consultantProvince: consultant.province,
-        projectProvince: project.province,
-      },
+      details: detailString,
     };
   }
 }

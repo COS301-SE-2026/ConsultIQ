@@ -1,4 +1,5 @@
 import { apiClient } from "../../../lib/api-client";
+import type { ConsultantProfileDto } from "../../../hooks/useFetchConsultantsProfiles";
 
 export interface CreateConsultantSkillPayload {
   skillName: string;
@@ -89,3 +90,13 @@ export const createConsultantProfile = async (
 ): Promise<{ message: string; consultantId: string }> => {
   return await apiClient.post("/consultants/profile", payload);
 };
+
+export const  getConsultantProfileById = async (id: string): Promise<ConsultantProfileDto>  => {
+  return await apiClient.get<ConsultantProfileDto>(`/consultants/${id}`);
+
+}
+
+export const getConsultantProfileByUserId = async (userId: string): Promise<ConsultantProfileDto> => {
+  return await apiClient.get<ConsultantProfileDto>(`/consultants/user/${userId}`);
+
+}

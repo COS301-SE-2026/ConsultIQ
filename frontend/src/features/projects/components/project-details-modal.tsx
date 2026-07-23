@@ -8,6 +8,7 @@ interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
   readonly onClose: () => void;
+  readonly isConsultant?: boolean;
 }
 
 
@@ -26,11 +27,13 @@ export default function ProjectDetailsModal({
   open,
   project,
   onClose,
+  isConsultant,
 }: ProjectDetailsModalProps) {
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
+  const isNonConsultant= !isConsultant;
   
   const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
       "project-overview": (fields) =>({
@@ -225,6 +228,7 @@ export default function ProjectDetailsModal({
           onEdit = {() => setActiveEditSection("project-overview") }
           onCancel = { () => setActiveEditSection(null) }
           onSave = { (fields: Partial <Project>) => handleSaveSection("project-overview", fields)}
+          isConsultant={isConsultant}
           />
 
           <ProjectLocationSection project={displayData} 
@@ -233,6 +237,7 @@ export default function ProjectDetailsModal({
           onEdit = {() => setActiveEditSection("project-location") }
           onCancel = { () => setActiveEditSection(null) }
           onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
+          isConsultant={isConsultant}
           />
 
             <ProjectSkillsSection skills={[...(displayData.skills ?? [])]}
@@ -241,10 +246,14 @@ export default function ProjectDetailsModal({
               onEdit = {() => setActiveEditSection("project-skills") }
               onCancel = { () => setActiveEditSection(null) }
               onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
+              isConsultant={isConsultant}
             />
         </div>
         <div className="h-6" />
-        <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
+        {isNonConsultant && (
+          <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
+        )}
+        
       </div>
     </div>
   );

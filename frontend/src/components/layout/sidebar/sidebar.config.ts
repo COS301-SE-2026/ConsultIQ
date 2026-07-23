@@ -66,5 +66,10 @@ export const consultantSidebarItems: SidebarItem[] = [
         label: "Notifications",
         path:"/notifications",
         icon:Bell
-    }
+    },
+    {
+        label: " My Projects",
+        path: "/consultant-projects",
+        icon: Briefcase
+    },
 ];

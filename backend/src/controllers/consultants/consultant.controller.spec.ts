@@ -3,19 +3,20 @@ import { NotFoundException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { NotificationService } from '../../notification/service/notification.service';
+
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
   getAllConsultants: jest.fn(),
   getConsultantById: jest.fn(),
   getAssignedProjects: jest.fn(),
+  updateConsultantProfile: jest.fn(),
   getAssignedProjectDetails: jest.fn(),
 };
 
 const mockNotificationService = {
   sendPushNotification: jest.fn(),
 };
-
 
 describe('ConsultantController', () => {
   let controller: ConsultantController;
@@ -175,7 +176,33 @@ describe('ConsultantController', () => {
     });
   });
 
-  // ─── getAssignedProjectDetails ────────────────────────────────────────────────────
+  describe('updateConsultantProfile', () => {
+    it('should call service with correct id and dto and return result', async () => {
+      mockConsultantService.updateConsultantProfile.mockResolvedValue({
+        message: 'Consultant profile updated successfully.',
+      });
+
+      const dto = { phone: '0821234567', nationality: 'South African' };
+      const result = await controller.updateConsultantProfile('consultant-uuid-1', dto as any);
+
+      expect(mockConsultantService.updateConsultantProfile).toHaveBeenCalledWith(
+        'consultant-uuid-1',
+        dto,
+      );
+      expect(result.message).toBe('Consultant profile updated successfully.');
+    });
+
+    it('should propagate NotFoundException from service', async () => {
+      mockConsultantService.updateConsultantProfile.mockRejectedValue(
+        new NotFoundException('Consultant with id uuid-999 not found.'),
+      );
+
+      await expect(
+        controller.updateConsultantProfile('uuid-999', {} as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('getAssignedProjectDetails', () => {
     it('should call service with userId and projectId and return result', async () => {
       const mockDetails = {

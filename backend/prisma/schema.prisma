@@ -89,6 +89,22 @@ enum ScoringFactorName {
   COST_TO_COMPANY
 }
 
+enum UploadStatus {
+  PENDING
+  UPLOADING
+  UPLOADED
+  FAILED
+  DELETED
+}
+
+enum ExtractionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVIEW_REQUIRED
+}
+
 enum MatchRunStatus {
   IN_PROGRESS
   COMPLETED
@@ -162,6 +178,8 @@ model User {
   scoringConfigAudits ScoringConfigAudit[]
   notifications       Notification[]
   matchRuns           MatchRun[]
+  adminActionsPerformed AdminAuditLog[]    @relation("AdminActions")
+  adminActionsReceived  AdminAuditLog[]    @relation("AdminTargets")
 
   @@map("users")
 }
@@ -262,14 +280,20 @@ model Certificate {
 }
 
 model CvFile {
-  id           String     @id @default(uuid())
-  consultantId String
-  fileName     String
-  mimeType     String
-  fileData     Bytes
-  status       String     @default("PENDING")
-  uploadedAt   DateTime   @default(now())
-  consultant   Consultant @relation(fields: [consultantId], references: [id])
+  id               String           @id @default(uuid())
+  consultantId     String
+  fileName         String
+  mimeType         String
+  fileSize         Int
+  s3Key            String
+  s3Url            String
+  uploadStatus     UploadStatus     @default(UPLOADED)
+  extractionStatus ExtractionStatus @default(PENDING)
+  rawText          String?
+  parsedData       Json?
+  uploadedAt       DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  consultant       Consultant       @relation(fields: [consultantId], references: [id])
 
   @@map("cv_files")
 }
@@ -372,6 +396,21 @@ model authAuditLog {
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@map("auth_audit_logs")
+}
+
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  performedById String   @map("performed_by_id")
+  targetUserId  String   @map("target_user_id")
+  action        String
+  previousValue String   @map("previous_value")
+  newValue      String   @map("new_value")
+  timestamp     DateTime @default(now())
+
+  performedBy User @relation("AdminActions", fields: [performedById], references: [id])
+  targetUser  User @relation("AdminTargets", fields: [targetUserId], references: [id])
+
+  @@map("admin_audit_logs")
 }
 
 model ConsultantExperience {

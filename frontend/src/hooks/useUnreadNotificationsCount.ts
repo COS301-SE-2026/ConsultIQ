@@ -9,7 +9,6 @@ export default function useUnreadNotificationCount(){
 
     const refresh = useCallback(async () => {
         if(!user){
-            setCount(0);
             return;
         }
 
@@ -22,11 +21,10 @@ export default function useUnreadNotificationCount(){
     },[user]);
 
     useEffect(() => {
-        if(!user){
-            setCount(0);
-            return;
+        if(user){
+            refresh();
         }
-        refresh();
+        
     },[user,refresh]);
-    return {count, refresh};
+    return {count: user ? count :0 , refresh};
 }

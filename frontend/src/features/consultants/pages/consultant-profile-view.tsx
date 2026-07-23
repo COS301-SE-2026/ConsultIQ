@@ -7,7 +7,7 @@ import {
   consultantManagerSidebarItems
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
-import  useUnreadNotificationsCount  from "../../../hooks/useUnreadNotificationsCount"; 
+import  useUnreadNotificationCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
 import { useFetchConsultantProfile, type MappedConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 
@@ -63,7 +63,9 @@ function ConsultantProfileViewPage({consultantViewProfile}:ConsultantProfileView
   const profile= consultantViewProfile ?? fetchedProfile;
   const loading = consultantViewProfile ? false: isLoading;
 
-    const{count: unreadCount} = useUnreadNotificationsCount();
+    const{count: unreadCount} = useUnreadNotificationCount();
+    console.log("unread",unreadCount);
+    
 
   // Dynamically select the sidebar based on the user's role
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"

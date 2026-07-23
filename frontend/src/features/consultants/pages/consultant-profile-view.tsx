@@ -105,7 +105,7 @@ function ConsultantProfileViewPage() {
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={sidebarItems} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-y-auto overscroll-none">
         <header
           className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}

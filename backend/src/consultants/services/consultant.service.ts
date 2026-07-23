@@ -26,7 +26,7 @@ export class ConsultantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   async createConsultantProfile(
     cmUserId: string,

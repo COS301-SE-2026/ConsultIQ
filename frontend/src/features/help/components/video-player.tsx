@@ -1,14 +1,14 @@
-import type { TutorialItem } from "./tutorial-section";
+import type { TutorialItem } from "./tutorials.data";
 import { Button } from "../../../components/ui/button";
 import {X} from "lucide-react"
 interface VideoPlayerProps{
-    video: TutorialItem;
-    onClose: () => void;
+    readonly video: TutorialItem;
+    readonly onClose: () => void;
 }
 export default function VideoPlayer({video, onClose}:VideoPlayerProps){
     return(
        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"> 
-            <div className=" absolute inset-0"  onClick={onClose}/>
+            <div className=" absolute inset-0"/>
             <div className="relative w-full max-w-3xl flex flex-col gap-4 p-4 bg-brand-bg rounded-xl border border-slate-850 overflow-hidden shadow-2xl ">
                 <div className=" flex items-center gap-5">
                     <h3 >{video.title}</h3>

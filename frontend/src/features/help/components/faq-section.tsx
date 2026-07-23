@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 
 
-export default function FaqSection({group,icon : Icon,items} :FAQItems){
+export default function FaqSection({ group,icon : Icon,items} :FAQItems){
     const [open,setOpen] = useState<number | null>(null);
     return(
         <div className="w-full max-w-xl mx-auto">

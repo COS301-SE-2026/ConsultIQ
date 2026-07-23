@@ -1,4 +1,3 @@
-import VideoPlayer from "./video-player";
 import type  {TutorialItem} from "./tutorial-section" 
 
 

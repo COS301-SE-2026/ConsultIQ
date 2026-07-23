@@ -1,17 +1,17 @@
-import { LifeBuoy, BarChart2, Upload, Settings, Shield } from "lucide-react";
+import { LifeBuoy, BarChart2, Upload, Settings } from "lucide-react";
 import TutorialSection from "../components/tutorial-section";
 import type { LucideIcon } from "lucide-react";
 import FaqSection from "../components/faq-section";
 
 interface QnA{
-    q: string;
-    a: string;
+   readonly q: string;
+    readonly a: string;
 }
 
 export interface FAQItems{
-    group:string;
-    icon: LucideIcon;
-    items: QnA[];
+   readonly group:string;
+   readonly icon: LucideIcon;
+   readonly items: QnA[];
 }
 
 const faqGroups: FAQItems[] = [
@@ -41,14 +41,6 @@ const faqGroups: FAQItems[] = [
       { q: "Can multiple managers configure the same project?", a: "Yes. Any team member with Manager or Admin role on a project can update its scoring configuration. Changes take effect immediately and re-rank all recommendations." },
     ],
   },
-//   {
-//     group: "Security & Privacy",
-//     icon: Shield,
-//     items: [
-//       { q: "Is my consultant data kept private?", a: "All data is encrypted at rest (AES-256) and in transit (TLS 1.3). Your consultancy's data is strictly isolated and never used to train shared models or shared with other tenants." },
-//       { q: "Where is my data stored?", a: "Data is stored in ISO 27001-certified data centres. You can choose your region (EU or US) during onboarding, and data never leaves your chosen region." },
-//     ],
-//   },
 ];
 
 export default function HelpPage(){

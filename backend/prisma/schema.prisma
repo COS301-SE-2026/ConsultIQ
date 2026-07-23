@@ -223,6 +223,7 @@ model Consultant {
   cvFiles               CvFile[]
   managers              ConsultantManager[]
   consultantExperiences ConsultantExperience[]
+  education             ConsultantEducation[]
   matchRunResults       MatchRunResult[]
 
   @@map("consultants")
@@ -264,6 +265,21 @@ model ConsultantSkill {
 
   @@unique([consultantId, skillId])
   @@map("consultant_skills")
+}
+
+model ConsultantEducation {
+  id            String     @id @default(uuid())
+  consultantId  String
+  consultant    Consultant @relation(fields: [consultantId], references: [id])
+  institution   String
+  qualification String
+  startDate     DateTime
+  endDate       DateTime?
+  fileName      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("consultant_education")
 }
 
 model Certificate {

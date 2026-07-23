@@ -2,6 +2,7 @@ import {
     IsString,
     IsNumber,
     IsArray,
+    IsNotEmpty,
     IsOptional,
     IsEnum,
     Min,
@@ -72,6 +73,27 @@ export class UpdateConsultantCertificationDto {
     endDate?: string;
 }
 
+export class UpdateConsultantEducationDto {
+  @IsString()
+  @IsNotEmpty()
+  institution!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  qualification!: string;
+
+  @IsDateString()
+  startDate!: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  fileName?: string;
+}
+
 export class UpdateConsultantDto {
     @IsOptional()
     @IsString()
@@ -91,7 +113,27 @@ export class UpdateConsultantDto {
 
     @IsOptional()
     @IsString()
-    location?: string;
+    addressLine1?: string;
+
+    @IsOptional()
+    @IsString()
+    addressLine2?: string;
+
+    @IsOptional()
+    @IsString()
+    suburb?: string;
+
+    @IsOptional()
+    @IsString()
+    city?: string;
+
+    @IsOptional()
+    @IsString()
+    province?: string;
+
+    @IsOptional()
+    @IsString()
+    postalCode?: string;
 
     @IsOptional()
     @IsNumber()
@@ -118,4 +160,9 @@ export class UpdateConsultantDto {
     @IsArray()
     @Type(() => UpdateConsultantCertificationDto)
     certifications?: UpdateConsultantCertificationDto[];
+
+    @IsOptional()
+    @IsArray()
+    @Type(() => UpdateConsultantEducationDto)
+    education?: UpdateConsultantEducationDto[];
 }

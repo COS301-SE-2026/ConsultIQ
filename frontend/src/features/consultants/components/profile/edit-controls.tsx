@@ -3,6 +3,7 @@ import { Pencil } from "lucide-react";
 
 interface EditControlProps{
     readonly isEditing: boolean;
+    readonly isSaving: boolean;
     readonly onEdit: () => void;
     readonly onSave: () => void;
     readonly onCancel: () => void;
@@ -16,7 +17,7 @@ const buttonStyle = {
 
 };
 
-function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
+function EditControls({isEditing, isSaving, onEdit,onSave,onCancel}: EditControlProps){
     return(
          <div className = " flex-1 flex justify-end gap-2">
            {isEditing ?(
@@ -25,7 +26,8 @@ function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
               onClick={onSave} 
               variant="default" 
               className ="font-bold px-4 py-2"
-             style={buttonStyle}
+              style={buttonStyle}
+              disabled={isSaving} 
             >
               Save
             </Button>
@@ -33,7 +35,8 @@ function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
               onClick={onCancel} 
               variant="outline" 
               className="font-bold px-4 py-2"
-                style ={buttonStyle}
+              style ={buttonStyle}
+              disabled={isSaving} 
             >
               Cancel
             </Button>

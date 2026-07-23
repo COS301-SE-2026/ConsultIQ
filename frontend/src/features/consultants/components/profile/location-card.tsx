@@ -28,57 +28,54 @@ export default function LocationCard({
  
 }: LocationCardProps) {
 
-  
-     const [isEditing, setIsEditing] = useState(false);
-     const [address1,setAddress1] = useState(addressLine1);
-     const [address2,setAddress2]= useState(addressLine2 ?? "");
-     const [Suburb,setSuburb]= useState(suburb ?? "");
-     const [City,setCity]= useState(city);
-     const [Province,setProvince]= useState(province);
-     const [postalCode,setPostalCode]= useState(initialPostalCode ?? "");
+    const [isEditing, setIsEditing] = useState(false);
+    const [address1,setAddress1] = useState(addressLine1);
+    const [address2,setAddress2]= useState(addressLine2 ?? "");
+    const [Suburb,setSuburb]= useState(suburb ?? "");
+    const [City,setCity]= useState(city);
+    const [Province,setProvince]= useState(province);
+    const [postalCode,setPostalCode]= useState(initialPostalCode ?? "");
 
-     const [address1Error, setAddress1Error] = useState("");
-     const [cityError,setCityError] = useState("");
-     
+    const [address1Error, setAddress1Error] = useState("");
+    const [cityError,setCityError] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
 
-
-
-
- const handleSave = () =>{
-
-    let isValid= true;
-    if(address1.trim()){
-     setAddress1Error("");
-    }else{
-       setAddress1Error("Address line 1 is required");
-      isValid= false;
+  const handleSave = async () => {
+    let isValid = true;
+    if (address1.trim()) {
+      setAddress1Error("");
+    } else {
+      setAddress1Error("Address line 1 is required");
+      isValid = false;
     }
 
-    if(City.trim()){
+    if (City.trim()) {
       setCityError("");
-    }else{
+    } else {
       setCityError("city is required");
-      isValid= false;
+      isValid = false;
     }
 
-    onSave?.({
-      addressLine1: address1.trim(),
-      addressLine2: address2.trim() || undefined,
-      suburb: Suburb || undefined,
-      city: City.trim(),
-      province : Province,
-      postalCode: postalCode.trim() || undefined,
-    });
+    if (!isValid) return;
 
-    if(!isValid){
-      return;
+    setIsSaving(true);
+    try {
+      await onSave?.({
+        addressLine1: address1.trim(),
+        addressLine2: address2.trim() || undefined,
+        suburb: Suburb || undefined,
+        city: City.trim(),
+        province: Province,
+        postalCode: postalCode.trim() || undefined,
+      });
+      setIsEditing(false);
+      toast.success("Location has been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsEditing(false);
-
-     toast.success("Location has been updated successfully");
-
-  }
+  };
 
   const handleCancel = () =>{
     setAddress1(addressLine1);
@@ -108,6 +105,7 @@ export default function LocationCard({
         {canEdit && (
              <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}

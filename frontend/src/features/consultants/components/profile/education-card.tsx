@@ -71,6 +71,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   const [selected, setSelected] = useState<{ edu: Education; index: number } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [localEducation, setLocalEducation] = useState(educationList);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -85,12 +86,17 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
 
   }
 
-  const handleSave = () => {
-
-    onSave?.([...localEducation]);
-    setIsEditing(false);
-    toast.success("Education has been updated successfully");
-
+   const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave?.([...localEducation]);
+      setIsEditing(false);
+      toast.success("Education has been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const addEducation = () => {
@@ -121,8 +127,6 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   
     }
 
-
-
   return (
     <>
       <div
@@ -145,6 +149,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
           {canEdit && (
              <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}

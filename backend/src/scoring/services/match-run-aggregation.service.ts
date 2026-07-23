@@ -10,6 +10,7 @@ export interface ScoredConsultantInput {
   consultantId: string;
   consultantName: string;
   consultantEmail: string;
+  isPlaced: boolean;
   outcome: ScoringResults;
 }
 //pointer to consultant that passed all hard exclusion checks
@@ -45,6 +46,7 @@ export class MatchRunAggregationService {
       consultantId: input.consultantId,
       consultantName: input.consultantName,
       consultantEmail: input.consultantEmail,
+      isPlaced: input.isPlaced,
       factorScores: input.outcome.factorScores,
       weights: input.outcome.redistributedWeights,
       factorDetails: input.outcome.factorDetails,

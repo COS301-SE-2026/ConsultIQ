@@ -12,6 +12,7 @@ export interface ScoredConsultant {
   factorScores: Partial<Record<ScoringFactor, number>>;
   weights: Partial<Record<ScoringFactor, number>>;
   factorDetails?: Partial<Record<ScoringFactor, string>>;
+  isPlaced: boolean;
 }
 
 export interface ScoredConsultantsResult {
@@ -83,6 +84,7 @@ export class WeightedAggregator {
       consultantEmail: consultant.consultantEmail,
       finalScore: round(sum * 100, FINAL_SCORE_DECIMAL_PLACES),
       factorBreakdown,
+      isPlaced: consultant.isPlaced,
     };
   }
 }

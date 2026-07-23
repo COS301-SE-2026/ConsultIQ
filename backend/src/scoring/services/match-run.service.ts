@@ -18,6 +18,7 @@ import {
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
 import { MatchRunStatus, Prisma } from '@prisma/client';
+import { MatchRunStats } from './interfaces/match-result.interface';
 
 @Injectable()
 export class MatchRunService {
@@ -52,6 +53,17 @@ export class MatchRunService {
         include: {
           skills: { include: { skill: true } },
           user: { select: { fullName: true, email: true } },
+          placements: {
+            where: {
+              status: 'ACTIVE',
+              //placement before or during project timeline
+              ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),
+              OR: [
+                { endDate: { gte: project.startDate } },
+                { endDate: null },
+              ],
+            }
+          }
         },
       });
 
@@ -71,6 +83,7 @@ export class MatchRunService {
       const scoringPromises = consultants.map(async (consultant) => {
         const consultantDto = this.mapConsultantToDto(consultant);
 
+        const isPlaced = consultant.placements && consultant.placements.length > 0;
         const outcome = await this.scoringPipeline.scoreConsultant({
           consultantId: consultant.id,
           projectId,
@@ -81,6 +94,7 @@ export class MatchRunService {
           consultantId: consultant.id,
           consultantName: consultant.user?.fullName || 'Unknown consultant name',
           consultantEmail: consultant.user?.email || 'Unknown consultant email',
+          isPlaced,
           outcome,
         };
       });
@@ -103,12 +117,15 @@ export class MatchRunService {
         (s) => s.outcome.excluded,
       ).length;
 
+      const totalPlacedCount = finalResults.filter(r => r.isPlaced).length;
+
       await this.saveMatchRun(
         projectId,
         executedByUserId,
         activeWeights,
         finalResults,
         logicallyExcludedCount + errorCount,
+        totalPlacedCount,
       );
       return finalResults;
     }
@@ -152,6 +169,7 @@ export class MatchRunService {
     activeWeights: Record<string, number>,
     results: ConsultantMatchResult[],
     excludedCount: number,
+    placedCount: number,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const matchRun = await tx.matchRun.create({
@@ -161,6 +179,7 @@ export class MatchRunService {
           configurationSnapshot: activeWeights,
           totalConsultantsScored: results.length,
           totalConsultantsExcluded: excludedCount,
+          totalConsultantsPlaced: placedCount,
           status: MatchRunStatus.COMPLETED,
         }
       })
@@ -171,6 +190,7 @@ export class MatchRunService {
           rank: r.rank,
           totalScore: r.finalScore,
           factorScores: r.factorBreakdown as unknown as Prisma.InputJsonArray,
+          isPlaced: r.isPlaced,
         }))
       })
     });
@@ -213,6 +233,29 @@ export class MatchRunService {
       finalScore: r.totalScore,
       rank: r.rank,
       factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],
+      isPlaced: r.isPlaced,
     }));
+  }
+
+  async getMatchRunStats(projectId: string, runId: string): Promise<MatchRunStats> {
+    const matchRun = await this.prisma.matchRun.findUnique({
+      where: { id: runId, projectId },
+      select: {
+        totalConsultantsScored: true,
+        totalConsultantsExcluded: true,
+        totalConsultantsPlaced: true,
+      }
+    });
+
+    if (!matchRun) {
+      throw new NotFoundException(`Match run ${runId} not found`);
+    }
+
+    return {
+      totalEvaluated: matchRun.totalConsultantsScored + matchRun.totalConsultantsExcluded,
+      totalExcluded: matchRun.totalConsultantsExcluded,
+      totalMatched: matchRun.totalConsultantsScored,
+      totalPlaced: matchRun.totalConsultantsPlaced,
+    }
   }
 }

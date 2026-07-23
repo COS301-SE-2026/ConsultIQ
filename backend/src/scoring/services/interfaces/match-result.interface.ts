@@ -20,4 +20,12 @@ export interface ConsultantMatchResult {
   finalScore: number;
   rank: number;
   factorBreakdown: WeightedFactorBreakdown[];
+  isPlaced: boolean;
+}
+
+export interface MatchRunStats {
+  totalEvaluated: number;
+  totalExcluded: number;
+  totalMatched: number;
+  totalPlaced: number;
 }

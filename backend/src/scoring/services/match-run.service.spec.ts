@@ -106,7 +106,7 @@ describe('MatchRunService', () => {
                 })
             })
             expect(mockPrisma.matchRunResult.createMany).toHaveBeenCalledTimes(1);
-            expect(result).toEqual(mockAggregatedResults);
+            expect(result).toEqual({ runId: 'run-01', results: mockAggregatedResults });
         })
 
         it('throws NotFoundException if project does not exist', async () => {

@@ -12,7 +12,7 @@ export class MatchRunController {
   async executeMatchRun(
     @Param('id') projectId: string,
     @Request() req: any,
-  ): Promise<ConsultantMatchResult[]> {
+  ): Promise<{ runId: string; results: ConsultantMatchResult[] }> {
 
     const userId = req.user.userId;
     return this.matchRunService.executeMatchRun(projectId, userId);

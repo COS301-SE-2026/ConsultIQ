@@ -10,9 +10,9 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CVUploadService } from 'src/cv-parsing/services/cv-upload.service';
-import { Roles } from 'src/common/guards/roles.guard';
-import { Role } from 'src/auth/enums/role.enum';
+import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
+import { Roles } from '../../common/guards/roles.guard';
+import { Role } from '../../auth/enums/role.enum';
 
 @Controller('cv')
 @Controller('cv')

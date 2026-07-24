@@ -3,10 +3,8 @@ import {
     BadRequestException,
     Logger,
 } from '@nestjs/common';
-import type { Multer } from 'multer';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { S3Service } from './s3.service';
-import { sign } from 'crypto';
 
 const ALLOWED_MIME_TYPES = [
     'application/pdf',

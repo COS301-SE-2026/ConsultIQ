@@ -34,6 +34,7 @@ export default function ProjectListPage() {
       try {
         setIsLoading(true);
         const response= await getProjects(1,50);
+        console.log(response);
 
         const mappedProjects: Project[] = response.projects.map((p: ApiProject) => ({
           id: p.id,

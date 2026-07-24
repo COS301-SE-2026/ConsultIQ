@@ -112,10 +112,10 @@ export default function ProjectScoringOverridePage() {
                     className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
                     style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
                 >
-                    <span><h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                         Project Override Scoring
                     </h1>
-                    <p className="text-lg font-medium text-slate-500 mt-1">Project Name</p></span>
+                    {/* <p className="text-lg font-medium text-slate-500 mt-1">Project Name</p></span> */}
 
 
                 </header>

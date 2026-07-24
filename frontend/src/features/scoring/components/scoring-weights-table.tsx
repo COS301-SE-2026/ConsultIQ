@@ -78,7 +78,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 </div>
             )}
             <div className="border-b border-slate-100">
-                <div className="py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center text-sm font-bold  tracking-wide">
+                <div className="py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center text-sm font-bold text-primary tracking-wide">
                     <div></div>
                     <div className="flex"><h3>Factor</h3></div>
                     <div className="flex justify-center gap-2"><h3>Weight</h3></div>

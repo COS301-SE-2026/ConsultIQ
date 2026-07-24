@@ -2,8 +2,8 @@ import { apiClient } from "../../../lib/api-client";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 
 export const placementService = {
-    executeMatchRun: async (projectId: string): Promise<Recommendation[]> => {
-        return apiClient.post<Recommendation[]>(`/projects/${projectId}/match-run`);
+    executeMatchRun: async (projectId: string): Promise<{ runId: string; results: Recommendation[] }> => {
+        return apiClient.post<{ runId: string; results: Recommendation[] }>(`/projects/${projectId}/match-run`);
     },
 
     getMatchRun: async (projectId: string, runId: string): Promise<Recommendation[]> => {

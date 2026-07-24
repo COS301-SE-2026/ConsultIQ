@@ -20,7 +20,7 @@ describe('MatchRunService', () => {
         mockPrisma = {
             project: { findUnique: jest.fn(), },
             consultant: { findMany: jest.fn() },
-            matchRun: { create: jest.fn(), findFirst: jest.fn() },
+            matchRun: { create: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
             matchRunResult: { createMany: jest.fn() },
             $transaction: jest.fn((callback) => callback(mockPrisma)),
         }
@@ -153,5 +153,36 @@ describe('MatchRunService', () => {
     })
 
 
+    describe('getMatchRunStats', () => {
+        it('successefully retrieves match run stats', async () => {
+            const projectId = 'project-01';
+            const runId = 'runId-01';
 
+            const mockMatchRun = {
+                totalConsultantsScored: 10,
+                totalConsultantsExcluded: 2,
+                totalConsultantsPlaced: 3,
+            }
+
+            mockPrisma.matchRun.findUnique.mockResolvedValue(mockMatchRun);
+
+            const result = await service.getMatchRunStats('project-01', 'runId-01');
+
+            expect(mockPrisma.matchRun.findUnique).toHaveBeenCalledWith({
+                where: { id: runId, projectId },
+                select: {
+                    totalConsultantsScored: true,
+                    totalConsultantsExcluded: true,
+                    totalConsultantsPlaced: true,
+                },
+            });
+
+            expect(result).toEqual({
+                totalEvaluated: 12,
+                totalExcluded: 2,
+                totalMatched: 10,
+                totalPlaced: 3,
+            });
+        });
+    });
 })

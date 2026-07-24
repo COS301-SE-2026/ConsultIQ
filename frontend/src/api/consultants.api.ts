@@ -1,5 +1,5 @@
 import type { ConsultantProfileDto } from "../hooks/useFetchConsultantsProfiles";
-
+import { apiClient } from "../lib/api-client";
 const getHeaders = (): Record<string, string> => ({
   'Content-Type': 'application/json',
   'Authorization': `Bearer ${sessionStorage.getItem('ciq_access_token')}`,
@@ -28,4 +28,62 @@ export async function getConsultantProfileByUserId(userId: string): Promise<Cons
   }
 
   return response.json() as Promise<ConsultantProfileDto>;
+}
+
+export async function updateConsultantProfile(
+  consultantId: string,
+  data: Partial<{
+    phone: string;
+    idNumber: string;
+    nationality: string;
+    addressLine1: string;
+    addressLine2: string;
+    suburb: string;
+    city: string;
+    province: string;
+    postalCode: string;
+    costToCompany: number;
+    availability: string;
+    skills: { skillName: string; yearsExperience: number; confidenceLevel: number }[];
+    experiences: {
+      jobTitle: string;
+      companyName: string;
+      jobType: string;
+      workModel: string;
+      startDate: string;
+      endDate?: string;
+      description: string;
+    }[];
+    certifications: { title: string; issuingBody: string; startDate?: string; endDate?: string }[];
+    education: {
+      institution: string;
+      qualification: string;
+      startDate: string;
+      endDate?: string;
+      fileName?: string;
+    }[];
+  }>
+): Promise<{ message: string }> {
+  return await apiClient.patch<{ message: string }>(`/consultants/${consultantId}`, data);
+}
+
+export async function uploadConsultantCv(
+  consultantId: string,
+  file: File,
+): Promise<{ cvFileId: string; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_URL}/cv/upload/${consultantId}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to upload CV.');
+  }
+
+  return response.json();
 }

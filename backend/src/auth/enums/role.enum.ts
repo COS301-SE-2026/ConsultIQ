@@ -3,6 +3,7 @@
  */
 
 export enum Role {
+  SUPER_ADMIN = 'SUPER_ADMIN',
   ADMIN = 'ADMIN',
   PROJECT_MANAGER = 'PROJECT_MANAGER', // Must NOT access cost-to-company data
   CONSULTANT_MANAGER = 'CONSULTANT_MANAGER',

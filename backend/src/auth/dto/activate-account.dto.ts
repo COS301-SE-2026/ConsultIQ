@@ -9,11 +9,11 @@ import { IsStrongEnough } from '../../common/validators/is-strong-enough.validat
 
 export class ActivateAccountDto {
   @IsEmail({}, { message: 'A valid email address is required.' })
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty({ message: 'Activation token is required.' })
-  token: string;
+  token!: string;
 
   @IsOptional()
   @IsString()
@@ -33,5 +33,5 @@ export class ActivateAccountDto {
     },
   )
   @IsStrongEnough()
-  password: string;
+  password!: string;
 }

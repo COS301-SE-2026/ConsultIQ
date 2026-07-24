@@ -9,19 +9,9 @@ import ProjectGrid from "../components/project-grid";
 import ProjectDetailsModal from "../components/project-details-modal";
 import EmptyProjectState from "../components/empty-project-state";
 import type { Project } from "../types/project.types";
-
-interface ApiProject {
-  id: string;
-  projectName: string;
-  clientName: string;
-  teamSize: number;
-  requiredAllocationPercentage: number;
-  clientBillingBudget: number;
-  startDate: string;
-  endDate?: string;
-  city: string;
-  province: string;
-}
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
+import type {ApiProject} from "../services/project.service"
+import { getProjects } from "../services/project.service";
 
 export default function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -36,28 +26,16 @@ export default function ProjectListPage() {
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
 
+  const{count: unreadCount} = useUnreadNotificationCount();
+
   // Fetch projects from the backend
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         setIsLoading(true);
-        const token = sessionStorage.getItem("ciq_access_token");
+        const response= await getProjects(1,50);
 
-        const response = await fetch("import.meta.env.VITE_API_URL/projects?page=1&limit=50", {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch projects");
-        }
-
-        const data = await response.json();
-
-        // 2. Replace 'any' with the 'ApiProject' interface
-        const mappedProjects: Project[] = data.projects.map((p: ApiProject) => ({
+        const mappedProjects: Project[] = response.projects.map((p: ApiProject) => ({
           id: p.id,
           name: p.projectName,
           projectName: p.projectName,
@@ -68,6 +46,7 @@ export default function ProjectListPage() {
           budget: p.clientBillingBudget,
           startDate: p.startDate,
           endDate: p.endDate || "",
+          status: p.status,
           location: {
             addressLine1: "",
             addressLine2: "",
@@ -76,7 +55,13 @@ export default function ProjectListPage() {
             province: p.province,
             postalCode: "",
           },
-          skills: [],
+            addressLine1: "",
+            addressLine2: "",
+            suburb: "",
+            city: p.city,
+            province: p.province,
+            postalCode: "",
+          skills:[],
         }));
 
         setProjects(mappedProjects);
@@ -99,9 +84,19 @@ export default function ProjectListPage() {
 
       // Budget Filter
       let matchesBudget = true;
-      if (budgetFilter === "small") matchesBudget = project.budget < 50000;
-      else if (budgetFilter === "medium") matchesBudget = project.budget >= 50000 && project.budget <= 200000;
-      else if (budgetFilter === "large") matchesBudget = project.budget > 200000;
+      if(budgetFilter){
+        const budget = project.budget;
+        if(budget === undefined){
+          matchesBudget=false;
+        }else if (budgetFilter === "small") {
+          matchesBudget = budget < 50000;
+        } else if(budgetFilter === "medium"){
+          matchesBudget = budget >= 50000 && budget <= 200000;
+        }else if(budgetFilter === "large"){
+          matchesBudget = budget > 200000;
+        }
+      }
+      
 
       // Team Size Filter
       let matchesTeamSize = true;
@@ -125,7 +120,7 @@ export default function ProjectListPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={projectManagerSidebarItems} />
+      <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount}/>
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"

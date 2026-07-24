@@ -4,10 +4,12 @@ import type { Project } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
 import ProjectSkillsSection from "./project-skills-section";
+import { getAssignedProjectDetails } from "../../consultants/services/consultant.service";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
   readonly onClose: () => void;
+  readonly isConsultant?: boolean;
 }
 
 
@@ -26,11 +28,13 @@ export default function ProjectDetailsModal({
   open,
   project,
   onClose,
+  isConsultant,
 }: ProjectDetailsModalProps) {
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
+  const isNonConsultant= !isConsultant;
   
   const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
       "project-overview": (fields) =>({
@@ -128,6 +132,53 @@ export default function ProjectDetailsModal({
     const fetchProjectDetails = async () => {
       setIsLoading(true);
       try {
+
+        if (isConsultant) {
+          // consultant path ---
+          const data = await getAssignedProjectDetails(project.id);
+          const p = data.project;
+ 
+          const mappedProject: Project = {
+            id: p.id,
+            name: p.projectName,
+            projectName: p.projectName,
+            clientName: p.clientName,
+            description: p.description || "No description provided.",
+            teamSize: p.teamSize,
+            allocation: p.allocation,
+            budget: p.budget,
+            startDate: p.startDate,
+            endDate: p.endDate || "",
+            status: p.status,
+ 
+            addressLine1: p.addressLine1,
+            addressLine2: p.addressLine2 || undefined,
+            suburb: p.suburb || undefined,
+            city: p.city,
+            province: p.province,
+            postalCode: p.postalCode,
+ 
+            location: {
+              addressLine1: p.addressLine1,
+              addressLine2: p.addressLine2 || undefined,
+              suburb: p.suburb ?? "",
+              city: p.city,
+              province: p.province,
+              postalCode: p.postalCode,
+            },
+ 
+            skills: p.skills.map((s) => ({
+              name: s.skillName,
+              competency: s.competency,
+              years: s.years,
+              mandatory: s.mandatory,
+            })),
+          };
+ 
+          setFullProject(mappedProject);
+          return;
+        }
+
         const token = sessionStorage.getItem("ciq_access_token");
         const response = await fetch(`import.meta.env.VITE_API_URL/projects/${project.id}`, {
           headers: {
@@ -225,6 +276,7 @@ export default function ProjectDetailsModal({
           onEdit = {() => setActiveEditSection("project-overview") }
           onCancel = { () => setActiveEditSection(null) }
           onSave = { (fields: Partial <Project>) => handleSaveSection("project-overview", fields)}
+          isConsultant={isConsultant}
           />
 
           <ProjectLocationSection project={displayData} 
@@ -233,6 +285,7 @@ export default function ProjectDetailsModal({
           onEdit = {() => setActiveEditSection("project-location") }
           onCancel = { () => setActiveEditSection(null) }
           onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
+          isConsultant={isConsultant}
           />
 
             <ProjectSkillsSection skills={[...(displayData.skills ?? [])]}
@@ -241,10 +294,14 @@ export default function ProjectDetailsModal({
               onEdit = {() => setActiveEditSection("project-skills") }
               onCancel = { () => setActiveEditSection(null) }
               onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
+              isConsultant={isConsultant}
             />
         </div>
         <div className="h-6" />
-        <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
+        {isNonConsultant && (
+          <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
+        )}
+        
       </div>
     </div>
   );

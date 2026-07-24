@@ -10,11 +10,22 @@ export interface WeightedFactorBreakdown {
   rawScore: number;
   weight: number;
   weightedContribution: number;
+  details?: string;
 }
 
 export interface ConsultantMatchResult {
   consultantId: string;
+  consultantName: string;
+  consultantEmail: string;
   finalScore: number;
   rank: number;
   factorBreakdown: WeightedFactorBreakdown[];
+  isPlaced: boolean;
+}
+
+export interface MatchRunStats {
+  totalEvaluated: number;
+  totalExcluded: number;
+  totalMatched: number;
+  totalPlaced: number;
 }

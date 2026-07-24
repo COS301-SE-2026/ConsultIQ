@@ -13,6 +13,7 @@ import {
   PendingProfileUserDto,
 } from '../dto/create-consultant.dto';
 import { ConsultantProfileDto } from '../dto/consultant-profile.dto';
+import { UpdateConsultantDto } from '../dto/update-consultant.dto';
 import {
   CompetencyLevel,
   ConsultantAvailability,
@@ -25,7 +26,7 @@ export class ConsultantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   async createConsultantProfile(
     cmUserId: string,
@@ -274,6 +275,133 @@ export class ConsultantService {
     return this.mapToProfileDto(consultant);
   }
 
+  async updateConsultantProfile(
+    consultantId: string,
+    dto: UpdateConsultantDto,
+  ): Promise<{ message: string }> {
+    //Verify consultant exists
+    const existing = await this.prisma.consultant.findUnique({
+      where: { id: consultantId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(
+        `Consultant with id ${consultantId} not found.`,
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.consultant.update({
+        where: { id: consultantId },
+        data: {
+          ...(dto.phone !== undefined && { phone: dto.phone }),
+          ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
+          ...(dto.nationality !== undefined && { nationality: dto.nationality }),
+          ...(dto.addressLine1 !== undefined && { addressLine1: dto.addressLine1 }),
+          ...(dto.addressLine2 !== undefined && { addressLine2: dto.addressLine2 }),
+          ...(dto.suburb !== undefined && { suburb: dto.suburb }),
+          ...(dto.city !== undefined && { city: dto.city }),
+          ...(dto.province !== undefined && { province: dto.province }),
+          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
+          ...(dto.costToCompany !== undefined && { costToCompany: dto.costToCompany }),
+          ...(dto.availability !== undefined && {
+            availability: dto.availability as ConsultantAvailability,
+          }),
+        },
+      });
+
+      if (dto.skills !== undefined) {
+        await tx.consultantSkill.deleteMany({
+          where: { consultantId },
+        });
+
+        for (const skill of dto.skills) {
+          const normalizedName = skill.skillName.trim().toLowerCase();
+          const skillRecord = await tx.skill.upsert({
+            where: { name: normalizedName },
+            update: {},
+            create: { name: normalizedName, category: 'General' },
+          });
+
+          // Recompute competency level server-side
+          const competencyLevel = this.inferCompetencyLevel(
+            skill.yearsExperience,
+            skill.confidenceLevel,
+          );
+
+          await tx.consultantSkill.create({
+            data: {
+              consultantId,
+              skillId: skillRecord.id,
+              competencyLevel,
+              yearsExperience: skill.yearsExperience,
+              confidenceLevel: skill.confidenceLevel,
+            },
+          });
+        }
+      }
+
+      if (dto.experiences !== undefined) {
+        await tx.consultantExperience.deleteMany({
+          where: { consultantId },
+        });
+
+        for (const exp of dto.experiences) {
+          await tx.consultantExperience.create({
+            data: {
+              consultantId,
+              jobTitle: exp.jobTitle,
+              companyName: exp.companyName,
+              jobType: exp.jobType as JobType,
+              workModel: exp.workModel as WorkModel,
+              startDate: new Date(exp.startDate),
+              endDate: exp.endDate ? new Date(exp.endDate) : null,
+              description: exp.description,
+            },
+          });
+        }
+      }
+
+      if (dto.certifications !== undefined) {
+        await tx.certificate.deleteMany({
+          where: { consultantId },
+        });
+
+        for (const cert of dto.certifications) {
+          await tx.certificate.create({
+            data: {
+              consultantId,
+              title: cert.title,
+              issuingBody: cert.issuingBody,
+              startDate: cert.startDate ? new Date(cert.startDate) : null,
+            },
+          });
+        }
+      }
+
+    if (dto.education !== undefined) {
+      await tx.consultantEducation.deleteMany({
+        where: { consultantId },
+      });
+
+      for (const edu of dto.education) {
+        await tx.consultantEducation.create({
+          data: {
+            consultantId,
+            institution: edu.institution,
+            qualification: edu.qualification,
+            startDate: new Date(edu.startDate),
+            endDate: edu.endDate ? new Date(edu.endDate) : null,
+            fileName: edu.fileName ?? null,
+          },
+        });
+      }
+    }
+    });
+
+    return { message: 'Consultant profile updated successfully.' };
+  }
+
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
 
   private getProfileIncludes() {
@@ -357,6 +485,21 @@ export class ConsultantService {
     };
   }
 
+  private inferCompetencyLevel(
+    yearsExperience: number,
+    confidenceLevel: number,
+  ): CompetencyLevel {
+    if (yearsExperience >= 5 && confidenceLevel >= 4) {
+      return CompetencyLevel.EXPERT;
+    }
+
+    if (yearsExperience >= 2 && confidenceLevel >= 3) {
+      return CompetencyLevel.INTERMEDIATE;
+    }
+
+    return CompetencyLevel.BEGINNER;
+  }
+
   //-----------------Consultant get assigned projects-------------------
   async getAssignedProjects(userId: string) {
     const consultant = await this.prisma.consultant.findUnique({
@@ -376,12 +519,16 @@ export class ConsultantService {
             projectName: true,
             clientName: true,
             description: true,
+            addressLine1: true,
             suburb: true,
             city: true,
+            province: true,
+            postalCode: true,
             status: true,
             startDate: true,
             endDate: true,
             allocation: true,
+            teamSize: true,
           },
         },
       },

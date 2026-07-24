@@ -15,6 +15,7 @@ describe('MatchRunController', () => {
         mockMatchRunService = {
             executeMatchRun: jest.fn(),
             getMatchRun: jest.fn(),
+            getMatchRunStats: jest.fn(),
         }
 
         const module: TestingModule = await Test.createTestingModule({
@@ -40,11 +41,11 @@ describe('MatchRunController', () => {
             const userId = 'user-01';
 
             const mockRequest = {
-                user: { id: userId },
+                user: { userId: userId },
             };
 
             const mockResult: ConsultantMatchResult[] = [
-                { consultantId: 'consultant-01', finalScore: 90, rank: 1, factorBreakdown: [] },
+                { consultantId: 'consultant-01', consultantName: 'Benji', consultantEmail: 'Benji@gmail.com', finalScore: 90, rank: 1, isPlaced: false, factorBreakdown: [] },
             ];
             mockMatchRunService.executeMatchRun.mockResolvedValue(mockResult);
             const result = await controller.executeMatchRun(projectId, mockRequest);
@@ -65,7 +66,7 @@ describe('MatchRunController', () => {
             const runId = 'run-01';;
 
             const mockResult: ConsultantMatchResult[] = [
-                { consultantId: 'consultant-01', finalScore: 90, rank: 1, factorBreakdown: [] },
+                { consultantId: 'consultant-01', consultantName: 'Benji', consultantEmail: 'Benji@gmail.com', finalScore: 90, rank: 1, isPlaced: false, factorBreakdown: [] },
             ];
             mockMatchRunService.getMatchRun.mockResolvedValue(mockResult);
             const result = await controller.getMatchRun(projectId, runId);
@@ -74,6 +75,28 @@ describe('MatchRunController', () => {
             expect(mockMatchRunService.getMatchRun).toHaveBeenCalledTimes(1);
 
             expect(result).toEqual(mockResult);
+        });
+    })
+
+    describe('getMatchRunStats', () => {
+        it('successefully retrieves match run stats', async () => {
+            const projectId = 'project-01';
+            const runId = 'run-01';;
+
+            const mockStats = {
+                totalEvaluated: 12,
+                totalExcluded: 2,
+                totalMatched: 10,
+                totalPlaced: 3
+            };
+
+            mockMatchRunService.getMatchRunStats.mockResolvedValue(mockStats);
+            const result = await controller.getMatchRunStats(projectId, runId);
+
+            expect(mockMatchRunService.getMatchRunStats).toHaveBeenCalledWith(projectId, runId);
+            expect(mockMatchRunService.getMatchRunStats).toHaveBeenCalledTimes(1);
+
+            expect(result).toEqual(mockStats);
         });
     })
 

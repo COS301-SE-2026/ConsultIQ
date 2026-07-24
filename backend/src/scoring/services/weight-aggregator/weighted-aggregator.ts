@@ -7,8 +7,12 @@ import {
 
 export interface ScoredConsultant {
   consultantId: string;
+  consultantName: string;
+  consultantEmail: string;
   factorScores: Partial<Record<ScoringFactor, number>>;
   weights: Partial<Record<ScoringFactor, number>>;
+  factorDetails?: Partial<Record<ScoringFactor, string>>;
+  isPlaced: boolean;
 }
 
 export interface ScoredConsultantsResult {
@@ -59,6 +63,8 @@ export class WeightedAggregator {
       const weight = consultant.weights[factor] ?? 0;
       const exactContribution = rawScore * weight;
 
+      const details = consultant.factorDetails?.[factor];
+
       sum += exactContribution;
       return {
         factor,
@@ -68,13 +74,17 @@ export class WeightedAggregator {
           exactContribution,
           FACTOR_BREAKDOWN_DECIMAL_PLACES,
         ),
+        details,
       };
     });
 
     return {
       consultantId: consultant.consultantId,
+      consultantName: consultant.consultantName,
+      consultantEmail: consultant.consultantEmail,
       finalScore: round(sum * 100, FINAL_SCORE_DECIMAL_PLACES),
       factorBreakdown,
+      isPlaced: consultant.isPlaced,
     };
   }
 }

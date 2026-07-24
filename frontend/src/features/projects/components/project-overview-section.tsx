@@ -13,6 +13,7 @@ interface ProjectOverviewSectionProps {
   readonly onSave: (fields:{ name: string, projectName:string, clientName: string,
           teamSize: number, budget: number, startDate: string, endDate: string, status: Project['status'],
           description: string})=>| void;
+  readonly isConsultant?: boolean;
 }
 
 const formatDate = (dateString?: string) => {
@@ -32,7 +33,7 @@ const formatDate = (dateString?: string) => {
 };
 
 export default function ProjectOverviewSection({
-  project, isEditing, isDisabled, onEdit, onCancel, onSave,
+  project, isEditing, isDisabled, onEdit, onCancel, onSave,isConsultant
 }: ProjectOverviewSectionProps) {
   const [projectName, setProjectName]= useState(project.name);
   const [clientName, setClientName]= useState(project.clientName);
@@ -43,13 +44,15 @@ export default function ProjectOverviewSection({
   const [status, setStatus]= useState(project.status);
   const [description, setDescription] = useState(project.description);
 
+  const isNonConsultant= !isConsultant;
+
   const handleSave= ()=>{
     onSave({
       name: projectName,
       projectName: projectName,
       clientName: clientName,
       teamSize: teamSize,
-      budget: budget,
+      budget: budget || 0,
       startDate: startDate,
       endDate: endDate,
       status: status,
@@ -177,12 +180,15 @@ export default function ProjectOverviewSection({
               <X className="h-5 w-5"/> Cancel
               </button>
               </div>):(
-                <button 
-                onClick={onEdit} 
-                disabled={isDisabled}
-                className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                <Edit className="h-5 w-5"/> 
-                </button>
+                isNonConsultant && (
+                  <button 
+                  onClick={onEdit} 
+                  disabled={isDisabled}
+                  className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
+                  <Edit className="h-5 w-5"/> 
+                  </button>
+                )
+              
               )}
             </div>
         </div>

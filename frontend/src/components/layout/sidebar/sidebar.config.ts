@@ -44,6 +44,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         icon:Cog
     },
     {
+        label: "Placements",
+        path:"/placement-dashboard",
+        icon:Users
+    },
+    {
         label: "Notifications",
         path:"/notifications",
         icon:Bell
@@ -54,12 +59,17 @@ export const projectManagerSidebarItems: SidebarItem[] = [
 export const consultantSidebarItems: SidebarItem[] = [
     {
         label: "Profile",
-        path: "/profile-view",
+        path: "/under-construction",
         icon: UserCheck
     },
     {
         label: "Notifications",
         path:"/notifications",
         icon:Bell
-    }
+    },
+    {
+        label: " My Projects",
+        path: "/consultant-projects",
+        icon: Briefcase
+    },
 ];

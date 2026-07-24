@@ -64,8 +64,8 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     
    
-    address1: data.addressLine1,
-    address2: data.addressLine2 || "Not Provided",
+    addressLine1: data.addressLine1,
+    addressLine2: data.addressLine2 || "Not Provided",
     suburb: data.suburb || "Not Provided",
     city:  data.city,
     province: data.province,
@@ -166,7 +166,7 @@ export function useFetchConsultantProfile(
     };
 
     fetchProfile();
-  }, [targetConsultantId, loggedInUserId]);
+  }, [targetConsultantId, loggedInUserId,hasParams]);
 
   return { profile, isLoading, error, notFound };
 }

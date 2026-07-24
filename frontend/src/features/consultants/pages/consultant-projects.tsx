@@ -1,6 +1,6 @@
 import { ProfileHeroCard } from "../components/profile";
 import ProjectGrid from "../../projects/components/project-grid";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../hooks/useAuth";
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import type { Project } from "../../projects/types/project.types";
@@ -8,41 +8,26 @@ import {useState } from "react";
 import ProjectDetailsModal from "../../projects/components/project-details-modal";
 import {consultantSidebarItems,} from "../../../components/layout/sidebar/sidebar.config";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-
+import { useFetchAssignedProject } from "../../../hooks/useFetchAssignedProjects";
 
 
 
 function ConsultantProjects(){
       const location = useLocation();
-      const navigate = useNavigate();
       const { user } = useAuth();
 
       
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
-    const [projects] = useState<Project[] >([]);
+    const { projects, isLoading: projectsLoading, error: projectsError } = useFetchAssignedProject();
 
     const { profile, error } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
     );
 
-    if (error || !profile) {
-    let errorMessage = "profile not found";
-
-    if (error){
-      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
-    }
-
-    return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4" style={{ backgroundColor: "var(--color-surface)" }}>
-        <div className="text-red-500 font-semibold text-lg">{errorMessage || "Profile error"}</div>
-        <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
-          Go Back
-        </button>
-      </div>
-    );
-  }
+    const hasNoProfile = Boolean(error || !profile);
+  
 
   
     return(
@@ -62,20 +47,30 @@ function ConsultantProjects(){
              
 
             <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overscroll-none">
-            <div className="flex flex-col gap-8 w-full max-w-5xl">
-              <div className="h-1" />
+              {hasNoProfile ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-brand-muted font-medium text-lg">No projects assigned yet</p>
+                </div>
+              ):(
+                 <div className="flex flex-col gap-8 w-full max-w-5xl">
+                <div className="h-1" />
+                    
+                  <ProfileHeroCard 
+                    fullName={profile?.fullName ?? ""}
+                    status={profile?.status ?? "Unavailable"} 
+                  />
                   
-                <ProfileHeroCard 
-                  fullName={profile.fullName}
-                  status={profile.status} 
-                />
                 
               
                 <div className="flex items-center gap-3 p-2 justify-start ">
                     <h2>Assigned Projects</h2>
                     <span className="bg-brand-blue text-white font-bold rounded-full flex items-center justify-center w-6 h-6">{projects.length}</span>
                 </div> 
-                {projects.length >0 ? (
+                {projectsLoading ? (
+                  <div>Loading your projects...</div>
+                    ) : projectsError ? (
+                    <div className="text-red-500">{projectsError}</div>
+                    ) : projects.length >0 ? (
                     <ProjectGrid projects={projects} onViewDetails={setSelectedProject} />
                     ) : (
                     <div>
@@ -83,6 +78,8 @@ function ConsultantProjects(){
                     </div>
                 )}
               </div>
+              )}
+           
              
               <ProjectDetailsModal
                 open={!!selectedProject}

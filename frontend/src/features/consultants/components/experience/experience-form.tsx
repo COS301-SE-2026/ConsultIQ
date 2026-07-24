@@ -170,11 +170,12 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
           </div>
         </div>
 
-        <div className="h-6" />
+        <div className="h-6 " />
         <Button
+          variant="secondary"
           onClick={handleAdd}
-          className="self-end h-8 w-30 px-6 text-sm font-medium rounded"
-          style={{ backgroundColor: "var(--color-primary)" }}
+          className="self-end flex h-8 w-30 px-6 text-sm font-medium rounded bg-brand-blue! text-white "
+          
         >
           Add Experience
         </Button>

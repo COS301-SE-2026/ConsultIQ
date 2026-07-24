@@ -12,6 +12,7 @@ import {Card} from "../../../components/ui/card"
 import { getNotifications,getArchivedNotifications,markAsRead, markAllAsRead, archiveNotification } from "../services/notification.services";
 import type { NotificationItems } from "../types/notification.types";
 import {toast} from "sonner";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 export type notificationTab = "All" | "Unread" | "Archived";
 
@@ -42,6 +43,7 @@ function NotificationPage(){
     const [isNotificationLoading,setIsNotificationLoading] = useState(false);
     const [isArchivedLoading,setIsArchivedLoading] = useState(false);
    
+    const{count: unreadCount, refresh: refreshUnreadCount} = useUnreadNotificationCount();
    
        useEffect(() =>{
             const isUnread= (notification:NotificationItems) => !notification.isRead;
@@ -145,6 +147,7 @@ function NotificationPage(){
               toast.success( ChosenIds.length === 1 ? "Marked notification as read" : "Selected notifications marked as read",{id:promiseToast});
               setSelectedIds(prev => prev.filter(id=>!ChosenIds.includes(id)));
               await refreshNotifications();
+              await refreshUnreadCount();
  
             }catch (err){
                 toast.error(err instanceof Error ? err.message :"Failed to mark  as read",{id:promiseToast});
@@ -158,6 +161,7 @@ function NotificationPage(){
             await markAllAsRead();
             toast.success("All notifications marked as read");
             await refreshNotifications();
+            await refreshUnreadCount();
         }catch(err){
             toast.error(err instanceof Error ? err.message :"Failed to mark all as read");
         }
@@ -236,7 +240,7 @@ function NotificationPage(){
 
     return(
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-            <Sidebar items={sidebarItems} />
+            <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
             <div className="flex-1 flex flex-col h-screen overflow-y-auto  gap-4">
                 <header

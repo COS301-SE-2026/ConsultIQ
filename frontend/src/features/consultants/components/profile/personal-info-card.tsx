@@ -58,8 +58,7 @@ export default function PersonalInfoCard({
    const [nationalityError, setNationalityError] = useState("");
    const [emailError,setEmailError] = useState("");
    const [nameError,setNameError]= useState("");
-
-
+   const [isSaving, setIsSaving] = useState(false);
 
    const handleEditClick = () => {
     setIsEditing(true);
@@ -80,8 +79,7 @@ export default function PersonalInfoCard({
 
    }
 
-
-   const handleSave = () => {
+   const handleSave = async () => {
 
      let isValid = true;
 
@@ -139,16 +137,17 @@ export default function PersonalInfoCard({
 
      if(!isValid) return;
     
-     //callback to api function in parent
-     onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdNumber, nationality: nationalityStatus });
-     
-
-
-     setIsEditing(false);
-     toast.success("Personal information has been updated successfully");
-
-
-   }
+    setIsSaving(true);
+    try {
+      await onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdNumber, nationality: nationalityStatus });
+      setIsEditing(false);
+      toast.success("Personal information has been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
    
 
@@ -159,6 +158,7 @@ export default function PersonalInfoCard({
        {canEdit && (
            <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}

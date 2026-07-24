@@ -10,15 +10,16 @@ import { RawConsultantDto } from '../dto/raw-consultant.dto';
 
 export type ScoringResults =
   | {
-      excluded: false;
-      factorScores: Partial<Record<ScoringFactor, number>>;
-      redistributedWeights: Partial<Record<ScoringFactor, number>>;
-    }
+    excluded: false;
+    factorScores: Partial<Record<ScoringFactor, number>>;
+    redistributedWeights: Partial<Record<ScoringFactor, number>>;
+    factorDetails: Partial<Record<ScoringFactor, string>>;
+  }
   | {
-      excluded: true;
-      reason: string;
-      missingMandatorySkills: string[];
-    };
+    excluded: true;
+    reason: string;
+    missingMandatorySkills: string[];
+  };
 /*
 Calcaute the five scoring factors considering the avtive ones and redistributing inactive weights into the active weights if the weights are not redistributed
 */
@@ -31,7 +32,7 @@ export class ScoringOrchestrator {
     private readonly costFitScorer: CostFitScorer,
     private readonly geographicFitScorer: GeographicFitScorer,
     private readonly availabilityFitScorer: AvailabilityFitScorer,
-  ) {}
+  ) { }
 
   async scoreConsultant(
     consultant: RawConsultantDto,
@@ -40,6 +41,7 @@ export class ScoringOrchestrator {
     activeFactors: Set<ScoringFactor>,
   ): Promise<ScoringResults> {
     const scoresByFactor: Partial<Record<ScoringFactor, number>> = {};
+    const detailsByFactor: Partial<Record<ScoringFactor, string>> = {};
 
     if (activeFactors.has(ScoringFactor.SKILL_ALIGNMENT)) {
       const skillResult = this.skillAlignment.score(consultant, project);
@@ -52,6 +54,10 @@ export class ScoringOrchestrator {
         };
       }
       scoresByFactor[ScoringFactor.SKILL_ALIGNMENT] = skillResult.score;
+
+      if (skillResult.details) {
+        detailsByFactor[ScoringFactor.SKILL_ALIGNMENT] = skillResult.details;
+      }
     }
 
     if (activeFactors.has(ScoringFactor.COMPETENCY_LEVEL)) {
@@ -60,11 +66,18 @@ export class ScoringOrchestrator {
         project,
       );
       scoresByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.score;
+
+      if (competencyResult.details) {
+        detailsByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.details;
+      }
     }
 
     if (activeFactors.has(ScoringFactor.COST_TO_COMPANY)) {
       const costFitResult = this.costFitScorer.score(consultant, project);
       scoresByFactor[ScoringFactor.COST_TO_COMPANY] = costFitResult.score;
+      if (costFitResult.details) {
+        detailsByFactor[ScoringFactor.COST_TO_COMPANY] = costFitResult.details;
+      }
     }
 
     if (activeFactors.has(ScoringFactor.LOCATION)) {
@@ -73,12 +86,18 @@ export class ScoringOrchestrator {
         project,
       );
       scoresByFactor[ScoringFactor.LOCATION] = geographicFitResult.score;
+
+      if (geographicFitResult.details) {
+        detailsByFactor[ScoringFactor.LOCATION] = geographicFitResult.details;
+      }
     }
 
     if (activeFactors.has(ScoringFactor.AVAILABILITY)) {
-      scoresByFactor[ScoringFactor.AVAILABILITY] = (
-        await this.availabilityFitScorer.score(consultant, project)
-      ).score;
+      const availabiltyResult = await this.availabilityFitScorer.score(consultant, project);
+      scoresByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.score;
+      if (availabiltyResult.details) {
+        detailsByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.details;
+      }
     }
 
     const redistributedWeights = this.redistributedWeights(
@@ -90,6 +109,7 @@ export class ScoringOrchestrator {
       excluded: false,
       factorScores: scoresByFactor,
       redistributedWeights: redistributedWeights,
+      factorDetails: detailsByFactor,
     };
   }
 

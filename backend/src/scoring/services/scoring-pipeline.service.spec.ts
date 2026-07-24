@@ -53,6 +53,7 @@ describe('ScoringPipelineService', () => {
             excluded: false,
             factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 0.8 },
             redistributedWeights: mockedActiveWeights,
+            factorDetails: {},
         };
 
         const mockActiveFactors = new Set([ScoringFactor.SKILL_ALIGNMENT, ScoringFactor.COST_TO_COMPANY]);

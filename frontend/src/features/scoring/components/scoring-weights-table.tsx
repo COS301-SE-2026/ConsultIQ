@@ -105,7 +105,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
 
                                 <div className="space-y-3">
                                     <div className="flex justify-center">
-                                        <div className="max-w-[60px] w-full">
+                                        <div className="max-w-[75px] w-full ">
                                             <input type="number" min="0" max="100" step="1"
                                                 disabled={!factor.isActive}
                                                 value={factor.isActive ? factor.weight : 0}

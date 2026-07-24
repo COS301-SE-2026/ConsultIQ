@@ -1,5 +1,5 @@
 import type { ConsultantProfileDto } from "../hooks/useFetchConsultantsProfiles";
-
+import { apiClient } from "../lib/api-client";
 const getHeaders = (): Record<string, string> => ({
   'Content-Type': 'application/json',
   'Authorization': `Bearer ${sessionStorage.getItem('ciq_access_token')}`,
@@ -64,19 +64,7 @@ export async function updateConsultantProfile(
     }[];
   }>
 ): Promise<{ message: string }> {
-  const response = await fetch(`${API_URL}/consultants/${consultantId}`, {
-    method: "PATCH",
-    headers: getHeaders(),
-    credentials: "include",
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to update profile");
-  }
-
-  return response.json();
+  return await apiClient.patch<{ message: string }>(`/consultants/${consultantId}`, data);
 }
 
 export async function uploadConsultantCv(

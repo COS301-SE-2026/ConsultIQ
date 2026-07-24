@@ -1,6 +1,6 @@
 import { Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { BlueOutlineButton } from "../pages/landing-page";
+import { BlueOutlineButton } from "../../../components/shared/nav-bar";
 
 
 

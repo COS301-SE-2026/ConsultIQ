@@ -2,6 +2,7 @@ import { LifeBuoy, BarChart2, Upload, Settings } from "lucide-react";
 import TutorialSection from "../components/tutorial-section";
 import type { LucideIcon } from "lucide-react";
 import FaqSection from "../components/faq-section";
+import Navbar from "../../../components/shared/nav-bar";
 
 interface QnA{
    readonly q: string;
@@ -46,6 +47,7 @@ const faqGroups: FAQItems[] = [
 export default function HelpPage(){
     return(
         <div className="min-h-screen ">
+                <Navbar/>
                 <header>
                     <section className="relative flex flex-col items-center overflow-hidden py-20 bg-brand-blue mb-5 sm:py-20 sm:mb-10 text-center px-4">
                     <div 

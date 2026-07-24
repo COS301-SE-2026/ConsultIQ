@@ -21,10 +21,18 @@ export default function VideoPlayer({video, onClose}:VideoPlayerProps){
                 </div>
 
                 <div className="relative w-full rounded-lg overflow-hidden bg-black aspect-video flex items-center justify-center text-brand-muted text-sm border border-slate-900">
-                    <div>
-                        <p>video goes here</p>
-                        <p className="text-xs text-brand-muted mt-1">{video.title}</p>
-                    </div>
+                    <iframe
+                        width="100%"
+                        height="100%"
+                        src={video.embedUrl}
+                        title={video.title}
+                        frameBorder="0"
+                        referrerPolicy="unsafe-url"
+                        allowFullScreen
+                        allow="clipboard-write"
+                        sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-forms allow-same-origin allow-presentation"
+                        className="absolute inset-0 rounded-lg"
+                    />
                 </div>
             </div>
        </div>

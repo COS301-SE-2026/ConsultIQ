@@ -24,7 +24,7 @@ export default function TutorialSection(){
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 ">
                 {tutorials.map((t)=> (
                 <VideoCard 
-                  key={t.id} 
+                  key={t.embedUrl} 
                   tutorial={t} 
                   onSelect={() => setActiveVideo(t)}
                   /> 

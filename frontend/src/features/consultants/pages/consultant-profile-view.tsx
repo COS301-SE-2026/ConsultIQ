@@ -11,6 +11,7 @@ import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import { updateConsultantProfile } from "../../../api/consultants.api";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import {
   ProfileHeroCard,
@@ -48,6 +49,7 @@ function ConsultantProfileViewPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const{count: unreadCount} = useUnreadNotificationCount();
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
@@ -107,7 +109,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={sidebarItems} notificationCount={unreadCount}/>
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <header

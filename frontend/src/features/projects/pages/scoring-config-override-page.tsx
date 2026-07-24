@@ -88,10 +88,12 @@ export default function ProjectScoringOverridePage() {
             setIsMatching(true);
             setErrMessage(null);
 
-            const rawMatchData = await placementService.executeMatchRun(projectId);
-            console.log(`Raw Data: ${JSON.stringify(rawMatchData, null, 2)}`);
+            const response = await placementService.executeMatchRun(projectId);
 
-            navigate(`/placement-dashboard`, {
+            const runId = response.runId;
+            const rawMatchData = response.results;
+
+            navigate(`/placement-dashboard/${projectId}/${runId}`, {
                 state: { rawMatchData }
             });
         } catch (err: unknown) {

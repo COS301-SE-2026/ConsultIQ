@@ -31,8 +31,10 @@ import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
 
 import NotificationPage from "../features/notifications/pages/notifications-page"
-import HelpPage from "../features/help/pages/help-page";
+
+//landing page
 import LandingPage from "../features/landing-page/pages/landing-page";
+import HelpPage from "../features/help/pages/help-page";
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -49,7 +51,7 @@ function AnimatedRoutes() {
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
                 <Route path="/help-page" element={<PageTransition><HelpPage /></PageTransition>} />
-                <Route path="/landing-page" element={<PageTransition><LandingPage /></PageTransition>} />
+                <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

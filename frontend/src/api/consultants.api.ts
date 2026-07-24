@@ -78,3 +78,24 @@ export async function updateConsultantProfile(
 
   return response.json();
 }
+
+export async function uploadConsultantCv(
+  consultantId: string,
+  file: File,
+): Promise<{ cvFileId: string; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_URL}/cv/upload/${consultantId}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to upload CV.');
+  }
+
+  return response.json();
+}

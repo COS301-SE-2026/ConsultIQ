@@ -297,11 +297,7 @@ export default function ProjectDetailsModal({
               isConsultant={isConsultant}
             />
         </div>
-        <div className="h-6" />
-        {isNonConsultant && (
-          <button className="bg-red-500 text-white font-semibold h-8 w-25 rounded"> Archive Project </button>
-        )}
-        
+
       </div>
     </div>
   );

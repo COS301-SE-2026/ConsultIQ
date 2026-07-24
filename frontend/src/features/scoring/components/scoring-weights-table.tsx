@@ -23,15 +23,17 @@ interface ScoringWeightTableProps {
 function ViewInfo({ label, description }: { readonly label: string; readonly description: string }) {
     const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="relative inline-flex items-center">
-            <button type="button" onClick={() => setIsOpen((previous) => !previous)}
+        <div className="relative inline-flex items-center"
+            onMouseEnter= {() =>setIsOpen(true)}
+            onMouseLeave= {() =>setIsOpen(false)}>
+            <button type="button" onFocus={() => setIsOpen(true)} onBlur={() => setIsOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
                 aria-label={`What does ${label} mean?`}>
                 <Info className="h-4 w-4" />
             </button>
 
             {isOpen && (
-                <div className="absolute left-1/2 bottom-full z-50 mb-4 w-56 -translate-x-1/2 rounded-md bg-white  p-3 text-center text-xs text-slate-600 border border-slate-200 shadow-md">
+                <div className="absolute left-1/2 bottom-full z-50 mb-4 w-56 -translate-x-1/2 rounded-md bg-white  p-3 text-center text-sm text-slate-700 border border-slate-200 shadow-md">
                     <div className="font-semibold text-slate-700">{label}</div>
                     <div className="mt-1">{description}</div>
                 </div>)}
@@ -95,15 +97,14 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 {factors.map((factor, idx) => (
                     <div key={`${factor.factorName}-${idx}`} >
                         <div className={`mb-4 border border-slate-200 rounded shadow-sm ${!factor.isActive && 'opacity-60'}`}>
-                            <div className="py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center">
+                            <div className="py-2 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center">
                                 <div></div>
-                                <div className="space-y-2">
-                                    <div className="h-2" />
+                                <div className="space-y-3">
                                     <h4 className="text-base font-semibold text-[#002D62]">{factor.factorName}</h4>
                                     <p className="text-sm text-slate-600">{factor.description}</p>
                                 </div>
 
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     <div className="flex justify-center">
                                         <div className="max-w-[75px] w-full ">
                                             <input type="number" min="0" max="100" step="1"

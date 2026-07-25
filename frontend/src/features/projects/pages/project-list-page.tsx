@@ -119,6 +119,11 @@ export default function ProjectListPage() {
     navigate(`/project-scoring-config/${project.id}`);
   };
 
+  const handleProjectUpdate= (updatedProject: Project) =>{
+    setProjects((currProjects)=> 
+      currProjects.map((p)=> (p.id ===updatedProject.id ? updatedProject : p))
+  );}
+
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount}/>
@@ -190,6 +195,7 @@ export default function ProjectListPage() {
         open={!!selectedProject}
         project={selectedProject}
         onClose={() => setSelectedProject(null)}
+        onUpdate={handleProjectUpdate}
       />
     </div>
   );

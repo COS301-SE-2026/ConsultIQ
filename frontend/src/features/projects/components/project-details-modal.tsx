@@ -12,6 +12,7 @@ interface ProjectDetailsModalProps {
   readonly project: Project | null;
   readonly onClose: () => void;
   readonly isConsultant?: boolean;
+  readonly onUpdate: (updatedProject: Project) => void;
 }
 
 
@@ -26,11 +27,32 @@ interface ApiProjectSkill {
   mandatory: boolean;
 }
 
+interface FullApiResponse{
+  id: string;
+  projectName: string;
+  clientName: string;
+  description: string;
+  teamSize: number,
+  allocation: number,
+  budget: number,
+  startDate: string,
+  endDate: string,
+  status: Project['status'],
+  addressLine1: string,
+  addressLine2: string | null,
+  suburb: string | null,
+  city: string,
+  province: string,
+  postalCode: string | null,
+  skills: ApiProjectSkill[],
+}
+
 export default function ProjectDetailsModal({
   open,
   project,
   onClose,
   isConsultant,
+  onUpdate,
 }: ProjectDetailsModalProps) {
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
@@ -109,6 +131,7 @@ export default function ProjectDetailsModal({
     
     await apiClient.patch(`/projects/${fullProject.id}`,payload);
     setFullProject(updatedProject);
+    onUpdate(updatedProject);
   }catch(error){
     toast.error("Failed to update project" + error);
   }finally{
@@ -168,8 +191,7 @@ export default function ProjectDetailsModal({
           setFullProject(mappedProject);
           return;
         }
-          const data= await apiClient.get<any>(`/projects/${project.id}`);
-          console.log(data);
+          const data= await apiClient.get<FullApiResponse>(`/projects/${project.id}`);
           const mappedProject: Project = {
             id: data.id,
             name: data.projectName,
@@ -253,7 +275,7 @@ export default function ProjectDetailsModal({
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
           onEdit = {() => setActiveEditSection("project-overview") }
           onCancel = { () => setActiveEditSection(null) }
-          onSave = { (fields) => handleSaveSection("project-overview", fields)}
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-overview", fields)}
           isConsultant={isConsultant}
           />
 
@@ -262,7 +284,7 @@ export default function ProjectDetailsModal({
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
           onEdit = {() => setActiveEditSection("project-location") }
           onCancel = { () => setActiveEditSection(null) }
-          onSave = { (fields) => handleSaveSection("project-location", fields)}
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
           isConsultant={isConsultant}
           />
 

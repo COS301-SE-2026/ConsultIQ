@@ -3,13 +3,14 @@ import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { COMPETENCY_RANK } from '../../enums/competency-level.enum';
-import { ScoringFactor } from '../../enums/scoring-factor.enum';
+
 
 @Injectable()
 export class CompetencyMatchScorer {
   private readonly MANDATORY_WEIGHT = 2.0;
   private readonly OPTIONAL_WEIGHT = 1.0;
   private readonly SKILL_BONUS = 0.02;
+  private readonly OVER_QUALIFIED_PENALTY = 0.15;
 
   score(
     consultant: RawConsultantDto,
@@ -21,10 +22,7 @@ export class CompetencyMatchScorer {
       return {
         score: 1,
         triggerHardExclusion: false,
-        detail: {
-          factor: ScoringFactor.COMPETENCY_LEVEL,
-          perSkill: [],
-        },
+        details: 'No specific competency levels required by project.',
       };
     }
 
@@ -65,10 +63,24 @@ export class CompetencyMatchScorer {
         consultantLevel = consultantRank.level;
         matchedRequiredSkills++;
 
-        if (requiredRank <= 0 || consultantRank.rank >= requiredRank) {
+        if (requiredRank <= 0) {
           skillScore = 1;
         } else {
-          skillScore = consultantRank.rank / requiredRank;
+
+          const rankDifference = consultantRank.rank - requiredRank;
+
+          if (rankDifference === 0) {
+            skillScore = 1.0;
+          }
+          else if (rankDifference > 0) {
+            //overqualified consultants are pernalized by their level of qualification
+            const penalty = rankDifference * this.OVER_QUALIFIED_PENALTY;
+            skillScore = Math.max(0.7, 1.0 - penalty);
+          }
+          else {
+            skillScore = consultantRank.rank / requiredRank;
+          }
+
         }
       }
 
@@ -101,18 +113,19 @@ export class CompetencyMatchScorer {
 
     const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
     const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));
+    const baseFormatted = (baseScore * 100).toFixed(1);
 
+    const bonusFormatted = (skillCountBonus * 100).toFixed(1);
+    let detailString = `Competency Match: ${baseFormatted}%.`
+
+    if (extraSkillCount > 0) {
+      detailString += ` Bonus applied for ${extraSkillCount} extra skill(s): +${bonusFormatted}%.`;
+    }
     return {
       score: finalScore,
       triggerHardExclusion: false,
 
-      detail: {
-        factor: ScoringFactor.COMPETENCY_LEVEL,
-        baseScore,
-        bonusApplied: skillCountBonus,
-
-        perSkill: perSkillDetails,
-      },
+      details: detailString,
     };
   }
 }

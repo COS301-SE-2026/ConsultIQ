@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   redis:
+    container_name: consultiq-prod-redis
     image: redis:7-alpine
     restart: always
     healthcheck:
@@ -11,6 +12,7 @@ services:
       retries: 5
 
   backend:
+    container_name: consultiq-prod-backend
     image: ghcr.io/cos301-se-2026/consultiq-backend:latest
     restart: always
     environment:
@@ -24,6 +26,8 @@ services:
         condition: service_healthy
     env_file:
       - /home/ubuntu/.env.production
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
   redis_data:

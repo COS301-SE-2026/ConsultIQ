@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { getConsultantProfileById, getConsultantProfileByUserId } from "../api/consultants.api";
+import { getConsultantProfileById, getConsultantProfileByUserId } from "../features/consultants/services/consultant.service";
+import { ApiError } from "../lib/api-client";
 
 
 interface ExperienceDto {
@@ -63,8 +64,8 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     
    
-    address1: data.addressLine1,
-    address2: data.addressLine2 || "Not Provided",
+    addressLine1: data.addressLine1,
+    addressLine2: data.addressLine2 || "Not Provided",
     suburb: data.suburb || "Not Provided",
     city:  data.city,
     province: data.province,
@@ -120,8 +121,14 @@ export function useFetchConsultantProfile(
   const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | string | null>(null);
+  const [notFound,setNotFound]= useState(false);
+  const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
   useEffect(() => {
+    if(!hasParams){
+          return;
+    }
+
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
@@ -132,26 +139,34 @@ export function useFetchConsultantProfile(
           rawData = await getConsultantProfileById(targetConsultantId);
         } else if (loggedInUserId) {
           rawData = await getConsultantProfileByUserId(loggedInUserId);
-        } else {
-          throw new Error("No usable identifier found to load profile.");
-        }
+        } 
 
         if (rawData) {
           setProfile(mapDtoToProfile(rawData));
+          setError(null);
+          setNotFound(false);
         }
-        setError(null);
+        
       } catch (err) {
         console.error("Profile Fetch Hook Error:", err);
         
-        const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
-        setError(errorMessage);
+        if(err instanceof ApiError && err.status === 404){
+          setProfile(null);
+          setError(null);
+          setNotFound(true);
+        }else{
+          const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
+          setError(errorMessage);
+          setNotFound(false);
+        }
+        
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfile();
-  }, [targetConsultantId, loggedInUserId]);
+  }, [targetConsultantId, loggedInUserId,hasParams]);
 
-  return { profile, isLoading, error };
+  return { profile, isLoading, error, notFound };
 }

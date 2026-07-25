@@ -1,6 +1,5 @@
 import { RawConsultantDto } from "../../dto/raw-consultant.dto";
 import { RawProjectDto } from "../../dto/raw-project.dto";
-import { ScoringFactor } from "../../enums/scoring-factor.enum";
 import { CostFitScorer } from "./cost-fit.scorer";
 
 function consultant(costToCompany: number): RawConsultantDto {
@@ -41,53 +40,27 @@ describe('CostFitScorer', () => {
         expect(scorer.score(consultant(100), project(200)).score).toBe(1.0);
 
         const result = scorer.score(consultant(100), project(200));
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_TO_COMPANY,
-            consultantRate: 100,
-            projectBudget: 200,
-            withinBudget: true,
-            overagePercentage: 0,
-        })
+        expect(result.details).toBe('Within budget (Rate: 100 | Budget: 200)');
     })
 
     it('scores 0.0 when a consultants rate is zero or missing and also flags the abnormalty', async () => {
         expect(scorer.score(consultant(0), project(200)).score).toBe(0.0);
 
         const result = scorer.score(consultant(0), project(200));
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_TO_COMPANY,
-            consultantRate: 0,
-            projectBudget: 200,
-            withinBudget: true,
-            note: 'Invalid data: Cost or Budget is missing or zero'
-        })
+        expect(result.details).toBe('Invalid data: Cost or Budget is missing or zero');
     })
 
 
     it('applies a penalty when the cost is above budget', async () => {
         const result = scorer.score(consultant(260), project(200));
         expect(result.score).toBe(0.8);
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_TO_COMPANY,
-            consultantRate: 260,
-            projectBudget: 200,
-            withinBudget: false,
-            overagePercentage: 30,
-            appliedPenalty: 0.2,
-        })
+        expect(result.details).toBe('Over budget by 30.0% (Rate: 260 | Budget: 200). Score reduced by penalty.');
     })
 
     it('scores 0.0 when the consultants cost is greately above the budget', async () => {
         const result = scorer.score(consultant(500), project(200));
         expect(result.score).toBe(0.0);
-        expect(result.detail).toEqual({
-            factor: ScoringFactor.COST_TO_COMPANY,
-            consultantRate: 500,
-            projectBudget: 200,
-            withinBudget: false,
-            overagePercentage: 150,
-            appliedPenalty: 1.0,
-        })
+        expect(result.details).toBe('Over budget by 150.0% (Rate: 500 | Budget: 200). Score reduced by penalty.');
     })
 
 })

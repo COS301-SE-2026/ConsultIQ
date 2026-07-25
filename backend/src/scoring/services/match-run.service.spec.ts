@@ -20,7 +20,7 @@ describe('MatchRunService', () => {
         mockPrisma = {
             project: { findUnique: jest.fn(), },
             consultant: { findMany: jest.fn() },
-            matchRun: { create: jest.fn(), findFirst: jest.fn() },
+            matchRun: { create: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
             matchRunResult: { createMany: jest.fn() },
             $transaction: jest.fn((callback) => callback(mockPrisma)),
         }
@@ -78,21 +78,7 @@ describe('MatchRunService', () => {
                     province: 'Gauteng',
                     user: { fullName: 'Benjamin Franklin' },
                     skills: [{ skill: { name: 'React' }, competencyLevel: 4 }],
-                }, //{
-                //     id: 'consultant-02',
-                //     costToCompany: 100,
-                //     city: 'Cape Town',
-                //     province: 'Western Cape',
-                //     user: { fullName: 'Arnold Swartzannegar' },
-                //     skills: [{ skill: { name: 'Java' }, competencyLevel: 2 }],
-                // }, {
-                //     id: 'consultant-03',
-                //     costToCompany: 100,
-                //     city: 'Johannesburg',
-                //     province: 'Gauteng',
-                //     user: { fullName: 'Bruce Lee' },
-                //     skills: [{ skill: { name: 'Java' }, competencyLevel: 1 }],
-                // },
+                },
             ];
 
             const mockWeights = { [ScoringFactor.SKILL_ALIGNMENT]: 0.5 };
@@ -120,7 +106,7 @@ describe('MatchRunService', () => {
                 })
             })
             expect(mockPrisma.matchRunResult.createMany).toHaveBeenCalledTimes(1);
-            expect(result).toEqual(mockAggregatedResults);
+            expect(result).toEqual({ runId: 'run-01', results: mockAggregatedResults });
         })
 
         it('throws NotFoundException if project does not exist', async () => {
@@ -147,7 +133,7 @@ describe('MatchRunService', () => {
                 id: 'run-01',
                 projectId: 'project-01',
                 results: [
-                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [] },
+                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [], consultant: { user: { fullName: 'Benji', email: 'Benji@gmail.com' } } },
                 ],
             };
 
@@ -157,6 +143,8 @@ describe('MatchRunService', () => {
 
             expect(result).toEqual([{
                 consultantId: 'consultant-01',
+                consultantName: 'Benji',
+                consultantEmail: 'Benji@gmail.com',
                 finalScore: 90,
                 rank: 1,
                 factorBreakdown: [],
@@ -165,5 +153,36 @@ describe('MatchRunService', () => {
     })
 
 
+    describe('getMatchRunStats', () => {
+        it('successefully retrieves match run stats', async () => {
+            const projectId = 'project-01';
+            const runId = 'runId-01';
 
+            const mockMatchRun = {
+                totalConsultantsScored: 10,
+                totalConsultantsExcluded: 2,
+                totalConsultantsPlaced: 3,
+            }
+
+            mockPrisma.matchRun.findUnique.mockResolvedValue(mockMatchRun);
+
+            const result = await service.getMatchRunStats('project-01', 'runId-01');
+
+            expect(mockPrisma.matchRun.findUnique).toHaveBeenCalledWith({
+                where: { id: runId, projectId },
+                select: {
+                    totalConsultantsScored: true,
+                    totalConsultantsExcluded: true,
+                    totalConsultantsPlaced: true,
+                },
+            });
+
+            expect(result).toEqual({
+                totalEvaluated: 12,
+                totalExcluded: 2,
+                totalMatched: 10,
+                totalPlaced: 3,
+            });
+        });
+    });
 })

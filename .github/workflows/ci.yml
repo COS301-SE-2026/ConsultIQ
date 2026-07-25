@@ -21,11 +21,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Generate Prisma client
         working-directory: backend
-        run: npx prisma generate
+        run: npx --no-install prisma generate
 
 
       - name: Run tests with coverage
@@ -51,7 +51,7 @@ jobs:
 
       - name: Run type check
         working-directory: backend
-        run: npx tsc --noEmit
+        run: ./node_modules/.bin/tsc --noEmit
 
       - name: Build
         working-directory: backend
@@ -118,7 +118,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run linter
         working-directory: frontend

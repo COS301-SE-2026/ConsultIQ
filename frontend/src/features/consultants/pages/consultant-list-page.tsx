@@ -9,6 +9,8 @@ import { getConsultants, getPendingProfiles } from "../services/consultant.servi
 import type { PendingProfileUserDto } from "../services/consultant.service";
 import { toast } from "sonner";
 import { UserCircle2 } from "lucide-react";
+import { Button } from "../../../components/ui/button";
+import  useUnreadNotificationsCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
 function ConsultantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -19,6 +21,8 @@ function ConsultantsPage() {
   const [activeSection, setActiveSection] = useState<"active" | "pending">("active");
   const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
+
+  const{count: unreadCount} = useUnreadNotificationsCount();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -86,7 +90,7 @@ function ConsultantsPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantManagerSidebarItems} />
+      <Sidebar items={consultantManagerSidebarItems} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header
@@ -98,11 +102,11 @@ function ConsultantsPage() {
           </h1>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
+              variant="default"
               onClick={() => navigate("/register")}
               className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
               style={{
-                backgroundColor: "var(--color-accent)",
                 color: "white",
                 fontSize: "16px",
                 padding: "12px 20px",
@@ -110,7 +114,7 @@ function ConsultantsPage() {
             >
               <UserPlus size={20} />
               Register Consultant
-            </button>
+            </Button>
           </div>
         </header>
 

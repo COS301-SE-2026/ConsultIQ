@@ -419,6 +419,9 @@ describe('ConsultantService', () => {
       ]);
 
       const result = await service.getAssignedProjects('user-1');
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-1');
+      expect(result[0].project.projectName).toBe('Project Alpha');
     });
   });
 

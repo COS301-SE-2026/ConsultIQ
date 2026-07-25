@@ -43,7 +43,7 @@ export default function ProjectCard({
         </div>
 
         {/* Description */}
-        <p className="text-[16px] leading-7 mb-2 line-clamp-4"
+        <p className="text-[16px] leading-7 mb-2 line-clamp-2 break-words"
           style={{
             color:
               "var(--color-text-secondary)",

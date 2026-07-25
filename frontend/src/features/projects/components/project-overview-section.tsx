@@ -33,7 +33,7 @@ const formatDate = (dateString?: string) => {
 };
 const formatStatus= (status: string): string=>{
   if(!status) return "N/A";
-  return status.replace(/_/g," ").replace(/\w\S*/g, (text) =>
+  return status.replaceAll(/_/g," ").replaceAll(/\w\S*/g, (text) =>
     text.charAt(0).toUpperCase()+ text.substring(1).toLocaleLowerCase());
 }
 

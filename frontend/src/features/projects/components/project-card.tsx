@@ -53,13 +53,11 @@ export default function ProjectCard({
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between mt-auto gap-3">
           {project.budget !== undefined && (
-            <>
             <div className="flex items-center gap-2">
               <p className="text-[16px] font-semibold text-primary whitespace-nowrap" >
                 R {project.budget.toLocaleString()}
               </p>
             </div>
-           </>
           )}
           <div className="flex flex-wrap items-center gap-2">
             {onConfigureScore && (

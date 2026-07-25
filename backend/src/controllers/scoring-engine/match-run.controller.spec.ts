@@ -15,6 +15,7 @@ describe('MatchRunController', () => {
         mockMatchRunService = {
             executeMatchRun: jest.fn(),
             getMatchRun: jest.fn(),
+            getMatchRunStats: jest.fn(),
         }
 
         const module: TestingModule = await Test.createTestingModule({
@@ -74,6 +75,28 @@ describe('MatchRunController', () => {
             expect(mockMatchRunService.getMatchRun).toHaveBeenCalledTimes(1);
 
             expect(result).toEqual(mockResult);
+        });
+    })
+
+    describe('getMatchRunStats', () => {
+        it('successefully retrieves match run stats', async () => {
+            const projectId = 'project-01';
+            const runId = 'run-01';;
+
+            const mockStats = {
+                totalEvaluated: 12,
+                totalExcluded: 2,
+                totalMatched: 10,
+                totalPlaced: 3
+            };
+
+            mockMatchRunService.getMatchRunStats.mockResolvedValue(mockStats);
+            const result = await controller.getMatchRunStats(projectId, runId);
+
+            expect(mockMatchRunService.getMatchRunStats).toHaveBeenCalledWith(projectId, runId);
+            expect(mockMatchRunService.getMatchRunStats).toHaveBeenCalledTimes(1);
+
+            expect(result).toEqual(mockStats);
         });
     })
 

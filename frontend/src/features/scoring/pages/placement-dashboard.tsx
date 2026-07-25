@@ -47,12 +47,13 @@ export default function PlacementDashboard() {
         }
         return [];
     }, [rawMatchData]);
-
+    console.log("URL Parameters:", { projectId, runId });
     useEffect(() => {
         const fetchStats = async () => {
             if (projectId && runId) {
                 try {
                     const fetchedStats = await placementService.getMatchRunStats(projectId, runId);
+                    // console.log("Raw stats from API:", fetchedStats);
                     setStats(fetchedStats);
                 } catch (error) {
                     console.error("Failed to fetch match run stats", error);
@@ -69,7 +70,6 @@ export default function PlacementDashboard() {
 
     const projectExcluded = stats?.totalExcluded ?? 0;
     const projectTotalEvaluated = stats?.totalEvaluated ?? (projectMatched + projectExcluded);
-
 
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);

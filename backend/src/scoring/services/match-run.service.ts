@@ -33,7 +33,7 @@ export class MatchRunService {
   async executeMatchRun(
     projectId: string,
     executedByUserId: string,
-  ): Promise<ConsultantMatchResult[]> {
+  ): Promise<{ runId: string; results: ConsultantMatchResult[] }> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: { skills: { include: { skill: true } } },
@@ -42,7 +42,11 @@ export class MatchRunService {
     if (!project) {
       throw new NotFoundException(`Project: ${projectId} is not found`);
     }
-
+    if (!project.skills || project.skills.length === 0) {
+      throw new BadRequestException(
+        `Cannot execute match run: Project has no required skills.`
+      );
+    }
     if (project.status !== 'OPEN' && project.status !== 'IN_PROGRESS') {
       throw new BadRequestException(
         `Match run can only be initialized for open and in-progress projects. Project Status is ${project.status}`,
@@ -119,7 +123,7 @@ export class MatchRunService {
 
       const totalPlacedCount = finalResults.filter(r => r.isPlaced).length;
 
-      await this.saveMatchRun(
+      const runId = await this.saveMatchRun(
         projectId,
         executedByUserId,
         activeWeights,
@@ -127,7 +131,7 @@ export class MatchRunService {
         logicallyExcludedCount + errorCount,
         totalPlacedCount,
       );
-      return finalResults;
+      return { runId, results: finalResults };
     }
   }
 
@@ -170,8 +174,8 @@ export class MatchRunService {
     results: ConsultantMatchResult[],
     excludedCount: number,
     placedCount: number,
-  ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+  ): Promise<string> {
+    return await this.prisma.$transaction(async (tx) => {
       const matchRun = await tx.matchRun.create({
         data: {
           project: { connect: { id: projectId } },
@@ -193,6 +197,7 @@ export class MatchRunService {
           isPlaced: r.isPlaced,
         }))
       })
+      return matchRun.id;
     });
   }
 

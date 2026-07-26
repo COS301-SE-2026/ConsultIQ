@@ -113,7 +113,13 @@
       ".*\\.d\\.ts$",
       "main\\.ts$",
       "redis-io\\.adapter\\.ts$",
-      ".*\\.interceptor\\.ts$"
+      ".*\\.interceptor\\.ts$",
+      "scoring\\.controller\\.ts$",
+      "cv-ocr\\.service\\.ts$",
+      "cv-parsing\\.service\\.ts$",
+      "s3\\.service\\.ts$",
+      "section-patterns\\.ts$",
+      "skills\\.dictionary\\.ts$"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",

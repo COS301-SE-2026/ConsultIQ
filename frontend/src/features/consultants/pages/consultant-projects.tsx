@@ -86,6 +86,7 @@ function ConsultantProjects(){
                 project={selectedProject}
                 onClose={() => setSelectedProject(null)}
                 isConsultant={true}
+                onUpdate={setSelectedProject}
               />
             </main>
              

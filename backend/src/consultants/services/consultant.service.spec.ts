@@ -380,46 +380,49 @@ describe('ConsultantService', () => {
       expect(result).toEqual([]);
     });
 
-    // it('returns assigned projects with team members excluding self', async () => {
-    //   mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
-    //   mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-    //     {
-    //       id: 'placement-1',
-    //       status: 'ACTIVE',
-    //       allocation: 80,
-    //       startDate: new Date('2026-01-01'),
-    //       endDate: null,
-    //       project: {
-    //         projectName: 'Project Alpha',
-    //         clientName: 'Client A',
-    //         description: 'Test project',
-    //         suburb: 'Sandton',
-    //         city: 'Johannesburg',
-    //         province: 'Gauteng',
-    //         status: 'IN_PROGRESS',
-    //         startDate: new Date('2026-01-01'),
-    //         endDate: null,
-    //         allocation: 100,
-    //         placements: [
-    //           {
-    //             consultantId: 'consultant-1',
-    //             consultant: {
-    //               user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
-    //             },
-    //           },
-    //           {
-    //             consultantId: 'consultant-2',
-    //             consultant: {
-    //               user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
-    //             },
-    //           },
-    //         ],
-    //       },
-    //     },
-    //   ]);
+    it('returns assigned projects with team members excluding self', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-1',
+          status: 'ACTIVE',
+          allocation: 80,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDate: null,
+            allocation: 100,
+            placements: [
+              {
+                consultantId: 'consultant-1',
+                consultant: {
+                  user: { fullName: 'Siya Sibiya', email: 'siya@bbd.co.za' },
+                },
+              },
+              {
+                consultantId: 'consultant-2',
+                consultant: {
+                  user: { fullName: 'Jane Doe', email: 'jane@bbd.co.za' },
+                },
+              },
+            ],
+          },
+        },
+      ]);
 
-    //   const result = await service.getAssignedProjects('user-1');
-    // });
+      const result = await service.getAssignedProjects('user-1');
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-1');
+      expect(result[0].project.projectName).toBe('Project Alpha');
+    });
   });
 
   describe('getAssignedProjectDetails', () => {

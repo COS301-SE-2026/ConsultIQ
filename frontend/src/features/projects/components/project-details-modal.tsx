@@ -288,7 +288,9 @@ export default function ProjectDetailsModal({
           isConsultant={isConsultant}
           />
 
-            <ProjectSkillsSection skills={[...(displayData.skills ?? [])]}
+            <ProjectSkillsSection
+              key = {fullProject ? fullProject.id : "loading"}
+              skills = {[...(displayData.skills ?? [])]}
               isEditing = {activeEditSection === "project-skills"}
               isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
               onEdit = {() => setActiveEditSection("project-skills") }

@@ -103,7 +103,6 @@ export default function SkillsForm() {
           </div>
         </div>
 
-        <div className="h-6" />
         <Button
           onClick={handleAddSkill}
           disabled={!skillName.trim() || !years || !confidence}
@@ -113,7 +112,6 @@ export default function SkillsForm() {
           Add Skill
         </Button>
 
-        <div className="h-6" />
 
         {/* Skills list */}
         {skills.length > 0 && (

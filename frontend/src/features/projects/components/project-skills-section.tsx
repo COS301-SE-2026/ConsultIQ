@@ -45,7 +45,6 @@ export default function ProjectSkillsSection({
     if(isEditing ){
         skillsSection= (
             <>
-            <div className="h-6"/>
             <ProjectSkillsCard
             key= {editingIndex ?? "new-skill"}
             skills={currentSkills}
@@ -56,7 +55,6 @@ export default function ProjectSkillsSection({
             onSkillSave={updateSkill} 
             isEditing = {isEditing}
             />
-            <div  className="h-6"/>
             <ProjectSkillsTable
             skills={currentSkills.map((skill, skillId) => ({
                 id: String(skillId),
@@ -67,7 +65,6 @@ export default function ProjectSkillsSection({
               }))}
               onEditSkill= {startEditing}
             />
-            <div  className="h-6"/>
             </>
         );
     }else{ 
@@ -88,9 +85,9 @@ export default function ProjectSkillsSection({
       return(
         <Card style={{ padding: "20px", border: "none" }}>
             
-          <div className=" flex flex-center gap-3 mb-8">
+          <div className=" flex flex-center gap-3">
             <h3
-                className="text-3xl font-bold mb-8"
+                className="text-3xl font-bold mb-4"
                 style={{ color: "var(--color-primary)" }}
               >
                 Skills

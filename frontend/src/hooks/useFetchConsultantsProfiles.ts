@@ -58,18 +58,18 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     fullName:data.fullName,
    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
-    phone: data.phoneNumber || "Not Provided",
-    idNumber: data.idNumber || "Not Provided",
-    nationality: data.nationality || "Not Provided",
+    phone: data.phoneNumber || "",
+    idNumber: data.idNumber || "",
+    nationality: data.nationality || "",
 
     
    
     addressLine1: data.addressLine1,
-    addressLine2: data.addressLine2 || "Not Provided",
-    suburb: data.suburb || "Not Provided",
+    addressLine2: data.addressLine2 || "",
+    suburb: data.suburb || "",
     city:  data.city,
     province: data.province,
-    postalCode: data.postalCode || "Not provided",
+    postalCode: data.postalCode || "",
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,

@@ -153,9 +153,10 @@ export default function PersonalInfoCard({
 
   return (
     <div className="relative">
-       <SectionCard title="Personal Information" >
-
-       {canEdit && (
+       <SectionCard 
+        title="Personal Information" 
+        edit={
+          canEdit && (
            <EditControls
                   isEditing={isEditing}
                   isSaving={isSaving}
@@ -163,7 +164,11 @@ export default function PersonalInfoCard({
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
-        )}
+          )
+        }
+        >
+
+       
 
       <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>
 

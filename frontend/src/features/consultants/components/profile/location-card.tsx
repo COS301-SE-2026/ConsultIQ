@@ -100,9 +100,11 @@ export default function LocationCard({
 
   return (
     <div className="relative">
-      <SectionCard title="Location">
-
-        {canEdit && (
+      
+      <SectionCard 
+        title="Location"
+        edit={
+          canEdit && (
              <EditControls
                   isEditing={isEditing}
                   isSaving={isSaving}
@@ -110,7 +112,11 @@ export default function LocationCard({
                   onSave={handleSave}
                   onCancel={handleCancel}
               />
-        )}
+          )
+        }
+      >
+
+       
 
          <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>
           {isEditing ? (

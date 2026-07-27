@@ -201,7 +201,7 @@ const handleSave = async () => {
 
                     <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
-                         variant= "secondary"
+                         variant= "ghost"
                          onClick={()=> setSelected({exp,index})}
                          className="gap-2 font-bold px-4 py-2 border-b"
                           style={{
@@ -215,7 +215,7 @@ const handleSave = async () => {
                          Edit
                        </Button>
                        <Button
-                          variant= "secondary"
+                          variant= "default"
                          onClick={()=> removeExperience(index)}
                          className="p-2 border"
                          style={{

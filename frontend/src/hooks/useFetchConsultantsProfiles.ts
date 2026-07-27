@@ -166,6 +166,7 @@ export function useFetchConsultantProfile(
     }, [targetConsultantId, loggedInUserId,hasParams]);
 
     useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchProfile();
     }, [fetchProfile]);
     

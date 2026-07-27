@@ -164,7 +164,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
       <div className="flex flex-col">
         {activeSkills.map((skill, index) => (
           <div
-            key={`${skill.name}-${index}`}
+            key={index}
             className={`grid ${isEditing ? "grid-cols-[2fr_1.5fr_1.5fr_2fr_auto] gap-4 items-center":"grid-cols-3"} font-medium`}
             style={{
               fontSize: "var(--text-h3)",
@@ -225,7 +225,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                 />
 
                 <Button
-                 variant="secondary"
+                 variant="default"
                  onClick={() => removeSkill(index)}
                    style ={{
                   fontSize: "14px",

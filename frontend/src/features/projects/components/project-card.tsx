@@ -14,16 +14,18 @@ export default function ProjectCard({
   onConfigureScore,
 }: ProjectCardProps) {
   return (
-    <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white">
-      <div className="flex flex-col h-full flex-1" style={{ padding: "32px 48px" }}>
+    <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white overflow-hidden">
+      <div className="flex flex-col h-full flex-1 p-6 sm:p-8">
         {/* Header */}
-        <div className="flex items-center gap-5 mb-5">
+        <div className="flex items-center gap-4 sm:gap-5 mb-5 min-w-0">
 
-          <div className="w-14 h-14 rounded-full bg-gray-300 flex items-center justify-center shrink-0">
-            <Folder className="text-white" size={18} />
+          <div className="w-12 h-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0"  style={{
+                backgroundColor: "var(--color-primary)",
+              }}>
+            <Folder className="text-white" size={20} />
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0 flex-1">
             <h2 className="text-[20px] font-semibold leading-snug"
               style={{
                 color: "var(--color-primary)",
@@ -39,10 +41,9 @@ export default function ProjectCard({
         </p>
           </div>
         </div>
-        <div className="h-4" />
 
         {/* Description */}
-        <p className="text-[16px] leading-7 mb-8 line-clamp-4"
+        <p className="text-[16px] leading-7 mb-2 line-clamp-2 break-words"
           style={{
             color:
               "var(--color-text-secondary)",
@@ -50,16 +51,13 @@ export default function ProjectCard({
           {project.description}
         </p>
         {/* Footer */}
-        <div className="items-wrap items-center justify-between mt-auto pt-4 gap-3">
+        <div className="flex flex-wrap items-center justify-between mt-auto gap-3">
           {project.budget !== undefined && (
-            <>
             <div className="flex items-center gap-2">
-              <p className="text-[16px] font-semibold">
-                R{project.budget.toLocaleString()}
+              <p className="text-[16px] font-semibold text-primary whitespace-nowrap" >
+                R {project.budget.toLocaleString()}
               </p>
             </div>
-            <div className="h-4" />
-           </>
           )}
           <div className="flex flex-wrap items-center gap-2">
             {onConfigureScore && (

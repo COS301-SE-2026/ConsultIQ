@@ -63,9 +63,9 @@ export default function ProjectLocationSection({
 
   return (
     <Card style={{ padding: "20px", border: "none" }}>
-      <div className= "flex flex-center gap-3 mb-8">
+      <div className= "flex flex-center gap-3">
         <h3
-          className="text-3xl font-bold mb-8"
+          className="text-3xl font-bold mb-4"
           style={{ color: "var(--color-primary)" }}
         >
           Location

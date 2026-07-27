@@ -53,7 +53,7 @@ function ConsultantProfileViewPage() {
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile: fetchedProfile, isLoading, error } = useFetchConsultantProfile(
+  const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
   );
@@ -74,12 +74,12 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   const canEdit = fromDashboard && Boolean(targetConsultantId);
 
-  async function save(partial: UpdatePayload) {
+  async function save(partial: UpdatePayload, optimisticPatch?: Partial<Profile>) {
     if (!targetConsultantId) {
       throw new Error("Missing consultant id");
     }
     await updateConsultantProfile(targetConsultantId, partial);
-    setOverrides((prev) => (prev ? { ...prev, ...(partial as Partial<Profile>) } : prev));
+    setOverrides((prev) => ({...prev,...(optimisticPatch ?? (partial as Partial<Profile>) )}));
   }
 
   if (isLoading) {
@@ -150,6 +150,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (status) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+                await refetch();
               }}
             />
 
@@ -167,6 +168,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                   idNumber: data.idNumber,
                   nationality: data.nationality,
                 });
+                await refetch();
               }}
             />
 
@@ -187,6 +189,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                   province: loc.province,
                   postalCode: loc.postalCode,
                 });
+                await refetch();
               }}
             />
 
@@ -205,6 +208,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     description: e.roleDescription,
                   })),
                 });
+                await refetch();
               }}
             />
 
@@ -212,13 +216,21 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               skills={profile.skills}
               canEdit={canEdit}
               onSave={async (skills) => {
+                const normalized = skills.map((s) => ({
+                  ...s,
+                  yearsOfExperience: Number(s.yearsOfExperience) || 0,
+                }));
+
                 await save({
                   skills: skills.map((s) => ({
                     skillName: s.name,
                     yearsExperience: s.yearsOfExperience,
                     confidenceLevel: s.confidenceLevel,
                   })),
-                });
+                },
+                {skills:normalized}
+              );
+                await refetch();
               }}
             />
 
@@ -235,6 +247,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     fileName: e.fileName,
                   })),
                 });
+                await refetch();
               }}
             />
           </div>

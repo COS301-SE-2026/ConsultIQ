@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getConsultantProfileById, getConsultantProfileByUserId } from "../features/consultants/services/consultant.service";
 import { ApiError } from "../lib/api-client";
 
@@ -58,18 +58,18 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     fullName:data.fullName,
    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
-    phone: data.phoneNumber || "Not Provided",
-    idNumber: data.idNumber || "Not Provided",
-    nationality: data.nationality || "Not Provided",
+    phone: data.phoneNumber || "",
+    idNumber: data.idNumber || "",
+    nationality: data.nationality || "",
 
     
    
     addressLine1: data.addressLine1,
-    addressLine2: data.addressLine2 || "Not Provided",
-    suburb: data.suburb || "Not Provided",
+    addressLine2: data.addressLine2 || "",
+    suburb: data.suburb || "",
     city:  data.city,
     province: data.province,
-    postalCode: data.postalCode || "Not provided",
+    postalCode: data.postalCode || "",
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,
@@ -124,12 +124,12 @@ export function useFetchConsultantProfile(
   const [notFound,setNotFound]= useState(false);
   const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
-  useEffect(() => {
-    if(!hasParams){
-          return;
-    }
+  
+    const fetchProfile = useCallback(async () => {
+      if(!hasParams){
+        return;
+      }
 
-    const fetchProfile = async () => {
       try {
         setIsLoading(true);
       
@@ -163,10 +163,13 @@ export function useFetchConsultantProfile(
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [targetConsultantId, loggedInUserId,hasParams]);
 
-    fetchProfile();
-  }, [targetConsultantId, loggedInUserId,hasParams]);
+    useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchProfile();
+    }, [fetchProfile]);
+    
 
-  return { profile, isLoading, error, notFound };
+  return { profile, isLoading, error, notFound, refetch:fetchProfile };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getConsultantProfileById, getConsultantProfileByUserId } from "../features/consultants/services/consultant.service";
 import { ApiError } from "../lib/api-client";
 
@@ -124,12 +124,12 @@ export function useFetchConsultantProfile(
   const [notFound,setNotFound]= useState(false);
   const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
-  useEffect(() => {
-    if(!hasParams){
-          return;
-    }
+  
+    const fetchProfile = useCallback(async () => {
+      if(!hasParams){
+        return;
+      }
 
-    const fetchProfile = async () => {
       try {
         setIsLoading(true);
       
@@ -163,10 +163,13 @@ export function useFetchConsultantProfile(
       } finally {
         setIsLoading(false);
       }
-    };
+    }, [targetConsultantId, loggedInUserId,hasParams]);
 
-    fetchProfile();
-  }, [targetConsultantId, loggedInUserId,hasParams]);
+    useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchProfile();
+    }, [fetchProfile]);
+    
 
-  return { profile, isLoading, error, notFound };
+  return { profile, isLoading, error, notFound, refetch:fetchProfile };
 }

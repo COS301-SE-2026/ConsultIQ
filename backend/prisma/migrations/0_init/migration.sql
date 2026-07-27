@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'CONSULTANT_MANAGER', 'CONSULTANT');
 
@@ -14,7 +17,7 @@ CREATE TYPE "AuditOutcome" AS ENUM ('SUCCESS', 'USER_NOT_FOUND', 'ACCOUNT_PENDIN
 CREATE TYPE "CompetencyLevel" AS ENUM ('BEGINNER', 'INTERMEDIATE', 'EXPERT');
 
 -- CreateEnum
-CREATE TYPE "PlacementStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "PlacementStatus" AS ENUM ('ACTIVE', 'COMPLETED', 'CANCELLED', 'TERMINATED');
 
 -- CreateEnum
 CREATE TYPE "ProjectStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'CLOSED', 'ARCHIVED', 'COMPLETED');
@@ -30,6 +33,15 @@ CREATE TYPE "WorkModel" AS ENUM ('ONSITE', 'REMOTE', 'HYBRID');
 
 -- CreateEnum
 CREATE TYPE "ScoringFactorName" AS ENUM ('SKILL_ALIGNMENT', 'COMPETENCY_LEVEL', 'AVAILABILITY', 'LOCATION', 'COST_TO_COMPANY');
+
+-- CreateEnum
+CREATE TYPE "UploadStatus" AS ENUM ('PENDING', 'UPLOADING', 'UPLOADED', 'FAILED', 'DELETED');
+
+-- CreateEnum
+CREATE TYPE "ExtractionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'REVIEW_REQUIRED');
+
+-- CreateEnum
+CREATE TYPE "MatchRunStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'FAILED');
 
 -- CreateTable
 CREATE TABLE "permissions" (
@@ -152,6 +164,21 @@ CREATE TABLE "consultant_skills" (
 );
 
 -- CreateTable
+CREATE TABLE "consultant_education" (
+    "id" TEXT NOT NULL,
+    "consultantId" TEXT NOT NULL,
+    "institution" TEXT NOT NULL,
+    "qualification" TEXT NOT NULL,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3),
+    "fileName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "consultant_education_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "certificates" (
     "id" TEXT NOT NULL,
     "consultantId" TEXT NOT NULL,
@@ -170,9 +197,15 @@ CREATE TABLE "cv_files" (
     "consultantId" TEXT NOT NULL,
     "fileName" TEXT NOT NULL,
     "mimeType" TEXT NOT NULL,
-    "fileData" BYTEA NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "fileSize" INTEGER NOT NULL,
+    "s3Key" TEXT NOT NULL,
+    "s3Url" TEXT NOT NULL,
+    "uploadStatus" "UploadStatus" NOT NULL DEFAULT 'UPLOADED',
+    "extractionStatus" "ExtractionStatus" NOT NULL DEFAULT 'PENDING',
+    "rawText" TEXT,
+    "parsedData" JSONB,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "cv_files_pkey" PRIMARY KEY ("id")
 );
@@ -263,6 +296,19 @@ CREATE TABLE "auth_audit_logs" (
 );
 
 -- CreateTable
+CREATE TABLE "admin_audit_logs" (
+    "id" TEXT NOT NULL,
+    "performed_by_id" TEXT NOT NULL,
+    "target_user_id" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "previous_value" TEXT NOT NULL,
+    "new_value" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "admin_audit_logs_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "consultant_experience" (
     "id" TEXT NOT NULL,
     "consultantId" TEXT NOT NULL,
@@ -285,6 +331,7 @@ CREATE TABLE "consultancy_scoring_configs" (
     "factorName" "ScoringFactorName" NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
+    "hardExclusionEnabled" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -298,6 +345,7 @@ CREATE TABLE "project_scoring_overrides" (
     "factorName" "ScoringFactorName" NOT NULL,
     "overrideWeight" DOUBLE PRECISION NOT NULL,
     "active" BOOLEAN NOT NULL DEFAULT true,
+    "hardExclusionEnabled" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "project_scoring_overrides_pkey" PRIMARY KEY ("id")
@@ -327,6 +375,36 @@ CREATE TABLE "notifications" (
     "archived_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MatchRun" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "executedByUserId" TEXT NOT NULL,
+    "status" "MatchRunStatus" NOT NULL,
+    "totalConsultantsScored" INTEGER NOT NULL DEFAULT 0,
+    "totalConsultantsExcluded" INTEGER NOT NULL DEFAULT 0,
+    "totalConsultantsPlaced" INTEGER NOT NULL DEFAULT 0,
+    "configurationSnapshot" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "MatchRun_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MatchRunResult" (
+    "id" TEXT NOT NULL,
+    "matchRunId" TEXT NOT NULL,
+    "consultantId" TEXT NOT NULL,
+    "totalScore" DOUBLE PRECISION NOT NULL,
+    "rank" INTEGER NOT NULL,
+    "factorScores" JSONB NOT NULL,
+    "isPlaced" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MatchRunResult_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -393,6 +471,9 @@ ALTER TABLE "consultant_skills" ADD CONSTRAINT "consultant_skills_consultantId_f
 ALTER TABLE "consultant_skills" ADD CONSTRAINT "consultant_skills_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "skills"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "consultant_education" ADD CONSTRAINT "consultant_education_consultantId_fkey" FOREIGN KEY ("consultantId") REFERENCES "consultants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "certificates" ADD CONSTRAINT "certificates_consultantId_fkey" FOREIGN KEY ("consultantId") REFERENCES "consultants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -423,6 +504,12 @@ ALTER TABLE "project_audit_logs" ADD CONSTRAINT "project_audit_logs_projectId_fk
 ALTER TABLE "auth_audit_logs" ADD CONSTRAINT "auth_audit_logs_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "admin_audit_logs" ADD CONSTRAINT "admin_audit_logs_performed_by_id_fkey" FOREIGN KEY ("performed_by_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "admin_audit_logs" ADD CONSTRAINT "admin_audit_logs_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "consultant_experience" ADD CONSTRAINT "consultant_experience_consultantId_fkey" FOREIGN KEY ("consultantId") REFERENCES "consultants"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -433,3 +520,16 @@ ALTER TABLE "scoring_config_audit" ADD CONSTRAINT "scoring_config_audit_adminUse
 
 -- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MatchRun" ADD CONSTRAINT "MatchRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MatchRun" ADD CONSTRAINT "MatchRun_executedByUserId_fkey" FOREIGN KEY ("executedByUserId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MatchRunResult" ADD CONSTRAINT "MatchRunResult_matchRunId_fkey" FOREIGN KEY ("matchRunId") REFERENCES "MatchRun"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MatchRunResult" ADD CONSTRAINT "MatchRunResult_consultantId_fkey" FOREIGN KEY ("consultantId") REFERENCES "consultants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

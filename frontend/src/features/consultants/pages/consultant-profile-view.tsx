@@ -53,7 +53,7 @@ function ConsultantProfileViewPage() {
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile: fetchedProfile, isLoading, error } = useFetchConsultantProfile(
+  const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
   );
@@ -150,6 +150,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (status) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+                await refetch();
               }}
             />
 
@@ -167,6 +168,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                   idNumber: data.idNumber,
                   nationality: data.nationality,
                 });
+                await refetch();
               }}
             />
 
@@ -187,6 +189,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                   province: loc.province,
                   postalCode: loc.postalCode,
                 });
+                await refetch();
               }}
             />
 
@@ -205,6 +208,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     description: e.roleDescription,
                   })),
                 });
+                await refetch();
               }}
             />
 
@@ -219,6 +223,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     confidenceLevel: s.confidenceLevel,
                   })),
                 });
+                await refetch();
               }}
             />
 
@@ -235,6 +240,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     fileName: e.fileName,
                   })),
                 });
+                await refetch();
               }}
             />
           </div>

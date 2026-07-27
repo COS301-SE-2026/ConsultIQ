@@ -1,3 +1,4 @@
+name: consultiq-staging
 version: '3.8'
 
 services:

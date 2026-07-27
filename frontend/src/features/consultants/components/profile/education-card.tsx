@@ -180,7 +180,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
 
                       <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
-                         variant= "secondary"
+                         variant= "ghost"
                          onClick={()=> setSelected({edu,index})}
                          className="gap-2 font-bold px-4 py-2 border-b"
                           style={actionButtonStyle}
@@ -190,7 +190,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
                          Edit
                        </Button>
                        <Button
-                          variant= "secondary"
+                          variant= "default"
                          onClick={()=> removeEducation(index)}
                          className="p-2 border"
                          style={actionButtonStyle}

@@ -22,7 +22,7 @@ import {
     WorkModel,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-
+import * as crypto from 'crypto';
 const prisma = new PrismaClient();
 
 // =============================================================================
@@ -116,10 +116,16 @@ const MOCK_DATA = {
     clients: ["FinBank", "HealthNet", "RetailCorp", "EduTech Inc", "GovServices", "Logistics SA", "AutoDrive", "MediaStream"]
 };
 
-const randomItem = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
-const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randomSample = <T>(arr: T[], count: number): T[] => [...arr].sort(() => 0.5 - Math.random()).slice(0, count);
-
+const randomItem = <T>(arr: T[]): T => arr[crypto.randomInt(0, arr.length)];
+const randomInt = (min: number, max: number): number => crypto.randomInt(min, max + 1);
+const randomSample = <T>(arr: T[], count: number): T[] => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = crypto.randomInt(0, i + 1);
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, count);
+};
 async function main() {
     console.log('🌱 Starting ConsultIQ database seed...\n');
 

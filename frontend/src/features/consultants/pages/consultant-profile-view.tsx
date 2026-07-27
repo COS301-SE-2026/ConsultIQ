@@ -230,7 +230,6 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                 },
                 {skills:normalized}
               );
-                });
                 await refetch();
               }}
             />

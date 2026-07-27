@@ -43,13 +43,21 @@ export function RecommendationRow({ recommendation, onSelectConsultant }: Recomm
                     </div>
                 </td>
 
-                <td>
+                <td className= "py-5 px-6">
+                    <div className= "flex items-center gap-2">
                     <button type="button" onClick={() => setIsExpanded(!isExpanded)}
-                        className="inline-flex items-center gap 2 px-4 py-2 border-slate-700 rounded-md text-sm font-bold text-slate-800 cursor-pointer">
+                        className="inline-flex items-center gap 2 px-3 py-2 border-slate-700 rounded-md text-sm font-bold text-slate-800 cursor-pointer">
                         Score Breakdown
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
-
+                    <button type="button" 
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-bold "
+                    style={{border: "1px solid var(--color-primary)",
+                           color:"var(--color-primary)",
+                    }}>
+                        Assign Project
+                    </button>
+                    </div>
                 </td>
             </tr>
             {isExpanded && (

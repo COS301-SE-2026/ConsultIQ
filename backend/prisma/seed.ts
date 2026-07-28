@@ -262,7 +262,7 @@ async function main() {
                 phone: `+27 7${randomInt(1, 9)} ${randomInt(100, 999)} ${randomInt(1000, 9999)}`,
                 nationality: 'South African',
                 costToCompany: randomInt(350000, 1200000),
-                availability: randomItem(Object.values(ConsultantAvailability)),
+                availability: ConsultantAvailability.AVAILABLE,
             },
         });
 
@@ -340,8 +340,8 @@ async function main() {
         update: {}, create: { userId: pmUser.id, projectId: baseProject.id },
     });
 
-    // --- Step 9: 5 Additional Projects ---
-    console.log('🏢 Generating 5 additional projects...');
+    // --- Step 9: 5 Additional OPEN Projects ---
+    console.log('🏢 Generating 5 additional OPEN projects...');
     for (let i = 1; i <= 5; i++) {
         const projectName = `${randomItem(MOCK_DATA.projectPrefixes)} ${randomItem(MOCK_DATA.projectSuffixes)} ${i}`;
         const clientName = randomItem(MOCK_DATA.clients);
@@ -363,7 +363,7 @@ async function main() {
                     teamSize: randomInt(2, 10),
                     allocation: randomItem([50, 80, 100]),
                     budget: randomInt(500000, 5000000),
-                    status: randomItem(Object.values(ProjectStatus)),
+                    status: ProjectStatus.OPEN,
                 },
             });
         }

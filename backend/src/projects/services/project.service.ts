@@ -18,7 +18,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -310,6 +310,7 @@ export class ProjectService {
           FROM projects p
           ${joins}
           LEFT JOIN project_skills ps ON ps."projectId" = p.id
+          WHERE p.status != 'ARCHIVED'
           ${whereClause}
           GROUP BY p.id
           ORDER BY p."createdAt" DESC

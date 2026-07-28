@@ -87,13 +87,11 @@ export default function ProfileInfoForm() {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
-        <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Personal Information
         </h2>
-        <div className="h-6" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
           <div className="flex flex-col gap-3">
@@ -198,7 +196,6 @@ export default function ProfileInfoForm() {
             Done
           </Button>
         </div>
-        <div className="h-6" />
       </div>
     </Card>
   );

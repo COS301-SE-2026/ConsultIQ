@@ -48,7 +48,7 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Location
@@ -142,7 +142,6 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
             Done
           </Button>
         </div>
-        <div className="h-6" />
       </div>
     </Card>
   );

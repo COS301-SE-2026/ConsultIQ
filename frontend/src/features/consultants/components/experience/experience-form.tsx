@@ -60,13 +60,11 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
-        <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Experience
         </h2>
-        <div className="h-6" />
 
         <div className="space-y-6 flex-1 gap-6 flex flex-col">
           <div className="flex flex-col gap-3">
@@ -174,12 +172,11 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         <Button
           variant="secondary"
           onClick={handleAdd}
-          className="self-end flex h-8 w-30 px-6 text-sm font-medium rounded bg-brand-blue! text-white "
+          className="self-end flex items-center justify-center px-6 text-sm font-medium rounded bg-brand-blue! text-white "
           
         >
           Add Experience
         </Button>
-        <div className="h-6" />
       </div>
     </Card>
   );

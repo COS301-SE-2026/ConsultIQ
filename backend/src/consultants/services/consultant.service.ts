@@ -21,6 +21,7 @@ import {
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
+import { start } from 'repl';
 @Injectable()
 export class ConsultantService {
   constructor(
@@ -436,6 +437,15 @@ export class ConsultantService {
           endDate: true,
           description: true,
           workModel: true,
+        },
+      },
+      education: {
+        select: {
+          id: true,
+          institution: true,
+          qualification: true,
+          startDate: true,
+          endDate: true,
         },
       },
     };

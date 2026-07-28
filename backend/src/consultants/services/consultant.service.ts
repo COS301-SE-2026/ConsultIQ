@@ -492,6 +492,13 @@ export class ConsultantService {
         endDate: cert.endDate,
         uploadedAt: cert.uploadedAt,
       })),
+      education: consultant.education.map((edu: any) => ({
+        id: edu.id,
+        instition: edu.institution,
+        qualification: edu.qualification,
+        startDate: edu.startDate,
+        endDate: edu.endDate
+      })),
     };
   }
 

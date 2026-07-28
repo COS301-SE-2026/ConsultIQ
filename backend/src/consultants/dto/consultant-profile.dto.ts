@@ -44,4 +44,13 @@ export class ConsultantProfileDto {
   skills!: ConsultantSkillsDto[];
   experience!: ExperienceDTO[];
   certificates!: ConsultantCertificationsDto[];
+  education!: ConsultantEducationDto[];
+}
+
+export class ConsultantEducationDto{
+  id!: string;
+  institution!: string;
+  qualification!: string;
+  startDate!: Date;
+  endDate!: Date | null;
 }

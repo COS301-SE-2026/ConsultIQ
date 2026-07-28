@@ -29,48 +29,48 @@ const prisma = new PrismaClient();
 // 1. Data Generators & Constants
 // =============================================================================
 
-const PERMISSIONS = [
-    { name: 'consultant_profile:read', description: 'View consultant profiles' },
-    { name: 'consultant_profile:create', description: 'Create a new consultant profile' },
-    { name: 'consultant_profile:update', description: 'Edit an existing consultant profile' },
-    { name: 'consultant_profile:delete', description: 'Delete a consultant profile' },
-    { name: 'scoring:read', description: 'View consultant scores and evaluations' },
-    { name: 'scoring:write', description: 'Run or update scoring evaluations' },
-    { name: 'placement:read', description: 'View placement dashboard and records' },
-    { name: 'placement:create', description: 'Create a new placement record' },
-    { name: 'placement:update', description: 'Update an existing placement record' },
-    { name: 'placement:delete', description: 'Delete a placement record' },
-    { name: 'cv:upload', description: 'Upload a CV for parsing' },
-    { name: 'cv:read', description: 'View parsed CV data' },
-    { name: 'cv:delete', description: 'Delete a parsed CV record' },
-    { name: 'ctc:read', description: 'View cost-to-company financial data' },
-    { name: 'ctc:write', description: 'Edit cost-to-company financial data' },
-    { name: 'user:read', description: 'View user accounts' },
-    { name: 'user:create', description: 'Create new user accounts' },
-    { name: 'user:update', description: 'Update user accounts' },
-    { name: 'user:delete', description: 'Delete user accounts' },
-    { name: 'user:assign_role', description: 'Assign or change roles for users' },
-    { name: 'user:suspend', description: 'Suspend or unlock user accounts' },
-    { name: 'user:unlock', description: 'Suspend or unlock user accounts' },
-    { name: 'audit:read', description: 'View authentication and system audit logs' },
-];
+// const PERMISSIONS = [
+//     { name: 'consultant_profile:read', description: 'View consultant profiles' },
+//     { name: 'consultant_profile:create', description: 'Create a new consultant profile' },
+//     { name: 'consultant_profile:update', description: 'Edit an existing consultant profile' },
+//     { name: 'consultant_profile:delete', description: 'Delete a consultant profile' },
+//     { name: 'scoring:read', description: 'View consultant scores and evaluations' },
+//     { name: 'scoring:write', description: 'Run or update scoring evaluations' },
+//     { name: 'placement:read', description: 'View placement dashboard and records' },
+//     { name: 'placement:create', description: 'Create a new placement record' },
+//     { name: 'placement:update', description: 'Update an existing placement record' },
+//     { name: 'placement:delete', description: 'Delete a placement record' },
+//     { name: 'cv:upload', description: 'Upload a CV for parsing' },
+//     { name: 'cv:read', description: 'View parsed CV data' },
+//     { name: 'cv:delete', description: 'Delete a parsed CV record' },
+//     { name: 'ctc:read', description: 'View cost-to-company financial data' },
+//     { name: 'ctc:write', description: 'Edit cost-to-company financial data' },
+//     { name: 'user:read', description: 'View user accounts' },
+//     { name: 'user:create', description: 'Create new user accounts' },
+//     { name: 'user:update', description: 'Update user accounts' },
+//     { name: 'user:delete', description: 'Delete user accounts' },
+//     { name: 'user:assign_role', description: 'Assign or change roles for users' },
+//     { name: 'user:suspend', description: 'Suspend or unlock user accounts' },
+//     { name: 'user:unlock', description: 'Suspend or unlock user accounts' },
+//     { name: 'audit:read', description: 'View authentication and system audit logs' },
+// ];
 
-const ROLE_PERMISSIONS: Record<Role, string[]> = {
-    [Role.SUPER_ADMIN]: PERMISSIONS.map((p) => p.name),
-    [Role.ADMIN]: PERMISSIONS.map((p) => p.name),
-    [Role.PROJECT_MANAGER]: [
-        'consultant_profile:read', 'scoring:read', 'placement:read', 'placement:create',
-        'placement:update', 'cv:read', 'audit:read',
-    ],
-    [Role.CONSULTANT_MANAGER]: [
-        'consultant_profile:read', 'consultant_profile:create', 'consultant_profile:update',
-        'scoring:read', 'scoring:write', 'placement:read', 'cv:upload', 'cv:read',
-        'cv:delete', 'ctc:read',
-    ],
-    [Role.CONSULTANT]: [
-        'consultant_profile:read', 'scoring:read', 'placement:read', 'cv:read',
-    ],
-};
+// const ROLE_PERMISSIONS: Record<Role, string[]> = {
+//     [Role.SUPER_ADMIN]: PERMISSIONS.map((p) => p.name),
+//     [Role.ADMIN]: PERMISSIONS.map((p) => p.name),
+//     [Role.PROJECT_MANAGER]: [
+//         'consultant_profile:read', 'scoring:read', 'placement:read', 'placement:create',
+//         'placement:update', 'cv:read', 'audit:read',
+//     ],
+//     [Role.CONSULTANT_MANAGER]: [
+//         'consultant_profile:read', 'consultant_profile:create', 'consultant_profile:update',
+//         'scoring:read', 'scoring:write', 'placement:read', 'cv:upload', 'cv:read',
+//         'cv:delete', 'ctc:read',
+//     ],
+//     [Role.CONSULTANT]: [
+//         'consultant_profile:read', 'scoring:read', 'placement:read', 'cv:read',
+//     ],
+// };
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
     [Role.SUPER_ADMIN]: 'Super Administrator with unrestricted system access.',
@@ -130,14 +130,14 @@ async function main() {
     console.log('🌱 Starting ConsultIQ database seed...\n');
 
     // --- Step 1: Permissions ---
-    console.log('Seeding permissions...');
-    for (const permission of PERMISSIONS) {
-        await prisma.permission.upsert({
-            where: { name: permission.name },
-            update: { description: permission.description },
-            create: { name: permission.name, description: permission.description },
-        });
-    }
+    // console.log('Seeding permissions...');
+    // for (const permission of PERMISSIONS) {
+    //     await prisma.permission.upsert({
+    //         where: { name: permission.name },
+    //         update: { description: permission.description },
+    //         create: { name: permission.name, description: permission.description },
+    //     });
+    // }
 
     // --- Step 2: Role Definitions ---
     console.log('Seeding role definitions...');
@@ -150,20 +150,20 @@ async function main() {
     }
 
     // --- Step 3: Role -> Permission Assignments ---
-    console.log('Assigning permissions to roles...');
-    for (const [roleName, permissionNames] of Object.entries(ROLE_PERMISSIONS)) {
-        const roleRecord = await prisma.roleDefinition.findUnique({ where: { name: roleName as Role } });
-        if (!roleRecord) continue;
-        for (const permissionName of permissionNames) {
-            const permRecord = await prisma.permission.findUnique({ where: { name: permissionName } });
-            if (!permRecord) continue;
-            await prisma.rolePermission.upsert({
-                where: { roleId_permissionId: { roleId: roleRecord.id, permissionId: permRecord.id } },
-                update: {},
-                create: { roleId: roleRecord.id, permissionId: permRecord.id },
-            });
-        }
-    }
+    // console.log('Assigning permissions to roles...');
+    // for (const [roleName, permissionNames] of Object.entries(ROLE_PERMISSIONS)) {
+    //     const roleRecord = await prisma.roleDefinition.findUnique({ where: { name: roleName as Role } });
+    //     if (!roleRecord) continue;
+    //     for (const permissionName of permissionNames) {
+    //         const permRecord = await prisma.permission.findUnique({ where: { name: permissionName } });
+    //         if (!permRecord) continue;
+    //         await prisma.rolePermission.upsert({
+    //             where: { roleId_permissionId: { roleId: roleRecord.id, permissionId: permRecord.id } },
+    //             update: {},
+    //             create: { roleId: roleRecord.id, permissionId: permRecord.id },
+    //         });
+    //     }
+    // }
 
     // --- Helper: Seed User Account ---
     async function seedUser(email: string, fullName: string, plainPassword: string, roleEnum: Role) {
@@ -237,9 +237,9 @@ async function main() {
         update: {}, create: { userId: cmUser.id, consultantId: aliceProfile.id },
     });
 
-    // --- Step 7: 30 Additional Consultants ---
-    console.log('Generating 30 additional consultants...');
-    for (let i = 1; i <= 30; i++) {
+    // --- Step 7: 8 Additional Consultants ---
+    console.log('Generating 8 additional consultants...');
+    for (let i = 1; i <= 8; i++) {
         const firstName = randomItem(MOCK_DATA.firstNames);
         const lastName = randomItem(MOCK_DATA.lastNames);
         const fullName = `${firstName} ${lastName}`;
@@ -340,9 +340,9 @@ async function main() {
         update: {}, create: { userId: pmUser.id, projectId: baseProject.id },
     });
 
-    // --- Step 9: 30 Additional Projects ---
-    console.log('🏢 Generating 30 additional projects...');
-    for (let i = 1; i <= 30; i++) {
+    // --- Step 9: 5 Additional Projects ---
+    console.log('🏢 Generating 5 additional projects...');
+    for (let i = 1; i <= 5; i++) {
         const projectName = `${randomItem(MOCK_DATA.projectPrefixes)} ${randomItem(MOCK_DATA.projectSuffixes)} ${i}`;
         const clientName = randomItem(MOCK_DATA.clients);
         const loc = randomItem(MOCK_DATA.locations);

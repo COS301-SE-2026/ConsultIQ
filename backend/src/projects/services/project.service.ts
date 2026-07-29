@@ -18,7 +18,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {

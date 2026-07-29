@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card } from "../../../components/ui/card";
 import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
+import { toast } from "sonner";
 
 interface ProjectSkillsCardProps {
   readonly skills: ProjectSkillData[];
@@ -21,14 +22,15 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
   const [competency, setCompetency] = useState(editingSkill?.competency ?? "INTERMEDIATE");
   const [years, setYears] = useState(String(editingSkill?.years ?? ""));
   const [isMandatory, setIsMandatory] = useState(Boolean(editingSkill?.mandatory ?? false));
+  const [prevEditingIndex, setPrevEditingIndex] = useState<number | null>(editingIndex);
 
-
-  useEffect(() => {
+  if (editingIndex !== prevEditingIndex) {
+    setPrevEditingIndex(editingIndex);
     setSkillName(editingSkill?.name ?? "");
     setCompetency(editingSkill?.competency ?? "INTERMEDIATE");
     setYears(String(editingSkill?.years ?? ""));
     setIsMandatory(Boolean(editingSkill?.mandatory ?? false));
-  }, [editingSkill]);
+  }
 
   const handleAddUpdate = () => {
     if (!skillName.trim() || !years) return;
@@ -43,8 +45,10 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
 
     if (editingIndex !== null) {
       onSkillSave(newSkill)
+      toast.success("Skill updated successfully!");
     } else {
       onSkillsChange([...skills, newSkill]);
+      toast.success("Skill updated successfully!");
     }
 
     setSkillName("");

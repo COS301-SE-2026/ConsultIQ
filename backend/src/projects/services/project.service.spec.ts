@@ -21,6 +21,7 @@ const mockTx = {
     create: jest.fn(),
     update: jest.fn(),
     deleteMany: jest.fn(),
+    findFirst: jest.fn(),
   },
 };
 
@@ -95,7 +96,7 @@ describe('ProjectService', () => {
 
     service = module.get<ProjectService>(ProjectService);
     jest.clearAllMocks();
-      mockPrismaService.$transaction.mockImplementation((callback: (tx: typeof mockTx) => unknown) =>
+    mockPrismaService.$transaction.mockImplementation((callback: (tx: typeof mockTx) => unknown) =>
       callback(mockTx),
     );
   });
@@ -411,14 +412,14 @@ describe('ProjectService', () => {
       startDate: new Date('2026-06-25'),
       endDate: new Date('2026-12-25'),
     };
-  
+
     beforeEach(() => {
       mockPrismaService.project.findUnique.mockResolvedValue(existingProject);
       mockPrismaService.projectManager.findUnique.mockResolvedValue({ id: 'pm-1' });
       mockTx.project.update.mockResolvedValue({});
       mockTx.project.findUnique.mockResolvedValue({ ...existingProject });
     });
-  
+
     it('builds update data for every core field when provided', async () => {
       const dto: any = {
         projectName: 'New Name',
@@ -435,9 +436,9 @@ describe('ProjectService', () => {
         teamSize: 10,
         allocation: 90,
       };
-  
+
       await service.updateProject('project-123', dto, 'user-1');
-  
+
       expect(mockTx.project.update).toHaveBeenCalledWith({
         where: { id: 'project-123' },
         data: expect.objectContaining({
@@ -455,31 +456,32 @@ describe('ProjectService', () => {
         }),
       });
     });
-  
+
     it('does not call project.update when no core fields are provided', async () => {
       await service.updateProject('project-123', { skills: [] } as any, 'user-1');
       expect(mockTx.project.update).not.toHaveBeenCalled();
     });
-  
+
     it('removes project skills when removeSkillIds is provided', async () => {
       await service.updateProject(
         'project-123',
         { removeSkillIds: ['skill-a', 'skill-b'] } as any,
         'user-1',
       );
-  
+
       expect(mockTx.projectSkill.deleteMany).toHaveBeenCalledWith({
         where: { id: { in: ['skill-a', 'skill-b'] }, projectId: 'project-123' },
       });
     });
-  
+
     it('does not call deleteMany when removeSkillIds is empty or omitted', async () => {
       await service.updateProject('project-123', {} as any, 'user-1');
       expect(mockTx.projectSkill.deleteMany).not.toHaveBeenCalled();
     });
-  
+
     it('creates a new project skill when no id is given', async () => {
       mockTx.skill.upsert.mockResolvedValue({ id: 'skill-new' });
+      mockTx.projectSkill.findFirst.mockResolvedValue(null);
       await service.updateProject(
         'project-123',
         {
@@ -489,7 +491,11 @@ describe('ProjectService', () => {
         } as any,
         'user-1',
       );
-  
+
+      expect(mockTx.projectSkill.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'project-123', skillId: 'skill-new' }
+      });
+
       expect(mockTx.skill.upsert).toHaveBeenCalledWith({
         where: { name: 'docker' },
         update: {},
@@ -505,9 +511,10 @@ describe('ProjectService', () => {
         },
       });
     });
-  
+
     it('updates an existing project skill when an id is given', async () => {
       mockTx.skill.upsert.mockResolvedValue({ id: 'skill-existing' });
+      mockTx.projectSkill.findFirst.mockResolvedValue({ id: 'project-skill-1' });
       await service.updateProject(
         'project-123',
         {
@@ -523,18 +530,20 @@ describe('ProjectService', () => {
         } as any,
         'user-1',
       );
-  
+      expect(mockTx.projectSkill.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'project-123', skillId: 'skill-existing' }
+      });
       expect(mockTx.projectSkill.update).toHaveBeenCalledWith({
         where: { id: 'project-skill-1' },
         data: {
-          skillId: 'skill-existing',
+          //skillId: 'skill-existing',
           competency: 'EXPERT',
           years: 4,
           mandatory: false,
         },
       });
     });
-  
+
     it('does not call skill upsert/create/update when skills array is empty', async () => {
       await service.updateProject('project-123', { skills: [] } as any, 'user-1');
       expect(mockTx.skill.upsert).not.toHaveBeenCalled();
@@ -542,13 +551,13 @@ describe('ProjectService', () => {
       expect(mockTx.projectSkill.update).not.toHaveBeenCalled();
     });
   });
-  
+
   describe('getAllProjects - total fallback', () => {
     it('defaults total to 0 when the count query returns no rows', async () => {
       mockPrismaService.$queryRaw
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
-  
+
       const result = await service.getAllProjects(1, 10, 'ADMIN', null);
       expect(result.total).toBe(0);
     });

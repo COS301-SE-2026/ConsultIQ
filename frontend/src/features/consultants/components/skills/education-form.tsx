@@ -7,7 +7,7 @@ import EducationTable from "./consultant-education-table";
 import type { Education } from "./consultant-education-table";
 import { Upload, Trash2 } from "lucide-react";
 import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
-import { formatDateInput, parseDate, validateDateRange } from "../../utils/date.utils";
+import {  parseDate, validateDateRange } from "../../utils/date.utils";
 import DateField from "../../../../components/shared/date-picker";
 
 const sanitizeText = (text: string) => text.replace(/[^a-zA-Z0-9\s.,'-]/g, "");

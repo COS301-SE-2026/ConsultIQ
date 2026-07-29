@@ -32,7 +32,7 @@ function ConsultantsPage() {
           getConsultants(1, 50),
           getPendingProfiles(),
         ]);
-        console.log(pendingProfiles);
+    
 
         const mapped = consultantsResponse.consultants.map((dto) => {
           const parts = dto.fullName.split(" ");

@@ -11,11 +11,6 @@ export const adminSidebarItems: SidebarItem[] = [
         path:"/admin-scoring-config",
         icon:Cog
     },
-    {
-        label: "Notifications",
-        path:"/notifications",
-        icon:Bell
-    }
 ]
 
 export const consultantManagerSidebarItems: SidebarItem[] = [
@@ -24,11 +19,6 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
         path: "/consultants-manager",
         icon: Users
     },
-    {
-        label: "Notifications",
-        path:"/notifications",
-        icon:Bell
-    }
 
 ]
 
@@ -48,11 +38,7 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         path:"/placement-dashboard",
         icon:Users
     },
-    {
-        label: "Notifications",
-        path:"/notifications",
-        icon:Bell
-    }
+
 
 ] 
 
@@ -67,9 +53,9 @@ export const consultantSidebarItems: SidebarItem[] = [
         path:"/notifications",
         icon:Bell
     },
-    {
-        label: " My Projects",
-        path: "/consultant-projects",
-        icon: Briefcase
-    },
+    // {
+    //     label: " My Projects",
+    //     path: "/consultant-projects",
+    //     icon: Briefcase
+    // },
 ];

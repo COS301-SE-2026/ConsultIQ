@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
+import DateField from "../../../../components/shared/date-picker";
 
 type Props = {
   onAdd: (exp: {
@@ -26,13 +27,13 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleAdd = () => {
-    const newErrors: Record<string, string> = {};
-    if (!jobTitle.trim()) newErrors.jobTitle = "Job title is required.";
-    if (!companyName.trim()) newErrors.companyName = "Company name is required.";
-    if (!jobType) newErrors.jobType = "Job type is required.";
-    if (!workModel) newErrors.workModel = "Work model is required.";
-    if (!startDate) newErrors.startDate = "Start date is required.";
-    if (!description.trim()) newErrors.description = "Description is required.";
+     const newErrors: Record<string, string> = {};
+      if (!jobTitle.trim()) newErrors.jobTitle = "Job title is required.";
+      if (!companyName.trim()) newErrors.companyName = "Company name is required.";
+      if (!jobType) newErrors.jobType = "Job type is required.";
+      if (!workModel) newErrors.workModel = "Work model is required.";
+      if (!startDate) newErrors.startDate = "Start date is required.";
+      if (!description.trim()) newErrors.description = "Description is required.";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -66,7 +67,6 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Experience
         </h2>
-        <div className="h-6" />
 
         <div className="space-y-6 flex-1 gap-6 flex flex-col">
           <div className="flex flex-col gap-3">
@@ -130,31 +130,35 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-3">
-              <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
-              <input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => { setStartDate(e.target.value); if (errors.startDate) setErrors((p) => ({ ...p, startDate: "" })); }}
-                className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400 ${errors.startDate ? "border-red-500" : "border-slate-200"}`}
-              />
-              {errors.startDate && <span className="text-red-500 text-sm">{errors.startDate}</span>}
-            </div>
+           <div className="flex flex-col gap-3">
+            <DateField
+              id="start-date"
+              label="Start Date"
+              selected={startDate ? new Date(startDate) : null}
+              onChange={(date: Date | null) => {
+                setStartDate(date ? date.toISOString() : "");
+                if (errors.startDate) {
+                  setErrors((prev) => ({ ...prev, startDate: "" }));
+                }
+              }}
+              error={errors.startDate}
+            />
+           </div>
 
             <div className="flex flex-col gap-3">
-              <label htmlFor="end-date" className="text-base font-semibold">
-                End Date <span className="text-slate-400 font-normal">(leave blank if current)</span>
-              </label>
-              <input
-                id="end-date"
-                type="date"
-                value={endDate}
-                min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
-              />
-            </div>
+             <DateField
+              id="end-date"
+              label="End Date (leave blank if current)"
+              selected={endDate ? new Date(endDate) : null}
+              onChange={(date: Date | null) => {
+                setEndDate(date ? date.toISOString() : "");
+                if (errors.endDate) {
+                  setErrors((prev) => ({ ...prev, endDate: "" }));
+                }
+              }}
+              error={errors.endDate}
+            />
+          </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -171,14 +175,18 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
         </div>
 
         <div className="h-6 " />
-        <Button
-          variant="secondary"
-          onClick={handleAdd}
-          className="self-end flex h-8 w-30 px-6 text-sm font-medium rounded bg-brand-blue! text-white "
-          
-        >
-          Add Experience
-        </Button>
+
+        <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
+            <Button
+            variant="default"
+            onClick={handleAdd}
+            className="font-medium text-sm"
+            
+          >
+            Add Experience
+          </Button> 
+        </div>
+       
         <div className="h-6" />
       </div>
     </Card>

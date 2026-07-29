@@ -36,11 +36,13 @@ describe('AdminUserService - Integration Test', () => {
             email: 'pm@test.com',
             fullName: 'Project Manager',
             role: 'PROJECT_MANAGER',
+            status: 'ACTIVE',
           },
           {
             email: 'consultant@test.com',
             fullName: 'Consultant User',
             role: 'CONSULTANT',
+            status: 'ACTIVE',
           },
           {
             email: 'archived@test.com',

@@ -310,6 +310,7 @@ export class ProjectService {
           FROM projects p
           ${joins}
           LEFT JOIN project_skills ps ON ps."projectId" = p.id
+          WHERE p.status != 'ARCHIVED'
           ${whereClause}
           GROUP BY p.id
           ORDER BY p."createdAt" DESC
@@ -450,11 +451,19 @@ export class ProjectService {
         skillInput.name,
       );
 
-      if (skillInput.id) {
+      const existingProjectSkill = await tx.projectSkill.findFirst({
+        where: {
+          projectId: projectId,
+          skillId: skillRecord.id,
+        }
+      });
+
+
+      if (existingProjectSkill) {
         await tx.projectSkill.update({
-          where: { id: skillInput.id },
+          where: { id: existingProjectSkill.id },
           data: {
-            skillId: skillRecord.id,
+            //  skillId: skillRecord.id,
             competency: skillInput.competency as CompetencyLevel,
             years: skillInput.years,
             mandatory: skillInput.mandatory,

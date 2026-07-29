@@ -298,14 +298,22 @@ export class ConsultantService {
           ...(dto.email !== undefined && {email: dto.email}),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
-          ...(dto.nationality !== undefined && { nationality: dto.nationality }),
-          ...(dto.addressLine1 !== undefined && { addressLine1: dto.addressLine1 }),
-          ...(dto.addressLine2 !== undefined && { addressLine2: dto.addressLine2 }),
+          ...(dto.nationality !== undefined && {
+            nationality: dto.nationality,
+          }),
+          ...(dto.addressLine1 !== undefined && {
+            addressLine1: dto.addressLine1,
+          }),
+          ...(dto.addressLine2 !== undefined && {
+            addressLine2: dto.addressLine2,
+          }),
           ...(dto.suburb !== undefined && { suburb: dto.suburb }),
           ...(dto.city !== undefined && { city: dto.city }),
           ...(dto.province !== undefined && { province: dto.province }),
           ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
-          ...(dto.costToCompany !== undefined && { costToCompany: dto.costToCompany }),
+          ...(dto.costToCompany !== undefined && {
+            costToCompany: dto.costToCompany,
+          }),
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
           }),
@@ -381,24 +389,24 @@ export class ConsultantService {
         }
       }
 
-    if (dto.education !== undefined) {
-      await tx.consultantEducation.deleteMany({
-        where: { consultantId },
-      });
-
-      for (const edu of dto.education) {
-        await tx.consultantEducation.create({
-          data: {
-            consultantId,
-            institution: edu.institution,
-            qualification: edu.qualification,
-            startDate: new Date(edu.startDate),
-            endDate: edu.endDate ? new Date(edu.endDate) : null,
-            fileName: edu.fileName ?? null,
-          },
+      if (dto.education !== undefined) {
+        await tx.consultantEducation.deleteMany({
+          where: { consultantId },
         });
+
+        for (const edu of dto.education) {
+          await tx.consultantEducation.create({
+            data: {
+              consultantId,
+              institution: edu.institution,
+              qualification: edu.qualification,
+              startDate: new Date(edu.startDate),
+              endDate: edu.endDate ? new Date(edu.endDate) : null,
+              fileName: edu.fileName ?? null,
+            },
+          });
+        }
       }
-    }
     });
 
     return { message: 'Consultant profile updated successfully.' };
@@ -438,6 +446,15 @@ export class ConsultantService {
           endDate: true,
           description: true,
           workModel: true,
+        },
+      },
+      education: {
+        select: {
+          id: true,
+          institution: true,
+          qualification: true,
+          startDate: true,
+          endDate: true,
         },
       },
     };
@@ -483,6 +500,13 @@ export class ConsultantService {
         startDate: cert.startDate,
         endDate: cert.endDate,
         uploadedAt: cert.uploadedAt,
+      })),
+      education: consultant.education.map((edu: any) => ({
+        id: edu.id,
+        institution: edu.institution,
+        qualification: edu.qualification,
+        startDate: edu.startDate,
+        endDate: edu.endDate,
       })),
     };
   }

@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AdminUserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   // async deleteUser(userId: string) {
   //   try {
@@ -30,16 +30,28 @@ export class AdminUserService {
   // }
 
   async getAllUsers(page: number = 1, limit: number = 10) {
-    const where = {
+
+    const pageNum = Number(page);
+    const limitNum = Number(limit);
+
+    const baseWhere = {
       deletedAt: null,
-      status: { not: 'ARCHIVED' as const },
       role: { not: 'ADMIN' as const },
     };
 
-    const [users, filteredTotal, activeUsers, suspendedUsers] =
+    const listWhere = {
+      ...baseWhere,
+      status: {
+        not: 'PENDING' as const
+      },
+    };
+
+
+
+    const [users, totalUsers, activeUsers, suspendedUsers] =
       await this.prisma.$transaction([
         this.prisma.user.findMany({
-          where,
+          where: listWhere,
           skip: (page - 1) * limit,
           take: limit,
           select: {
@@ -52,21 +64,17 @@ export class AdminUserService {
           },
         }),
 
-        this.prisma.user.count({ where }),
+        this.prisma.user.count({ where: baseWhere }),
 
         this.prisma.user.count({
           where: {
-            deletedAt: null,
-            status: 'ACTIVE',
-            role: { not: 'ADMIN' as const },
+            ...baseWhere, status: 'ACTIVE'
           },
         }),
 
         this.prisma.user.count({
           where: {
-            deletedAt: null,
-            status: 'SUSPENDED',
-            role: { not: 'ADMIN' as const },
+            ...baseWhere, status: 'SUSPENDED'
           },
         }),
       ]);
@@ -74,9 +82,9 @@ export class AdminUserService {
     return {
       data: users,
       meta: {
-        totalRecords: filteredTotal,
-        currentPage: page,
-        totalPages: Math.ceil(filteredTotal / limit),
+        totalRecords: totalUsers,
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalUsers / limitNum),
         activeUsers,
         suspendedUsers,
       },

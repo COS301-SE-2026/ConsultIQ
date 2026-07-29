@@ -64,6 +64,7 @@ export default function ProjectSkillsSection({
                 mandatory: skill.mandatory,
               }))}
               onEditSkill= {startEditing}
+              isEditing= {isEditing}
             />
             </>
         );
@@ -78,8 +79,8 @@ export default function ProjectSkillsSection({
                 mandatory: skill.mandatory,
               }))}
               onEditSkill= {()=> {}}
+              isEditing = {isEditing}
             />
-         
         );
       }
       return(

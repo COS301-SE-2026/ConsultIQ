@@ -50,13 +50,13 @@ export function RecommendationRow({ recommendation, onSelectConsultant }: Recomm
                         Score Breakdown
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
-                    <button type="button" 
+                    {/* <button type="button" 
                     className="inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-bold "
                     style={{border: "1px solid var(--color-primary)",
                            color:"var(--color-primary)",
                     }}>
                         Assign Project
-                    </button>
+                    </button> */}
                     </div>
                 </td>
             </tr>

@@ -33,7 +33,7 @@ function EditControls({isEditing, isSaving, onEdit,onSave,onCancel}: EditControl
             </Button>
             <Button 
               onClick={onCancel} 
-              variant="outline" 
+              variant="ghost" 
               className="font-bold px-4 py-2"
               style ={buttonStyle}
               disabled={isSaving} 
@@ -46,7 +46,7 @@ function EditControls({isEditing, isSaving, onEdit,onSave,onCancel}: EditControl
             <Button 
               onClick={onEdit} 
               variant="ghost" 
-              className="gap-2 font-bold px-4 py-2 border-b"
+              className="gap-2 font-bold px-4 py-2 shadow-sm"
               style ={buttonStyle}
              >
                 <Pencil size={16}/>

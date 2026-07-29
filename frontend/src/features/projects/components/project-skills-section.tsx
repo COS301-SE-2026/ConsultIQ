@@ -88,14 +88,58 @@ export default function ProjectSkillsSection({
   return (
     <Card style={{ padding: "20px", border: "none" }}>
 
-      <div className=" flex flex-center gap-3">
-        <h3
-          className="text-3xl font-bold mb-4"
-          style={{ color: "var(--color-primary)" }}
-        >
-          Skills
-        </h3>
-        <div>
+    if(isEditing ){
+        skillsSection= (
+            <>
+            <ProjectSkillsCard
+            key= {editingIndex ?? "new-skill"}
+            skills={currentSkills}
+            onSkillsChange={setCurrentSkills}
+            editingSkill= {editingIndex !==null ? currentSkills[editingIndex]: null}
+            onCancelEdit= {cancelEditing}
+            editingIndex ={editingIndex}
+            onSkillSave={updateSkill} 
+            isEditing = {isEditing}
+            />
+            <ProjectSkillsTable
+            skills={currentSkills.map((skill, skillId) => ({
+                id: String(skillId),
+                name: skill.name,
+                competency: skill.competency,
+                years: skill.years,
+                mandatory: skill.mandatory,
+              }))}
+              onEditSkill= {startEditing}
+              isEditing= {isEditing}
+            />
+            </>
+        );
+    }else{ 
+        skillsSection= (            
+            <ProjectSkillsTable
+              skills={currentSkills.map((skill, skillId) => ({
+                id: String(skillId),
+                name: skill.name,
+                competency: skill.competency,
+                years: skill.years,
+                mandatory: skill.mandatory,
+              }))}
+              onEditSkill= {()=> {}}
+              isEditing = {isEditing}
+            />
+        );
+      }
+      return(
+        <Card style={{ padding: "20px", border: "none" }}>
+            
+          <div className=" flex flex-center gap-3">
+            <h3
+                className="text-3xl font-bold mb-4"
+                style={{ color: "var(--color-primary)" }}
+              >
+                Skills
+              </h3>
+              <div>
           {isEditing ? (
             <div className="flex gap-4">
               <button

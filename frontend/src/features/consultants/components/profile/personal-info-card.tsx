@@ -139,7 +139,8 @@ export default function PersonalInfoCard({
     
     setIsSaving(true);
     try {
-      await onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdNumber, nationality: nationalityStatus });
+      const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
+      await onSave?.({ fullName: fullNameState, email: emailState, phone: normalizedPhone, idNumber: localIdNumber, nationality: nationalityStatus });
       setIsEditing(false);
       toast.success("Personal information has been updated successfully");
     } catch (err) {

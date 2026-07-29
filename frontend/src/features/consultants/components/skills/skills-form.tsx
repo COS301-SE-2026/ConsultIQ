@@ -49,7 +49,6 @@ export default function SkillsForm() {
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Skills
         </h2>
-        <div className="h-6" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-3">
@@ -85,6 +84,7 @@ export default function SkillsForm() {
               type="number"
               placeholder="5"
               min="0"
+              max="70"
               value={years}
               onChange={(e) => setYears(e.target.value)}
             />
@@ -103,14 +103,20 @@ export default function SkillsForm() {
           </div>
         </div>
 
-        <Button
-          onClick={handleAddSkill}
-          disabled={!skillName.trim() || !years || !confidence}
-          className="self-end h-8 w-20 px-6 text-sm font-medium rounded transition disabled:opacity-50"
-          style={{ backgroundColor: "var(--color-primary)" }}
-        >
-          Add Skill
-        </Button>
+        <div className="h-6 " />
+
+        <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
+            <Button
+              variant="default"
+              onClick={handleAddSkill}
+              disabled={!skillName.trim() || !years || !confidence}
+              
+            >
+              Add Skill
+            </Button>
+        </div>
+
+        
 
 
         {/* Skills list */}

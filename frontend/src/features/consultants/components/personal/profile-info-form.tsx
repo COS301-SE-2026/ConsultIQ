@@ -87,7 +87,7 @@ export default function ProfileInfoForm() {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="p-8 h-full w-full flex items-start justify-center">
       <div className="w-full max-w-[800px] flex flex-col h-full">
         <div className="h-6" />
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
@@ -191,9 +191,9 @@ export default function ProfileInfoForm() {
 
         <div className="mt-8 flex justify-end w-full">
           <Button
+            variant="default"
             onClick={handleDone}
-            className="h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
-            style={{ color: "var(--color-primary)" }}
+            className="h-10 w-24  rounded-xl font-semibold "
           >
             Done
           </Button>

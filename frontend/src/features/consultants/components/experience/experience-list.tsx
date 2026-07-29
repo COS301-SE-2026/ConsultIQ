@@ -2,6 +2,7 @@ import { Card } from "../../../../components/ui/card";
 import ExperienceCard from "./experience-card";
 import type { ExperienceItem } from "../../pages/consultant-profile.context";
 import { ArrowRight } from "lucide-react";
+import { Button } from "../../../../components/ui/button";
 
 type Props = {
   experiences?: ExperienceItem[];
@@ -34,14 +35,14 @@ export default function ExperienceList({ experiences = [], onRemove, onComplete 
         <div className="h-6" />
         {experiences.length > 0 && onComplete && (
           <div className="flex justify-end mt-4">
-            <button
+            <Button
+              variant="default"
               onClick={onComplete}
-              className="flex items-center justify-center gap-2 h-10 w-30 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
-              style={{ backgroundColor: "var(--color-primary)" }}
+              className="h-10 gap-2  rounded-xl font-semibold"
             >
               Next: Skills
               <ArrowRight size={18} />
-            </button>
+            </Button>
           </div>
         )}
       </div>

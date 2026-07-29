@@ -2,6 +2,7 @@ import SkillsForm from "../components/skills/skills-form";
 import EducationForm from "../components/skills/education-form";
 import { ArrowRight } from "lucide-react";
 import { useConsultantProfile } from "../pages/consultant-profile.context";
+import { Button } from "../../../components/ui/button";
 
 interface Props {
   onComplete: () => void;
@@ -19,14 +20,14 @@ export default function SkillsTab({ onComplete }: Props) {
 
       {profileData.skills.length > 0 && (
         <div className="flex justify-end mt-4">
-          <button
-            onClick={onComplete}
-              className="flex items-center justify-center gap-2 h-10 w-30 px-8 rounded-xl text-white font-semibold transition hover:brightness-110"
-            style={{ backgroundColor: "var(--color-primary)" }}
-          >
-            Next: Review
-            <ArrowRight size={18} />
-          </button>
+           <Button
+              variant="default"
+              onClick={onComplete}
+              className="h-10 gap-2  rounded-xl font-semibold"
+            >
+              Next: Review
+              <ArrowRight size={18} />
+            </Button>
         </div>
       )}
     </div>

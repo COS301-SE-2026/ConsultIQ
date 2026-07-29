@@ -139,7 +139,7 @@ export default function EducationTable({
 
               <td>
                  <Button
-                  variant="secondary"
+                  variant="default"
                   onClick={() => onRemove(item.id)}
                   className="gap-2 h-6 w-20 rounded"
                 >
@@ -154,7 +154,7 @@ export default function EducationTable({
           ))
         ) : (
           <tr>
-            <td className="py-4 text-center text-gray-500 border-t">
+            <td  colSpan={5} className="py-4 text-center text-gray-500 border-t">
               No education added yet.
             </td> 
           </tr>

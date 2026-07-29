@@ -47,7 +47,7 @@ export class ConsultantProfileDto {
   education!: ConsultantEducationDto[];
 }
 
-export class ConsultantEducationDto{
+export class ConsultantEducationDto {
   id!: string;
   institution!: string;
   qualification!: string;

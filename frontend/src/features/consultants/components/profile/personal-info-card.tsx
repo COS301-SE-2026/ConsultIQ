@@ -12,7 +12,7 @@ interface PersonalInfoCardProps {
   readonly idNumber?: string;
   readonly nationality?: string;
   readonly canEdit?:boolean;
-  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => void;
+  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => Promise<void> | void;
 }
 
     function validateSAID(id: string): boolean {

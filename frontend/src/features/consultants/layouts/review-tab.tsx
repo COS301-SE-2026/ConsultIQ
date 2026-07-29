@@ -161,7 +161,7 @@ export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
         <button
           onClick={onSave}
           disabled={isSaving}
-          className="h-12 w-30 px-10 rounded-xl text-white font-bold text-base transition hover:brightness-110 disabled:opacity-60"
+          className="flex items-center justify-center px-4 py-2 rounded-xl text-white font-bold text-base transition hover:brightness-110 disabled:opacity-60"
           style={{ backgroundColor: "var(--color-accent)" }}
         >
           {isSaving ? "Creating Profile..." : "Create Profile"}

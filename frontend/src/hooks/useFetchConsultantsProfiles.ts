@@ -14,6 +14,14 @@ interface ExperienceDto {
   workModel?: string;
 }
 
+interface EducationDto {
+  id?: string;
+  institution?: string;
+  qualification?: string;
+  startDate?: Date;
+  endDate?: Date | null;
+}
+
 interface SkillDto {
   skillName: string;
   competencyLevel: string;
@@ -45,6 +53,7 @@ export interface ConsultantProfileDto {
   province: string;
   postalCode?: string;
   experience?: ExperienceDto[];
+  education?: EducationDto[];
   skills?: SkillDto[];
   certificates?: CertificateDto[];
 }

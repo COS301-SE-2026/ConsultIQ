@@ -23,7 +23,7 @@ const variantStyles: Record<ButtonVariant, string> = {
 
     secondary: `
         bg-[#3C5A8A]
-        text-[#002D72]
+        text-white
         hover:bg-[#4A5568]
     `,
 

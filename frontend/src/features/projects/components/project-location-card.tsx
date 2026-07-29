@@ -17,13 +17,11 @@ export default function ProjectLocationCard({ data, errors = {}, onChange }: Pro
   return (
     <Card className="p-12 h-full w-full flex items-start justify-center">
       <div className="w-full max-w-[440px] flex flex-col h-full">
-        <div className="h-6" />
 
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Location
         </h2>
 
-        <div className="h-6" />
 
         <div className="flex flex-col gap-6 flex-1">
           {/* Address Line 1 (Required) */}

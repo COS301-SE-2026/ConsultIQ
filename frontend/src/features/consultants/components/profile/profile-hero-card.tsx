@@ -1,5 +1,6 @@
 import {useState} from "react";
 import EditControls from "./edit-controls";
+import { toast } from "sonner";
 
 interface ProfileHeroCardProps {
   readonly fullName: string;
@@ -29,13 +30,18 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
     setCurrentStatus(status);
   };
 
-  const handleSave = () => {
+  const [isSaving, setIsSaving] = useState(false);
 
-    //callback to parent 
-    onSave?.(currentStatus);
-    setIsEditing(false);
-    
-
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave?.(currentStatus);
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,6 +114,7 @@ function ProfileHeroCard({ fullName, status, canEdit,onSave }: ProfileHeroCardPr
        {canEdit && (
           <EditControls
             isEditing={isEditing}
+            isSaving={isSaving}
             onEdit={handleEditClick}
             onSave={handleSave}
             onCancel={handleCancel}

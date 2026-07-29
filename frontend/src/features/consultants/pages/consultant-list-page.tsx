@@ -9,6 +9,8 @@ import { getConsultants, getPendingProfiles } from "../services/consultant.servi
 import type { PendingProfileUserDto } from "../services/consultant.service";
 import { toast } from "sonner";
 import { UserCircle2 } from "lucide-react";
+import { Button } from "../../../components/ui/button";
+import  useUnreadNotificationsCount  from "../../../hooks/useUnreadNotificationsCount"; 
 
 function ConsultantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,6 +22,8 @@ function ConsultantsPage() {
   const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
 
+  const{count: unreadCount} = useUnreadNotificationsCount();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -28,6 +32,7 @@ function ConsultantsPage() {
           getConsultants(1, 50),
           getPendingProfiles(),
         ]);
+    
 
         const mapped = consultantsResponse.consultants.map((dto) => {
           const parts = dto.fullName.split(" ");
@@ -86,7 +91,7 @@ function ConsultantsPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantManagerSidebarItems} />
+      <Sidebar items={consultantManagerSidebarItems} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col min-w-0">
         <header
@@ -98,19 +103,14 @@ function ConsultantsPage() {
           </h1>
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
+              variant="default"
               onClick={() => navigate("/register")}
-              className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
-              style={{
-                backgroundColor: "var(--color-accent)",
-                color: "white",
-                fontSize: "16px",
-                padding: "12px 20px",
-              }}
+              className="flex items-center gap-2 rounded-xl px-3 py-3 text-white font-semibold transition hover:opacity-90"
             >
               <UserPlus size={20} />
               Register Consultant
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -175,7 +175,7 @@ function ConsultantsPage() {
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder={activeSection === "active" ? "Search by name, skill, email..." : "Search by name or email..."}
-              onFilterClick={() => { }}
+              
             />
             <div className="h-6" />
 

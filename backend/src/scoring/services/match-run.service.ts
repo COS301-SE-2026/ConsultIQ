@@ -18,6 +18,7 @@ import {
 import { RawProjectDto } from '../dto/raw-project.dto';
 import { RawConsultantDto } from '../dto/raw-consultant.dto';
 import { MatchRunStatus, Prisma } from '@prisma/client';
+import { MatchRunStats } from './interfaces/match-result.interface';
 
 @Injectable()
 export class MatchRunService {
@@ -27,12 +28,12 @@ export class MatchRunService {
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-  ) {}
+  ) { }
 
   async executeMatchRun(
     projectId: string,
     executedByUserId: string,
-  ): Promise<ConsultantMatchResult[]> {
+  ): Promise<{ runId: string; results: ConsultantMatchResult[] }> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: { skills: { include: { skill: true } } },
@@ -41,7 +42,11 @@ export class MatchRunService {
     if (!project) {
       throw new NotFoundException(`Project: ${projectId} is not found`);
     }
-
+    if (!project.skills || project.skills.length === 0) {
+      throw new BadRequestException(
+        `Cannot execute match run: Project has no required skills.`
+      );
+    }
     if (project.status !== 'OPEN' && project.status !== 'IN_PROGRESS') {
       throw new BadRequestException(
         `Match run can only be initialized for open and in-progress projects. Project Status is ${project.status}`,
@@ -51,7 +56,18 @@ export class MatchRunService {
         where: { user: { status: 'ACTIVE' } },
         include: {
           skills: { include: { skill: true } },
-          user: { select: { fullName: true } },
+          user: { select: { fullName: true, email: true } },
+          placements: {
+            where: {
+              status: 'ACTIVE',
+              //placement before or during project timeline
+              ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),
+              OR: [
+                { endDate: { gte: project.startDate } },
+                { endDate: null },
+              ],
+            }
+          }
         },
       });
 
@@ -71,6 +87,7 @@ export class MatchRunService {
       const scoringPromises = consultants.map(async (consultant) => {
         const consultantDto = this.mapConsultantToDto(consultant);
 
+        const isPlaced = consultant.placements && consultant.placements.length > 0;
         const outcome = await this.scoringPipeline.scoreConsultant({
           consultantId: consultant.id,
           projectId,
@@ -79,6 +96,9 @@ export class MatchRunService {
         });
         return {
           consultantId: consultant.id,
+          consultantName: consultant.user?.fullName || 'Unknown consultant name',
+          consultantEmail: consultant.user?.email || 'Unknown consultant email',
+          isPlaced,
           outcome,
         };
       });
@@ -101,14 +121,17 @@ export class MatchRunService {
         (s) => s.outcome.excluded,
       ).length;
 
-      await this.saveMatchRun(
+      const totalPlacedCount = finalResults.filter(r => r.isPlaced).length;
+
+      const runId = await this.saveMatchRun(
         projectId,
         executedByUserId,
         activeWeights,
         finalResults,
         logicallyExcludedCount + errorCount,
+        totalPlacedCount,
       );
-      return finalResults;
+      return { runId, results: finalResults };
     }
   }
 
@@ -150,28 +173,31 @@ export class MatchRunService {
     activeWeights: Record<string, number>,
     results: ConsultantMatchResult[],
     excludedCount: number,
-  ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    placedCount: number,
+  ): Promise<string> {
+    return await this.prisma.$transaction(async (tx) => {
       const matchRun = await tx.matchRun.create({
         data: {
-          projectId,
-          executedByUserId,
+          project: { connect: { id: projectId } },
+          executedByUser: { connect: { id: executedByUserId } },
           configurationSnapshot: activeWeights,
           totalConsultantsScored: results.length,
           totalConsultantsExcluded: excludedCount,
+          totalConsultantsPlaced: placedCount,
           status: MatchRunStatus.COMPLETED,
-        },
-      });
+        }
+      })
       await tx.matchRunResult.createMany({
         data: results.map((r) => ({
           matchRunId: matchRun.id,
           consultantId: r.consultantId,
           rank: r.rank,
           totalScore: r.finalScore,
-          // cast to prisma JSON type
-          factorScores: r.factorBreakdown as unknown as Prisma.InputJsonValue,
-        })),
-      });
+          factorScores: r.factorBreakdown as unknown as Prisma.InputJsonArray,
+          isPlaced: r.isPlaced,
+        }))
+      })
+      return matchRun.id;
     });
   }
 
@@ -181,7 +207,22 @@ export class MatchRunService {
   ): Promise<ConsultantMatchResult[]> {
     const matchRun = await this.prisma.matchRun.findFirst({
       where: { id: runId, projectId },
-      include: { results: true },
+      include: {
+        results: {
+          include: {
+            consultant: {
+              include: {
+                user: {
+                  select: {
+                    fullName: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
     });
 
     if (!matchRun) {
@@ -192,9 +233,34 @@ export class MatchRunService {
 
     return matchRun.results.map((r) => ({
       consultantId: r.consultantId,
+      consultantName: r.consultant?.user?.fullName || 'Unknown',
+      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com',
       finalScore: r.totalScore,
       rank: r.rank,
       factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],
+      isPlaced: r.isPlaced,
     }));
+  }
+
+  async getMatchRunStats(projectId: string, runId: string): Promise<MatchRunStats> {
+    const matchRun = await this.prisma.matchRun.findUnique({
+      where: { id: runId, projectId },
+      select: {
+        totalConsultantsScored: true,
+        totalConsultantsExcluded: true,
+        totalConsultantsPlaced: true,
+      }
+    });
+
+    if (!matchRun) {
+      throw new NotFoundException(`Match run ${runId} not found`);
+    }
+
+    return {
+      totalEvaluated: matchRun.totalConsultantsScored + matchRun.totalConsultantsExcluded,
+      totalExcluded: matchRun.totalConsultantsExcluded,
+      totalMatched: matchRun.totalConsultantsScored,
+      totalPlaced: matchRun.totalConsultantsPlaced,
+    }
   }
 }

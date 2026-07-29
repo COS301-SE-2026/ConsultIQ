@@ -1,7 +1,9 @@
+name: consultiq-staging
 version: '3.8'
 
 services:
   redis:
+    container_name: consultiq-staging-redis
     image: redis:7-alpine
     restart: always
     healthcheck:
@@ -11,6 +13,7 @@ services:
       retries: 5
 
   backend:
+    container_name: consultiq-staging-backend
     image: ghcr.io/cos301-se-2026/consultiq-backend:staging
     restart: always
     environment:

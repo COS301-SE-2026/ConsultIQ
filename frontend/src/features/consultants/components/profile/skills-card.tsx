@@ -25,7 +25,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [localSkills, setLocalSkills] = useState(skills);
   const [showValidation, setShowValidation] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
    
 
   const handleCancel = () => {
@@ -42,26 +42,27 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
   }
 
-  const handleSave = () => {
-
+  const handleSave = async () => {
     const hasEmptyFields = localSkills.some((skill) => !skill.name.trim());
 
     if (hasEmptyFields) {
-      setShowValidation(true); 
+      setShowValidation(true);
       return;
     }
 
     setShowValidation(false);
-
-     onSave?.([...localSkills]); //Callback to parent where api call is made
-
-    
-
-    setIsEditing(false);
-    toast.success(" your skills have been updated successfully");
-
-  }
-
+    setIsSaving(true);
+    try {
+      await onSave?.([...localSkills]);
+      setIsEditing(false);
+      toast.success("Your skills have been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  
   const competencyLevel = (years: number, confidence: number) : "BEGINNER" | "INTERMEDIATE" | "EXPERT" =>{
     if (confidence >= 4 && years >= 5) return "EXPERT";
     if (confidence >= 3 && years>= 3) return "INTERMEDIATE";
@@ -130,6 +131,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
          {canEdit && (
              <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}
@@ -162,7 +164,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
       <div className="flex flex-col">
         {activeSkills.map((skill, index) => (
           <div
-            key={`${skill.name}-${index}`}
+            key={index}
             className={`grid ${isEditing ? "grid-cols-[2fr_1.5fr_1.5fr_2fr_auto] gap-4 items-center":"grid-cols-3"} font-medium`}
             style={{
               fontSize: "var(--text-h3)",
@@ -223,7 +225,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                 />
 
                 <Button
-                 variant="secondary"
+                 variant="default"
                  onClick={() => removeSkill(index)}
                    style ={{
                   fontSize: "14px",

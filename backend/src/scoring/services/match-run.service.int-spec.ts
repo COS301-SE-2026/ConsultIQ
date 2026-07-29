@@ -188,14 +188,15 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 },
       ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { runId, results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(1);
-      expect(result[0].consultantId).toBe(consultant.id);
+      expect(results).toBeDefined();
+      expect(runId).toBeDefined();
+      expect(results.length).toBe(1);
+      expect(results[0].consultantId).toBe(consultant.id);
 
       // verify that the match run was persisted
       const saveMatchRun = await prisma.matchRun.findFirst({
@@ -204,6 +205,7 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       });
 
       expect(saveMatchRun).toBeDefined();
+      expect(saveMatchRun?.id).toBe(runId);
       expect(saveMatchRun?.status).toBe('COMPLETED');
       expect(saveMatchRun?.totalConsultantsScored).toBe(1);
       expect(saveMatchRun?.executedByUserId).toBe(adminUser.id);
@@ -260,20 +262,20 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 },
       ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(3);
+      expect(results).toBeDefined();
+      expect(results.length).toBe(3);
 
-      expect(result[0].finalScore).toBeGreaterThan(result[1].finalScore);
-      expect(result[1].finalScore).toBeGreaterThan(result[2].finalScore);
+      expect(results[0].finalScore).toBeGreaterThan(results[1].finalScore);
+      expect(results[1].finalScore).toBeGreaterThan(results[2].finalScore);
 
-      expect(result[0].consultantId).toBe(consultantA.id);
-      expect(result[1].consultantId).toBe(consultantB.id);
-      expect(result[2].consultantId).toBe(consultantC.id);
+      expect(results[0].consultantId).toBe(consultantA.id);
+      expect(results[1].consultantId).toBe(consultantB.id);
+      expect(results[2].consultantId).toBe(consultantC.id);
 
       // verify that the match run was persisted
       const savedResults = await prisma.matchRunResult.findMany({
@@ -330,15 +332,15 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         },
       ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(1);
+      expect(results).toBeDefined();
+      expect(results.length).toBe(1);
 
-      const matchResult = result[0];
+      const matchResult = results[0];
       expect(matchResult.consultantId).toBe(consultant.id);
 
       const scoredFactors = matchResult.factorBreakdown.map((f) => f.factor);

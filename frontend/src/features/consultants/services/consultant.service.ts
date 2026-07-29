@@ -75,6 +75,86 @@ export interface PendingProfileUserDto {
   createdAt: string;
 }
 
+export interface AssignedProjectSummary {
+  id: string;
+  projectName: string;
+  clientName: string;
+  description: string | null;
+  addressLine1: string;
+  suburb: string | null;
+  city: string;
+  province: string;
+  postalCode: string;
+  status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "ARCHIVED" | "COMPLETED";
+  startDate: string;
+  endDate: string | null;
+  allocation: number;
+  teamSize: number;
+}
+
+export interface AssignedProjectListItem {
+  placementId: string;
+  placementStatus: "ACTIVE" | "COMPLETED" | "CANCELLED" | "TERMINATED";
+  placementAllocation: number;
+  startDate: string;
+  endDate: string | null;
+  project: AssignedProjectSummary;
+}
+
+export interface AssignedProjectSkill {
+  skillName: string;
+  competency: string;
+  years: number;
+  mandatory: boolean;
+}
+
+export interface AssignedProjectTeamMember {
+  fullName: string;
+  email: string;
+}
+
+export interface AssignedProjectDetail {
+  id: string;
+  projectName: string;
+  clientName: string;
+  description: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  suburb: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "ARCHIVED" | "COMPLETED";
+  startDate: string;
+  endDate: string | null;
+  teamSize: number;
+  allocation: number;
+  budget: number;
+  skills: AssignedProjectSkill[];
+  teamMembers: AssignedProjectTeamMember[];
+}
+
+export interface AssignedProjectDetailDto {
+  placementId: string;
+  placementStatus: string;
+  placementAllocation: number;
+  startDate: string;
+  endDate: string | null;
+  project: AssignedProjectDetail;
+}
+
+export const getAssignedProjects = async (): Promise<AssignedProjectListItem[]> => {
+  return await apiClient.get<AssignedProjectListItem[]>(
+    "/consultants/assigned/project"
+  );
+};
+
+export const getAssignedProjectDetails = async ( projectId: string ): Promise<AssignedProjectDetailDto> => {
+  return await apiClient.get<AssignedProjectDetailDto>(
+    `/consultants/assigned/projects/${projectId}`
+  );
+};
+
 export const getConsultants = async (page = 1, limit = 50) => {
   return await apiClient.get<PaginatedConsultantsResponseDto>(
     `/consultants?page=${page}&limit=${limit}`

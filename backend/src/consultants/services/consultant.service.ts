@@ -275,32 +275,52 @@ export class ConsultantService {
     return this.mapToProfileDto(consultant);
   }
 
-  async updateConsultantProfile(consultantId: string, dto: UpdateConsultantDto,): Promise<{message: string}> {
+  async updateConsultantProfile(
+    consultantId: string,
+    dto: UpdateConsultantDto,
+  ): Promise<{ message: string }> {
     //Verify consultant exists
     const existing = await this.prisma.consultant.findUnique({
-      where: {id: consultantId}
+      where: { id: consultantId },
     });
 
-    if(!existing){
-      throw new NotFoundException(`Consultant with id ${consultantId} not found.`)
+    if (!existing) {
+      throw new NotFoundException(
+        `Consultant with id ${consultantId} not found.`,
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
       await tx.consultant.update({
-        where: {id: consultantId},
+        where: { id: consultantId },
         data: {
-          ...(dto.phone !== undefined && {phone: dto.phone}),
+          ...(dto.fullname !== undefined && {fullname: dto.phone}),
+          ...(dto.email !== undefined && {email: dto.email}),
+          ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
-          ...(dto.nationality !== undefined && { nationality: dto.nationality }),
-          ...(dto.location !== undefined && { location: dto.location }),
-          ...(dto.costToCompany !== undefined && { costToCompany: dto.costToCompany }),
+          ...(dto.nationality !== undefined && {
+            nationality: dto.nationality,
+          }),
+          ...(dto.addressLine1 !== undefined && {
+            addressLine1: dto.addressLine1,
+          }),
+          ...(dto.addressLine2 !== undefined && {
+            addressLine2: dto.addressLine2,
+          }),
+          ...(dto.suburb !== undefined && { suburb: dto.suburb }),
+          ...(dto.city !== undefined && { city: dto.city }),
+          ...(dto.province !== undefined && { province: dto.province }),
+          ...(dto.postalCode !== undefined && { postalCode: dto.postalCode }),
+          ...(dto.costToCompany !== undefined && {
+            costToCompany: dto.costToCompany,
+          }),
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
-        }),
+          }),
         },
       });
 
-      if(dto.skills !== undefined){
+      if (dto.skills !== undefined) {
         await tx.consultantSkill.deleteMany({
           where: { consultantId },
         });
@@ -328,7 +348,7 @@ export class ConsultantService {
               confidenceLevel: skill.confidenceLevel,
             },
           });
-        } 
+        }
       }
 
       if (dto.experiences !== undefined) {
@@ -352,25 +372,44 @@ export class ConsultantService {
         }
       }
 
-      if(dto.certifications !== undefined){
+      if (dto.certifications !== undefined) {
         await tx.certificate.deleteMany({
-          where: {consultantId},
+          where: { consultantId },
         });
 
-        for(const cert of dto.certifications) {
+        for (const cert of dto.certifications) {
           await tx.certificate.create({
             data: {
-            consultantId,
-            title: cert.title,
-            issuingBody: cert.issuingBody,
-            startDate: cert.startDate ? new Date(cert.startDate) : null,
-          },
+              consultantId,
+              title: cert.title,
+              issuingBody: cert.issuingBody,
+              startDate: cert.startDate ? new Date(cert.startDate) : null,
+            },
+          });
+        }
+      }
+
+      if (dto.education !== undefined) {
+        await tx.consultantEducation.deleteMany({
+          where: { consultantId },
+        });
+
+        for (const edu of dto.education) {
+          await tx.consultantEducation.create({
+            data: {
+              consultantId,
+              institution: edu.institution,
+              qualification: edu.qualification,
+              startDate: new Date(edu.startDate),
+              endDate: edu.endDate ? new Date(edu.endDate) : null,
+              fileName: edu.fileName ?? null,
+            },
           });
         }
       }
     });
 
-    return {message: 'Consultant profile updated successfully.'};
+    return { message: 'Consultant profile updated successfully.' };
   }
 
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
@@ -407,6 +446,15 @@ export class ConsultantService {
           endDate: true,
           description: true,
           workModel: true,
+        },
+      },
+      education: {
+        select: {
+          id: true,
+          institution: true,
+          qualification: true,
+          startDate: true,
+          endDate: true,
         },
       },
     };
@@ -453,19 +501,29 @@ export class ConsultantService {
         endDate: cert.endDate,
         uploadedAt: cert.uploadedAt,
       })),
+      education: consultant.education.map((edu: any) => ({
+        id: edu.id,
+        institution: edu.institution,
+        qualification: edu.qualification,
+        startDate: edu.startDate,
+        endDate: edu.endDate,
+      })),
     };
   }
 
-  private inferCompetencyLevel(yearsExperience: number, confidenceLevel: number): CompetencyLevel{
-    if(yearsExperience >= 5 && confidenceLevel >= 4){
-      return CompetencyLevel.EXPERT
+  private inferCompetencyLevel(
+    yearsExperience: number,
+    confidenceLevel: number,
+  ): CompetencyLevel {
+    if (yearsExperience >= 5 && confidenceLevel >= 4) {
+      return CompetencyLevel.EXPERT;
     }
 
-    if(yearsExperience >= 2 && confidenceLevel >= 3){
-      return CompetencyLevel.INTERMEDIATE
+    if (yearsExperience >= 2 && confidenceLevel >= 3) {
+      return CompetencyLevel.INTERMEDIATE;
     }
 
-    return CompetencyLevel.BEGINNER
+    return CompetencyLevel.BEGINNER;
   }
 
   //-----------------Consultant get assigned projects-------------------
@@ -487,12 +545,16 @@ export class ConsultantService {
             projectName: true,
             clientName: true,
             description: true,
+            addressLine1: true,
             suburb: true,
             city: true,
+            province: true,
+            postalCode: true,
             status: true,
             startDate: true,
             endDate: true,
             allocation: true,
+            teamSize: true,
           },
         },
       },

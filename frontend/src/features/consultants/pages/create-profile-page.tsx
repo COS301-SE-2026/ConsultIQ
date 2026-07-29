@@ -8,6 +8,7 @@ import { createConsultantProfile } from "../services/consultant.service";
 import type { CreateConsultantProfilePayload } from "../services/consultant.service";
 import { toast } from "sonner";
 import { ConsultantProfileProvider, useConsultantProfile } from "../pages/consultant-profile.context";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import PersonalTab from "../layouts/personal-tab";
 import ExperienceTab from "../layouts/experience-tab";
@@ -22,6 +23,8 @@ function CreateProfileContent() {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
   const { profileData, updateProfileData } = useConsultantProfile();
+
+  const{count: unreadCount} = useUnreadNotificationCount();
 
    useEffect(() => {
       if (userId) {
@@ -101,7 +104,7 @@ function CreateProfileContent() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantManagerSidebarItems} />
+      <Sidebar items={consultantManagerSidebarItems}  notificationCount={unreadCount}/>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
@@ -115,10 +118,16 @@ function CreateProfileContent() {
           <div className="flex gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center h-12 w-30 px-6 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
-              style={{ color: "var(--color-primary)" }}
+              className="flex items-center justify-center h-8 w-30 px-6 text-lg rounded-xl font-semibold transition hover:opacity-70"
+              style={{ color: "var(--color-primary)",
+                 fontSize: "16px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: 0,
+               }}
             >
-              <ArrowLeft className="mr-2" />
+              <ArrowLeft size={20} className="mr-2" />
               Back
             </button>
           </div>

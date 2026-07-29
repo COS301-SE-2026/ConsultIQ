@@ -12,9 +12,10 @@ interface TableSkill {
 interface ProjectSkillsTableProps {
    readonly skills: TableSkill[];
    readonly onEditSkill: (skill: TableSkill, idx: number)=> void;
+   readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsTable({ skills, onEditSkill }: ProjectSkillsTableProps) {
+export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: ProjectSkillsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 4;
 
@@ -43,9 +44,11 @@ export default function ProjectSkillsTable({ skills, onEditSkill }: ProjectSkill
               <span className="truncate pr-2">{skill.competency}</span>
               <span>{skill.years}</span>
               <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
-              <button type="button"
+              {isEditing && (
+                <button type="button"
               onClick={()=> onEditSkill(skill, startIndex+index)}
               className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
+              )}
             </div>
           ))
         ) : (

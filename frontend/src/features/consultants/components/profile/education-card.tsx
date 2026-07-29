@@ -182,8 +182,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
                        <Button
                          variant= "ghost"
                          onClick={()=> setSelected({edu,index})}
-                         className="gap-2 font-bold px-4 py-2 border-b"
-                          style={actionButtonStyle}
+                         className="gap-2 font-bold px-3 py-1.5 shadow-md"
                        >
                          <Pencil size={16} className="text-slate-500"/>
 

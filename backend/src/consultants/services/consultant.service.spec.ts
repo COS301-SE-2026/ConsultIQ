@@ -231,6 +231,7 @@ describe('ConsultantService', () => {
         ],
         consultantExperiences: [],
         certificates: [],
+        education: [],
       });
 
       const result = await service.getConsultantById('uuid-1');
@@ -238,6 +239,10 @@ describe('ConsultantService', () => {
       expect(result.fullName).toBe('Jane Smith');
       expect(result.skills[0].skillName).toBe('TypeScript');
       expect(result.skills[0].competencyLevel).toBe('EXPERT');
+
+      expect(result.skills[0].skillName).toBe('TypeScript');
+      expect(result.skills[0].competencyLevel).toBe('EXPERT');
+      expect(result.education).toEqual([]);
     });
   });
 
@@ -300,6 +305,15 @@ describe('ConsultantService', () => {
             uploadedAt: referenceDate,
           },
         ],
+        education: [
+          {
+            id: 'edu-1',
+            institution: 'University of Pretoria',
+            qualification: 'BSc Computer Science',
+            startDate: referenceDate,
+            endDate: null,
+          },
+        ],
       });
 
       const result = await service.getConsultantByUserId('user-uuid-123');
@@ -341,6 +355,13 @@ describe('ConsultantService', () => {
       expect(result.certificates[0].title).toBe('AWS Solutions Architect');
       expect(result.certificates[0].startDate).toBeNull();
       expect(result.certificates[0].uploadedAt).toEqual(referenceDate);
+
+      expect(result.education).toHaveLength(1);
+      expect(result.education[0].id).toBe('edu-1');
+      expect(result.education[0].institution).toBe('University of Pretoria');
+      expect(result.education[0].qualification).toBe('BSc Computer Science');
+      expect(result.education[0].startDate).toEqual(referenceDate);
+      expect(result.education[0].endDate).toBeNull();
     });
   });
 

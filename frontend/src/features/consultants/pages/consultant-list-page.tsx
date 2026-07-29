@@ -32,6 +32,7 @@ function ConsultantsPage() {
           getConsultants(1, 50),
           getPendingProfiles(),
         ]);
+    
 
         const mapped = consultantsResponse.consultants.map((dto) => {
           const parts = dto.fullName.split(" ");
@@ -105,12 +106,7 @@ function ConsultantsPage() {
             <Button
               variant="default"
               onClick={() => navigate("/register")}
-              className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
-              style={{
-                color: "white",
-                fontSize: "16px",
-                padding: "12px 20px",
-              }}
+              className="flex items-center gap-2 rounded-xl px-3 py-3 text-white font-semibold transition hover:opacity-90"
             >
               <UserPlus size={20} />
               Register Consultant
@@ -179,7 +175,7 @@ function ConsultantsPage() {
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder={activeSection === "active" ? "Search by name, skill, email..." : "Search by name or email..."}
-              onFilterClick={() => { }}
+              
             />
             <div className="h-6" />
 

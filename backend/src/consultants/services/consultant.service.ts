@@ -294,6 +294,8 @@ export class ConsultantService {
       await tx.consultant.update({
         where: { id: consultantId },
         data: {
+          ...(dto.fullname !== undefined && {fullname: dto.phone}),
+          ...(dto.email !== undefined && {email: dto.email}),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
           ...(dto.nationality !== undefined && { nationality: dto.nationality }),

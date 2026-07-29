@@ -143,7 +143,6 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
             Done
           </Button>
         </div>
-        <div className="h-6" />
       </div>
     </Card>
   );

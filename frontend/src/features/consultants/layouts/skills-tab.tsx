@@ -14,9 +14,9 @@ export default function SkillsTab({ onComplete }: Props) {
   return (
     <div className="space-y-8">
       <SkillsForm />
-      <div className="h-6" />
+     
       <EducationForm />
-      <div className="h-6" />
+      
 
       {profileData.skills.length > 0 && (
         <div className="flex justify-end mt-4">

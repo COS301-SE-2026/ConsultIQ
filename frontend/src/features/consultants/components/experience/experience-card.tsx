@@ -24,7 +24,7 @@ type Props = {
 
 export default function ExperienceCard({ experience, onRemove }: Props) {
   return (
-    <Card className="border border-slate-200 shadow-sm" style={{ padding: "28px 32px" }}>
+    <Card className="border rounded-2xl border-slate-200 shadow-sm" style={{ padding: "28px 32px" }}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <h3 className="text-xl font-bold mb-1" style={{ color: "var(--color-primary)" }}>

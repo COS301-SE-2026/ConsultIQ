@@ -61,14 +61,14 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
+    <Card className="px-6 py-6 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="text-3xl font-bold mb-8 mt-6" style={{ color: "var(--color-primary)" }}>
           Experience
         </h2>
 
-        <div className="space-y-6 flex-1 gap-6 flex flex-col">
-          <div className="flex flex-col gap-3">
+        <div className="space-y-6 flex-1  flex  flex-col">
+          <div className="flex flex-col gap-2">
             <label htmlFor="job-title" className="text-base font-semibold">Job Title</label>
             <Input
               id="job-title"
@@ -92,7 +92,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
             {errors.companyName && <span className="text-red-500 text-sm">{errors.companyName}</span>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center">
             <div className="flex flex-col gap-3">
               <label htmlFor="job-type" className="text-base font-semibold">Job Type</label>
               <select
@@ -128,7 +128,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 items-center justify-center gap-6">
            <div className="flex flex-col gap-3">
             <DateField
               id="start-date"
@@ -173,20 +173,19 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
           </div>
         </div>
 
-        <div className="h-6 " />
 
-        <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
+        <div className="self-end bg-brand-blue! overflow-hidden rounded-xl mt-4 mb-6">
             <Button
-            variant="default"
-            onClick={handleAdd}
-            className="font-medium text-sm"
-            
-          >
+              variant="default"
+              onClick={handleAdd}
+              className="font-medium text-sm flex items-center justify-center"
+              
+            >
             Add Experience
           </Button> 
         </div>
        
-        <div className="h-6" />
+        
       </div>
     </Card>
   );

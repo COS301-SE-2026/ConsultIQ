@@ -48,15 +48,15 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
   };
 
   return (
-    <Card className="p-8 h-full w-full flex items-start justify-center">
-      <div className="w-full max-w-[800px] flex flex-col h-full">
-        <div className="h-6" />
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+    <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
+      <div className="w-full max-w-[800px] flex flex-col h-full mt-6">
+       
+        <h2 className="text-3xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
           Location
         </h2>
 
-        <div className="space-y-6 flex-1 gap-4 flex flex-col">
-          <div className="flex flex-col gap-3">
+        <div className="space-y-6 flex-1 flex flex-col">
+          <div className="flex flex-col gap-3 mt-4">
             <label htmlFor="address-line-1" className="text-base font-semibold">
               Address Line 1 <span className="text-red-500">*</span>
             </label>
@@ -133,12 +133,12 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
 
         {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
 
-        <div className="h-6" />
-        <div className="mt-8 flex justify-end w-full">
+        
+        <div className="mt-6 mb-6 flex justify-end w-full">
           <Button
             variant="default"
             onClick={handleDone}
-            className="h-10 w-24  rounded-xl font-semibold "
+            className="flex items-center justify-center  rounded-xl font-semibold "
           >
             Done
           </Button>

@@ -12,9 +12,9 @@ type Props = {
 
 export default function ExperienceList({ experiences = [], onRemove, onComplete }: Props) {
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
+    <Card className="py-6 px-6 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="text-3xl font-bold mb-8 mt-6" style={{ color: "var(--color-primary)" }}>
           Added Experience
         </h2>
         <div className="flex flex-col gap-6 flex-1">
@@ -31,7 +31,7 @@ export default function ExperienceList({ experiences = [], onRemove, onComplete 
           )}
         </div>
         {experiences.length > 0 && onComplete && (
-          <div className="flex justify-end mt-4">
+          <div className="flex justify-end mt-6">
             <Button
               variant="default"
               onClick={onComplete}

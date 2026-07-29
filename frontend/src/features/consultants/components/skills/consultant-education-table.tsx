@@ -141,7 +141,7 @@ export default function EducationTable({
                  <Button
                   variant="default"
                   onClick={() => onRemove(item.id)}
-                  className="gap-2 h-6 w-20 rounded"
+                  className=" rounded-xl"
                 >
                   <Trash2 size={18}/>
 

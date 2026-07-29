@@ -43,13 +43,13 @@ export default function SkillsForm() {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
+    <Card className="px-6 py-6 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-200 flex flex-col h-full">
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="text-3xl mt-6 font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Skills
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col gap-3">
             <label htmlFor="skill-name" className="text-sm font-medium">Skill Name</label>
             <Input
@@ -66,7 +66,7 @@ export default function SkillsForm() {
               id="confidence"
               value={confidence}
               onChange={(e) => setConfidence(e.target.value)}
-              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
+              className="flex h-12 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
             >
               <option value="" disabled>Select confidence (1-4)</option>
               <option value="1">1 - Low</option>
@@ -102,13 +102,14 @@ export default function SkillsForm() {
           </div>
         </div>
 
-        <div className="h-6 " />
+      
 
         <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
             <Button
               variant="default"
               onClick={handleAddSkill}
               disabled={!skillName.trim() || !years || !confidence}
+              className="flex items-center justify-center"
               
             >
               Add Skill
@@ -120,7 +121,7 @@ export default function SkillsForm() {
 
         {/* Skills list */}
         {skills.length > 0 && (
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="mb-6 flex flex-col gap-3">
             <h3 className="text-base font-semibold" style={{ color: "var(--color-primary)" }}>
               Added Skills
             </h3>
@@ -147,7 +148,7 @@ export default function SkillsForm() {
           </div>
         )}
 
-        <div className="h-6" />
+     
       </div>
     </Card>
   );

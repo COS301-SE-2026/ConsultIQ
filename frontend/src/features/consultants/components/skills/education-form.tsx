@@ -207,16 +207,16 @@ export default function EducationForm() {
     }, [educationList]);
 
     return (
-        <Card className="p-8 h-full w-full flex items-start justify-center">
+        <Card className="px-6 py-6 h-full w-full flex items-start rounded-2xl justify-center">
             <div className="w-full max-w-200 flex flex-col h-full">
-                <h2 className="text-3xl font-bold mb-8"
+                <h2 className="text-3xl font-bold mb-8 mt-6"
                     style={{ color: "var(--color-primary)" }}
                 >
                     Education
                 </h2>
-            <div className="h-6" />
-            <div className="space-y-6 flex-1 gap-6 flex flex-col">
-            <div className= "grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div className="space-y-6 flex-1 flex flex-col">
+            <div className= "grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-3">
                     <label htmlFor="selected-institution" className="text-sm font-medium">
                         Institution Name
@@ -313,20 +313,17 @@ export default function EducationForm() {
                         onClearFile={handleClearFile}
                     />
 
-                <div className="h-6" />
+                
                 <Button 
+                    variant="default"
                     onClick={handleAddEducation}
                     disabled={isAddButtonDisabled}
-                    className="self-end flex items-center justify-center px-6 text-sm font-medium rounded transition disabled:opacity-50"
-                    style={{
-                        backgroundColor:
-                        "var(--color-primary)",
-                    }}
+                    className="self-end flex items-center justify-center px-6 text-sm font-medium rounded-xl bg-brand-blue transition disabled:opacity-50"
                 >
                     Add Education
                 </Button>
-                <div className="h-6" />
-                <div className="mt-8 w-full">
+             
+                <div className=" w-full mb-6">
                     <EducationTable 
                         education={educationList}
                         onRemove={(id) => setEducationList(prev => prev.filter(e => e.id !== id ))}

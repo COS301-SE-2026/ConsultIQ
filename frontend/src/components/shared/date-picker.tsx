@@ -5,7 +5,7 @@ interface DateFieldProps{
     readonly label:string;
     readonly selected: Date |null;
     readonly onChange: (date: Date |null) => void;
-    readonly error: string;
+    readonly error?: string;
 }
 
 function DateField({id,label,selected,onChange,error}:DateFieldProps){

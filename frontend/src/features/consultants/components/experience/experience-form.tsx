@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
+import DateField from "../../../../components/shared/date-picker";
 
 type Props = {
   onAdd: (exp: {
@@ -26,13 +27,13 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleAdd = () => {
-    const newErrors: Record<string, string> = {};
-    if (!jobTitle.trim()) newErrors.jobTitle = "Job title is required.";
-    if (!companyName.trim()) newErrors.companyName = "Company name is required.";
-    if (!jobType) newErrors.jobType = "Job type is required.";
-    if (!workModel) newErrors.workModel = "Work model is required.";
-    if (!startDate) newErrors.startDate = "Start date is required.";
-    if (!description.trim()) newErrors.description = "Description is required.";
+     const newErrors: Record<string, string> = {};
+      if (!jobTitle.trim()) newErrors.jobTitle = "Job title is required.";
+      if (!companyName.trim()) newErrors.companyName = "Company name is required.";
+      if (!jobType) newErrors.jobType = "Job type is required.";
+      if (!workModel) newErrors.workModel = "Work model is required.";
+      if (!startDate) newErrors.startDate = "Start date is required.";
+      if (!description.trim()) newErrors.description = "Description is required.";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -60,14 +61,14 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
+    <Card className="px-6 py-6 h-full w-full flex items-start justify-center rounded-2xl">
       <div className="w-full max-w-[800px] flex flex-col h-full">
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="text-3xl font-bold mb-8 mt-6" style={{ color: "var(--color-primary)" }}>
           Experience
         </h2>
 
-        <div className="space-y-6 flex-1 gap-6 flex flex-col">
-          <div className="flex flex-col gap-3">
+        <div className="space-y-6 flex-1  flex  flex-col">
+          <div className="flex flex-col gap-2">
             <label htmlFor="job-title" className="text-base font-semibold">Job Title</label>
             <Input
               id="job-title"
@@ -91,7 +92,7 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
             {errors.companyName && <span className="text-red-500 text-sm">{errors.companyName}</span>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-center">
             <div className="flex flex-col gap-3">
               <label htmlFor="job-type" className="text-base font-semibold">Job Type</label>
               <select
@@ -127,32 +128,36 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col gap-3">
-              <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
-              <input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => { setStartDate(e.target.value); if (errors.startDate) setErrors((p) => ({ ...p, startDate: "" })); }}
-                className={`flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400 ${errors.startDate ? "border-red-500" : "border-slate-200"}`}
-              />
-              {errors.startDate && <span className="text-red-500 text-sm">{errors.startDate}</span>}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 items-center justify-center gap-6">
+           <div className="flex flex-col gap-3">
+            <DateField
+              id="start-date"
+              label="Start Date"
+              selected={startDate ? new Date(startDate) : null}
+              onChange={(date: Date | null) => {
+                setStartDate(date ? date.toISOString() : "");
+                if (errors.startDate) {
+                  setErrors((prev) => ({ ...prev, startDate: "" }));
+                }
+              }}
+              error={errors.startDate}
+            />
+           </div>
 
             <div className="flex flex-col gap-3">
-              <label htmlFor="end-date" className="text-base font-semibold">
-                End Date <span className="text-slate-400 font-normal">(leave blank if current)</span>
-              </label>
-              <input
-                id="end-date"
-                type="date"
-                value={endDate}
-                min={startDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
-              />
-            </div>
+             <DateField
+              id="end-date"
+              label="End Date (leave blank if current)"
+              selected={endDate ? new Date(endDate) : null}
+              onChange={(date: Date | null) => {
+                setEndDate(date ? date.toISOString() : "");
+                if (errors.endDate) {
+                  setErrors((prev) => ({ ...prev, endDate: "" }));
+                }
+              }}
+              error={errors.endDate}
+            />
+          </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -168,15 +173,19 @@ export default function ExperienceForm({ onAdd }: Readonly<Props>) {
           </div>
         </div>
 
-        <div className="h-6 " />
-        <Button
-          variant="secondary"
-          onClick={handleAdd}
-          className="self-end flex items-center justify-center px-6 text-sm font-medium rounded bg-brand-blue! text-white "
-          
-        >
-          Add Experience
-        </Button>
+
+        <div className="self-end bg-brand-blue! overflow-hidden rounded-xl mt-4 mb-6">
+            <Button
+              variant="default"
+              onClick={handleAdd}
+              className="font-medium text-sm flex items-center justify-center"
+              
+            >
+            Add Experience
+          </Button> 
+        </div>
+       
+        
       </div>
     </Card>
   );

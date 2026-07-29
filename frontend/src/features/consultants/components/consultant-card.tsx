@@ -40,7 +40,7 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
 
   return (
     <div
-      className="bg-white rounded-2xl flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow duration-200"
+      className="bg-white rounded-2xl flex flex-col h-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow duration-200"
       style={{ padding: "28px 28px 24px 28px" }}
     >
       
@@ -155,7 +155,7 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
       </div>
 
      
-      <div className="flex justify-center" style={{ paddingTop: "4px" }}>
+      <div className="flex justify-center mt-auto"  style={{ paddingTop: "4px" }}>
         <button
           onClick={() => onViewDetails?.(id)}
           className="flex items-center gap-2 font-bold transition-all duration-150 hover:gap-3"

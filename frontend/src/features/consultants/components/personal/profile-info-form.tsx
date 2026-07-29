@@ -87,8 +87,8 @@ export default function ProfileInfoForm() {
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center rounded-2xl">
-      <div className="w-full max-w-[800px] flex flex-col h-full">
+    <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
+      <div className="w-full max-w-[800px] flex flex-col h-full mt-6">
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Personal Information
         </h2>
@@ -159,10 +159,10 @@ export default function ProfileInfoForm() {
           </div>
         </div>
 
-        <div className="h-6" />
+     
 
         {/* Availability Toggle */}
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col justify gap-3 mt-6">
           <label className="text-base font-semibold">Availability</label>
           <div className="flex items-center gap-4 h-10">
             <button
@@ -187,11 +187,11 @@ export default function ProfileInfoForm() {
           </div>
         </div>
 
-        <div className="mt-8 flex justify-end w-full">
+        <div className=" flex justify-end w-full">
           <Button
+            variant="default"
             onClick={handleDone}
-            className="h-16 w-48 text-lg rounded font-semibold transition bg-gray-50 hover:bg-gray-100"
-            style={{ color: "var(--color-primary)" }}
+            className="flex items-center justify-center  rounded-xl font-semibold "
           >
             Done
           </Button>

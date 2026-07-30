@@ -21,29 +21,37 @@ const NAV_BUTTONS: NavButton[]=[
 
 export default function StyleGuideHome(){
     return (
-        <div className= "relative min-h-screen w-full bg-[#002B5C] text-white flex flex-col justify-between overflow-hidden p-8 md:p-16">
-            <div className= "absolute top-0 right-0 w-[190px] h-[30vh] z-10" style={{background: "rgba(52, 84, 132, 0.99)", boxShadow: "0 4px 4px rgba(0,0,0,0.30)"}}/>
-            <div className= "absolute right-[190px] bottom-0 w-[190px] h-[70vh] z-10 " style={{background: "rgba(48, 80, 129, 0.99)", boxShadow: "inset 0 4px 4px rgba(0,0,0,0.30)"}}/>
+        <div className= "relative min-h-screen w-full animate-gradient text-white flex flex-col justify-between overflow-hidden p-8 md:p-16"
+        style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}}>
+            
+        <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute right-20 top-40 w-[320px] h-[320px] rounded-full blur-[100px] opacity-50 animate-float-slow"
+            style={{background: "radial-gradient(circle, rgba(58, 110, 165, 0.65) 0%, transparent 75%)",}}
+            />
+                <div className= "absolute top-0 right-0 w-[190px] h-[30vh] z-10 animate-float-reverse" style={{background: "rgba(52, 84, 132, 0.99)", boxShadow: "0 4px 4px rgba(0,0,0,0.30)"}}/>
+                <div className= "absolute right-[190px] bottom-0 w-[190px] h-[70vh] z-10 animate-float-slow" style={{background: "rgba(48, 80, 129, 0.99)", boxShadow: "inset 0 4px 4px rgba(0,0,0,0.30)"}}/>
 
+        </div>
             <div className="relative z-10">
-                <div className="flex items-center gap-3">
-                    <div className=" p-2.5 rounded-lg  backdrop-blur-md inline-block">
+                {/* <div className="flex items-center gap-3">
+                    <div className=" p-3 rounded-xl bg-white/10  backdrop-blur-md border border-white/10 inline-block">
                         <img src={consultIqLogo}
                         alt="ConsultIQ Logo"
-                        className="h-30 w-auto object-contain"
+                        className="h-16 md:h-20 w-auto object-contain"
                         />
                     </div>
-                </div>
-            <div className="relative z-10 flex-1 flex items-center max-w-xl -mt-16">
-                <h1 className="!text-5xl sm:!text-6xl md:!text-7xl !font-normal tracking-tight !text-white leading-[1.1]">
-                    Brand <br />
-                    Style <br />
+                </div> */}
+            <div className="max-w-xl mt-5">
+                <span className="text-lg md:text-xl font-medium !font-bold tracking-wide text-accent mb-2 border rounded-2xl px-3 inline-block" style={{border: "var(--color-accent) 1px solid"}}>ConsultIQ</span>
+                <h1 className="!text-5xl sm:!text-6xl md:!text-7xl !font-normal tracking-tight !text-white leading-[1.15]">
+                    Brand <br/>
+                    Style<br />
                     Guidelines
                 </h1>
             </div>
             </div>
 
-            <div className="relative z-10 w-full max-w-5xl mt-auto">
+            <div className="relative z-10 w-full max-w-4xl mt-auto">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
                     {NAV_BUTTONS.map((button) =>(
                         <Link

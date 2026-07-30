@@ -55,6 +55,9 @@ function AnimatedRoutes() {
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
+                <Route path="/help-page" element={<PageTransition><HelpPage /></PageTransition>} />
+                <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
+                <Route path="/brand-style-home" element={<PageTransition><BrandStyleHome /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

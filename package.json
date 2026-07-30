@@ -23,9 +23,17 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",
-    "@types/node": "^26.1.2"
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "^26.1.2",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2"
   },
-  "scripts": {},
+  "scripts": {
+    "playwright:install": "playwright install --with-deps",
+    "playwright:install:chromium": "playwright install --with-deps chromium",
+    "test:ui": "playwright test --config=playwright.ui.config.ts",
+    "test:e2e": "playwright test --config=playwright.e2e.config.ts"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"

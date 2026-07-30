@@ -20,7 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:int": "dotenv -e .env.test -- jest --config jest-int.json --runInBand",
     "test:int:db-push": "dotenv -e .env.test -- npx prisma db push",
-    "test:int:setup": "npm run test:int:db-push && npm run test:int"
+    "test:int:setup": "npm run test:int:db-push && npm run test:int",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

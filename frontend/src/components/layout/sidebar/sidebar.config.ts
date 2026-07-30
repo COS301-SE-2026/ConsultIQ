@@ -1,5 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck,House,Cog,Bell } from "lucide-react";
+import { Users, Briefcase, UserCheck,House,Cog,Bell,HelpCircle } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",
@@ -15,6 +15,11 @@ export const adminSidebarItems: SidebarItem[] = [
         label: "Notifications",
         path:"/notifications",
         icon:Bell
+    },
+     {
+        label: "Help",
+        path:"/help-page",
+        icon:HelpCircle
     }
 ]
 
@@ -28,6 +33,11 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
         label: "Notifications",
         path:"/notifications",
         icon:Bell
+    },
+     {
+        label: "Help",
+        path:"/help-page",
+        icon:HelpCircle
     }
 
 ]
@@ -52,6 +62,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         label: "Notifications",
         path:"/notifications",
         icon:Bell
+    },
+     {
+        label: "Help",
+        path:"/help-page",
+        icon:HelpCircle
     }
 
 ] 
@@ -72,4 +87,9 @@ export const consultantSidebarItems: SidebarItem[] = [
         path: "/consultant-projects",
         icon: Briefcase
     },
+     {
+        label: "Help",
+        path:"/help-page",
+        icon:HelpCircle
+    }
 ];

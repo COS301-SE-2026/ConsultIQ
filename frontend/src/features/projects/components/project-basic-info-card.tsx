@@ -200,7 +200,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 onChange={(e) => {
                   const sanitizedVal= e.target.value.replace(/[^0-9.]/g,'').replace(/(\..*)./g,'$1');
                   const val= Number.parseFloat(sanitizedVal) || 0;
-                  onChange("budget", val>999999999 ? 999999999 : val);
+                  onChange("budget", Math.min(val,999999999));
                 }}
                 className={getInputClass("budget")}
               />

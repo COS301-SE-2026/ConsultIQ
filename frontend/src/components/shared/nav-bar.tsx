@@ -90,7 +90,7 @@ export default function Navbar(){
                         <div className="relative" ref={helpRef}>
                             <Button
                                 variant="ghost"
-                                onClick={()=> navigate("/help-page")}
+                                onClick={()=> navigate("/help-page",{state:{from:"landing"}})}
                                 className="gap-1.5 px-3 py-2 font-semibold text-brand-muted! hover:text-brand-blue!"
                             >
                                 <HelpCircle size={16}/>

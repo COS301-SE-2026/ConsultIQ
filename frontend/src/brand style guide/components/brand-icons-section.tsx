@@ -35,7 +35,7 @@ export default function BrandIconsSection(){
             </div>
             <div className= " max-w-7xl mx-auto space-y-12">
               <section  className="bg-white rounded-2xl p-8 border border-secondary/10 shadow-sm ">
-                <h2 text-xl font-bold text-primary mb-6>Standard Icon Scales</h2>
+                <h2 className="text-xl font-bold text-primary mb-6">Standard Icon Scales</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   {ICON_SIZES.map((spec) =>{
                     const Icon= spec.icon;

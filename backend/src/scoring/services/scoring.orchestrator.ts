@@ -26,6 +26,7 @@ Calcaute the five scoring factors considering the avtive ones and redistributing
 
 @Injectable()
 export class ScoringOrchestrator {
+  private readonly MANDATORY_SKILL_PENALTY = 0.15;
   constructor(
     private readonly skillAlignment: SkillAligmentScorer,
     private readonly competencyMatchScorer: CompetencyMatchScorer,
@@ -47,11 +48,13 @@ export class ScoringOrchestrator {
       const skillResult = this.skillAlignment.score(consultant, project);
 
       if (skillResult.triggerHardExclusion) {
-        return {
-          excluded: true,
-          reason: 'Consultant does not meet mandatory skill requirements',
-          missingMandatorySkills: skillResult.missingMandatorySkills ?? [],
-        };
+        const missingSkills = skillResult.missingMandatorySkills ?? [];
+        skillResult.score = Math.max(0, skillResult.score - this.MANDATORY_SKILL_PENALTY);
+
+        const penaltyNotice = `[-15% PENALTY APPLIED] Missing mandatory skills: ${missingSkills.join(', ')}`;
+        skillResult.details = skillResult.details
+          ? `${skillResult.details} | ${penaltyNotice}`
+          : penaltyNotice;
       }
       scoresByFactor[ScoringFactor.SKILL_ALIGNMENT] = skillResult.score;
 

@@ -137,3 +137,35 @@ img {
 .input {
     @apply w-full rounded-xl border border-slate-300 px-4 py-4 outline-none focus:ring-2 focus:ring-blue-500;
 }
+/* brand style animations*/
+@keyframes float-slow{
+  0%, 100%{
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  50%{
+    transform: translateY(-30px) translateX(20px) scale(1.08);
+  }
+}
+@keyframes float-reverse{
+  0%, 100%{
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  50%{
+    transform: translateY(35px) translateX(-25px) scale(0.92);
+  }
+}
+@keyframes gradient-shift{
+  0% {background-position: 0% 50%;}
+  50% {background-position: 100% 50%;}
+  100% {background-position: 0% 50%;}
+}
+.animate-float-slow{
+  animation: float-slow 12s ease-in-out infinite;
+}
+.animate-float-reverse{
+  animation: float-reverse 16s ease-in-out infinite;
+}
+.animate-gradient{
+  background-size: 200% 200%;
+  animation: gradient-shift 18s ease infinite;
+}

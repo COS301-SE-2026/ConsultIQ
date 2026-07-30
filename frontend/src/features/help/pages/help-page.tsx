@@ -9,7 +9,7 @@ import {
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 interface QnA {
     readonly q: string;
@@ -114,29 +114,26 @@ export default function HelpPage() {
                         </header>
 
                     )}
-                        
-                        <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-10 lg:px-16" : "lg:px-8 sm:px-6"}`}>
-                            <section id="tutorials">
-                                <TutorialSection />
-                            </section>
+                <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-10 lg:px-16" : "lg:px-8 sm:px-6"}`}>
+                    <section id="tutorials">
+                        <TutorialSection/>
+                     </section> 
 
-                            <section id="FAQ">
-                                <div className="mb-8">
-                                    <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">FAQs</p>
-                                    <h2 className="font-bold text-2xl">Frequently asked questions</h2>
-                                </div>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                    {faqGroups.map((g) => <FaqSection key={g.group} {...g} />)}
-                                </div>
-                            </section>
-                        </main>
-
-
-                    </div>
-                
-        </div>
-
-
+                     <section id="FAQ">
+                        <div className="mb-8">
+                            <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">FAQs</p>
+                            <h2 className="font-bold text-2xl">Frequently asked questions</h2>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                            {faqGroups.map((g) => <FaqSection key={g.group} {...g}/>)}
+                        </div>
+                     </section>
+                     <section id= "about-us" className="mt-10">
+                        <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">About Us</p>
+                        <Link to="/brand-style-home"><h3 className="font-medium text-2xl">ConsultIQ Brand Style Guidelines</h3></Link>
+                     </section>
+                     </main>
+                </div>
+                </div> 
             );
-   
 } 

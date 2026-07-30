@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { PrismaClient, Project } from '../../backend/node_modules/@prisma/client';
-import dotenv from '../../backend/node_modules/dotenv';
+import dotenv from 'dotenv';
 import path from 'path';
 
 const bcrypt = require('../../backend/node_modules/bcrypt') as any;

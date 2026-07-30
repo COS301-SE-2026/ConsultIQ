@@ -96,8 +96,7 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 | Environment | URL |
 |---|---|
 | Production (Frontend) | https://consult-iq-red.vercel.app |
-| Production (Backend API) | http://13.247.189.149:3000 |
-| Staging (Backend API) | http://13.247.189.149:3001 |
+
 
 ## Rollback Strategy
 

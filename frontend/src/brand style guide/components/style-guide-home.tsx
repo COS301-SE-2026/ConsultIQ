@@ -13,7 +13,7 @@ const NAV_BUTTONS: NavButton[]=[
     {label: "Icons", href: "/brand-icons-section"},
     {label: "Tone", href: "/brand-tone-section"},
     {label: "Components", href: "/brand-components-section"},
-    {label: "Accessibility", href: "/brand-accessibility-section"},
+    {label: "Logo", href: "/brand-logo-section"},
     {label: "Responsiveness", href: "/brand-responsiveness-section"},
     {label: "Changelog",href: "/brand-changelog-section"},
 ];

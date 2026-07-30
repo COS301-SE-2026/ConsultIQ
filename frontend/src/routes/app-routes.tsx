@@ -45,7 +45,7 @@ import BrandToneSection from "../brand style guide/components/brand-tone-section
 import BrandIconsSection from "../brand style guide/components/brand-icons-section.tsx";
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
-
+import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -71,7 +71,7 @@ function AnimatedRoutes() {
                 <Route path="/brand-icons-section" element={<PageTransition><BrandIconsSection /></PageTransition>} />
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
-
+                <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}

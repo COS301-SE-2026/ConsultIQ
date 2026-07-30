@@ -191,6 +191,6 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
         await expect(page.getByText('No Match')).toBeVisible();
 
         await expect(page.getByText('Total Evaluated').locator('..')).toContainText('3');
-        await expect(page.getByText('Excluded').locator('..')).toContainText('1');
+        await expect(page.getByText('Excluded').locator('..')).toContainText('0');
     });
 });

@@ -46,7 +46,7 @@ export default function BrandIconsSection(){
                             <span className=" text-sm font-mono font-mono px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">{spec.pixels}</span>
                           </div>
                           <div className="h-16 flex items-center justify-center bg-white rounded-lg border border-secondary/10 mb-3 text-primary">
-                            <Icon  size={parseInt(spec.pixels, 10)} strokeWidth={2}/> 
+                            <Icon  size={Number.parseInt(spec.pixels, 10)} strokeWidth={2}/> 
                           </div>
                           <p className= " text-sm text-secondary leading-relaxed">
                             {spec.usage }

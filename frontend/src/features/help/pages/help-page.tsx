@@ -115,33 +115,7 @@ export default function HelpPage() {
                         </header>
 
                     )}
-                        
-                        <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-10 lg:px-16" : "lg:px-8 sm:px-6"}`}>
-                            <section id="tutorials">
-                                <TutorialSection />
-                            </section>
-
-                            <section id="FAQ">
-                                <div className="mb-8">
-                                    <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">FAQs</p>
-                                    <h2 className="font-bold text-2xl">Frequently asked questions</h2>
-                                </div>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                                    {faqGroups.map((g) => <FaqSection key={g.group} {...g} />)}
-                                </div>
-                            </section>
-                        </main>
-
-
-                    </div>
-                    <p className="text-white/40 font-bold text-2xl">
-                        Explore tutorials and common questions about consultIQ
-                    </p>
-                        
-                    </section>
-                </header>
-
-                <main className="w-full max-w-7xl mx-auto  lg:px-8 sm:px-6 mb-8">
+                <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-10 lg:px-16" : "lg:px-8 sm:px-6"}`}>
                     <section id="tutorials">
                         <TutorialSection/>
                      </section> 
@@ -158,16 +132,9 @@ export default function HelpPage() {
                      <section id= "about-us" className="mt-10">
                         <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">About Us</p>
                         <Link to="/brand-style-home"><h3 className="font-medium text-2xl">ConsultIQ Brand Style Guidelines</h3></Link>
-
-
                      </section>
-                </main>
-               
-           
-                
-        </div>
-
-
+                     </main>
+                </div>
+                </div> 
             );
-   
 } 

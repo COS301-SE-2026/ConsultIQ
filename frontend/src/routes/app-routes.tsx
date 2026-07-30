@@ -40,6 +40,10 @@ import HelpPage from "../features/help/pages/help-page";
 import BrandStyleHome from "../brand style guide/components/style-guide-home.tsx"
 import BrandStorySection from "../brand style guide/components/brand-story-section.tsx"
 import BrandTypographySection from "../brand style guide/components/brand-typography-section.tsx";
+import BrandSpacingSection from "../brand style guide/components/brand-spacing-section.tsx";
+import BrandToneSection from "../brand style guide/components/brand-tone-section.tsx";
+import BrandIconsSection from "../brand style guide/components/brand-icons-section.tsx";
+import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 
 
 
@@ -62,6 +66,10 @@ function AnimatedRoutes() {
                 <Route path="/brand-style-home" element={<PageTransition><BrandStyleHome /></PageTransition>} />
                 <Route path="/brand-story-section" element={<PageTransition><BrandStorySection /></PageTransition>} />
                 <Route path="/brand-typography-section" element={<PageTransition><BrandTypographySection /></PageTransition>} />
+                <Route path="/brand-spacing-section" element={<PageTransition><BrandSpacingSection /></PageTransition>} />
+                <Route path="/brand-tone-section" element={<PageTransition><BrandToneSection /></PageTransition>} />
+                <Route path="/brand-icons-section" element={<PageTransition><BrandIconsSection /></PageTransition>} />
+                <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

@@ -8,21 +8,21 @@ interface NavButton{
 
 const NAV_BUTTONS: NavButton[]=[
     {label:"Brand Story", href: "/brand-story-section"},
-    {label: "Colors", href: "/colors-section"},
+    {label: "Colors", href: "/brand-colors-section"},
     {label: "Typography", href: "/brand-typography-section"},
-    {label: "Spacing", href: "/brand-story-section"},
-    {label: "Icons", href: "/brand-story-section"},
-    {label: "Tone", href: "/brand-story-section"},
-    {label: "Components", href: "/brand-story-section"},
-    {label: "Accessibility", href: "/brand-story-section"},
-    {label: "Responsiveness", href: "/brand-story-section"},
-    {label: "Changelog",href: "/brand-story-section"},
+    {label: "Spacing", href: "/brand-spacing-section"},
+    {label: "Icons", href: "/brand-icons-section"},
+    {label: "Tone", href: "/brand-tone-section"},
+    {label: "Components", href: "/brand-components-section"},
+    {label: "Accessibility", href: "/brand-accessibility-section"},
+    {label: "Responsiveness", href: "/brand-responsiveness-section"},
+    {label: "Changelog",href: "/brand-changelog-section"},
 ];
 
 export default function StyleGuideHome(){
     return (
-        <div className= "relative min-h-screen w-full bg-primary text-white flex flex-col justify-between overflow-hidden p-8 md:p-16">
-        {/* // style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}} */}
+        <div className= "relative min-h-screen w-full bg-primary text-white flex flex-col justify-between overflow-hidden p-8 md:p-16"
+        style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}}>
             
         <div className="absolute inset-0 pointer-events-none">
             <div className="absolute right-20 top-40 w-[320px] h-[320px] rounded-full blur-[100px] opacity-50 animate-float-slow"
@@ -35,12 +35,9 @@ export default function StyleGuideHome(){
             <div className="relative z-10">
             <div className="max-w-xl ">
                 <Link to="/" className="inline-flex items-center gap-3 px-3 py-5 rounded-2xl" >
-                <div className="h-7 flex items-center justify-center">
-                     <img src={consultIqLogo}
-                        alt="ConsultIQ Logo"
-                        className="h-10 md:h-15 w-auto mix-blend-screen"
-                        />
-                </div>
+                <span className="flex items-center justify-center text-accent font-bold text-lg border rounded-full px-4 py-1">
+                     consultIQ
+                </span>
                 </Link>
                 <h1 className="!text-5xl sm:!text-6xl md:!text-7xl !font-normal tracking-tight !text-white leading-[1.15]">
                     Brand <br/>
@@ -51,7 +48,6 @@ export default function StyleGuideHome(){
             </div>
 
             <div className="relative z-10 w-full max-w-4xl mt-auto">
-                <p className="text-sm font-semiold tracking-wider text-accent mb-3"> Explore System Specifications</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
                     {NAV_BUTTONS.map((button) =>(
                         <Link

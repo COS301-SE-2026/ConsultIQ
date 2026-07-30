@@ -1,4 +1,5 @@
 import {Type} from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface FontType{
     readonly level: string;
@@ -24,6 +25,10 @@ export default function BrandTypographySection(){
 
     return(
         <div className="min-h-screen w-full bg-surface text-primary p-6 md:p-12">            
+            <div className= " max-w-7xl mx-auto mb-4 ">
+                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border borde-white/15 text-sm font-semibold text-accent mb-8">
+                    Back to Home</Link>
+            </div>
             <div className="max-w-7xl mx-auto mb-12">
                 <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight mb-4">Typography System </h1>
                 <p className="text-lg text-base max-w-7xl leading-relaxed">The ConsultIQ typographic hierarchy utilizes clean, high-legibility sans-serif typefaces optimized for data-dense dashboards and enterprise reporting workflows.</p>

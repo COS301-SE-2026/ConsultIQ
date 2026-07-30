@@ -1,4 +1,5 @@
 import {Box, Layers } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface TokenItem{
     readonly token: string;
@@ -25,6 +26,10 @@ const RADIUS: TokenItem[] = [
 export default function BrandSpacingSection(){
     return(
         <div className="min-h-screen w-full bg-[var(--color-surface)] text-primary p-6 md:p-12">
+            <div className= " max-w-7xl mx-auto mb-4 ">
+                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border borde-white/15 text-sm font-semibold text-accent mb-8">
+                    Back to Home</Link>
+            </div>            
             <div className="max-w-7xl mx-auto mb-12">  
                 <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight mb-4"> Spacing & Design Tokens</h1>
                 <p className="text-base  text-lg text-secondary max-w-7xl leading-relaxed">Systematic spatial metrics ensure structural alignment, consistent component rhythm, and predictable responsive layouts across the ConsultIQ platform.</p>

@@ -1,4 +1,5 @@
 import {Eye, LayoutGrid, ShieldCheck, Target, Sparkles, Accessibility} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function BrandStorySection(){
 
@@ -16,9 +17,9 @@ const principles=[
         <div className= "relative min-h-screen w-full overflow-hidden text-white rounded-2xl shadow-2xl mb-12" style={{ backgroundColor: "var(--color-primary)",}}>
           <div className= "relative z-10 px-8 py-16 md:px-16 md:py20 border-b border-white/10">
             <div className="max-w-4xl">
-                <div className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border borde-white/15 text-sm font-semibold text-accent mb-10">
-                    <span className= "w-2 h-2 rounded-full bg-accent animate-pulse"/>ConsultIQ Design System 
-                </div>
+                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border border-white/15 text-sm font-semibold text-accent mb-10">
+                Back To Home
+                </Link>
                 <h1 className= " !text-4xl md:text-6xl font-bold tracking-tight !text-white mb-6 leading-tight">Visual Identity & <br/>
                 <span className= "text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-sky-300 to-[var(--color-accent)] animate-gradient">Interface Standards</span>
                 </h1>

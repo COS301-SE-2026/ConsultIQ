@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
@@ -9,7 +9,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 @Injectable()
 export class AvailabilityFitScorer {
   private readonly prisma: PrismaService;
-
+  private readonly logger = new Logger(AvailabilityFitScorer.name);
   constructor(prisma: PrismaService) {
     this.prisma = prisma;
   }
@@ -58,6 +58,10 @@ export class AvailabilityFitScorer {
     }
 
     if (remainingCapacity <= 0) {
+      this.logger.debug(
+        `Consultant Excluded [Project: ${project.projectId} | Consultant: ${consultant.consultantId}]. ` +
+        `Reason: No availability - 0% capacity remaining (Requires ${reqAlloc}%).`
+      );
       return {
         score: 0,
         triggerHardExclusion: true,

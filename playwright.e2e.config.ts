@@ -5,6 +5,16 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(__dirname, 'backend/.env.test') });
 
+function requireEnv(name: string): string {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(
+            `Missing required env var "${name}" for e2e tests. `
+        );
+    }
+    return value;
+}
+
 export default defineConfig({
     testDir: './tests/e2e',
     timeout: 30_000,
@@ -39,9 +49,10 @@ export default defineConfig({
             stderr: 'pipe',
 
             env: {
-                DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://consultiq:consultiq@localhost:5432/consultiq_test',
-                REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6379',
-                JWT_SECRET: process.env.JWT_SECRET ?? 'local-dev-secret-change-me',
+                DATABASE_URL: requireEnv('DATABASE_URL'),
+                REDIS_URL: requireEnv('REDIS_URL'),
+                JWT_SECRET: requireEnv('JWT_SECRET'),
+                RESEND_API_KEY: requireEnv('RESEND_API_KEY'),
             },
         },
         {

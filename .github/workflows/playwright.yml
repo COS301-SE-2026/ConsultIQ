@@ -29,10 +29,10 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+        run: npm run playwright:install
 
       - name: Run UI tests
-        run: npx playwright test --config=playwright.ui.config.ts
+        run: npm run test:ui
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
@@ -74,8 +74,9 @@ jobs:
 
     env:
       DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
-      REDIS_URL: redis://localhost:6379
+      REDIS_URL: ${{ secrets.REDIS_URL }}
       JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
 
     steps:
       - name: Checkout code
@@ -101,7 +102,7 @@ jobs:
 
       - name: Generate Prisma client
         working-directory: backend
-        run: npx --no-install prisma generate
+        run: npm run prisma:generate
 
       - name: Write backend test environment
         working-directory: backend
@@ -113,13 +114,13 @@ jobs:
 
       - name: Run Prisma migrations
         working-directory: backend
-        run: npx --no-install prisma migrate deploy
+        run: npm run prisma:migrate:deploy
 
       - name: Install Playwright (chromium only)
-        run: npx playwright install --with-deps chromium
+        run: npm run playwright:install:chromium
 
       - name: Run E2E tests
-        run: npx playwright test --config=playwright.e2e.config.ts
+        run: npm run test:e2e
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}

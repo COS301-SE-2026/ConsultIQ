@@ -3,14 +3,13 @@ import TutorialSection from "../components/tutorial-section";
 import type { LucideIcon } from "lucide-react";
 import FaqSection from "../components/faq-section";
 import Navbar from "../../../components/shared/nav-bar";
-import { Link } from "react-router-dom";
 import {
     consultantSidebarItems, consultantManagerSidebarItems,
     projectManagerSidebarItems, adminSidebarItems,
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 
 interface QnA {
     readonly q: string;

@@ -237,9 +237,30 @@ async function main() {
         update: {}, create: { userId: cmUser.id, consultantId: aliceProfile.id },
     });
 
-    // --- Step 7: 8 Additional Consultants ---
-    console.log('Generating 8 additional consultants...');
-    for (let i = 1; i <= 8; i++) {
+    // --- Step 6.5: Seed Notification for Alice ---
+    console.log('Seeding profile creation notification for Alice...');
+
+    const existingNotification = await prisma.notification.findFirst({
+        where: {
+            userId: consultantUser.id,
+            title: 'Profile creation! 🎉'
+        }
+    });
+
+    if (!existingNotification) {
+        await prisma.notification.create({
+            data: {
+                userId: consultantUser.id,
+                title: 'Profile creation! 🎉',
+                body: 'Your consultant profile has been completed.',
+                isRead: false,
+                isArchived: false,
+            },
+        });
+    }
+    // --- Step 7: 15 Additional Consultants ---
+    console.log('Generating 15 additional consultants...');
+    for (let i = 1; i <= 15; i++) {
         const firstName = randomItem(MOCK_DATA.firstNames);
         const lastName = randomItem(MOCK_DATA.lastNames);
         const fullName = `${firstName} ${lastName}`;
@@ -340,9 +361,9 @@ async function main() {
         update: {}, create: { userId: pmUser.id, projectId: baseProject.id },
     });
 
-    // --- Step 9: 5 Additional OPEN Projects ---
-    console.log('🏢 Generating 5 additional OPEN projects...');
-    for (let i = 1; i <= 5; i++) {
+    // --- Step 9: 8 Additional OPEN Projects ---
+    console.log('🏢 Generating 8 additional OPEN projects...');
+    for (let i = 1; i <= 8; i++) {
         const projectName = `${randomItem(MOCK_DATA.projectPrefixes)} ${randomItem(MOCK_DATA.projectSuffixes)} ${i}`;
         const clientName = randomItem(MOCK_DATA.clients);
         const loc = randomItem(MOCK_DATA.locations);

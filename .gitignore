@@ -439,3 +439,10 @@ $RECYCLE.BIN/
 . e n v . d o c k e r 
  
  
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

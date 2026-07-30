@@ -162,8 +162,9 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               nationality={profile.nationality}
               canEdit={canEdit}
               onSave={async (data) => {
-                // fullName/email aren't on UpdateConsultantDto yet — only these three persist
                 await save({
+                  fullname: data.fullName,
+                  email: data.email,
                   phone: data.phone,
                   idNumber: data.idNumber,
                   nationality: data.nationality,

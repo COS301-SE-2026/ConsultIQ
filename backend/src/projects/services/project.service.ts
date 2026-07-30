@@ -18,7 +18,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -451,11 +451,19 @@ export class ProjectService {
         skillInput.name,
       );
 
-      if (skillInput.id) {
+      const existingProjectSkill = await tx.projectSkill.findFirst({
+        where: {
+          projectId: projectId,
+          skillId: skillRecord.id,
+        }
+      });
+
+
+      if (existingProjectSkill) {
         await tx.projectSkill.update({
-          where: { id: skillInput.id },
+          where: { id: existingProjectSkill.id },
           data: {
-            skillId: skillRecord.id,
+            //  skillId: skillRecord.id,
             competency: skillInput.competency as CompetencyLevel,
             years: skillInput.years,
             mandatory: skillInput.mandatory,

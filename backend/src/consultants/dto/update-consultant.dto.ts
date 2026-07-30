@@ -102,6 +102,15 @@ export class UpdateConsultantEducationDto {
 }
 
 export class UpdateConsultantDto {
+
+    @IsOptional()
+    @IsString()
+    fullname?: string;
+
+    @IsOptional()
+    @IsString()
+    email?: string;
+
     @IsOptional()
     @IsString()
     @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })

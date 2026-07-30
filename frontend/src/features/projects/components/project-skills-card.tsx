@@ -2,39 +2,54 @@ import { useState } from "react";
 import { Card } from "../../../components/ui/card";
 import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
+import { toast } from "sonner";
 
 interface ProjectSkillsCardProps {
   readonly skills: ProjectSkillData[];
   readonly onSkillsChange: (skills: ProjectSkillData[]) => void;
   readonly editingSkill: ProjectSkillData | null;
-  readonly onCancelEdit: ()=> void;
+  readonly onCancelEdit: () => void;
   readonly editingIndex: number | null;
-  readonly onSkillSave: (skill: ProjectSkillData)=> void;
-  readonly onEditSkill?: (skill: ProjectSkillData, idx: number) =>void;
+  readonly onSkillSave: (skill: ProjectSkillData) => void;
+  readonly onEditSkill?: (skill: ProjectSkillData, idx: number) => void;
   readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkill,
-    onCancelEdit, editingIndex, onSkillSave,onEditSkill, isEditing,}: ProjectSkillsCardProps) {
+export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill,
+  onCancelEdit, editingIndex, onSkillSave, onEditSkill, isEditing, }: ProjectSkillsCardProps) {
 
   const [skillName, setSkillName] = useState(editingSkill?.name ?? "");
   const [competency, setCompetency] = useState(editingSkill?.competency ?? "INTERMEDIATE");
   const [years, setYears] = useState(String(editingSkill?.years ?? ""));
   const [isMandatory, setIsMandatory] = useState(Boolean(editingSkill?.mandatory ?? false));
- 
+  const [prevEditingIndex, setPrevEditingIndex] = useState<number | null>(editingIndex);
+
+  if (editingIndex !== prevEditingIndex) {
+    setPrevEditingIndex(editingIndex);
+    setSkillName(editingSkill?.name ?? "");
+    setCompetency(editingSkill?.competency ?? "INTERMEDIATE");
+    setYears(String(editingSkill?.years ?? ""));
+    setIsMandatory(Boolean(editingSkill?.mandatory ?? false));
+  }
+
   const handleAddUpdate = () => {
     if (!skillName.trim() || !years) return;
 
-  const newSkill: ProjectSkillData= {
-    id: editingSkill?.id,
-    name: skillName.trim(),
-    competency,
-    years: Number(years),
-    mandatory: isMandatory,};
+    const newSkill: ProjectSkillData = {
+      id: editingSkill?.id,
+      name: skillName.trim(),
+      competency,
+      years: Number(years),
+      mandatory: isMandatory,
+    };
 
-    if(editingIndex !==null){onSkillSave(newSkill)
-    } else{
-      onSkillsChange([...skills, newSkill]);}
+    if (editingIndex !== null) {
+      onSkillSave(newSkill)
+      toast.success("Skill updated successfully!");
+    } else {
+      onSkillsChange([...skills, newSkill]);
+      toast.success("Skill updated successfully!");
+    }
 
     setSkillName("");
     setCompetency("INTERMEDIATE");
@@ -48,7 +63,7 @@ export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkil
       <div className="w-full max-w-[440px] flex flex-col h-full">
 
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
-          Add Skills
+          {editingSkill ? "Edit Skill" : "Add Skills"}
         </h2>
 
 
@@ -118,14 +133,22 @@ export default function ProjectSkillsCard({ skills, onSkillsChange , editingSkil
             className="h-14 rounded text-white font-semibold text-lg mt-2 transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-           {editingSkill ? "Update Skill" : "Add Skill"}
+            {editingSkill ? "Update Skill" : "Add Skill"}
           </button>
 
-                
-        {(!isEditing && 
-          <ProjectSkillsTable skills={skills}
-          onEditSkill={onEditSkill || (()=> {})}
-          /> )}
+          {editingSkill && (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="h-10 text-gray-500 hover:text-gray-700 font-medium transition"
+            >
+              Cancel Edit
+            </button>
+          )}
+          {(!isEditing &&
+            <ProjectSkillsTable skills={skills}
+              onEditSkill={onEditSkill || (() => { })}
+            />)}
         </div>
 
         <div className="h-6" />

@@ -33,6 +33,8 @@ export async function getConsultantProfileByUserId(userId: string): Promise<Cons
 export async function updateConsultantProfile(
   consultantId: string,
   data: Partial<{
+    fullname: string;
+    email: string;
     phone: string;
     idNumber: string;
     nationality: string;

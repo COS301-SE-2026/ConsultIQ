@@ -44,7 +44,7 @@ import BrandSpacingSection from "../brand style guide/components/brand-spacing-s
 import BrandToneSection from "../brand style guide/components/brand-tone-section.tsx";
 import BrandIconsSection from "../brand style guide/components/brand-icons-section.tsx";
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
-
+import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 
 
 function AnimatedRoutes() {
@@ -70,6 +70,7 @@ function AnimatedRoutes() {
                 <Route path="/brand-tone-section" element={<PageTransition><BrandToneSection /></PageTransition>} />
                 <Route path="/brand-icons-section" element={<PageTransition><BrandIconsSection /></PageTransition>} />
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
+                <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

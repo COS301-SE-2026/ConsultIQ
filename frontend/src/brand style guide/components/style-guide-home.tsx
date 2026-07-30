@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import consultIqLogo from "../../assets/logos/ConsultIQ Logo Dark.png"
 
 interface NavButton{
     readonly label: string;

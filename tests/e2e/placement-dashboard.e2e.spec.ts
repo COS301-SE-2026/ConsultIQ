@@ -188,7 +188,7 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
         // 4. ASSERTION: Verify all profiles were evaluated by the scoring algorithm
         await expect(page.getByText('Perfect Match')).toBeVisible();
         await expect(page.getByText('Partial Match')).toBeVisible();
-        await expect(page.getByText('No Match')).not.toBeVisible();
+        await expect(page.getByText('No Match')).toBeVisible();
 
         await expect(page.getByText('Total Evaluated').locator('..')).toContainText('3');
         await expect(page.getByText('Excluded').locator('..')).toContainText('1');

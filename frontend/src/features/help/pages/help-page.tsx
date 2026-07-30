@@ -3,6 +3,7 @@ import TutorialSection from "../components/tutorial-section";
 import type { LucideIcon } from "lucide-react";
 import FaqSection from "../components/faq-section";
 import Navbar from "../../../components/shared/nav-bar";
+import { Link } from "react-router-dom";
 
 interface QnA{
    readonly q: string;
@@ -91,6 +92,12 @@ export default function HelpPage(){
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                             {faqGroups.map((g) => <FaqSection key={g.group} {...g}/>)}
                         </div>
+                     </section>
+                     <section id= "about-us" className="mt-10">
+                        <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">About Us</p>
+                        <Link to="/brand-style-home"><h3 className="font-medium text-2xl">ConsultIQ Brand Style Guidelines</h3></Link>
+
+
                      </section>
                 </main>
                

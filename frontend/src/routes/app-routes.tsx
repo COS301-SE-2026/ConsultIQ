@@ -37,7 +37,9 @@ import LandingPage from "../features/landing-page/pages/landing-page";
 import HelpPage from "../features/help/pages/help-page";
 
 //brand styling
-import BrandStyleHome from "../brand style guide/pages/style-guide-home.tsx"
+import BrandStyleHome from "../brand style guide/components/style-guide-home.tsx"
+import BrandStorySection from "../brand style guide/components/brand-story-section.tsx"
+import BrandTypographySection from "../brand style guide/components/brand-typography-section.tsx";
 
 
 
@@ -58,6 +60,8 @@ function AnimatedRoutes() {
                 <Route path="/help-page" element={<PageTransition><HelpPage /></PageTransition>} />
                 <Route path="/" element={<PageTransition><LandingPage /></PageTransition>} />
                 <Route path="/brand-style-home" element={<PageTransition><BrandStyleHome /></PageTransition>} />
+                <Route path="/brand-story-section" element={<PageTransition><BrandStorySection /></PageTransition>} />
+                <Route path="/brand-typography-section" element={<PageTransition><BrandTypographySection /></PageTransition>} />
 
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}

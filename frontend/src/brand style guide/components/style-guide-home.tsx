@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
-import consultIqLogo from "../../assets/logos/ConsultIQ Logo Dark.png";
-
+import consultIqLogo from "../../assets/logos/ConsultIQ Logo Dark.png"
 
 interface NavButton{
     readonly label: string;
@@ -8,21 +7,22 @@ interface NavButton{
 }
 
 const NAV_BUTTONS: NavButton[]=[
-    {label:"Principles", href: "/pages/principles"},
-    {label: "Colors", href: "pages/colors"},
-    {label: "Typography", href: "pages/typography"},
-    {label: "Icons", href: "pages/icons"},
-    {label: "Tone", href: "pages/tone"},
-    {label: "Components", href: "pages/components"},
-    {label: "Spacing", href: "pages/spacing"},
-    {label: "Accessibility", href: "pages/accessibility"},
-    {label: "Responsiveness", href: "pages/responsiveness"},
+    {label:"Brand Story", href: "/brand-story-section"},
+    {label: "Colors", href: "/colors-section"},
+    {label: "Typography", href: "/brand-typography-section"},
+    {label: "Spacing", href: "/brand-story-section"},
+    {label: "Icons", href: "/brand-story-section"},
+    {label: "Tone", href: "/brand-story-section"},
+    {label: "Components", href: "/brand-story-section"},
+    {label: "Accessibility", href: "/brand-story-section"},
+    {label: "Responsiveness", href: "/brand-story-section"},
+    {label: "Changelog",href: "/brand-story-section"},
 ];
 
 export default function StyleGuideHome(){
     return (
-        <div className= "relative min-h-screen w-full animate-gradient text-white flex flex-col justify-between overflow-hidden p-8 md:p-16"
-        style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}}>
+        <div className= "relative min-h-screen w-full bg-primary text-white flex flex-col justify-between overflow-hidden p-8 md:p-16">
+        {/* // style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}} */}
             
         <div className="absolute inset-0 pointer-events-none">
             <div className="absolute right-20 top-40 w-[320px] h-[320px] rounded-full blur-[100px] opacity-50 animate-float-slow"
@@ -33,16 +33,15 @@ export default function StyleGuideHome(){
 
         </div>
             <div className="relative z-10">
-                {/* <div className="flex items-center gap-3">
-                    <div className=" p-3 rounded-xl bg-white/10  backdrop-blur-md border border-white/10 inline-block">
-                        <img src={consultIqLogo}
+            <div className="max-w-xl ">
+                <Link to="/" className="inline-flex items-center gap-3 px-3 py-5 rounded-2xl" >
+                <div className="h-7 flex items-center justify-center">
+                     <img src={consultIqLogo}
                         alt="ConsultIQ Logo"
-                        className="h-16 md:h-20 w-auto object-contain"
+                        className="h-10 md:h-15 w-auto mix-blend-screen"
                         />
-                    </div>
-                </div> */}
-            <div className="max-w-xl mt-5">
-                <span className="text-lg md:text-xl font-medium !font-bold tracking-wide text-accent mb-2 border rounded-2xl px-3 inline-block" style={{border: "var(--color-accent) 1px solid"}}>ConsultIQ</span>
+                </div>
+                </Link>
                 <h1 className="!text-5xl sm:!text-6xl md:!text-7xl !font-normal tracking-tight !text-white leading-[1.15]">
                     Brand <br/>
                     Style<br />
@@ -52,6 +51,7 @@ export default function StyleGuideHome(){
             </div>
 
             <div className="relative z-10 w-full max-w-4xl mt-auto">
+                <p className="text-sm font-semiold tracking-wider text-accent mb-3"> Explore System Specifications</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
                     {NAV_BUTTONS.map((button) =>(
                         <Link

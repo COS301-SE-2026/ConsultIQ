@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import {Search, Settings,Sparkles, Info, ShieldAlert,CheckCircle, Copy, Check, User, Bell, FolderOpen,} from "lucide-react";
+import {Search, Settings,Sparkles, Info, ShieldAlert,} from "lucide-react";
 
 interface IconSpecification{
   readonly size: string;

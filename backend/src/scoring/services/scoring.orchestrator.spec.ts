@@ -114,6 +114,53 @@ describe('ScoringOrchestrator', () => {
             }
         })
 
+        it('handles a penalized consultant when missingMandatorySkills is undefined', async () => {
+            jest.spyOn(SkillAligmentScorer.prototype, 'score').mockReturnValue({
+                score: 0.5,
+                triggerHardExclusion: true,
+                details: 'Some details 10',
+            });
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant(),
+                project(),
+                WEIGHTS,
+                ACTIVE_FACTORS
+            );
+
+            expect(result.excluded).toBe(false);
+            if (!result.excluded) {
+
+                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toContain('[-15% PENALTY APPLIED] Missing mandatory skills: ');
+            }
+        });
+        it('sets the penalty notice as the sole detail when no previous details exist', async () => {
+            const spy = jest.spyOn(SkillAligmentScorer.prototype, 'score').mockReturnValue({
+                score: 0.5,
+                triggerHardExclusion: true,
+                missingMandatorySkills: ['Docker'],
+                details: undefined,
+            });
+
+            const orchestrator = orcheStrator(true);
+            const result = await orchestrator.scoreConsultant(
+                consultant(),
+                project(),
+                WEIGHTS,
+                ACTIVE_FACTORS
+            );
+
+            expect(result.excluded).toBe(false);
+            if (!result.excluded) {
+                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toBe(
+                    '[-15% PENALTY APPLIED] Missing mandatory skills: Docker'
+                );
+            }
+
+            spy.mockRestore();
+        });
+
     })
 
     describe('Redistributed Weights', () => {

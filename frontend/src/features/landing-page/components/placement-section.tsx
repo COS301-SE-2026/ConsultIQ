@@ -1,5 +1,5 @@
 import { Target, Sliders,LayoutDashboard, 
-    BookOpen, TrendingUp,MapPin,DollarSign,Clock } from "lucide-react";
+    BookOpen, TrendingUp,MapPin,Banknote,Clock } from "lucide-react";
 import ScoringFeatureCard from "./scoring-feature-card";
 
 const SCORING_FEATURES =[
@@ -28,7 +28,7 @@ const SCORE_FACTORS =[
     {label: "Skill Alignment", icon: BookOpen, colour: "#002d62"},
     {label: "Competency level", icon: TrendingUp, colour: "#1a5ba8"},
     {label: "Location", icon: MapPin, color: "#2a7fd4"},
-    {label: "Cost to company rate", icon: DollarSign, colour: "#3a9fe0"},
+    {label: "Cost to company rate", icon: Banknote, colour: "#3a9fe0"},
     {label: "Availability", icon: Clock, colour: "#4abfec"},
 ];
 
@@ -50,7 +50,7 @@ export default function PlacementSection(){
                     </p>
                 </div>  
 
-                <div className=" mt-14 grid w-full max-w-7xl grid-cols-3 gap-6">
+                <div className=" mt-14 grid grid-cols-1 md:grid-cols-2 w-full max-w-7xl lg:grid-cols-3 gap-4 sm:gap-6">
                     {SCORING_FEATURES.map(({icon:Icon,title,description,badge}) => (
                         <ScoringFeatureCard key={title} icon={Icon} title={title} description={description} badge={badge}/>
                     ))}

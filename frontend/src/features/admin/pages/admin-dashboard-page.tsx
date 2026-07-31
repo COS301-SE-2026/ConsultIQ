@@ -10,6 +10,8 @@ import { Users, UserCheck, UserX, Folder } from "lucide-react";
 import type { AdminUserItem, UserMeta, AdminProjectItem, ProjectMeta } from "../types/admin.types";
 import { getAllUsers, getAllProjects } from "../services/admin.service";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
+import AdminFilters from "../components/admin-filters";
+
 
 export type adminTab = "Users" | "Projects";
 
@@ -170,75 +172,25 @@ function AdminPage() {
                                 placeholder={activeTab === "Users" ? "Search by name, email..." : "Search by project or client name..."}
                                 onFilterClick={() => setShowFilters((prev) => !prev)}
                             />
-                            <div className="h-6" />
+                           
 
-                            {showFilters && activeTab === "Users" && (
-                                <div
-                                    className="flex gap-3  mt-3"
-                                    style={{
-                                        padding: "8px",
-                                    }}
-                                >
-
-                                    <select
-                                        value={roleFilter}
-                                        onChange={(e) => setRoleFilter(e.target.value)}
-                                        className=" h-12 w-full rounded-xl border bg-white px-4 py-2 text-sm "
-                                        style={{
-                                            borderColor: "var(--color-border)",
-                                            color: "var(--color-text-primary)",
-                                        }}
-                                    >
-                                        <option value="">All roles</option>
-                                        <option value="CONSULTANT">Consultant</option>
-                                        <option value="ADMIN">Admin</option>
-                                        <option value="CONSULTANT_MANAGER">Consultant manager</option>
-                                        <option value="PROJECT_MANAGER">Project manager</option>
-                                    </select>
-
-                                    <select
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        className="flex h-12 w-full rounded-xl border bg-white px-4 py-2 text-sm "
-                                        style={{
-                                            borderColor: "var(--color-border)",
-                                            color: "var(--color-text-primary)",
-                                        }}
-                                    >
-                                        <option value="">All statuses</option>
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="SUSPENDED">Suspended</option>
-                                        <option value="PENDING">Pending</option>
-                                    </select>
+                            {showFilters &&  (
+                                <div className="mt-6">
+                                  <AdminFilters
+                                    activeTab={activeTab}
+                                    roleFilter={roleFilter}
+                                    statusFilter={statusFilter}
+                                    budgetFilter={budgetSort}
+                                    onRoleChange={setRoleFilter}
+                                    onStatusChange={setStatusFilter}
+                                    onBudgetSortChange={setBudgetSort}
+                                />  
                                 </div>
 
                             )}
 
-                            {showFilters && activeTab === "Projects" && (
-                                <div
-                                    className="flex gap-3 mt-3"
-                                    style={{
-                                        padding: "8px",
-                                    }}
-                                >
-                                    <select
-                                        value={budgetSort}
-                                        onChange={(e) => setBudgetSort(e.target.value as "asc" | "desc" | "")}
-                                        className=" h-12 w-full rounded-xl border bg-white px-4 py-2 text-sm "
-                                        style={{
-                                            borderColor: "var(--color-border)",
-                                            color: "var(--color-text-primary)",
-                                        }}
-                                    >
-                                        <option value="">Sort by budget</option>
-                                        <option value="desc">Highest to Lowest</option>
-                                        <option value="asc">Lowest to Highest</option>
-                                    </select>
-                                </div>
-
-                            )}
-
-
+                             
+                            <div className="mt-6"/>
                             <AdminTabs activeTab={activeTab} setActiveTab={handleTabChange} />
 
                         </div>

@@ -63,7 +63,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => navigate(item.path,{state:{from:"sidebar"}})}
               style={{
                 padding: "14px 24px",
 
@@ -171,7 +171,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
           </div>
         </div>
         <button
-        onClick={logout}
+        onClick={() => {logout(); navigate("/")}}
         style={{
           border: "none",
           background: "transparent",

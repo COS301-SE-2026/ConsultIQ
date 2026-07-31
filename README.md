@@ -44,7 +44,6 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 <div align="center">
 
 ## Documentation
-## Documentation
 
 <details open>
 <summary><strong>Demo 2</strong></summary>

@@ -45,11 +45,35 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
 ## Documentation
 
+<details open>
+<summary><strong>Demo 2</strong></summary>
+
+<br>
+
 | Resource |
-|:---:|
+|:---|
+| [System Requirements Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/SRS%20V2.pdf) |
+| [System Architecture Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/SAS%20(1).pdf) |
+| [Coding Standards](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/Coding%20Standards_V2.pdf) |
+| [Testing Policy](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/testing_policy%20(1).pdf) |
+| [User Manual](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/User%20manual.pdf) |
+| [Brand Style Guide](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/Brand%20Style%20Guide%20V2.pdf) |
+| [Figma UI Panels](https://www.figma.com/design/S4Ydfuk6L0YkWhdjdRGxf9/High_fidelity_wireframes?node-id=0-1&p=f&t=m8cf3g1IC16ToRs4-0) |
+
+</details>
+
+<details>
+<summary><strong>Demo 1</strong></summary>
+
+<br>
+
+| Resource |
+|:---|
 | [Functional Requirements (SRS)](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/SRS.pdf) |
 | [TROOS Project Board](https://github.com/orgs/COS301-SE-2026/projects/66) |
 
+
+</details>
 <br>
 
 ## Meet the Team

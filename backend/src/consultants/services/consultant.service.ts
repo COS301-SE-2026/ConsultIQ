@@ -26,7 +26,7 @@ export class ConsultantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-  ) {}
+  ) { }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -61,7 +61,6 @@ export class ConsultantService {
         'A profile already exists for this consultant.',
       );
     }
-
     return await this.prisma
       .$transaction(async (tx) => {
         // Create consultant profile
@@ -79,6 +78,11 @@ export class ConsultantService {
             nationality: dto.nationality,
             costToCompany: dto.costToCompany,
             availability: dto.availability as ConsultantAvailability,
+
+            latitude: dto.latitude ?? null,
+            longitude: dto.longitude ?? null,
+            placeId: dto.placeId ?? null,
+            formattedAddress: dto.formattedAddress ?? null,
           },
         });
 
@@ -294,8 +298,8 @@ export class ConsultantService {
       await tx.consultant.update({
         where: { id: consultantId },
         data: {
-          ...(dto.fullname !== undefined && {fullname: dto.phone}),
-          ...(dto.email !== undefined && {email: dto.email}),
+          ...(dto.fullname !== undefined && { fullname: dto.fullname }),
+          ...(dto.email !== undefined && { email: dto.email }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
           ...(dto.nationality !== undefined && {
@@ -317,6 +321,15 @@ export class ConsultantService {
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
           }),
+          ...(
+            (dto.latitude !== undefined || dto.longitude !== undefined ||
+              dto.placeId !== undefined || dto.formattedAddress !== undefined) && {
+              latitude: dto.latitude ?? null,
+              longitude: dto.longitude ?? null,
+              placeId: dto.placeId ?? null,
+              formattedAddress: dto.formattedAddress ?? null,
+            }
+          ),
         },
       });
 

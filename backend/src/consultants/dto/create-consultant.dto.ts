@@ -116,6 +116,23 @@ export class CreateConsultantDto {
   @IsOptional()
   postalCode?: string;
 
+
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  placeId?: string;
+
+  @IsOptional()
+  @IsString()
+  formattedAddress?: string;
+
   @IsNumber()
   @Min(0)
   costToCompany!: number;

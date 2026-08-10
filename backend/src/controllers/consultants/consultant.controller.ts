@@ -11,13 +11,16 @@ import {
   ValidationPipe,
   Param,
   Patch,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
 import { UpdateConsultantDto } from '../../consultants/dto/update-consultant.dto';
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
-
+import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('consultants')
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
@@ -93,6 +96,26 @@ export class ConsultantController {
     return await this.consultantService.updateConsultantProfile(
       consultantId,
       dto,
+    );
+  }
+
+  @Post(':id/picture')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.CONSULTANT)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadProfilePicture(
+    @Param('id') consultantId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ): Promise<{ pictureUrl: string; message: string }> {
+    if (!file) {
+      throw new BadRequestException('No file was uploaded.');
+    }
+    const userId = req.user?.userId;
+    return this.consultantService.uploadProfilePicture(
+      consultantId,
+      userId,
+      file,
     );
   }
 }

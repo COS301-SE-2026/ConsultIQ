@@ -21,11 +21,13 @@ import {
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
+import { S3Service } from '../../cv-parsing/services/s3.service';
 @Injectable()
 export class ConsultantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly s3Service: S3Service,
   ) {}
 
   async createConsultantProfile(

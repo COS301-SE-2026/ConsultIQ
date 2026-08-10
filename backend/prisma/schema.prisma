@@ -216,6 +216,7 @@ model Consultant {
   tenantId      String?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
+  pictureUrl    String?
 
   skills                ConsultantSkill[]
   certificates          Certificate[]
@@ -482,7 +483,6 @@ model ScoringConfigAudit {
 
   @@map("scoring_config_audit")
 }
-
 
 model Notification {
   id         String   @id @default(uuid())

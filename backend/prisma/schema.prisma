@@ -217,6 +217,7 @@ model Consultant {
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   pictureUrl    String?
+  pictureKey    String?
 
   skills                ConsultantSkill[]
   certificates          Certificate[]

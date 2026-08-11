@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { Trash2, User } from "lucide-react";
+import { ImageDropzone } from "../image-dropzone";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 
 export default function ProfileInfoForm() {
@@ -18,6 +20,8 @@ export default function ProfileInfoForm() {
   const [idError, setIdError] = useState("");
   const [nationalityError, setNationalityError] = useState("");
   const [costError, setCostError] = useState("");
+  const [uploadedPhoto, setUploadedPhoto] = useState<File | undefined>();
+  const [previewProfilePhoto, setPreviewProfilePhoto] = useState<string | null>(null);
 
   function validateSAID(id: string): boolean {
     if (!/^\d{13}$/.test(id)) return false;
@@ -86,12 +90,71 @@ export default function ProfileInfoForm() {
     toast.success("Personal information saved!");
   };
 
+  useEffect(() => {
+    if (!uploadedPhoto) {
+      setPreviewProfilePhoto(null);
+      return;
+    }
+
+    const photoURL = URL.createObjectURL(uploadedPhoto);
+    setPreviewProfilePhoto(photoURL);
+
+    return () => URL.revokeObjectURL(photoURL);
+  }, [uploadedPhoto]);
+
+
+  const handleRemovePhoto = () => {
+    setUploadedPhoto(undefined);
+
+  };
+
+
   return (
     <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col h-full mt-6">
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Personal Information
         </h2>
+        <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
+          Upload consultant profile photo
+        </p>
+
+        {/* Profile Photo Upload */}
+        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 mb-6">
+          <div className="relative shrink-0 w-[160px] h-[160px] ">
+            <div className="w-full h-full rounded-full bg-[var(--color-primary)] flex items-center overflow-hidden justify-center">
+              {previewProfilePhoto ? (
+                <>
+                  <img
+                    src={previewProfilePhoto}
+                    alt="Profile preview"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </>
+
+              ) : (
+                <User className="w-1/2 h-1/2 text-white" />
+              )}
+
+            </div>
+
+            {previewProfilePhoto && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center"
+                aria-label="remove photo"
+              >
+                <Trash2 className="w-6 h-6 text-gray-700" />
+              </button>
+            )}
+          </div>
+
+          {/* Upload Area */}
+          <div className="flex-1 w-full">
+           <ImageDropzone onFileSelect={(file) => setUploadedPhoto(file)}/>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
           <div className="flex flex-col gap-3">
@@ -159,7 +222,7 @@ export default function ProfileInfoForm() {
           </div>
         </div>
 
-     
+
 
         {/* Availability Toggle */}
         <div className="flex flex-col justify gap-3 mt-6">

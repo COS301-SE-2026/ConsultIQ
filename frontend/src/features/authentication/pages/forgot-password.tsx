@@ -1,10 +1,9 @@
-import { activateAccount } from "../../../api/auth.api";
 import {useSearchParams} from "react-router-dom";
 import consultIqLogo from "../../../assets/logos/ConsultIQ Logo Dark.png";
-
+import { forgotPassword } from "../../../api/auth.api"; 
 import PasswordForm from "../components/password-form";
 
-function SetPasswordPage() {
+function ForgotPasswordPage() {
   const [searchParams] = useSearchParams();
   const email= searchParams.get("email");
   const token= searchParams.get("token");
@@ -12,7 +11,7 @@ function SetPasswordPage() {
   if(!email || !token){
     return(
       <div className="relative min-h-screen bg-[#F4F6FA]">
-        <p className="text-center pt-24 text-white">Invalid activation link.</p>
+        <p className="text-center pt-24 text-white">Invalid password reset  link.</p>
       </div>
     );
   }
@@ -22,9 +21,7 @@ function SetPasswordPage() {
       className=" relative min-h-screen bg-[#F4F6FA] ">
     
     {/* Navy Polygon */}
-    <div
-      className="absolute origin-bottom-left bg-[#092352] left-0 bottom-0 h-screen w-[calc(100vh*1.38)] -rotate-[50deg]"
-    />
+    <div className="absolute origin-bottom-left bg-[#092352] left-0 bottom-0 h-screen w-[calc(100vh*1.38)] -rotate-[50deg]"/>
 
       {/* Logo */}
       <div className="absolute left-[70px]  top-1/3 -translate-y-1/2 z-10 ">
@@ -32,43 +29,31 @@ function SetPasswordPage() {
           <img 
             src={consultIqLogo}
             alt="ConsultIQ Logo"
-            className=" w-[228px] h-[152px] object-contain  "/>
+            className=" w-[228px] h-[152px] object-contain"/>
         </div>
       </div>
 
       {/* Gold Glow */}
-      <div
-        className="
-          absolute
-          left-[53%]
-          top-1/2
-          -translate-x-[10%]
-          -translate-y-1/2
-          w-[565px]
-          h-[575px]
-          rounded-full
-          blur-[90px]
-          pointer-events-none
-        "
+      <div className="absolute left-[53%] top-1/2  -translate-x-[10%]  -translate-y-1/2 w-[565px] h-[575px] rounded-full blur-[90px] pointer-events-none "
         style={{
           backgroundColor:
             "rgba(201, 168, 76, 0.38)",
         }}
       />
 
-      {/* Form Container */}
       <div
         className="absolute left-[50%] top-1/2 -translate-y-1/2 z-10 ">
         <PasswordForm 
-        title="Create your password"
-        description= "Create your password to activate your account."
-        submitLabel= "Set Password"
-        successRedirect={`/popia-consent?email=${encodeURIComponent(email)}`}
-        successMessage="Your account is now active."
-        onSubmit={({password}) =>activateAccount({email, token, password})}/>
+        title="Set a new password"
+        description= "Enter a new password to finish resetting your account"
+        submitLabel= "Save Password"
+        successRedirect="/login"
+        successMessage="Your password has been updated."
+        onSubmit={({password}) =>forgotPassword({email, token, password})}
+        />
       </div>
     </div>
   );
 }
 
-export default SetPasswordPage;
+export default ForgotPasswordPage;

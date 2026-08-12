@@ -1,31 +1,32 @@
 import { useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { activateAccount } from "../../../api/auth.api";
+import { useNavigate } from "react-router-dom";
 import { Check, X } from "lucide-react";
 
-interface PasswordRule {
-  label: string;
-  test: (password: string) => boolean;
+interface PasswordFormProps {
+  email?: string;
+  token?: string;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  onSubmit: (payload: {email?: string; token?: string; password: string}) => Promise<unknown>;
+  successRedirect?: string;
+  successMessage?: string;
 }
 
-const passwordRules: PasswordRule[] = [
-  { label: "At least 8 characters", test: (p) => p.length >= 8 },
-  { label: "At least one uppercase letter", test: (p) => /[A-Z]/.test(p) },
-  { label: "At least one lowercase letter", test: (p) => /[a-z]/.test(p) },
-  { label: "At least one number", test: (p) => /[0-9]/.test(p) },
-  { label: "At least one special character", test: (p) => /[^A-Za-z0-9]/.test(p) },
+const passwordRules = [
+  { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
+  { label: "At least one uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
+  { label: "At least one lowercase letter", test: (p: string) => /[a-z]/.test(p) },
+  { label: "At least one number", test: (p: string) => /[0-9]/.test(p) },
+  { label: "At least one special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
 ];
 
 function allRulesMet(password: string) {
   return passwordRules.every((rule) => rule.test(password));
-}
+} 
 
-function SetPasswordForm() {
-  const [searchParams] = useSearchParams();
-  const email = searchParams.get("email") ?? "";
-  const token = searchParams.get("token") ?? "";
+function PasswordForm({email, token, title= "Set Password",description= "Enter a secure password", submitLabel= "Set Password", onSubmit, successRedirect, successMessage}: PasswordFormProps) {
   const navigate = useNavigate();
-
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<{ password?: string[]; confirmPassword?: string }>({});
@@ -63,7 +64,7 @@ function SetPasswordForm() {
     setSubmitError(null);
 
     try {
-      await activateAccount({ email, token, password });
+      await onSubmit({ email, token, password });
       setSuccess(true);
     } catch (err) {
       setSubmitError((err as Error).message);
@@ -73,20 +74,18 @@ function SetPasswordForm() {
   }
 
     if (success) {
-      setTimeout(() => {
-        navigate( `/popia-consent?email=${encodeURIComponent(email)}`);
-      }, 2000);
+      if(successRedirect) setTimeout(() => navigate(successRedirect), 1200);
 
       return (
         <div className="flex flex-col w-[560px] min-h-[580px] bg-white rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] items-center justify-center gap-6 px-12 text-center">
           <h1 className="font-bold text-2xl" style={{ color: "var(--color-primary)" }}>
-            Account Activated!
+            Success
           </h1>
           <p style={{ color: "var(--color-text-secondary)" }}>
-            Your password has been set successfully. Redirecting you to our terms and conditions...
+            {successMessage ?? "Your password was updated."}
           </p>
         </div>
-      );
+      ); 
     }
 
   return (
@@ -97,17 +96,17 @@ function SetPasswordForm() {
       {/* Heading */}
       <div className="mb-4 w-full text-center">
         <h1 className="font-bold mb-3" style={{ color: "var(--color-primary)" }}>
-          Welcome to ConsultIQ
+          {title}
         </h1>
         <p className="text-base" style={{ color: "var(--color-text-secondary)" }}>
-          Create your password to activate your account.
+          {description}
         </p>
         {email && (
           <p className="text-sm mt-2" style={{ color: "var(--color-text-secondary)" }}>
-            Setting password for <strong>{email}</strong>
+            For <strong>{email}</strong>
           </p>
         )}
-      </div>
+      </div >
 
       {/* Form Fields */}
       <div className="flex flex-col gap-6">
@@ -188,10 +187,10 @@ function SetPasswordForm() {
         className="mx-auto w-96 max-w-[520px] h-[48px] mt-4 rounded text-white font-bold text-base transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
         style={{ backgroundColor: "var(--color-accent)" }}
       >
-        {loading ? "Activating..." : "Set Password"}
+        {loading ? "Saving..." : submitLabel}
       </button>
     </form>
   );
 }
 
-export default SetPasswordForm;
+export default PasswordForm;

@@ -147,9 +147,7 @@ export const LoginCard: React.FC = () => {
         <div className="w-96 max-w-[520px] flex justify-center mt-1">
           <Link
             to="/forgot-password"
-            className="text-sm font-semibold hover:underline"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
+            className="text-sm font-semibold !text-slate-500 hover:!underline hover:!text-blue-600 transition">
             Forgot password?
           </Link>
         </div>

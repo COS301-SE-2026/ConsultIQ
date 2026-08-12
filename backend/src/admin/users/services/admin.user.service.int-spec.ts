@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { AdminUserService } from './admin.user.service';
 import { cleanDatabase } from '../../../../prisma/prisma-test-utils';
 import { AdminModule } from '../../admin.module';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 describe('AdminUserService - Integration Test', () => {
   let service: AdminUserService;
@@ -11,7 +12,7 @@ describe('AdminUserService - Integration Test', () => {
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [AdminModule],
+      imports: [AdminModule, PrismaModule],
     }).compile();
 
     service = moduleRef.get<AdminUserService>(AdminUserService);

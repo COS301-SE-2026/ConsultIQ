@@ -158,7 +158,7 @@ export const LoginCard: React.FC = () => {
         type="submit"
         disabled={loading}
         className="mx-auto w-96 max-w-[520px] h-[48px] mt-10 rounded text-white font-bold text-base transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{ backgroundColor: "var(--color-accent)" }}
+        style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? (
           <>

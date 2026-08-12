@@ -60,6 +60,8 @@ function SetPasswordPage() {
       <div
         className="absolute left-[50%] top-1/2 -translate-y-1/2 z-10 ">
         <PasswordForm 
+        email={email}
+        token={token}
         title="Create your password"
         description= "Create your password to activate your account."
         submitLabel= "Set Password"

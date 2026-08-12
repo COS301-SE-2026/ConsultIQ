@@ -185,7 +185,7 @@ function PasswordForm({email, token, title= "Set Password",description= "Enter a
         type="submit"
         disabled={loading}
         className="mx-auto w-96 max-w-[520px] h-[48px] mt-4 rounded text-white font-bold text-base transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
-        style={{ backgroundColor: "var(--color-accent)" }}
+        style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? "Saving..." : submitLabel}
       </button>

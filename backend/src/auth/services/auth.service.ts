@@ -425,4 +425,41 @@ export class AuthService {
 
     return {message: 'If that account exists, a reset link has been sent.'}
   }
+
+  async resetPassword(dto: ActivateAccountDto):Promise<{message: string}>{
+    const user= await this.prisma.user.findUnique({where: {email: dto.email}})
+    if(!user) throw new NotFoundException('Account not found.');
+
+    const hashedIncomingToken= this.token.hashToken(dto.token);
+    const tokenRecord= await this.prisma.token.findFirst({
+      where: {
+        userId: user.id,
+        token: hashedIncomingToken,
+        type: 'PASSWORD_RESET',
+        usedAt: null,
+      },
+    });
+    
+    if (!tokenRecord){
+      throw new BadRequestException('Invalid reset token.');
+    }
+    if (this.token.isTokenExpired(tokenRecord.expiresAt)){
+      throw new BadRequestException('This reset link has expired. Request a new one.');
+    }
+
+    const passwordHash= await bcrypt.hash(dto.password, 12);
+
+    //update password
+    await this.prisma.$transaction([
+      this.prisma.token.update({
+        where: {id : tokenRecord.id},
+        data: {usedAt: new Date()},
+      }),
+      this.prisma.user.update({
+        where: {id: user.id},
+        data: {passwordHash},
+      }),
+    ]);
+    return {message: 'Password successfully updated. You can now login.'};
+  }
 }

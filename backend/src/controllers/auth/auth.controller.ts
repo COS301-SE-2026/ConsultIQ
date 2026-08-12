@@ -129,6 +129,13 @@ export class AuthController {
     return await this.authService.forgotPassword(dto.email);
   }
 
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ActivateAccountDto): Promise<{message: string}>{
+    return await this.authService.resetPassword(dto);
+  }
+
   // TASK-17: Validate refresh token and issue new JWT + refresh token
   @Public()
   @Post('refresh')

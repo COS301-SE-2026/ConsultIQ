@@ -4,6 +4,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { ScoringService } from './scoring-config.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName } from '@prisma/client';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 describe('ScoringService - Two-Tier Config Integration Test', () => {
   let scoringService: ScoringService;
@@ -11,7 +12,7 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ScoringModule],
+      imports: [ScoringModule, PrismaModule],
     }).compile();
 
     scoringService = moduleRef.get<ScoringService>(ScoringService);

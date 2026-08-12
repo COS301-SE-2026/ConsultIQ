@@ -87,6 +87,8 @@ export default function ProfileInfoForm() {
       availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
     });
 
+    void uploadedPhoto; // TO DO: save with rest of the updated profile data when the endpoint is ready
+
     toast.success("Personal information saved!");
   };
 

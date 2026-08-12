@@ -46,7 +46,7 @@ function ForgotPasswordPage() {
 
       {/* Gold Glow */}
       <div className="absolute left-[50%] top-1/2  -translate-y-1/2 z-10">
-              <div className="lg:hidden mb-8 px-8 py-6 rounded-2xl bg-[#092352]">
+        <div className="lg:hidden mb-8 px-8 py-6 rounded-2xl bg-[#092352]">
           <img 
             src={consultIqLogo}
             alt="ConsultIQ Logo"

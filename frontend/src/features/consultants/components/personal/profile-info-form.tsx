@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
@@ -90,21 +90,15 @@ export default function ProfileInfoForm() {
     toast.success("Personal information saved!");
   };
 
-  useEffect(() => {
-    if (!uploadedPhoto) {
-      setPreviewProfilePhoto(null);
-      return;
-    }
-
-    const photoURL = URL.createObjectURL(uploadedPhoto);
-    setPreviewProfilePhoto(photoURL);
-
-    return () => URL.revokeObjectURL(photoURL);
-  }, [uploadedPhoto]);
-
 
   const handleRemovePhoto = () => {
     setUploadedPhoto(undefined);
+
+    if (previewProfilePhoto) {
+      URL.revokeObjectURL(previewProfilePhoto);
+    }
+
+    setPreviewProfilePhoto(null);
 
   };
 
@@ -152,7 +146,22 @@ export default function ProfileInfoForm() {
 
           {/* Upload Area */}
           <div className="flex-1 w-full">
-           <ImageDropzone onFileSelect={(file) => setUploadedPhoto(file)}/>
+            <ImageDropzone onFileSelect={(file) => {
+
+              setUploadedPhoto(file);
+
+              if (previewProfilePhoto) {
+                URL.revokeObjectURL(previewProfilePhoto);
+              }
+
+              if (file) {
+                setPreviewProfilePhoto(URL.createObjectURL(file));
+              } else {
+                setPreviewProfilePhoto(null);
+              }
+
+            }}
+            />
           </div>
         </div>
 

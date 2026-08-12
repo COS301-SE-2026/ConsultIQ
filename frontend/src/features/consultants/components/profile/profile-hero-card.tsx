@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import EditControls from "./edit-controls";
 import { toast } from "sonner";
 import { ImageDropzone } from "../image-dropzone";
@@ -50,20 +50,14 @@ function ProfileHeroCard({ fullName, status, canEdit, onSave }: ProfileHeroCardP
   };
 
 
-  useEffect(() => {
-    if (!uploadedPhoto) {
-      setPreviewProfilePhoto(null);
-      return;
-    }
-
-    const photoURL = URL.createObjectURL(uploadedPhoto);
-    setPreviewProfilePhoto(photoURL);
-
-    return () => URL.revokeObjectURL(photoURL);
-  }, [uploadedPhoto]);
-
   const handleRemovePhoto = () => {
     setUploadedPhoto(undefined);
+
+    if (previewProfilePhoto) {
+      URL.revokeObjectURL(previewProfilePhoto);
+    }
+
+    setPreviewProfilePhoto(null);
 
   };
 
@@ -174,7 +168,21 @@ function ProfileHeroCard({ fullName, status, canEdit, onSave }: ProfileHeroCardP
       {isEditing && (
         <div className=" w-full max-w-xl mt-6">
           <h3 className="mb-2">Upload profile photo</h3>
-          <ImageDropzone onFileSelect={(file) => setUploadedPhoto(file)} />
+          <ImageDropzone onFileSelect={(file) => {
+
+              setUploadedPhoto(file);
+
+              if (previewProfilePhoto) {
+                URL.revokeObjectURL(previewProfilePhoto);
+              }
+
+              if (file) {
+                setPreviewProfilePhoto(URL.createObjectURL(file));
+              } else {
+                setPreviewProfilePhoto(null);
+              }
+
+            }} />
         </div>
       )}
     </div>

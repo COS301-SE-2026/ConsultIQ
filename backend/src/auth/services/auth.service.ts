@@ -387,4 +387,42 @@ export class AuthService {
 
     return { message: 'Terms accepted successfully.' };
   }
+
+  async forgotPassword(email: string): Promise<{message: string}>{
+    const user= await this.prisma.user.findUnique({where: {email}});
+    if(!user){
+      return {message: "If that account exists, a reset link has been sent."};
+    }
+    //throttle: check if at most 3 reset tokens have been sent in the last hour
+    const anHourAgo= new Date(Date.now() - 60*60*1000);
+    const  recentTokenCount= await this.prisma.token.count({
+      where:{
+        userId: user.id,
+        type: "PASSWORD_RESET",
+        createdAt: {gte: anHourAgo},
+      },
+    });
+    if(recentTokenCount >=3){
+      throw new  TooManyRequestsException('You have requested too many password reset emails. Please wait an hour and try again.');
+    }
+
+    const {rawToken, hashedToken}= this.token.generateActivationToken();
+    const expiry= this.token.getTokenExpiry();
+
+    await this.prisma.token.create({
+      data: {
+        userId: user.id,
+        token: hashedToken,
+        type: 'PASSWORD_RESET',
+        expiresAt: expiry,
+      },
+    });
+
+    const frontendUrl= this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const resetLink= `${frontendUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    this.email.sendPasswordResetEmail(user.email, user.fullName ?? user.email, resetLink)
+    .catch((err) =>console.error('Failed to send reset email: ', err));
+
+    return {message: 'If that account exists, a reset link has been sent.'}
+  }
 }

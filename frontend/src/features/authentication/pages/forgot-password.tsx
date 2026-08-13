@@ -18,7 +18,7 @@ function ForgotPasswordPage() {
         try{
             await forgotPassword({email});
             setInfo("If that account exists, a reset link was sent to the email address.");
-            setTimeout(() => navigate("/login"), 3000);
+            navigate("/check-email", {state: {email}} );
         }catch(err){
             setError((err as Error).message || "An error has occured, please try again.");
         }finally{

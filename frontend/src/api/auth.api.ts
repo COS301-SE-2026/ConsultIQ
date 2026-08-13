@@ -59,3 +59,11 @@ export async function forgotPassword({email}: {email: string}){
   });
   return handleResponse(res);
 }
+export async function resetPassword(payload: ActivateAccountPayload){
+  const res= await fetch(`${API_BASE_URL}/auth/reset-password`,{
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({payload}),
+  });
+  return handleResponse(res);
+}

@@ -10,6 +10,8 @@ import SetPasswordPage from "../features/authentication/pages/set-password-page"
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
 import PopiaDeclinePage from "../features/authentication/pages/popia-decline-page";
 import ForgotPasswordPage from "../features/authentication/pages/forgot-password.tsx"
+import ResetPasswordPage from "../features/authentication/pages/reset-pasword.tsx";
+import CheckEmail from "../features/authentication/pages/check-email.tsx";
 // Consultants
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
@@ -59,6 +61,8 @@ function AnimatedRoutes() {
                 <Route path="/login" element={<PageTransition><LoginForm /></PageTransition>} />
                 <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
+                <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
+                <Route path="/check-email" element={<PageTransition><CheckEmail /></PageTransition>} />
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />

@@ -419,7 +419,7 @@ export class AuthService {
     });
 
     const frontendUrl= this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const resetLink= `${frontendUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    const resetLink= `${frontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
     this.email.sendPasswordResetEmail(user.email, user.fullName ?? user.email, resetLink)
     .catch((err) =>console.error('Failed to send reset email: ', err));
 

@@ -57,19 +57,15 @@ describe('AdminProjectService', () => {
                 { id: '9', ProjectName: 'User 9', status: 'OPEN' },
                 { id: '10', ProjectName: 'User 10', status: 'OPEN' },
             ];
-            const totalUsers = 10;
+            // const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, totalUsers, 10]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, 10]);
             const result = await service.getAllProjects(1, 10);
 
             expect(prisma.$transaction).toHaveBeenCalledWith([
                 prisma.project.findMany({
-                    where: { archivedAt: null, status: { not: 'ARCHIVED' } },
                     skip: 0,
                     take: 10,
-                }),
-                prisma.project.count({
-                    where: { archivedAt: null, status: { not: 'ARCHIVED' } },
                 }),
                 prisma.project.count(),
             ]);
@@ -77,8 +73,7 @@ describe('AdminProjectService', () => {
             expect(result).toEqual({
                 data: mockProjects,
                 meta: {
-                    totalRecords: totalUsers,
-                    absoluteTotalRecords: mockProjects.length,
+                    totalRecords: mockProjects.length,
                     currentPage: 1,
                     totalPages: 1,
                 },

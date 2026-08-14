@@ -154,6 +154,58 @@ describe('ProjectService', () => {
         projectId: 'uuid-111',
       });
     });
+
+    it('should map location fields correctly when they are provided in the DTO', async () => {
+      mockTx.project.create.mockResolvedValue({ id: 'uuid-with-loc' });
+      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+
+      const dtoWithLocation = {
+        ...baseDto,
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123irehfew;odejir',
+        formattedAddress: 'Pretoria, South Africa',
+      };
+
+      await service.createProject(dtoWithLocation, 'user-123', 'PROJECT_MANAGER');
+
+      expect(mockTx.project.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: -25.7479,
+            longitude: 28.2293,
+            placeId: '123irehfew;odejir',
+            formattedAddress: 'Pretoria, South Africa',
+
+          }),
+        }),
+      );
+    });
+
+    it('should default location fields to null when omitted', async () => {
+      mockTx.project.create.mockResolvedValue({ id: 'uuid-no-loc' });
+      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+
+      const dtoWithoutLocation = { ...baseDto } as any;
+      delete dtoWithoutLocation.latitude;
+      delete dtoWithoutLocation.longitude;
+      delete dtoWithoutLocation.placeId;
+      delete dtoWithoutLocation.formattedAddress;
+
+      await service.createProject(dtoWithoutLocation, 'user-123', 'PROJECT_MANAGER');
+
+
+      expect(mockTx.project.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: null,
+            longitude: null,
+            placeId: null,
+            formattedAddress: null,
+          }),
+        }),
+      );
+    });
   });
 
   describe('createProject - status default', () => {
@@ -553,6 +605,31 @@ describe('ProjectService', () => {
       expect(mockTx.skill.upsert).not.toHaveBeenCalled();
       expect(mockTx.projectSkill.create).not.toHaveBeenCalled();
       expect(mockTx.projectSkill.update).not.toHaveBeenCalled();
+    });
+
+    it('builds update fields for location coordinates when provided', async () => {
+      const dto: any = {
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123dewudgwel',
+        formattedAddress: 'Pretoria, South Africa',
+        budget: 150000,
+        status: 'IN_PROGRESS',
+      };
+
+      await service.updateProject('project-123', dto, 'user-1');
+
+      expect(mockTx.project.update).toHaveBeenCalledWith({
+        where: { id: 'project-123' },
+        data: expect.objectContaining({
+          latitude: -25.7479,
+          longitude: 28.2293,
+          placeId: '123dewudgwel',
+          formattedAddress: 'Pretoria, South Africa',
+          budget: 150000,
+          status: 'IN_PROGRESS',
+        }),
+      });
     });
   });
 

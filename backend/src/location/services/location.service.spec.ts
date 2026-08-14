@@ -42,6 +42,11 @@ describe('LocationService', () => {
 
         it('should return mapped location when API is called and responds successfully', async () => {
             process.env.GOOGLE_MAPS_API_KEY = 'mock-api-key';
+
+            const mockComponents = [
+                { long_name: '1600', short_name: '1600', types: ['street_number'] },
+                { long_name: 'Mountain View', short_name: 'Mountain View', types: ['locality', 'political'] }
+            ];
             const mockResponse = {
                 status: 'OK',
                 results: [
@@ -54,6 +59,7 @@ describe('LocationService', () => {
                             },
                         },
                         place_id: 'mock-place-id',
+                        address_components: mockComponents,
                     },
                 ],
             };
@@ -68,9 +74,9 @@ describe('LocationService', () => {
                 longitude: 56.78,
                 formattedAddress: '123 Mock street, Mock City, Mock Province',
                 placeId: 'mock-place-id',
+                addressComponents: mockComponents,
             });
         });
-
 
         it('should return null and log a warning if the API returns a status other than OK', async () => {
             process.env.GOOGLE_MAPS_API_KEY = 'valid_api_key';

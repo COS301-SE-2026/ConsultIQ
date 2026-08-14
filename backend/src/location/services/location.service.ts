@@ -23,6 +23,7 @@ export class LocationService {
                     longitude: result.geometry.location.lng,
                     formattedAddress: result.formatted_address,
                     placeId: result.place_id,
+                    addressComponents: result.address_components,
                 };
             } else {
                 this.logger.warn(`Geocoding failed for address: ${address} | status: ${data.status}`);

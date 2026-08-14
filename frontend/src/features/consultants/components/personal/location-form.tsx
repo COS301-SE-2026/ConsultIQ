@@ -7,7 +7,7 @@ import { useConsultantProfile } from "../../pages/consultant-profile.context";
 import SearchBar from "../../../../components/shared/search-bar";
 
 interface Props {
-  onComplete?: () => void;
+  readonly onComplete?: () => void;
 }
 
 export default function LocationForm({ onComplete }: Props) {

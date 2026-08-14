@@ -59,6 +59,22 @@ export class CreateProjectDto {
   @IsOptional()
   postalCode?: string;
 
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  placeId?: string;
+
+  @IsOptional()
+  @IsString()
+  formattedAddress?: string;
+
   @IsDateString()
   startDate!: string;
 

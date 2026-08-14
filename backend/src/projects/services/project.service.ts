@@ -367,86 +367,24 @@ export class ProjectService {
   private buildProjectUpdateData(
     coreFields: Omit<UpdateProjectDto, 'skills' | 'removeSkillIds'>,
   ): Prisma.ProjectUpdateInput {
-    const updateData: Prisma.ProjectUpdateInput & {
+    const updateData = Object.entries(coreFields).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Prisma.ProjectUpdateInput & {
       latitude?: number | null;
       longitude?: number | null;
       placeId?: string | null;
       formattedAddress?: string | null;
-    } = {};
+    });
 
-    if (coreFields.projectName !== undefined) {
-      updateData.projectName = coreFields.projectName;
+    if (updateData.startDate !== undefined) {
+      updateData.startDate = new Date(updateData.startDate as string | Date);
     }
 
-    if (coreFields.clientName !== undefined) {
-      updateData.clientName = coreFields.clientName;
-    }
-
-    if (coreFields.description !== undefined) {
-      updateData.description = coreFields.description;
-    }
-
-    if (coreFields.addressLine1 !== undefined) {
-      updateData.addressLine1 = coreFields.addressLine1;
-    }
-
-    if (coreFields.addressLine2 !== undefined) {
-      updateData.addressLine2 = coreFields.addressLine2;
-    }
-
-    if (coreFields.suburb !== undefined) {
-      updateData.suburb = coreFields.suburb;
-    }
-
-    if (coreFields.city !== undefined) {
-      updateData.city = coreFields.city;
-    }
-
-    if (coreFields.province !== undefined) {
-      updateData.province = coreFields.province;
-    }
-    if (coreFields.postalCode !== undefined) {
-      updateData.postalCode = coreFields.postalCode;
-    }
-
-    if (coreFields.startDate !== undefined) {
-      updateData.startDate = new Date(coreFields.startDate);
-    }
-
-    if (coreFields.endDate !== undefined) {
-      updateData.endDate = new Date(coreFields.endDate);
-    }
-
-    if (coreFields.teamSize !== undefined) {
-      updateData.teamSize = coreFields.teamSize;
-    }
-
-    if (coreFields.allocation !== undefined) {
-      updateData.allocation = coreFields.allocation;
-    }
-
-    if (coreFields.budget !== undefined) {
-      updateData.budget = coreFields.budget;
-    }
-
-    if (coreFields.status !== undefined) {
-      updateData.status = coreFields.status;
-    }
-
-    if (coreFields.latitude !== undefined) {
-      updateData.latitude = coreFields.latitude;
-    }
-
-    if (coreFields.longitude !== undefined) {
-      updateData.longitude = coreFields.longitude;
-    }
-
-    if (coreFields.placeId !== undefined) {
-      updateData.placeId = coreFields.placeId;
-    }
-
-    if (coreFields.formattedAddress !== undefined) {
-      updateData.formattedAddress = coreFields.formattedAddress;
+    if (updateData.endDate !== undefined) {
+      updateData.endDate = new Date(updateData.endDate as string | Date);
     }
 
     return updateData;

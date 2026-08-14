@@ -18,7 +18,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -167,6 +167,10 @@ export class ProjectService {
           addressLine1: dto.addressLine1,
           addressLine2: dto.addressLine2,
           suburb: dto.suburb,
+          latitude: dto.latitude ?? null,
+          longitude: dto.longitude ?? null,
+          placeId: dto.placeId ?? null,
+          formattedAddress: dto.formattedAddress ?? null,
           description: dto.description,
           postalCode: dto.postalCode ?? '',
           city: dto.city,
@@ -363,7 +367,13 @@ export class ProjectService {
   private buildProjectUpdateData(
     coreFields: Omit<UpdateProjectDto, 'skills' | 'removeSkillIds'>,
   ): Prisma.ProjectUpdateInput {
-    const updateData: Prisma.ProjectUpdateInput = {};
+    const updateData: Prisma.ProjectUpdateInput & {
+      latitude?: number | null;
+      longitude?: number | null;
+      placeId?: string | null;
+      formattedAddress?: string | null;
+    } = {};
+
     if (coreFields.projectName !== undefined) {
       updateData.projectName = coreFields.projectName;
     }
@@ -421,6 +431,22 @@ export class ProjectService {
 
     if (coreFields.status !== undefined) {
       updateData.status = coreFields.status;
+    }
+
+    if (coreFields.latitude !== undefined) {
+      updateData.latitude = coreFields.latitude;
+    }
+
+    if (coreFields.longitude !== undefined) {
+      updateData.longitude = coreFields.longitude;
+    }
+
+    if (coreFields.placeId !== undefined) {
+      updateData.placeId = coreFields.placeId;
+    }
+
+    if (coreFields.formattedAddress !== undefined) {
+      updateData.formattedAddress = coreFields.formattedAddress;
     }
 
     return updateData;

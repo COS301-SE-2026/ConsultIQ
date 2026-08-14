@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MatchRunService } from './match-run.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName, CompetencyLevel } from '@prisma/client';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 async function createAdmin(prisma: PrismaService) {
   return prisma.user.create({
@@ -118,7 +119,7 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ScoringModule],
+      imports: [ScoringModule, PrismaModule],
     }).compile();
 
     matchRunService = moduleRef.get<MatchRunService>(MatchRunService);

@@ -9,4 +9,4 @@ import { CvParsingModule } from '../cv-parsing/cv-parsing.module';
   providers: [ConsultantService],
   imports: [PrismaModule, CvParsingModule],
 })
-export class ConsultantsModule {}
+export class ConsultantsModule { }

@@ -11,6 +11,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { BaseLocationDto } from '../../common/dto/base-location.dto';
 
 export class CreateProjectSkillDto {
   @IsString()
@@ -27,7 +28,7 @@ export class CreateProjectSkillDto {
   mandatory!: boolean;
 }
 
-export class CreateProjectDto {
+export class CreateProjectDto extends BaseLocationDto {
   @IsString()
   projectName!: string;
 
@@ -37,43 +38,6 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsString()
-  addressLine1!: string;
-
-  @IsString()
-  @IsOptional()
-  addressLine2?: string;
-
-  @IsString()
-  @IsOptional()
-  suburb?: string;
-
-  @IsString()
-  city!: string;
-
-  @IsString()
-  province!: string;
-
-  @IsString()
-  @IsOptional()
-  postalCode?: string;
-
-  @IsOptional()
-  @IsNumber()
-  latitude?: number;
-
-  @IsOptional()
-  @IsNumber()
-  longitude?: number;
-
-  @IsOptional()
-  @IsString()
-  placeId?: string;
-
-  @IsOptional()
-  @IsString()
-  formattedAddress?: string;
 
   @IsDateString()
   startDate!: string;

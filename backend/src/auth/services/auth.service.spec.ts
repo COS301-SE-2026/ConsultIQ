@@ -244,6 +244,74 @@ describe('AuthService', () => {
     });
   });
 
+  // ---------------------------------------forgotPassword-------------------------------------------
+  describe('forgotPassword', () =>{
+    const emailAdress= 'botho@consultiq.com';
+
+    it('should send a reset email when the user exists', async() =>{
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.token.count.mockResolvedValue(0);
+      prisma.token.create( MOCK_TOKEN_RECORD as any);
+      email.sendPasswordResetEmail.mockResolvedValue({} as any);
+
+      const result= await service.forgotPassword(emailAdress);
+      
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { email: emailAdress },
+      });
+
+      expect(prisma.token.count).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: MOCK_USER.id,
+            type: "PASSWORD_RESET",}),
+        }),
+      );
+      
+      expect(prisma.token.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: MOCK_USER.id,
+            type: "PASSWORD_RESET",}),
+        }),
+      );
+
+      expect(email.sendPasswordResetEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('/reset-password?token='),
+      );
+      expect(result.message).toContain('If that account exists');
+  })
+
+  it('should return a generic success message even when the user does not exist', async() =>{
+    prisma.user.findUnique.mockResolvedValue(null);
+    const result= await service.forgotPassword("unknown@consultiq.com");
+
+      expect(result.message).toContain('If that account exists');
+      expect(prisma.token.count).not.toHaveBeenCalled();
+      expect(prisma.token.create).not.toHaveBeenCalled();
+      expect(email.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('should throw 429 when too many reset emails were sent in the last hour', async() =>{
+      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.token.count.mockResolvedValue(3);
+
+      await expect(service.forgotPassword(emailAdress)).rejects.toThrow();
+    });
+
+    it('should not throw id sending the reset email fails', async()=>{
+       jest.spyOn(console, 'error').mockImplementation(() => {});
+       prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+       prisma.token.count.mockResolvedValue(0);
+       prisma.token.create( MOCK_TOKEN_RECORD as any);
+       email.sendPasswordResetEmail.mockRejectedValue(new Error('Email provider down'));
+
+       await expect(service.forgotPassword(emailAdress)).resolves.toBeDefined();
+    })
+  })
+
   // ---------------------------------------resetPassword-------------------------------------------
   describe('resetPassword',() =>{
     const dto= {

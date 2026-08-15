@@ -31,11 +31,16 @@ export interface ParsedEducation {
 }
 
 export interface ParsedContactInfo {
-  fullName?: string;
-  email?: string;
-  phone?: string;
-  nationality?: string;
-  location?: string;
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    nationality?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    suburb?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
 }
 
 export interface ConfidenceScores {

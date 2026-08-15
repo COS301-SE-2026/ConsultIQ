@@ -18,8 +18,16 @@ export interface ParsedExperience {
 export interface ParsedCertification {
     title: string;
     issuingBody: string;
-    startDate: string;
-    endDate: string;
+    startDate?: string;
+    endDate?: string;
+}
+
+export interface ParsedEducation {
+    institution: string;
+    qualification: string;
+    fieldOfStudy?: string;
+    startDate?: string;
+    endDate?: string;
 }
 
 export interface ParsedContactInfo {
@@ -44,13 +52,6 @@ export interface ParsedCvData {
     experiences: ParsedExperience[];
     certifications: ParsedCertification[];
     confidenceScores: ConfidenceScores;
-    rawSections: {
-        contact?: string;
-        experience?: string;
-        skills?: string;
-        certifications?: string;
-        education?: string;
-  };
 }
 
 export interface CvParsingResult {

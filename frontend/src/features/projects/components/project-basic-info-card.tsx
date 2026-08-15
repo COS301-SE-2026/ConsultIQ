@@ -190,14 +190,17 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 Billing Budget
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 id="budget"
                 placeholder="R 0"
                 value={data.budget || ""}
                 min="0"
+                maxLength={12}
                 onChange={(e) => {
-                  const val = Math.max(0, parseFloat(e.target.value) || 0);
-                  onChange("budget", val);
+                  const sanitizedVal= e.target.value.replace(/[^0-9.]/g,'').replace(/(\..*)./g,'$1');
+                  const val= Number.parseFloat(sanitizedVal) || 0;
+                  onChange("budget", Math.min(val,999999999));
                 }}
                 className={getInputClass("budget")}
               />

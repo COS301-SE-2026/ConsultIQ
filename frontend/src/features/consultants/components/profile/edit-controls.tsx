@@ -3,6 +3,7 @@ import { Pencil } from "lucide-react";
 
 interface EditControlProps{
     readonly isEditing: boolean;
+    readonly isSaving: boolean;
     readonly onEdit: () => void;
     readonly onSave: () => void;
     readonly onCancel: () => void;
@@ -12,11 +13,11 @@ interface EditControlProps{
 const buttonStyle = {
      fontSize: "14px",
      padding: "6px 12px",
-     boxShadow: "2px 4px 6px rgba(0,0,0,0.1)",
+     boxShadow: "2px 4px 6px rgba(211,211,211,0.8)",
 
 };
 
-function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
+function EditControls({isEditing, isSaving, onEdit,onSave,onCancel}: EditControlProps){
     return(
          <div className = " flex-1 flex justify-end gap-2">
            {isEditing ?(
@@ -25,15 +26,17 @@ function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
               onClick={onSave} 
               variant="default" 
               className ="font-bold px-4 py-2"
-             style={buttonStyle}
+              style={buttonStyle}
+              disabled={isSaving} 
             >
               Save
             </Button>
             <Button 
               onClick={onCancel} 
-              variant="outline" 
+              variant="ghost" 
               className="font-bold px-4 py-2"
-                style ={buttonStyle}
+              style ={buttonStyle}
+              disabled={isSaving} 
             >
               Cancel
             </Button>
@@ -42,8 +45,8 @@ function EditControls({isEditing, onEdit,onSave,onCancel}: EditControlProps){
            ):(
             <Button 
               onClick={onEdit} 
-              variant="secondary" 
-              className="gap-2 font-bold px-4 py-2 border-b"
+              variant="ghost" 
+              className="gap-2 font-bold px-4 py-2 shadow-sm"
               style ={buttonStyle}
              >
                 <Pencil size={16}/>

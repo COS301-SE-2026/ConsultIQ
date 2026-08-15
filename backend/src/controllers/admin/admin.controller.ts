@@ -102,13 +102,17 @@ export class AdminController {
   @Put('users/:userId/role')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @UsePipes(new ValidationPipe({ whitelist: true}))
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async assignRole(
-      @Param('userId') targetUserId: string,
-      @Body() assignRoleDto: AssignRoleDto,
-      @Req() req: any,
+    @Param('userId') targetUserId: string,
+    @Body() assignRoleDto: AssignRoleDto,
+    @Req() req: any,
   ): Promise<{ message: string }> {
-      const performedById = req.user.userId as string;
-      return await this.adminService.assignRole(targetUserId, assignRoleDto, performedById);
+    const performedById = req.user.userId as string;
+    return await this.adminService.assignRole(
+      targetUserId,
+      assignRoleDto,
+      performedById,
+    );
   }
 }

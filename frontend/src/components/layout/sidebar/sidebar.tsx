@@ -7,9 +7,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   readonly items: SidebarItem[];
+  readonly notificationCount?: number;
 }
 
-function Sidebar({ items }: SidebarProps) {
+function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,11 +57,13 @@ function Sidebar({ items }: SidebarProps) {
       >
         {items.map((item) => {
           const Icon = item.icon;
+          const isNotifications = item.path === "/notifications";
+          const showBadge = isNotifications && notificationCount >0;
 
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => navigate(item.path,{state:{from:"sidebar"}})}
               style={{
                 padding: "14px 24px",
 
@@ -95,6 +98,14 @@ function Sidebar({ items }: SidebarProps) {
               <Icon size={22} />
 
               {item.label}
+
+              {showBadge && (
+                <span
+                  className="mx-auto min-w-5 h-5 flex items-center justify-center leading-4 text-brand-blue text-xs bg-white rounded-xl p-1.5"
+                >
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -160,7 +171,7 @@ function Sidebar({ items }: SidebarProps) {
           </div>
         </div>
         <button
-        onClick={logout}
+        onClick={() => {logout()}}
         style={{
           border: "none",
           background: "transparent",

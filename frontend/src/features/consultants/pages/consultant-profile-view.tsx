@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
@@ -9,6 +10,8 @@ import {
 import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
+import { updateConsultantProfile } from "../../../api/consultants.api";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import {
   ProfileHeroCard,
@@ -39,27 +42,45 @@ export interface Profile {
   education: Education[];
 }
 
+type UpdatePayload = Parameters<typeof updateConsultantProfile>[1];
+
 function ConsultantProfileViewPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const{count: unreadCount} = useUnreadNotificationCount();
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
 
-  const { profile, isLoading, error } = useFetchConsultantProfile(
+  const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
   );
 
-  // Dynamically select the sidebar based on the user's role
+ const [overrides, setOverrides] = useState<Partial<Profile>>({});
+ const [lastConsultantId, setLastConsultantId] = useState(targetConsultantId);
+
+  if (targetConsultantId !== lastConsultantId) {
+    setLastConsultantId(targetConsultantId);
+    setOverrides({});
+  }
+
+const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
+
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-
-
   const canEdit = fromDashboard && Boolean(targetConsultantId);
+
+  async function save(partial: UpdatePayload, optimisticPatch?: Partial<Profile>) {
+    if (!targetConsultantId) {
+      throw new Error("Missing consultant id");
+    }
+    await updateConsultantProfile(targetConsultantId, partial);
+    setOverrides((prev) => ({...prev,...(optimisticPatch ?? (partial as Partial<Profile>) )}));
+  }
 
   if (isLoading) {
     return (
@@ -69,13 +90,11 @@ function ConsultantProfileViewPage() {
     );
   }
 
-  console.log("profile data: ", profile);
-
   if (error || !profile) {
     let errorMessage = "profile not found";
 
-    if (error){
-      errorMessage = typeof error === "string" ? error :(error.message || "error while loading profile");
+    if (error) {
+      errorMessage = typeof error === "string" ? error : (error.message || "error while loading profile");
     }
 
     return (
@@ -90,8 +109,7 @@ function ConsultantProfileViewPage() {
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      {/* Inject the dynamic sidebar here */}
-      <Sidebar items={sidebarItems} />
+      <Sidebar items={sidebarItems} notificationCount={unreadCount}/>
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <header
@@ -118,7 +136,6 @@ function ConsultantProfileViewPage() {
             <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
-            {/* Empty div to balance the flexbox if the back button is present */}
             {fromDashboard && <div style={{ width: "70px" }}></div>}
           </div>
         </header>
@@ -131,9 +148,10 @@ function ConsultantProfileViewPage() {
               fullName={profile.fullName}
               status={profile.status}
               canEdit={canEdit}
-                onSave={() => {
-                  // API call goes here
-                }}
+              onSave={async (status) => {
+                await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+                await refetch();
+              }}
             />
 
             <PersonalInfoCard
@@ -143,51 +161,96 @@ function ConsultantProfileViewPage() {
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
-               onSave={() => {
-                // API call goes here
+              onSave={async (data) => {
+                await save({
+                  fullname: data.fullName,
+                  email: data.email,
+                  phone: data.phone,
+                  idNumber: data.idNumber,
+                  nationality: data.nationality,
+                });
+                await refetch();
               }}
-             
             />
 
-            <LocationCard
-              addressLine1={profile.address1}
-              addressLine2={profile.address2}
-              suburb= {profile.suburb}
-              city= {profile.city}
+           <LocationCard
+              addressLine1={profile.addressLine1}
+              addressLine2={profile.addressLine2}
+              suburb={profile.suburb}
+              city={profile.city}
               province={profile.province}
               postalCode={profile.postalCode}
               canEdit={canEdit}
-              onSave={() =>{
-                
+              onSave={async (loc) => {
+                await save({
+                  addressLine1: loc.addressLine1,
+                  addressLine2: loc.addressLine2,
+                  suburb: loc.suburb,
+                  city: loc.city,
+                  province: loc.province,
+                  postalCode: loc.postalCode,
+                });
+                await refetch();
               }}
-             
             />
 
-            <ExperienceCard 
-              experiences={profile.experience} 
+            <ExperienceCard
+              experiences={profile.experience}
               canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+              onSave={async (experiences) => {
+                await save({
+                  experiences: experiences.map((e) => ({
+                    jobTitle: e.jobTitle,
+                    companyName: e.company,
+                    jobType: e.jobType,
+                    workModel: e.workModel,
+                    startDate: e.startDate,
+                    endDate: e.endDate,
+                    description: e.roleDescription,
+                  })),
+                });
+                await refetch();
               }}
             />
 
-            <SkillsCard 
+            <SkillsCard
               skills={profile.skills}
               canEdit={canEdit}
-              onSave={() => {
-                // call your API here, then update state
-              }}
-             />
+              onSave={async (skills) => {
+                const normalized = skills.map((s) => ({
+                  ...s,
+                  yearsOfExperience: Number(s.yearsOfExperience) || 0,
+                }));
 
-            <EducationCard 
-              educationList={profile.education} 
-              canEdit={canEdit}
-              onSave={()=>{
-                // API call goes here
+                await save({
+                  skills: skills.map((s) => ({
+                    skillName: s.name,
+                    yearsExperience: s.yearsOfExperience,
+                    confidenceLevel: s.confidenceLevel,
+                  })),
+                },
+                {skills:normalized}
+              );
+                await refetch();
               }}
             />
 
-
+            <EducationCard
+              educationList={profile.education}
+              canEdit={canEdit}
+              onSave={async (education) => {
+                await save({
+                  education: education.map((e) => ({
+                    institution: e.institution,
+                    qualification: e.qualification,
+                    startDate: e.startDate,
+                    endDate: e.endDate || undefined,
+                    fileName: e.fileName,
+                  })),
+                });
+                await refetch();
+              }}
+            />
           </div>
         </main>
       </div>

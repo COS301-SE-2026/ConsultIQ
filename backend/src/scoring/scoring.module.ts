@@ -13,13 +13,13 @@ import { WeightedAggregator } from './services/weight-aggregator/weighted-aggreg
 import { MatchRunController } from '../controllers/scoring-engine/match-run.controller';
 import { ScoringService } from './services/scoring-config.service';
 import { ScoringController } from '../controllers/scoring/scoring.controller';
-import { PrismaService } from '../prisma/prisma.service';
+//import { PrismaService } from '../prisma/prisma.service';
 import { MatchRunService } from './services/match-run.service';
 @Module({
   controllers: [MatchRunController, ScoringController],
   providers: [
     ScoringService,
-    PrismaService,
+    //PrismaService,
 
     MatchRunService,
     //Phase 1: Data ingestion and Normalization

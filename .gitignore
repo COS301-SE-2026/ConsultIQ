@@ -432,6 +432,17 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+*.pem
+*.pem*
+
 # End of https://www.toptal.com/developers/gitignore/api/nestjs,python,typescript,react,node,venv,visualstudiocode,windows,macos,linux
-. e n v . d o c k e r  
+. e n v . d o c k e r 
  
+ 
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

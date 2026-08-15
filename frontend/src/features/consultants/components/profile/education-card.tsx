@@ -71,6 +71,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   const [selected, setSelected] = useState<{ edu: Education; index: number } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [localEducation, setLocalEducation] = useState(educationList);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleEditClick = () => {
     setIsEditing(true);
@@ -85,12 +86,17 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
 
   }
 
-  const handleSave = () => {
-
-    onSave?.([...localEducation]);
-    setIsEditing(false);
-    toast.success("Education has been updated successfully");
-
+   const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave?.([...localEducation]);
+      setIsEditing(false);
+      toast.success("Education has been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   const addEducation = () => {
@@ -121,8 +127,6 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
   
     }
 
-
-
   return (
     <>
       <div
@@ -145,6 +149,7 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
           {canEdit && (
              <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}
@@ -175,17 +180,16 @@ function EducationCard({ educationList, canEdit, onSave }: EducationCardProps) {
 
                       <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
-                         variant= "secondary"
+                         variant= "ghost"
                          onClick={()=> setSelected({edu,index})}
-                         className="gap-2 font-bold px-4 py-2 border-b"
-                          style={actionButtonStyle}
+                         className="gap-2 font-bold px-3 py-1.5 shadow-md"
                        >
                          <Pencil size={16} className="text-slate-500"/>
 
                          Edit
                        </Button>
                        <Button
-                          variant= "secondary"
+                          variant= "default"
                          onClick={()=> removeEducation(index)}
                          className="p-2 border"
                          style={actionButtonStyle}

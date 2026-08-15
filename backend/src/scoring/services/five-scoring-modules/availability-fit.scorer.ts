@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { ScoringFactor } from '../../enums/scoring-factor.enum';
+
 //Remaining Capacity = 100% - (Sum of allocation_percentages of all projects the consultant is currently allocated to)
 //Across all projects where the start and end dates overlap
 @Injectable()
 export class AvailabilityFitScorer {
   private readonly prisma: PrismaService;
-
+  private readonly logger = new Logger(AvailabilityFitScorer.name);
   constructor(prisma: PrismaService) {
     this.prisma = prisma;
   }
@@ -46,56 +46,43 @@ export class AvailabilityFitScorer {
     );
 
     const remainingCapacity = 100 - totalAllocation;
-    if (project.requiredAllocationPercentage <= 0) {
+    const reqAlloc = project.requiredAllocationPercentage;
+    const detailString = `Requires ${reqAlloc}% capacity | Has ${remainingCapacity}% remaining`;
+
+    if (reqAlloc <= 0) {
       return {
         score: 1,
         triggerHardExclusion: false,
-        detail: {
-          factor: ScoringFactor.AVAILABILITY,
-          requiredAvailability: project.requiredAllocationPercentage,
-          currentAvailability: remainingCapacity,
-          withinAvailability: true,
-        },
+        details: 'Project requires 0% allocation.',
       };
     }
 
     if (remainingCapacity <= 0) {
+      this.logger.debug(
+        `Consultant Excluded [Project: ${project.projectId} | Consultant: ${consultant.consultantId}]. ` +
+        `Reason: No availability - 0% capacity remaining (Requires ${reqAlloc}%).`
+      );
       return {
         score: 0,
         triggerHardExclusion: true,
-        detail: {
-          factor: ScoringFactor.AVAILABILITY,
-          requiredAvailability: project.requiredAllocationPercentage,
-          currentAvailability: remainingCapacity,
-          withinAvailability: false,
-        },
+        details: `0% capacity available (Requires ${reqAlloc}%).`,
       };
     }
 
-    if (remainingCapacity >= project.requiredAllocationPercentage) {
+    if (remainingCapacity >= reqAlloc) {
       return {
         score: 1,
         triggerHardExclusion: false,
-        detail: {
-          factor: ScoringFactor.AVAILABILITY,
-          requiredAvailability: project.requiredAllocationPercentage,
-          currentAvailability: remainingCapacity,
-          withinAvailability: true,
-        },
+        details: detailString,
       };
     }
 
-    const score = remainingCapacity / project.requiredAllocationPercentage;
+    const score = remainingCapacity / reqAlloc;
     return {
       score,
       triggerHardExclusion: false,
 
-      detail: {
-        factor: ScoringFactor.AVAILABILITY,
-        requiredAvailability: project.requiredAllocationPercentage,
-        currentAvailability: remainingCapacity,
-        withinAvailability: false,
-      },
+      details: detailString,
     };
   }
 }

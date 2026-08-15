@@ -1,18 +1,18 @@
 export interface ParsedSkill {
-    skillName: string;
-    yearsExperience: number;
-    competencyLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT';
-    confidenceLevel: number;
+  skillName: string;
+  yearsExperience: number;
+  competencyLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT';
+  confidenceLevel: number;
 }
 
 export interface ParsedExperience {
-    jobTitle: string;
-    companyName: string;
-    jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
-    workModel: 'ONSITE' | 'REMOTE' | 'HYBRID';
-    startDate: string;
-    endDate?: string;
-    description: string;
+  jobTitle: string;
+  companyName: string;
+  jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
+  workModel: 'ONSITE' | 'REMOTE' | 'HYBRID';
+  startDate: string;
+  endDate?: string;
+  description: string;
 }
 
 export interface ParsedCertification {
@@ -31,19 +31,19 @@ export interface ParsedEducation {
 }
 
 export interface ParsedContactInfo {
-    fullName?: string;
-    email?: string;
-    phone?: string;
-    nationality?: string;
-    location?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  nationality?: string;
+  location?: string;
 }
 
 export interface ConfidenceScores {
-    contact: number;
-    skills: number;
-    experience: number;
-    certifications: number;
-    overall: number;
+  contact: number;
+  skills: number;
+  experience: number;
+  certifications: number;
+  overall: number;
 }
 
 export interface ParsedCvData {
@@ -55,8 +55,8 @@ export interface ParsedCvData {
 }
 
 export interface CvParsingResult {
-    success: boolean;
-    data?: ParsedCvData;
-    error?: string;
-    processingTimeMs: number;
+  success: boolean;
+  data?: ParsedCvData;
+  error?: string;
+  processingTimeMs: number;
 }

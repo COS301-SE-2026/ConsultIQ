@@ -14,12 +14,14 @@ type LocationPayload={
   readonly onEdit: ()=> void;
   readonly onCancel: ()=> void;
   readonly onSave: (fields: LocationPayload)=> void;
+  readonly isConsultant?: boolean;
 }
 
 export default function ProjectLocationSection({
-  project,isEditing, isDisabled, onEdit, onCancel, onSave
+  project,isEditing, isDisabled, onEdit, onCancel, onSave, isConsultant
 }: ProjectLocationSectionProps) {
 
+  const isNonConsultant= !isConsultant;
   const[currentLocation, setCurrentLocation]= useState<ProjectLocation>(project.location);
 
   const handleSaveField=(field: keyof ProjectLocation, changedVal: ProjectLocation[keyof ProjectLocation])=>{
@@ -61,9 +63,9 @@ export default function ProjectLocationSection({
 
   return (
     <Card style={{ padding: "20px", border: "none" }}>
-      <div className= "flex flex-center gap-3 mb-8">
+      <div className= "flex flex-center gap-3">
         <h3
-          className="text-3xl font-bold mb-8"
+          className="text-3xl font-bold mb-4"
           style={{ color: "var(--color-primary)" }}
         >
           Location
@@ -82,12 +84,15 @@ export default function ProjectLocationSection({
               <X className="h-5 w-5"/> Cancel
               </button>
               </div>):(
-                <button 
-                onClick={onEdit} 
-                disabled={isDisabled}
-                className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                <Edit className="h-5 w-5"/> 
-                </button>
+                isNonConsultant && (
+                  <button 
+                  onClick={onEdit} 
+                  disabled={isDisabled}
+                  className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
+                  <Edit className="h-5 w-5"/> 
+                  </button>
+                )
+                
               )}
             </div>
 

@@ -37,6 +37,10 @@ export class ConsultantProfileDto {
   addressLine2?: string | null;
   suburb?: string | null;
   city!: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  placeId?: string | null;
+  formattedAddress?: string | null;
   province!: string;
   postalCode?: string | null;
   costToCompany!: number;
@@ -44,4 +48,13 @@ export class ConsultantProfileDto {
   skills!: ConsultantSkillsDto[];
   experience!: ExperienceDTO[];
   certificates!: ConsultantCertificationsDto[];
+  education!: ConsultantEducationDto[];
+}
+
+export class ConsultantEducationDto {
+  id!: string;
+  institution!: string;
+  qualification!: string;
+  startDate!: Date;
+  endDate!: Date | null;
 }

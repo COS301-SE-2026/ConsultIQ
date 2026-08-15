@@ -43,6 +43,15 @@ const processQueue = (token: string | null) => {
   queue = [];
 };
 
+async function refreshWithCrossTabLock(): Promise<string | null> {
+  if(typeof navigator != "undefined" && "locks" in navigator){
+    return navigator.locks.request("ciq-refresh-token", async () => {
+      return refreshTokenFn();
+    });
+  }
+  return refreshTokenFn();
+}
+
 // ---- Response interceptor ----
 api.interceptors.response.use(
   (res) => res,
@@ -69,7 +78,7 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const newToken = await refreshTokenFn();
+      const newToken = await refreshWithCrossTabLock();
 
       if (!newToken) throw new Error("Refresh failed");
 

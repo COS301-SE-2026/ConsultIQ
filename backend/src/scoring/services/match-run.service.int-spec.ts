@@ -5,23 +5,23 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MatchRunService } from './match-run.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName, CompetencyLevel } from '@prisma/client';
-
-
-
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 async function createAdmin(prisma: PrismaService) {
   return prisma.user.create({
     data: {
-      email: 'admin@consultiq.com', fullName: 'IQ Admin', role: 'ADMIN'
+      email: 'admin@consultiq.com',
+      fullName: 'IQ Admin',
+      role: 'ADMIN',
     },
   });
 }
 
-
 async function createBackendSkill(prisma: PrismaService) {
   return prisma.skill.create({
     data: {
-      name: 'Java', category: 'Backend'
+      name: 'Java',
+      category: 'Backend',
     },
   });
 }
@@ -39,9 +39,12 @@ async function createConsultant(
 ) {
   const user = await prisma.user.create({
     data: {
-      email, fullName: 'IQ Consultant', status: 'ACTIVE', role: 'CONSULTANT'
-    }
-  })
+      email,
+      fullName: 'IQ Consultant',
+      status: 'ACTIVE',
+      role: 'CONSULTANT',
+    },
+  });
 
   return prisma.consultant.create({
     data: {
@@ -51,17 +54,18 @@ async function createConsultant(
       city,
       province,
       skills: {
-        create: [{
-          skillId,
-          competencyLevel,
-          yearsExperience,
-          confidenceLevel
-        }],
-      }
-    }
-  })
+        create: [
+          {
+            skillId,
+            competencyLevel,
+            yearsExperience,
+            confidenceLevel,
+          },
+        ],
+      },
+    },
+  });
 }
-
 
 async function createProject(
   prisma: PrismaService,
@@ -69,7 +73,7 @@ async function createProject(
   teamSize: number,
   skillId: string,
   overrides: { factorName: ScoringFactorName; overrideWeight: number }[],
-  extraData: any = {}
+  extraData: any = {},
 ) {
   const project = await prisma.project.create({
     data: {
@@ -86,15 +90,17 @@ async function createProject(
       allocation: 100,
       ...extraData,
       skills: {
-        create: [{
-          skillId,
-          competency: CompetencyLevel.INTERMEDIATE,
-          years: 5,
-          mandatory: true
-        }]
-      }
-    }
-  })
+        create: [
+          {
+            skillId,
+            competency: CompetencyLevel.INTERMEDIATE,
+            years: 5,
+            mandatory: true,
+          },
+        ],
+      },
+    },
+  });
 
   if (overrides.length > 0) {
     await prisma.projectScoringOverride.createMany({
@@ -102,8 +108,8 @@ async function createProject(
         projectId: project.id,
         factorName: o.factorName,
         overrideWeight: o.overrideWeight,
-      }))
-    })
+      })),
+    });
   }
   return project;
 }
@@ -113,7 +119,7 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
 
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ScoringModule],
+      imports: [ScoringModule, PrismaModule],
     }).compile();
 
     matchRunService = moduleRef.get<MatchRunService>(MatchRunService);
@@ -138,8 +144,6 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
     });
 
     it('should throw BadRequestException if project status is not OPEN or IN_PROGRESS', async () => {
-
-
       const project = await prisma.project.create({
         data: {
           projectName: 'Dependency Injection',
@@ -167,22 +171,33 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       // Seed Test DB
       const adminUser = await createAdmin(prisma);
       const backendSkill = await createBackendSkill(prisma);
-      const consultant = await createConsultant(prisma, 'consultant@consultiq.com', 400, 'Pretoria', 'State', backendSkill.id, CompetencyLevel.EXPERT, 5, 90);
-
+      const consultant = await createConsultant(
+        prisma,
+        'consultant@consultiq.com',
+        400,
+        'Pretoria',
+        'State',
+        backendSkill.id,
+        CompetencyLevel.EXPERT,
+        5,
+        90,
+      );
 
       // Project level weight configurations
       const project = await createProject(prisma, 600, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 }])
+        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 },
+      ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { runId, results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(1);
-      expect(result[0].consultantId).toBe(consultant.id);
+      expect(results).toBeDefined();
+      expect(runId).toBeDefined();
+      expect(results.length).toBe(1);
+      expect(results[0].consultantId).toBe(consultant.id);
 
       // verify that the match run was persisted
       const saveMatchRun = await prisma.matchRun.findFirst({
@@ -191,6 +206,7 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       });
 
       expect(saveMatchRun).toBeDefined();
+      expect(saveMatchRun?.id).toBe(runId);
       expect(saveMatchRun?.status).toBe('COMPLETED');
       expect(saveMatchRun?.totalConsultantsScored).toBe(1);
       expect(saveMatchRun?.executedByUserId).toBe(adminUser.id);
@@ -207,32 +223,60 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         data: { name: 'Java', category: 'Backend' },
       });
 
-      const consultantA = await createConsultant(prisma, 'consultantA@consultIq.com', 400, 'Pretoria', 'State', backendSkill.id, CompetencyLevel.EXPERT, 5, 90);
-      const consultantB = await createConsultant(prisma, 'consultantB@consultIq.com', 1100, 'Johannesburg', 'Cape Town', backendSkill.id, CompetencyLevel.BEGINNER, 2, 60);
-      const consultantC = await createConsultant(prisma, 'consultantC@consultIq.com', 1200, 'Johannesburg', 'Cape Town', backendSkill.id, CompetencyLevel.BEGINNER, 1, 40);
-
-
+      const consultantA = await createConsultant(
+        prisma,
+        'consultantA@consultIq.com',
+        400,
+        'Pretoria',
+        'State',
+        backendSkill.id,
+        CompetencyLevel.EXPERT,
+        5,
+        90,
+      );
+      const consultantB = await createConsultant(
+        prisma,
+        'consultantB@consultIq.com',
+        1100,
+        'Johannesburg',
+        'Cape Town',
+        backendSkill.id,
+        CompetencyLevel.BEGINNER,
+        2,
+        60,
+      );
+      const consultantC = await createConsultant(
+        prisma,
+        'consultantC@consultIq.com',
+        1200,
+        'Johannesburg',
+        'Cape Town',
+        backendSkill.id,
+        CompetencyLevel.BEGINNER,
+        1,
+        40,
+      );
 
       // Project level weight configurations
       const project = await createProject(prisma, 1000, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 }
-      ])
+        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 },
+      ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(3);
+      expect(results).toBeDefined();
+      expect(results.length).toBe(3);
 
-      expect(result[0].finalScore).toBeGreaterThan(result[1].finalScore);
-      expect(result[1].finalScore).toBeGreaterThan(result[2].finalScore);
+      expect(results[0].finalScore).toBeGreaterThan(results[1].finalScore);
+      expect(results[1].finalScore).toBeGreaterThan(results[2].finalScore);
 
-      expect(result[0].consultantId).toBe(consultantA.id);
-      expect(result[1].consultantId).toBe(consultantB.id);
-      expect(result[2].consultantId).toBe(consultantC.id);
+      expect(results[0].consultantId).toBe(consultantA.id);
+      expect(results[1].consultantId).toBe(consultantB.id);
+      expect(results[2].consultantId).toBe(consultantC.id);
 
       // verify that the match run was persisted
       const savedResults = await prisma.matchRunResult.findMany({
@@ -253,20 +297,29 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         data: { name: 'Java', category: 'Backend' },
       });
 
-      const consultant = await createConsultant(prisma, 'consultant2@consultIq.com', 400, 'Cape Town', 'Western Cape', backendSkill.id, CompetencyLevel.EXPERT, 8, 95)
-
-
-
+      const consultant = await createConsultant(
+        prisma,
+        'consultant2@consultIq.com',
+        400,
+        'Cape Town',
+        'Western Cape',
+        backendSkill.id,
+        CompetencyLevel.EXPERT,
+        8,
+        95,
+      );
 
       // Project level weight configurations
       const project = await createProject(prisma, 100, 1, backendSkill.id, [
         {
           factorName: ScoringFactorName.SKILL_ALIGNMENT,
           overrideWeight: 0.2,
-        }, {
+        },
+        {
           factorName: ScoringFactorName.COST_TO_COMPANY,
           overrideWeight: 0.2,
-        }, {
+        },
+        {
           factorName: ScoringFactorName.COMPETENCY_LEVEL,
           overrideWeight: 0.2,
         },
@@ -277,18 +330,18 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
         {
           factorName: ScoringFactorName.AVAILABILITY,
           overrideWeight: 0.2,
-        }
-      ])
+        },
+      ]);
 
-      const result = await matchRunService.executeMatchRun(
+      const { results } = await matchRunService.executeMatchRun(
         project.id,
         adminUser.id,
       );
 
-      expect(result).toBeDefined();
-      expect(result.length).toBe(1);
+      expect(results).toBeDefined();
+      expect(results.length).toBe(1);
 
-      const matchResult = result[0];
+      const matchResult = results[0];
       expect(matchResult.consultantId).toBe(consultant.id);
 
       const scoredFactors = matchResult.factorBreakdown.map((f) => f.factor);
@@ -297,8 +350,6 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       expect(scoredFactors).toContain('COMPETENCY_LEVEL');
       expect(scoredFactors).toContain('LOCATION');
       expect(scoredFactors).toContain('AVAILABILITY');
-
     });
-
   });
 });

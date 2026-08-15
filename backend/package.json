@@ -20,14 +20,16 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:int": "dotenv -e .env.test -- jest --config jest-int.json --runInBand",
     "test:int:db-push": "dotenv -e .env.test -- npx prisma db push",
-    "test:int:setup": "npm run test:int:db-push && npm run test:int"
+    "test:int:setup": "npm run test:int:db-push && npm run test:int",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate:deploy": "prisma migrate deploy"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1069.0",
-    "@aws-sdk/s3-request-presigner": "^3.1069.0",
+    "@aws-sdk/client-s3": "^3.1093.0",
+    "@aws-sdk/s3-request-presigner": "^3.1093.0",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
@@ -43,13 +45,13 @@
     "bullmq": "^5.78.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
-    "ioredis": "^5.11.1",
     "cookie-parser": "^1.4.7",
     "i": "^0.3.7",
+    "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
     "mammoth": "^1.12.0",
     "multer": "^2.2.0",
-    "pdf-parse": "^1.1.1",
+    "pdf-parse": "^1.1.4",
     "prisma": "^6.19.3",
     "redis": "^6.1.0",
     "reflect-metadata": "^0.2.2",
@@ -70,7 +72,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/multer": "^2.1.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
     "@types/pdf-parse": "^1.1.5",
     "@types/supertest": "^7.0.0",
@@ -108,32 +110,21 @@
     "coveragePathIgnorePatterns": [
       ".*\\.module\\.ts$",
       ".*\\.dto\\.ts$",
-      "main\\.ts$",
-      ".*\\.d\\.ts$",
-      "prisma\\.service\\.ts$",
-      ".*interceptor\\.ts$",
-      ".*repository\\.ts$",
-      "projects\\.module\\.ts$",
-      "consultants\\.module\\.ts$",
-      "email\\.module\\.ts$",
-      "common\\.module\\.ts$",
-      "auth\\.module\\.ts$",
-      "consultant-list\\.dto\\.ts$",
-      "consultant-profile\\.dto\\.ts$",
-      "project-list\\.dto\\.ts$"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      ".*\\.module\\.ts$",
-      ".*\\.dto\\.ts$",
       ".*\\.entity\\.ts$",
       ".*\\.int-spec\\.ts$",
       ".*\\.d\\.ts$",
       "main\\.ts$",
       "redis-io\\.adapter\\.ts$",
-      ".*\\.interceptor\\.ts$"
+      ".*\\.interceptor\\.ts$",
+      "scoring\\.controller\\.ts$",
+      "cv-ocr\\.service\\.ts$",
+      "cv-parsing\\.service\\.ts$",
+      "s3\\.service\\.ts$",
+      "section-patterns\\.ts$",
+      "skills\\.dictionary\\.ts$"
     ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node",
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)/prisma/client$": "<rootDir>/common/__mocks__/prisma.service.ts"
     }

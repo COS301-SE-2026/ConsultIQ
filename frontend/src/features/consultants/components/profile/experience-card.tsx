@@ -84,9 +84,10 @@ function ExperienceInfo({exp}:{readonly exp: Experience}){
 }
 
 function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
-  const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
-  const [isEditing,setIsEditing]= useState(false);
-  const [localExperience,setLocalExperience]= useState(experiences);
+const [selected, setSelected] = useState<{exp: Experience; index: number }| null>(null);
+const [isEditing,setIsEditing]= useState(false);
+const [localExperience,setLocalExperience]= useState(experiences);
+const [isSaving, setIsSaving] = useState(false);
   
   
 
@@ -104,13 +105,18 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
   }
 
-  const handleSave = () => {
-
-    onSave?.([...localExperience]);
+const handleSave = async () => {
+  setIsSaving(true);
+  try {
+    await onSave?.([...localExperience]);
     setIsEditing(false);
     toast.success("Experience has been updated successfully");
-
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+  } finally {
+    setIsSaving(false);
   }
+};
 
   const addExperience = () => {
 
@@ -167,6 +173,7 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
             {canEdit && (
                 <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}
@@ -194,21 +201,16 @@ function ExperienceCard({ experiences, canEdit, onSave }: ExperienceCardProps) {
 
                     <div className="flex items-center gap-2 shrink-0 ml-4">
                        <Button
-                         variant= "secondary"
+                         variant= "ghost"
                          onClick={()=> setSelected({exp,index})}
-                         className="gap-2 font-bold px-4 py-2 border-b"
-                          style={{
-                           boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                           fontSize: "14px",
-                           padding: "6px 12px",
-                         }}
+                         className="gap-2 font-bold px-3 text-sm py-1.5 shadow-md"
                        >
                          <Pencil size={16} className="text-slate-500"/>
 
                          Edit
                        </Button>
                        <Button
-                          variant= "secondary"
+                          variant= "default"
                          onClick={()=> removeExperience(index)}
                          className="p-2 border"
                          style={{

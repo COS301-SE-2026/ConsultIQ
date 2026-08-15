@@ -13,6 +13,7 @@ interface ProjectOverviewSectionProps {
   readonly onSave: (fields:{ name: string, projectName:string, clientName: string,
           teamSize: number, budget: number, startDate: string, endDate: string, status: Project['status'],
           description: string})=>| void;
+  readonly isConsultant?: boolean;
 }
 
 const formatDate = (dateString?: string) => {
@@ -30,9 +31,14 @@ const formatDate = (dateString?: string) => {
     year: "numeric",
   });
 };
+const formatStatus= (status: string): string=>{
+  if(!status) return "N/A";
+  return status.replaceAll(/_/g," ").replaceAll(/\w\S*/g, (text) =>
+    text.charAt(0).toUpperCase()+ text.substring(1).toLocaleLowerCase());
+}
 
 export default function ProjectOverviewSection({
-  project, isEditing, isDisabled, onEdit, onCancel, onSave,
+  project, isEditing, isDisabled, onEdit, onCancel, onSave,isConsultant
 }: ProjectOverviewSectionProps) {
   const [projectName, setProjectName]= useState(project.name);
   const [clientName, setClientName]= useState(project.clientName);
@@ -43,13 +49,15 @@ export default function ProjectOverviewSection({
   const [status, setStatus]= useState(project.status);
   const [description, setDescription] = useState(project.description);
 
+  const isNonConsultant= !isConsultant;
+
   const handleSave= ()=>{
     onSave({
       name: projectName,
       projectName: projectName,
       clientName: clientName,
       teamSize: teamSize,
-      budget: budget,
+      budget: budget || 0,
       startDate: startDate,
       endDate: endDate,
       status: status,
@@ -58,8 +66,6 @@ export default function ProjectOverviewSection({
   }
 
   const renderEditingSection=() =>(
-    <>
-      <div className="h-6"/>
     <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className = "flex flex-col gap-1">
         <label htmlFor="project-name" className="text-base font-semibold">Project Name</label>
@@ -124,12 +130,10 @@ export default function ProjectOverviewSection({
         className="text-base text-white rounded border"/>
       </div>
     </div>
-    </>
   )
 
   const renderReadOnlySection=()=>(
     <>
-  <div className="h-2" />
       <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-4">
         <Info label="Project Name" value={project.name} />
         <Info label="Client Name" value={project.clientName} />
@@ -137,10 +141,9 @@ export default function ProjectOverviewSection({
         <Info label="Budget" value={`R${project.budget}`} />
         <Info label="Start Date" value={formatDate(project.startDate)} />
         <Info label="End Date" value={formatDate(project.endDate)} />
-        <Info label="Project Status" value={project.status} />
+        <Info label="Project Status" value={formatStatus(project.status)} />
       </div>
       <div className="mt-8">
-      <div className="h-2" />
         <p className="text-lg font-semibold mb-2">Description</p>
         <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
           {project.description}
@@ -155,14 +158,13 @@ export default function ProjectOverviewSection({
   return (
     <Card style={{ padding: "20px", border: "none" }}
      className= {`${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
-      <div className="flex flex-center gap-3 mb-8">
+      <div className="flex flex-center gap-3">
         <h3
-          className="text-3xl font-bold mb-8"
+          className="text-3xl font-bold mb-4"
           style={{ color: "var(--color-primary)" }}
         >
           Overview
         </h3>
-        <div className= "h-6"/>
         <div>
           {isEditing ? (
             <div className="flex gap-4">
@@ -177,12 +179,15 @@ export default function ProjectOverviewSection({
               <X className="h-5 w-5"/> Cancel
               </button>
               </div>):(
-                <button 
-                onClick={onEdit} 
-                disabled={isDisabled}
-                className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                <Edit className="h-5 w-5"/> 
-                </button>
+                isNonConsultant && (
+                  <button 
+                  onClick={onEdit} 
+                  disabled={isDisabled}
+                  className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
+                  <Edit className="h-5 w-5"/> 
+                  </button>
+                )
+              
               )}
             </div>
         </div>

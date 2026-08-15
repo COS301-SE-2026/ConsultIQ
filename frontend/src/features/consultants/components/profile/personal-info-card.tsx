@@ -12,7 +12,7 @@ interface PersonalInfoCardProps {
   readonly idNumber?: string;
   readonly nationality?: string;
   readonly canEdit?:boolean;
-  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => void;
+  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => Promise<void> | void;
 }
 
     function validateSAID(id: string): boolean {
@@ -58,8 +58,7 @@ export default function PersonalInfoCard({
    const [nationalityError, setNationalityError] = useState("");
    const [emailError,setEmailError] = useState("");
    const [nameError,setNameError]= useState("");
-
-
+   const [isSaving, setIsSaving] = useState(false);
 
    const handleEditClick = () => {
     setIsEditing(true);
@@ -80,8 +79,7 @@ export default function PersonalInfoCard({
 
    }
 
-
-   const handleSave = () => {
+   const handleSave = async () => {
 
      let isValid = true;
 
@@ -139,31 +137,39 @@ export default function PersonalInfoCard({
 
      if(!isValid) return;
     
-     //callback to api function in parent
-     onSave?.({ fullName: fullNameState, email: emailState, phone: phoneNumber, idNumber: localIdNumber, nationality: nationalityStatus });
-     
-
-
-     setIsEditing(false);
-     toast.success("Personal information has been updated successfully");
-
-
-   }
+    setIsSaving(true);
+    try {
+      const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
+      await onSave?.({ fullName: fullNameState, email: emailState, phone: normalizedPhone, idNumber: localIdNumber, nationality: nationalityStatus });
+      setIsEditing(false);
+      toast.success("Personal information has been updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update — please try again");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
    
 
   return (
     <div className="relative">
-       <SectionCard title="Personal Information" >
-
-       {canEdit && (
+       <SectionCard 
+        title="Personal Information" 
+        edit={
+          canEdit && (
            <EditControls
                   isEditing={isEditing}
+                  isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
-        )}
+          )
+        }
+        >
+
+       
 
       <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: "28px" }}>
 

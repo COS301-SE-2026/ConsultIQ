@@ -27,7 +27,7 @@ function ForgotPasswordPage() {
     }
 
   return (
-    <div className=" relative min-h-screen bg-[#F4F6FA] ">
+    <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start bg-[#F4F6FA] overflow-hidden p-4">
     
     <div className="hidden lg:block relative w-1/2 h-screen">
       {/* Navy Polygon */}
@@ -45,7 +45,7 @@ function ForgotPasswordPage() {
 
 
       {/* Gold Glow */}
-      <div className="absolute left-[50%] top-1/2  -translate-y-1/2 z-10">
+    <div className="relative z-10 w-full lg:w-1/2 flex flex-col items-center justify-center">
         <div className="lg:hidden mb-8 px-8 py-6 rounded-2xl bg-[#092352]">
           <img 
             src={consultIqLogo}

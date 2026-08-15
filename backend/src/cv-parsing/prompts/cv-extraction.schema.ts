@@ -1,8 +1,8 @@
 // Defines the JSON shape Claude returns extracted data in
-
+import Anthropic from '@anthropic-ai/sdk';
 export const CV_EXTRACTION_TOOL_NAME = 'record_cv_data';
 
-export const cvExtractionSchema = {
+export const cvExtractionSchema: Anthropic.Tool = {
     name: CV_EXTRACTION_TOOL_NAME,
     description: 'Extracts structured data from a CV document: contact info, skills, experience, certifications, and education.',
     input_schema: {
@@ -139,4 +139,4 @@ export const cvExtractionSchema = {
         },
         required: ['contact', 'skills', 'experiences', 'certifications', 'education', 'confidenceScores'],
     },
-} as const;
+};

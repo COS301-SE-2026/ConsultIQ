@@ -4,7 +4,7 @@ import consultIqLogo from "../../../assets/logos/ConsultIQ Logo Dark.png";
         readonly children: React.ReactNode;
     }
 
-    function ConsultIqLogo({className}: {className?: string}){
+    function ConsultIqLogo({className}: {readonly className?: string}){
         return(
             <img
             src={consultIqLogo}

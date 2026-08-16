@@ -301,11 +301,11 @@ describe('AuthService', () => {
       await expect(service.forgotPassword(emailAdress)).rejects.toThrow();
     });
 
-    it('should not throw id sending the reset email fails', async()=>{
+    it('should not throw if sending the reset email fails', async()=>{
        jest.spyOn(console, 'error').mockImplementation(() => {});
        prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
        prisma.token.count.mockResolvedValue(0);
-       prisma.token.create( MOCK_TOKEN_RECORD as any);
+       prisma.token.create.mockResolvedValue( MOCK_TOKEN_RECORD as any);
        email.sendPasswordResetEmail.mockRejectedValue(new Error('Email provider down'));
 
        await expect(service.forgotPassword(emailAdress)).resolves.toBeDefined();

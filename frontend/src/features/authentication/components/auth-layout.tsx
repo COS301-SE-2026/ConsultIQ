@@ -1,10 +1,9 @@
 import consultIqLogo from "../../../assets/logos/ConsultIQ Logo Dark.png";
 
-type AuthLayoutProps= {
-    readonly children: React.ReactNode;
-}
+    type AuthLayoutProps= {
+        readonly children: React.ReactNode;
+    }
 
-export default function AuthLayout({ children }: AuthLayoutProps){
     function ConsultIqLogo({className}: {className?: string}){
         return(
             <img
@@ -13,7 +12,8 @@ export default function AuthLayout({ children }: AuthLayoutProps){
             className={className}/>
         );
     }
-        
+
+export default function AuthLayout({ children }: AuthLayoutProps){  
     return (
     <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start bg-[#F4F6FA] overflow-hidden p-4">
         

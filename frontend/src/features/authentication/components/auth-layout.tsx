@@ -5,7 +5,16 @@ type AuthLayoutProps= {
 }
 
 export default function AuthLayout({ children }: AuthLayoutProps){
-     return (
+    function ConsultIqLogo({className}: {className?: string}){
+        return(
+            <img
+            src={consultIqLogo}
+            alt="ConsultIQ Logo"
+            className={className}/>
+        );
+    }
+        
+    return (
     <div className="relative min-h-screen w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start bg-[#F4F6FA] overflow-hidden p-4">
         
         <div className="hidden lg:block relative w-1/2 h-screen">
@@ -14,20 +23,14 @@ export default function AuthLayout({ children }: AuthLayoutProps){
           {/* Logo */}
           <div className="relative z-10 "
           style={{top: "30%", left:"60%", transform:"translate(-50%, -50%)"}}>
-              <img 
-                src={consultIqLogo}
-                alt="ConsultIQ Logo"
-                className="w-[228px] h-auto object-contain"
+              <ConsultIqLogo className="w-[228px] h-auto object-contain"
               />
           </div>
         </div>
 
     <div className="relative z-10 w-full lg:w-1/2 flex flex-col items-center justify-center">
         <div className="lg:hidden mb-8 px-8 py-6 rounded-2xl bg-[#092352]">
-          <img 
-            src={consultIqLogo}
-            alt="ConsultIQ Logo"
-            className="w-[160px] h-auto object-contain"
+          <ConsultIqLogo className="w-[160px] h-auto object-contain"
           />
       </div>
       {children}

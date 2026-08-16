@@ -3,21 +3,21 @@ import { useNavigate } from "react-router-dom";
 import { Check, X } from "lucide-react";
 
 interface PasswordFormProps {
-  email?: string;
-  token?: string;
-  title?: string;
-  description?: string;
-  submitLabel?: string;
+  readonly email?: string;
+  readonly token?: string;
+  readonly title?: string;
+  readonly description?: string;
+  readonly submitLabel?: string;
   onSubmit: (payload: {email?: string; token?: string; password: string}) => Promise<unknown>;
-  successRedirect?: string;
-  successMessage?: string;
+  readonly successRedirect?: string;
+  readonly successMessage?: string;
 }
 
 const passwordRules = [
   { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
   { label: "At least one uppercase letter", test: (p: string) => /[A-Z]/.test(p) },
   { label: "At least one lowercase letter", test: (p: string) => /[a-z]/.test(p) },
-  { label: "At least one number", test: (p: string) => /[0-9]/.test(p) },
+  { label: "At least one number", test: (p: string) => /\d/.test(p) },
   { label: "At least one special character", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
 ];
 

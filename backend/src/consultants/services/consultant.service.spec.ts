@@ -8,6 +8,7 @@ import {
 import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
+
 const mockPrismaService = {
   user: {
     findUnique: jest.fn(),
@@ -17,10 +18,29 @@ const mockPrismaService = {
     findUnique: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
+    create: jest.fn(),
+  },
+  consultantManager: {
+    create: jest.fn(),
+  },
+  skill: {
+    upsert: jest.fn(),
+  },
+  consultantSkill: {
+    create: jest.fn(),
+  },
+  consultantExperience: {
+    create: jest.fn(),
+  },
+  certificate: {
+    create: jest.fn(),
+  },
+  projectPlacement: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   $transaction: jest.fn(),
 };
-
 
 const mockNotificationService = {
   createAndSendNotification: jest.fn(),
@@ -112,6 +132,79 @@ describe('ConsultantService', () => {
       const result = await service.createConsultantProfile(cmUserId, dto as any);
       expect(result.message).toBe('Consultant profile created successfully.');
       expect(result.consultantId).toBe('new-consultant-uuid');
+    });
+
+    it('should correctly map location fields when they are provided in the DTO', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        return callback(mockPrismaService);
+      });
+
+      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
+      mockPrismaService.consultantManager.create.mockResolvedValue({});
+      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockPrismaService.consultantSkill.create.mockResolvedValue({});
+      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+
+      const dtoWithLocation = {
+        ...dto,
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123dehdhdj',
+        formattedAddress: 'Pretoria, South Africa',
+      };
+
+      await service.createConsultantProfile(cmUserId, dtoWithLocation as any);
+
+      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: -25.7479,
+            longitude: 28.2293,
+            placeId: '123dehdhdj',
+            formattedAddress: 'Pretoria, South Africa',
+          }),
+        }),
+      );
+    });
+
+    it('should default location fields to null when they are not provided', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        return callback(mockPrismaService);
+      });
+
+      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
+      mockPrismaService.consultantManager.create.mockResolvedValue({});
+      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockPrismaService.consultantSkill.create.mockResolvedValue({});
+      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+
+      const dtoWithoutLocation = { ...dto } as any;
+      delete dtoWithoutLocation.latitude;
+      delete dtoWithoutLocation.longitude;
+      delete dtoWithoutLocation.placeId;
+      delete dtoWithoutLocation.formattedAddress;
+
+      await service.createConsultantProfile(cmUserId, dtoWithoutLocation);
+      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: null,
+            longitude: null,
+            placeId: null,
+            formattedAddress: null,
+          }),
+        }),
+      );
     });
   });
 
@@ -366,22 +459,7 @@ describe('ConsultantService', () => {
   });
 
   //-------Consultant get assigned projects
-  const mockPrismaService = {
-    user: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-    },
-    consultant: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-    },
-    projectPlacement: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-    },
-    $transaction: jest.fn(),
-  };
+
 
   describe('getAssignedProjects', () => {
     it('throws NotFoundException when consultant profile does not exist', async () => {
@@ -527,303 +605,361 @@ describe('ConsultantService', () => {
 
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
-  const consultantId = 'consultant-uuid-1';
+    const consultantId = 'consultant-uuid-1';
 
-  it('should throw NotFoundException if consultant does not exist', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+    it('should throw NotFoundException if consultant does not exist', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
 
-    await expect(
-      service.updateConsultantProfile(consultantId, {}),
-    ).rejects.toThrow(NotFoundException);
-  });
-
-  it('should update basic fields without touching skills, experiences or certifications', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
-    });
-    mockPrismaService.$transaction.mockResolvedValue([{}]);
-
-    const result = await service.updateConsultantProfile(consultantId, {
-      phone: '0821234567',
-      nationality: 'South African',
+      await expect(
+        service.updateConsultantProfile(consultantId, {}),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
-    expect(result.message).toBe('Consultant profile updated successfully.');
-  });
+    it('should update basic fields without touching skills, experiences or certifications', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+      mockPrismaService.$transaction.mockResolvedValue([{}]);
 
-  it('should replace all skills when provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
+      const result = await service.updateConsultantProfile(consultantId, {
+        phone: '0821234567',
+        nationality: 'South African',
+      });
+
+      expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
+      expect(result.message).toBe('Consultant profile updated successfully.');
     });
 
-    const txMock = {
-      consultant: { update: jest.fn().mockResolvedValue({}) },
-      consultantSkill: {
-        deleteMany: jest.fn().mockResolvedValue({}),
-        create: jest.fn().mockResolvedValue({}),
-      },
-      skill: {
-        upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
-      },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-    };
+    it('should replace all skills when provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
 
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
-
-    await service.updateConsultantProfile(consultantId, {
-      skills: [
-        { skillName: 'TypeScript', yearsExperience: 5, confidenceLevel: 4 },
-      ],
-    });
-
-    expect(txMock.consultantSkill.deleteMany).toHaveBeenCalledWith({
-      where: { consultantId },
-    });
-    expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
-  });
-
-  it('should recompute competency level', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
-    });
-
-    let capturedSkillData: any = null;
-
-    const txMock = {
-      consultant: { update: jest.fn().mockResolvedValue({}) },
-      consultantSkill: {
-        deleteMany: jest.fn().mockResolvedValue({}),
-        create: jest.fn().mockImplementation((args) => {
-          capturedSkillData = args.data;
-          return Promise.resolve({});
-        }),
-      },
-      skill: {
-        upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
-      },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-    };
-
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
-
-    await service.updateConsultantProfile(consultantId, {
-      skills: [
-        { skillName: 'React', yearsExperience: 5, confidenceLevel: 4 },
-      ],
-    });
-
-    expect(capturedSkillData.competencyLevel).toBe('EXPERT');
-  });
-
-  it('should replace all experiences when provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
-    });
-
-    const txMock = {
-      consultant: { update: jest.fn().mockResolvedValue({}) },
-      consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-      skill: { upsert: jest.fn() },
-      consultantExperience: {
-        deleteMany: jest.fn().mockResolvedValue({}),
-        create: jest.fn().mockResolvedValue({}),
-      },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-    };
-
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
-
-    await service.updateConsultantProfile(consultantId, {
-      experiences: [
-        {
-          jobTitle: 'Developer',
-          companyName: 'ConsultIQ',
-          jobType: 'FULL_TIME',
-          workModel: 'REMOTE',
-          startDate: '2022-01-01T00:00:00.000Z',
-          description: 'Built things.',
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
         },
-      ],
+        skill: {
+          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
+        },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        skills: [
+          { skillName: 'TypeScript', yearsExperience: 5, confidenceLevel: 4 },
+        ],
+      });
+
+      expect(txMock.consultantSkill.deleteMany).toHaveBeenCalledWith({
+        where: { consultantId },
+      });
+      expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
     });
 
-    expect(txMock.consultantExperience.deleteMany).toHaveBeenCalledWith({
-      where: { consultantId },
-    });
-    expect(txMock.consultantExperience.create).toHaveBeenCalledTimes(1);
-  });
+    it('should recompute competency level', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
 
-  it('should replace all certifications  provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
-    });
+      let capturedSkillData: any = null;
 
-    const txMock = {
-      consultant: { update: jest.fn().mockResolvedValue({}) },
-      consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-      skill: { upsert: jest.fn() },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: {
-        deleteMany: jest.fn().mockResolvedValue({}),
-        create: jest.fn().mockResolvedValue({}),
-      },
-    };
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockImplementation((args) => {
+            capturedSkillData = args.data;
+            return Promise.resolve({});
+          }),
+        },
+        skill: {
+          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
+        },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+      };
 
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
 
-    await service.updateConsultantProfile(consultantId, {
-      certifications: [
-        { title: 'AWS Certified Developer', issuingBody: 'Amazon' },
-      ],
-    });
+      await service.updateConsultantProfile(consultantId, {
+        skills: [
+          { skillName: 'React', yearsExperience: 5, confidenceLevel: 4 },
+        ],
+      });
 
-    expect(txMock.certificate.deleteMany).toHaveBeenCalledWith({
-      where: { consultantId },
-    });
-    expect(txMock.certificate.create).toHaveBeenCalledTimes(1);
-  });
-
-  it('should replace all education entries when provided', async () => {
-  mockPrismaService.consultant.findUnique.mockResolvedValue({
-    id: consultantId,
-  });
-
-  const txMock = {
-    consultant: { update: jest.fn().mockResolvedValue({}) },
-    consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-    skill: { upsert: jest.fn() },
-    consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-    certificate: { deleteMany: jest.fn(), create: jest.fn() },
-    consultantEducation: {
-      deleteMany: jest.fn().mockResolvedValue({}),
-      create: jest.fn().mockResolvedValue({}),
-    },
-  };
-
-  mockPrismaService.$transaction.mockImplementation(
-    async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-  );
-
-  await service.updateConsultantProfile(consultantId, {
-    education: [
-      {
-        institution: 'University of Pretoria',
-        qualification: 'BSc Computer Science',
-        startDate: '2022-01-01T00:00:00.000Z',
-        endDate: '2025-12-01T00:00:00.000Z',
-      },
-    ],
-  });
-
-  expect(txMock.consultantEducation.deleteMany).toHaveBeenCalledWith({
-    where: { consultantId },
-  });
-  expect(txMock.consultantEducation.create).toHaveBeenCalledTimes(1);
-});
-
-  it('should not touch education when not provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
+      expect(capturedSkillData.competencyLevel).toBe('EXPERT');
     });
 
-    const txMock = {
-      consultant: { update: jest.fn().mockResolvedValue({}) },
-      consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-      skill: { upsert: jest.fn() },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-      consultantEducation: {
-        deleteMany: jest.fn().mockResolvedValue({}),
-        create: jest.fn().mockResolvedValue({}),
-      },
-    };
+    it('should replace all experiences when provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
 
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+      };
 
-    await service.updateConsultantProfile(consultantId, {
-      phone: '0821234567',
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        experiences: [
+          {
+            jobTitle: 'Developer',
+            companyName: 'ConsultIQ',
+            jobType: 'FULL_TIME',
+            workModel: 'REMOTE',
+            startDate: '2022-01-01T00:00:00.000Z',
+            description: 'Built things.',
+          },
+        ],
+      });
+
+      expect(txMock.consultantExperience.deleteMany).toHaveBeenCalledWith({
+        where: { consultantId },
+      });
+      expect(txMock.consultantExperience.create).toHaveBeenCalledTimes(1);
     });
 
-    expect(txMock.consultantEducation.deleteMany).not.toHaveBeenCalled();
-    expect(txMock.consultantEducation.create).not.toHaveBeenCalled();
-  });
+    it('should replace all certifications  provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
 
-  it('should update address fields when provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        certifications: [
+          { title: 'AWS Certified Developer', issuingBody: 'Amazon' },
+        ],
+      });
+
+      expect(txMock.certificate.deleteMany).toHaveBeenCalledWith({
+        where: { consultantId },
+      });
+      expect(txMock.certificate.create).toHaveBeenCalledTimes(1);
     });
 
-    const updateSpy = jest.fn().mockResolvedValue({});
-    const txMock = {
-      consultant: { update: updateSpy },
-      consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-      skill: { upsert: jest.fn() },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-      consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
-    };
+    it('should replace all education entries when provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
 
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+        consultantEducation: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+      };
 
-    await service.updateConsultantProfile(consultantId, {
-      addressLine1: '742 Evergreen Terrace',
-      city: 'Pretoria',
-      province: 'Gauteng',
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        education: [
+          {
+            institution: 'University of Pretoria',
+            qualification: 'BSc Computer Science',
+            startDate: '2022-01-01T00:00:00.000Z',
+            endDate: '2025-12-01T00:00:00.000Z',
+          },
+        ],
+      });
+
+      expect(txMock.consultantEducation.deleteMany).toHaveBeenCalledWith({
+        where: { consultantId },
+      });
+      expect(txMock.consultantEducation.create).toHaveBeenCalledTimes(1);
     });
 
-    expect(updateSpy).toHaveBeenCalledWith({
-      where: { id: consultantId },
-      data: expect.objectContaining({
+    it('should not touch education when not provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+        consultantEducation: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        phone: '0821234567',
+      });
+
+      expect(txMock.consultantEducation.deleteMany).not.toHaveBeenCalled();
+      expect(txMock.consultantEducation.create).not.toHaveBeenCalled();
+    });
+
+    it('should update address fields when provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const updateSpy = jest.fn().mockResolvedValue({});
+      const txMock = {
+        consultant: { update: updateSpy },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+        consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
         addressLine1: '742 Evergreen Terrace',
         city: 'Pretoria',
         province: 'Gauteng',
-      }),
-    });
-  });
+      });
 
-  it('should update availability status when provided', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({
-      id: consultantId,
-    });
-
-    const updateSpy = jest.fn().mockResolvedValue({});
-    const txMock = {
-      consultant: { update: updateSpy },
-      consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-      skill: { upsert: jest.fn() },
-      consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-      certificate: { deleteMany: jest.fn(), create: jest.fn() },
-      consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
-    };
-
-    mockPrismaService.$transaction.mockImplementation(
-      async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-    );
-
-    await service.updateConsultantProfile(consultantId, {
-      availability: 'UNAVAILABLE',
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          addressLine1: '742 Evergreen Terrace',
+          city: 'Pretoria',
+          province: 'Gauteng',
+        }),
+      });
     });
 
-    expect(updateSpy).toHaveBeenCalledWith({
-      where: { id: consultantId },
-      data: expect.objectContaining({
+    it('should update availability status when provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const updateSpy = jest.fn().mockResolvedValue({});
+      const txMock = {
+        consultant: { update: updateSpy },
+        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
+        skill: { upsert: jest.fn() },
+        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
+        certificate: { deleteMany: jest.fn(), create: jest.fn() },
+        consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
         availability: 'UNAVAILABLE',
-      }),
+      });
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          availability: 'UNAVAILABLE',
+        }),
+      });
     });
-  });
+
+    it('should update location fields when valid location data is provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+      };
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123heivehew',
+        formattedAddress: 'Pretoria, South Africa',
+      });
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          latitude: -25.7479,
+          longitude: 28.2293,
+          placeId: '123heivehew',
+          formattedAddress: 'Pretoria, South Africa',
+        }),
+      });
+    });
+
+    it('should fallback to null, for location fields if only partial location data is provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        latitude: -25.7479,
+      });
+
+
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          latitude: -25.7479,
+          longitude: null,
+          placeId: null,
+          formattedAddress: null,
+        }),
+      });
+    });
   });
 });

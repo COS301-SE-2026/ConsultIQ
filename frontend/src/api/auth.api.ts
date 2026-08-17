@@ -50,3 +50,20 @@ export async function acceptTerms(email: string): Promise<{ message: string }> {
   });
   return handleResponse(res);
 }
+
+export async function forgotPassword({email}: {email: string}){
+  const res= await fetch(`${API_BASE_URL}/auth/forgot-password`,{
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email}),
+  });
+  return handleResponse(res);
+}
+export async function resetPassword(payload: ActivateAccountPayload){
+  const res= await fetch(`${API_BASE_URL}/auth/reset-password`,{
+    method: "POST",
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+}

@@ -21,6 +21,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { UserAgent } from '../../common/decorators/user-agent.decorator';
 import { LoginDto } from '../../auth/dto/login.dto';
+import { ForgotPasswordDto } from '../../auth/dto/forgot-password.dto';
 // import { UseGuards } from '@nestjs/common';
 // import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { Role } from '../../auth/enums/role.enum';
@@ -119,6 +120,20 @@ export class AuthController {
       message: 'Login successful.',
       result: userProfile,
     };
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{message: string}>{
+    return await this.authService.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ActivateAccountDto): Promise<{message: string}>{
+    return await this.authService.resetPassword(dto);
   }
 
   // TASK-17: Validate refresh token and issue new JWT + refresh token

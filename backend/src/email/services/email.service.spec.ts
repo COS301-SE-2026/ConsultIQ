@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument */
+import { Subject } from 'rxjs';
 import { EmailService } from './email.service';
 
 describe('EmailService', () => {
@@ -74,4 +75,57 @@ describe('EmailService', () => {
       ).rejects.toThrow('Provider error');
     });
   });
+
+  describe('sendPasswordResetEmail', ()=>{
+    it('should call resend with the reset email payload', async()=>{
+      await service.sendPasswordResetEmail(
+        'botho@consultiq.com',
+        'Botho Smith',
+        'http://localhost:5173/reset-password?token=abc123&email=botho%40consultiq.com',
+      );
+
+      expect(mockResendSend).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'botho@consultiq.com',
+          subject: 'Reset your ConsultIQ password',
+        }),
+      );
+    });
+
+    it('should include the reset link in the body of the email', async()=>{
+      const resetLink='http://localhost:5173/reset-password?token=abc123&email=botho%40consultiq.com';
+    
+      await service.sendPasswordResetEmail(
+        'botho@consultiq.com',
+        'Botho Smith',
+        resetLink,
+      );
+
+      const args= mockResendSend.mock.calls[0][0];
+      expect(args.html).toContain(resetLink);
+    });
+
+    it('should include recipient name in the reset email body', async()=>{
+      await service.sendPasswordResetEmail(
+        'botho@consultiq.com',
+        'Botho Smith',
+        'http://localhost:5173/reset-password?token=abc123&email=botho%40consultiq.com',
+      );
+
+      const args= mockResendSend.mock.calls[0][0];
+      expect(args.html).toContain('Botho Smith');
+    });
+
+    it('should propagate errors from the email provider', async()=>{
+      mockResendSend.mockRejectedValue(new Error('Provider error'));
+
+      await expect(
+        service.sendPasswordResetEmail(
+        'botho@consultiq.com',
+        'Botho Smith',
+        'http://localhost:5173/reset-password?token=abc123&email=botho%40consultiq.com',
+      ),
+    ).rejects.toThrow('Provider error');
+    });   
+  })
 });

@@ -176,10 +176,12 @@ describe('RefreshTokenService', () => {
 
         //  Replay attack detection 
 
-        it('should throw 401 when token has already been used (replay attack)', async () => {
+        it('should throw 401 when token has already been used outside of the 20seconds grade period (replay attack)', async () => {
+            const gracePeriod = new Date(Date.now() - 60 * 1000);
+
             (prisma.token.findFirst as jest.Mock).mockResolvedValue({
                 ...mockTokenRecord,
-                usedAt: new Date(), // already used
+                usedAt: gracePeriod, // already used a minute ago
             } as any);
 
             await expect(service.refresh('raw-token')).rejects.toThrow(
@@ -187,10 +189,29 @@ describe('RefreshTokenService', () => {
             );
         });
 
-        it('should revoke entire token family when replay is detected', async () => {
+        it('should issue new tokens if a used token is presented within the 20-second grace period (race condition)', async () => {
+
+            const fiveSecondsAgo = new Date(Date.now() - 5 * 1000);
+
             (prisma.token.findFirst as jest.Mock).mockResolvedValue({
                 ...mockTokenRecord,
-                usedAt: new Date(),
+                usedAt: fiveSecondsAgo,
+            } as any);
+
+            const result = await service.refresh('raw-token');
+
+            expect(result).toHaveProperty('accessToken');
+            expect(result).toHaveProperty('refreshToken');
+
+            expect(prisma.token.updateMany).not.toHaveBeenCalledWith(
+                expect.objectContaining({ data: { usedAt: expect.any(Date) } })
+            );
+        });
+        it('should revoke entire token family when replay is detected', async () => {
+            const gracePeriod = new Date(Date.now() - 60 * 1000);
+            (prisma.token.findFirst as jest.Mock).mockResolvedValue({
+                ...mockTokenRecord,
+                usedAt: gracePeriod,
             } as any);
             (prisma.token.updateMany as jest.Mock).mockResolvedValue({ count: 2 } as any);
 

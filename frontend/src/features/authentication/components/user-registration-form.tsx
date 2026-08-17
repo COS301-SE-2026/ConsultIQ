@@ -136,7 +136,7 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
         type="submit"
         disabled={loading}
         className="w-96 px-5 py-4 min-h-[52px] rounded-xl text-white font-semibold text-lg transition hover:opacity-90 disabled:opacity-60"
-        style={{ backgroundColor: "var(--color-accent)" }}
+        style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? "Registering..." : "Register User"}
       </button>

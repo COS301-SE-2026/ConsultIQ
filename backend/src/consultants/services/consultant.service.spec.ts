@@ -18,10 +18,29 @@ const mockPrismaService = {
     findUnique: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
+    create: jest.fn(),
+  },
+  consultantManager: {
+    create: jest.fn(),
+  },
+  skill: {
+    upsert: jest.fn(),
+  },
+  consultantSkill: {
+    create: jest.fn(),
+  },
+  consultantExperience: {
+    create: jest.fn(),
+  },
+  certificate: {
+    create: jest.fn(),
+  },
+  projectPlacement: {
+    findMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   $transaction: jest.fn(),
 };
-
 
 const mockNotificationService = {
   createAndSendNotification: jest.fn(),
@@ -113,6 +132,79 @@ describe('ConsultantService', () => {
       const result = await service.createConsultantProfile(cmUserId, dto as any);
       expect(result.message).toBe('Consultant profile created successfully.');
       expect(result.consultantId).toBe('new-consultant-uuid');
+    });
+
+    it('should correctly map location fields when they are provided in the DTO', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        return callback(mockPrismaService);
+      });
+
+      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
+      mockPrismaService.consultantManager.create.mockResolvedValue({});
+      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockPrismaService.consultantSkill.create.mockResolvedValue({});
+      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+
+      const dtoWithLocation = {
+        ...dto,
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123dehdhdj',
+        formattedAddress: 'Pretoria, South Africa',
+      };
+
+      await service.createConsultantProfile(cmUserId, dtoWithLocation as any);
+
+      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: -25.7479,
+            longitude: 28.2293,
+            placeId: '123dehdhdj',
+            formattedAddress: 'Pretoria, South Africa',
+          }),
+        }),
+      );
+    });
+
+    it('should default location fields to null when they are not provided', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        return callback(mockPrismaService);
+      });
+
+      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
+      mockPrismaService.consultantManager.create.mockResolvedValue({});
+      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockPrismaService.consultantSkill.create.mockResolvedValue({});
+      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+
+      const dtoWithoutLocation = { ...dto } as any;
+      delete dtoWithoutLocation.latitude;
+      delete dtoWithoutLocation.longitude;
+      delete dtoWithoutLocation.placeId;
+      delete dtoWithoutLocation.formattedAddress;
+
+      await service.createConsultantProfile(cmUserId, dtoWithoutLocation);
+      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            latitude: null,
+            longitude: null,
+            placeId: null,
+            formattedAddress: null,
+          }),
+        }),
+      );
     });
   });
 
@@ -832,8 +924,65 @@ describe('ConsultantService', () => {
         }),
       });
     });
-  });
 
+    it('should update location fields when valid location data is provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+      };
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        latitude: -25.7479,
+        longitude: 28.2293,
+        placeId: '123heivehew',
+        formattedAddress: 'Pretoria, South Africa',
+      });
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          latitude: -25.7479,
+          longitude: 28.2293,
+          placeId: '123heivehew',
+          formattedAddress: 'Pretoria, South Africa',
+        }),
+      });
+    });
+
+    it('should fallback to null, for location fields if only partial location data is provided', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: { update: jest.fn().mockResolvedValue({}) },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      await service.updateConsultantProfile(consultantId, {
+        latitude: -25.7479,
+      });
+
+
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: expect.objectContaining({
+          latitude: -25.7479,
+          longitude: null,
+          placeId: null,
+          formattedAddress: null,
+        }),
+      });
+    });
+  });
   // ---------- uploadProfilePicture------------
   describe('uploadProfilePicture', () => {
     const consultantId = 'consultant-uuid-1';
@@ -930,3 +1079,4 @@ describe('ConsultantService', () => {
     });
   });
 });
+

@@ -12,6 +12,7 @@ import { AdminModule } from './admin/admin.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScoringModule } from './scoring/scoring.module';
 import { NotificationModule } from './notification/notification.module';
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -32,8 +33,9 @@ import { NotificationModule } from './notification/notification.module';
     ScoringModule,
     NotificationModule,
     AdminModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

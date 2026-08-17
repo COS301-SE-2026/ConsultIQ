@@ -45,6 +45,19 @@ export const authService = {
         const response = await apiClient.get<Record<string, unknown>>('/auth/me');
         return response?.result ? response.result : response;
     },
+    refresh: async (): Promise<string> => {
+        const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+        });
+
+        if (!res.ok) {
+            throw new Error('Refresh failed');
+        }
+
+        return 'success';
+    },
     logout: async (): Promise<void> => {
         await fetch(`${API_BASE_URL}/auth/logout`, {
             method: 'POST',

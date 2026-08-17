@@ -462,31 +462,6 @@ describe('ConsultantService', () => {
   });
 
   //-------Consultant get assigned projects
-<<<<<<< HEAD
-=======
-  const mockPrismaService = {
-    user: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-    },
-    consultant: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
-    },
-    projectPlacement: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-    },
-    consultantManager: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-    },
-
-    $transaction: jest.fn(),
-  };
->>>>>>> d77d246a385b1184d80ea9493de19cbe5e5f254e
 
   describe('getAssignedProjects', () => {
     it('throws NotFoundException when consultant profile does not exist', async () => {

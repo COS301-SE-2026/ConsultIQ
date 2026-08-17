@@ -4,6 +4,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -21,12 +22,35 @@ import {
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+
 @Injectable()
 export class ConsultantService {
+  private readonly CACHE_KEY = 'cache:consultants_list';
+  private redisClient: Redis;
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-  ) { }
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
+  ) {
+    const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
+    this.redisClient = new Redis(redisUrl);
+  }
+  onModuleDestroy() {
+    this.redisClient.quit();
+  }
+  async invalidateConsultantCache() {
+    const keys = await this.redisClient.keys('cache:consultants:*');
+
+    if (keys.length > 0) {
+      await this.redisClient.del(...keys);
+      console.log(`Cache Invalidated: Cleared ${keys.length} stale pages.`);
+    }
+  }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -147,6 +171,10 @@ export class ConsultantService {
         return { consultantId: consultant.id };
       })
       .then(async (result) => {
+
+        // Invalidate all paginated consultant list caches
+        await this.invalidateConsultantCache();
+
         //send notification to consultant
         await this.notificationService.createAndSendNotification(
           dto.consultantUserId,
@@ -192,6 +220,15 @@ export class ConsultantService {
     limit: number,
     userRole: string,
   ): Promise<PaginatedConsultantsResponseDto> {
+
+    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
+    const cachedData = await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
+    if (cachedData) {
+      console.log(`CACHE HIT for key: ${cacheKey}`);
+      return cachedData;
+    }
+    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from Prisma...`);
+
     const skip = (page - 1) * limit;
     const [consultants, total] = await Promise.all([
       this.prisma.consultant.findMany({
@@ -247,8 +284,11 @@ export class ConsultantService {
 
       return dto;
     });
+    const response = { page, total, consultants: mappedConsultants };
+    // TTL: 5 min
+    await this.cacheManager.set(cacheKey, response, 300000);
 
-    return { page, total, consultants: mappedConsultants };
+    return response;
   }
 
   async getConsultantById(id: string): Promise<ConsultantProfileDto> {

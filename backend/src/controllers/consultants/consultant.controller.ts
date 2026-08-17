@@ -84,15 +84,19 @@ export class ConsultantController {
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.CONSULTANT_MANAGER)
+  @Roles(Role.CONSULTANT_MANAGER, Role.CONSULTANT)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateConsultantProfile(
     @Param('id') consultantId: string,
+    @Req() req: any,
     @Body() dto: UpdateConsultantDto,
   ): Promise<{ message: string }> {
+    const {userId, role} = req.user;
     return await this.consultantService.updateConsultantProfile(
       consultantId,
       dto,
+      role,
+      userId
     );
   }
 }

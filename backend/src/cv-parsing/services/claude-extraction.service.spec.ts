@@ -6,13 +6,14 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeExtractionService } from './claude-extraction.service';
 import { CV_EXTRACTION_TOOL_NAME } from '../prompts/cv-extraction.schema';
 
-// Keep the real error classes (AuthenticationError, BadRequestError, etc.)
-// so `instanceof` checks in the service still work — only the client
-// constructor itself gets replaced with a mock.
 jest.mock('@anthropic-ai/sdk', () => {
   const actual = jest.requireActual('@anthropic-ai/sdk');
+  const RealAnthropic = actual.default;
+
   const MockAnthropic = jest.fn();
-  Object.assign(MockAnthropic, actual.default); // carries over AuthenticationError, etc.
+
+  Object.setPrototypeOf(MockAnthropic, RealAnthropic);
+
   return { __esModule: true, ...actual, default: MockAnthropic };
 });
 

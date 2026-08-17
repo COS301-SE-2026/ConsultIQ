@@ -410,7 +410,7 @@ export class ConsultantService {
               jobTitle: exp.jobTitle,
               companyName: exp.companyName,
               jobType: exp.jobType.toUpperCase().replace(/[\s-]/g, '_') as JobType,
-              workModel: exp.workModel.toUpperCase().replace(/-/g, '_') as WorkModel,
+              workModel: exp.workModel.toUpperCase().replace(/-/g, '') as WorkModel,
               startDate: new Date(exp.startDate),
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,

@@ -1,8 +1,22 @@
+import { activateAccount } from "../../../api/auth.api";
+import {useSearchParams} from "react-router-dom";
 import consultIqLogo from "../../../assets/logos/ConsultIQ Logo Dark.png";
 
-import SetPasswordForm from "../components/set-password-form";
+import PasswordForm from "../components/password-form";
 
 function SetPasswordPage() {
+  const [searchParams] = useSearchParams();
+  const email= searchParams.get("email");
+  const token= searchParams.get("token");
+
+  if(!email || !token){
+    return(
+      <div className="relative min-h-screen bg-[#F4F6FA]">
+        <p className="text-center pt-24 text-white">Invalid activation link.</p>
+      </div>
+    );
+  }
+
   return (
     <div
       className=" relative min-h-screen bg-[#F4F6FA] ">
@@ -45,7 +59,15 @@ function SetPasswordPage() {
       {/* Form Container */}
       <div
         className="absolute left-[50%] top-1/2 -translate-y-1/2 z-10 ">
-        <SetPasswordForm />
+        <PasswordForm 
+        email={email}
+        token={token}
+        title="Create your password"
+        description= "Create your password to activate your account."
+        submitLabel= "Set Password"
+        successRedirect={`/popia-consent?email=${encodeURIComponent(email)}`}
+        successMessage="Your account is now active."
+        onSubmit={({password}) =>activateAccount({email, token, password})}/>
       </div>
     </div>
   );

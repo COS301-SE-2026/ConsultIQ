@@ -8,7 +8,7 @@ interface PasswordFormProps {
   readonly title?: string;
   readonly description?: string;
   readonly submitLabel?: string;
-  onSubmit: (payload: {readonly email?: string; readonly token?: string; readonly password: string}) => Promise<unknown>;
+  readonly onSubmit: (payload: {readonly email?: string; readonly token?: string; readonly password: string}) => Promise<unknown>;
   readonly successRedirect?: string;
   readonly successMessage?: string;
 }

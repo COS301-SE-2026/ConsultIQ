@@ -60,6 +60,22 @@ export class UpdateProjectDto {
   suburb?: string;
 
   @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
+
+  @IsOptional()
+  @IsString()
+  placeId?: string;
+
+  @IsOptional()
+  @IsString()
+  formattedAddress?: string;
+
+  @IsOptional()
   @IsString()
   city?: string;
 

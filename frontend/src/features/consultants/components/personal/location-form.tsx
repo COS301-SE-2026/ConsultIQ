@@ -4,12 +4,14 @@ import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
+import SearchBar from "../../../../components/shared/search-bar";
 
 interface Props {
-  onComplete?: () => void;
+  readonly onComplete?: () => void;
 }
 
-export default function LocationForm({ onComplete }: Props) {  const { updateProfileData } = useConsultantProfile();
+export default function LocationForm({ onComplete }: Props) {
+  const { updateProfileData } = useConsultantProfile();
 
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
@@ -18,6 +20,7 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [error, setError] = useState("");
+  const [addressSearch, setAddressSearch] = useState("");
 
   const handleDone = () => {
     if (!addressLine1.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
@@ -42,18 +45,28 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
       province: province.trim(),
       postalCode: postalCode.trim(),
 
-     });
+    });
     toast.success("Location saved!");
     onComplete?.();
   };
 
+    const handleSearchAddress = (query: string) => {
+        setAddressSearch(query);
+
+    };
+
   return (
     <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col h-full mt-6">
-       
+
         <h2 className="text-3xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
           Location
         </h2>
+        <SearchBar
+          value={addressSearch}
+          onChange={handleSearchAddress}
+          placeholder="Search for an address..."
+        />
 
         <div className="space-y-6 flex-1 flex flex-col">
           <div className="flex flex-col gap-3 mt-4">
@@ -133,7 +146,7 @@ export default function LocationForm({ onComplete }: Props) {  const { updatePro
 
         {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
 
-        
+
         <div className="mt-6 mb-6 flex justify-end w-full">
           <Button
             variant="default"

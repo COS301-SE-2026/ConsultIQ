@@ -299,7 +299,6 @@ export class ConsultantService {
         where: { id: consultantId },
         data: {
           ...(dto.fullname !== undefined && { fullname: dto.fullname }),
-
           ...(dto.email !== undefined && { email: dto.email }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),

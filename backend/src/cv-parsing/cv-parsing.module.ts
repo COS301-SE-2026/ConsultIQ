@@ -8,6 +8,5 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule],
   controllers: [CvController],
   providers: [CVUploadService, S3Service],
-  exports: [S3Service],
 })
 export class CvParsingModule { }

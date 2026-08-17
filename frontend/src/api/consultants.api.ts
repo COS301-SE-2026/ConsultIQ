@@ -89,3 +89,23 @@ export async function uploadConsultantCv(
 
   return response.json();
 }
+
+export async function uploadConsultantPicture(
+  consultantId: string,
+  file: File,
+): Promise<{ pictureUrl: string; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_URL}/consultants/${consultantId}/picture`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if(!response.ok){
+    const error = await response.json();
+    throw new Error(error.message || 'Failed to upload profile picture.');
+  }
+  return response.json();
+}

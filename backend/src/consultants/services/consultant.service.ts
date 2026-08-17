@@ -21,13 +21,11 @@ import {
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
-import { S3Service } from '../../cv-parsing/services/s3.service';
 @Injectable()
 export class ConsultantService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-    private readonly s3Service: S3Service,
   ) {}
 
   async createConsultantProfile(
@@ -478,6 +476,9 @@ export class ConsultantService {
       postalCode: consultant.postalCode,
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
+      pictureUrl: consultant.pictureData
+        ?`data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
+        : null,
       skills: consultant.skills.map((cs: any) => ({
         id: cs.id,
         skillName: cs.skill.name,
@@ -667,6 +668,7 @@ export class ConsultantService {
   async uploadProfilePicture(
     consultantId: string,
     userId: string,
+    userRole: string,
     file: Express.Multer.File,
   ): Promise<{ pictureUrl: string; message: string }> {
     if (!this.ALLOW_IMAGE_MIME_TYPES.includes(file.mimetype)) {
@@ -687,21 +689,32 @@ export class ConsultantService {
       );
     }
 
-    if (consultant.userId !== userId) {
+    const isSelf = consultant.userId === userId;
+    let isManagingCM = false;
+
+    if(!isSelf && userRole === 'CONSULTANT_MANAGER')
+    {
+      const managerLink = await this. prisma.consultantManager.findUnique({
+        where: { userId_consultantId: { userId, consultantId} },
+      });
+      isManagingCM = !!managerLink;
+    }
+
+    if (!isSelf && !isManagingCM) {
       throw new ForbiddenException(
-        'You are not authorized to upload a profile picture for this consultant.',
+        'You can only update your own profile picture, or a profile picture for a consultant you manage.',
       );
     }
 
-    const s3Key = this.s3Service.generateS3Key(consultantId, file.originalname);
-    await this.s3Service.uploadFile(s3Key, file.buffer, file.mimetype);
-
-    const pictureUrl = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
-
     await this.prisma.consultant.update({
       where: { id: consultantId },
-      data: { pictureUrl, pictureKey: s3Key },
+      data: { 
+        pictureData: Uint8Array.from(file.buffer),
+        pictureMimeType: file.mimetype
+       },
     });
+
+    const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
     return { pictureUrl, message: 'Profile picture uploaded successfully.' };
   }

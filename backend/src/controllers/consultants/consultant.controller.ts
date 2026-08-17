@@ -101,7 +101,7 @@ export class ConsultantController {
 
   @Post(':id/picture')
   @HttpCode(HttpStatus.OK)
-  @Roles(Role.CONSULTANT)
+  @Roles(Role.CONSULTANT, Role.CONSULTANT_MANAGER)
   @UseInterceptors(FileInterceptor('file'))
   async uploadProfilePicture(
     @Param('id') consultantId: string,
@@ -112,9 +112,11 @@ export class ConsultantController {
       throw new BadRequestException('No file was uploaded.');
     }
     const userId = req.user?.userId;
+    const userRole = req.user?.role;
     return this.consultantService.uploadProfilePicture(
       consultantId,
       userId,
+      userRole,
       file,
     );
   }

@@ -8,7 +8,6 @@ import {
 import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
-import { S3Service } from '../../cv-parsing/services/s3.service';
 
 const mockPrismaService = {
   user: {
@@ -28,13 +27,6 @@ const mockNotificationService = {
   createAndSendNotification: jest.fn(),
 };
 
-const mockS3Service = {
-  generateS3Key: jest.fn(),
-  uploadFile: jest.fn(),
-  generatePresignedUrl: jest.fn(),
-  deleteFile: jest.fn(),
-};
-
 
 describe('ConsultantService', () => {
   let service: ConsultantService;
@@ -45,7 +37,6 @@ describe('ConsultantService', () => {
         ConsultantService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
-        { provide: S3Service, useValue: mockS3Service },
       ],
     }).compile();
 
@@ -391,6 +382,11 @@ describe('ConsultantService', () => {
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    consultantManager: {
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+
     $transaction: jest.fn(),
   };
 
@@ -852,14 +848,14 @@ describe('ConsultantService', () => {
     it('should throw BadRequestException for an unsupported mime type', async () => {
       const badFile = { ...mockFile, mimetype: 'application/pdf' };
       await expect(
-        service.uploadProfilePicture(consultantId, userId, badFile as any),
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', badFile as any),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when the file exceeds the size limit', async () => {
       const oversizedFile = { ...mockFile, size: 6 * 1024 * 1024 };
       await expect(
-        service.uploadProfilePicture(consultantId, userId, oversizedFile as any),
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', oversizedFile as any),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -867,46 +863,70 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.uploadProfilePicture(consultantId, userId, mockFile),
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT',mockFile),
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException if the caller is not the consultant themselves', async () => {
+    it('should throw ForbiddenException if a non-managing CONSULTANT_MANAGER tries to upload', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId: 'a-different-user',
+      });
+
+      mockPrismaService.consultantManager.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT',mockFile),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException if thr caller is neither a consultant nor a consultant manger', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: consultantId,
         userId: 'a-different-user',
       });
 
       await expect(
-        service.uploadProfilePicture(consultantId, userId, mockFile),
+        service.uploadProfilePicture(consultantId, userId, 'PROJECT_MANAGER', mockFile),
       ).rejects.toThrow(ForbiddenException);
-    });
+    })
 
-    it('should upload the picture and return the picture URL on success', async () => {
+    it('should upload successfully when the consultant uploads their own picture', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: consultantId,
         userId,
       });
-      mockS3Service.generateS3Key.mockReturnValue('profile-pictures/consultant-uuid-1/uuid-photo.jpg');
-      mockS3Service.uploadFile.mockResolvedValue(undefined);
+
       mockPrismaService.consultant.update.mockResolvedValue({});
 
-      const result = await service.uploadProfilePicture(consultantId, userId, mockFile);
+      const result = await service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', mockFile);
 
-      expect(mockS3Service.uploadFile).toHaveBeenCalledWith(
-        'profile-pictures/consultant-uuid-1/uuid-photo.jpg',
-        mockFile.buffer,
-        mockFile.mimetype,
-      );
+      expect(mockPrismaService.consultantManager.findUnique).not.toHaveBeenCalledWith();
       expect(mockPrismaService.consultant.update).toHaveBeenCalledWith({
-        where: { id: consultantId },
-        data: expect.objectContaining({
-          pictureUrl: expect.stringContaining('profile-pictures/consultant-uuid-1'),
-          pictureKey: 'profile-pictures/consultant-uuid-1/uuid-photo.jpg',
-        }),
+        where: { id: consultantId},
+        data: {
+          pictureData: expect.any(Uint8Array),
+          pictureMimeType: 'image/jpeg',
+        },
       });
       expect(result.message).toBe('Profile picture uploaded successfully.');
-      expect(result.pictureUrl).toContain('profile-pictures/consultant-uuid-1');
+      expect(result.pictureUrl).toBe(`data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`);
+    });
+
+    it('should upload successfully when the managing CONSULTANT_MANAGER uploads on the consultant\'s behalf', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId: 'a-different-user',
+      });
+      mockPrismaService.consultantManager.findUnique.mockResolvedValue({ id: 'link-1 '});
+      mockPrismaService.consultant.update.mockResolvedValue({});
+
+      const result = await service.uploadProfilePicture(consultantId, userId, 'CONSULTANT_MANAGER', mockFile);
+
+      expect(mockPrismaService.consultantManager.findUnique).toHaveBeenCalledWith({
+        where: { userId_consultantId: { userId, consultantId } },
+      });
+      expect(result.message).toBe('Profile picture uploaded successfully.');
     });
   });
 });

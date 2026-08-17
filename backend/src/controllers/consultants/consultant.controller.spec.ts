@@ -262,12 +262,13 @@ describe('ConsultantController', () => {
         message: 'Profile picture uploaded successfully.',
       });
 
-      const req = { user: { userId: 'user-123' } };
+      const req = { user: { userId: 'user-123', role: 'CONSULTANT' } };
       const result = await controller.uploadProfilePicture('consultant-1', mockFile, req as any);
 
       expect(mockConsultantService.uploadProfilePicture).toHaveBeenCalledWith(
         'consultant-1',
         'user-123',
+        'CONSULTANT',
         mockFile,
       );
       expect(result.message).toBe('Profile picture uploaded successfully.');

@@ -216,8 +216,8 @@ model Consultant {
   tenantId      String?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
-  pictureUrl    String?
-  pictureKey    String?
+  pictureData     Bytes?
+  pictureMimeType    String?
 
   skills                ConsultantSkill[]
   certificates          Certificate[]

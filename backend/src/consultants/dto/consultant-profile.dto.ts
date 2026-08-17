@@ -45,6 +45,7 @@ export class ConsultantProfileDto {
   experience!: ExperienceDTO[];
   certificates!: ConsultantCertificationsDto[];
   education!: ConsultantEducationDto[];
+  pictureUrl!: string | null;
 }
 
 export class ConsultantEducationDto {

@@ -108,8 +108,8 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
     education: (data.education || []).map((edu, index: number) => ({
       id: edu.id || `edu-${index}`,
-      institution: edu.institution,
-      qualification: edu.qualification,
+      institution: edu.institution || "",
+      qualification: edu.qualification || "",
       startDate: edu.startDate 
         ? new Date(edu.startDate).toISOString().split("T")[0]
         : '',

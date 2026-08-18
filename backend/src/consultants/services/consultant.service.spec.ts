@@ -990,5 +990,77 @@ describe('ConsultantService', () => {
         }),
       });
     });
+
+    it('should throw when  the current consultant has no profile', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateConsultantProfile(
+          consultantId, 
+          {},
+          'CONSULTANT',
+          'missing-consultant-user-1',
+        ),
+      ).rejects.toThrow('No consultant profile for the current user.')
+    });
+
+    it('should throw when the consultant disappears before transaction update', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<void>) => callback(txMock),
+      );
+
+      await expect(
+        service.updateConsultantProfile(
+          consultantId,
+          {},
+          'CONSULTANT_MANAGER',
+          'cm-manager-user-1',
+        ),
+      ).rejects.toThrow(`Consultant with id ${consultantId} not found.`,);
+    });
+    
+    it('should update the linked user when fullname is provided', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const userUpdate= jest.fn().mockResolvedValue({});
+      const consultantUpdate= jest.fn().mockResolvedValue({});
+      const txMock= {
+        consultant: {findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1',
+        }),
+        update : consultantUpdate, },
+        user: {update: userUpdate, }
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<void>) => callback(txMock),
+      );
+
+      await service.updateConsultantProfile(
+        consultantId,
+        {fullname: 'Updated Username', email: 'updated@consultiq.com'},
+        'CONSULTANT_MANAGER',
+        'cm-manager-user-1',
+      );
+
+      expect(userUpdate).toHaveBeenCalledWith({
+        where: {id: 'consultant-user-1'},
+        data: {
+          fullName: 'Updated Username',
+          email: 'updated@consultiq.com',
+        },
+      });
+    });
   });
 });

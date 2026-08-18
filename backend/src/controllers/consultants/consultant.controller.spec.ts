@@ -183,11 +183,14 @@ describe('ConsultantController', () => {
       });
 
       const dto = { phone: '0821234567', nationality: 'South African' };
-      const result = await controller.updateConsultantProfile('consultant-uuid-1', dto as any);
+      const req = { user: { userId: 'consultant-user-1', role: 'CONSULTANT' } };
+      const result = await controller.updateConsultantProfile('consultant-uuid-1',req as any, dto as any);
 
       expect(mockConsultantService.updateConsultantProfile).toHaveBeenCalledWith(
         'consultant-uuid-1',
         dto,
+        'CONSULTANT',
+        'consultant-user-1',
       );
       expect(result.message).toBe('Consultant profile updated successfully.');
     });
@@ -197,8 +200,9 @@ describe('ConsultantController', () => {
         new NotFoundException('Consultant with id uuid-999 not found.'),
       );
 
+      const req = { user: { userId: 'consultant-user-1', role: 'CONSULTANT' } };  
       await expect(
-        controller.updateConsultantProfile('uuid-999', {} as any),
+        controller.updateConsultantProfile('uuid-999',req as any, {} as any),
       ).rejects.toThrow(NotFoundException);
     });
   });

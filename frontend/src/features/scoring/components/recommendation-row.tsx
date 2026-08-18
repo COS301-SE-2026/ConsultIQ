@@ -7,10 +7,13 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 interface RecommendationRowProps {
     readonly recommendation: Recommendation;
     readonly onSelectConsultant: (id: string) => void;
+    readonly onPlaceConsultant: (consultantId: string) => Promise<void>;
 }
 
 export function RecommendationRow({ recommendation, onSelectConsultant }: RecommendationRowProps) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [_isConfirming, setIsConfirming] = useState(false);
+    const [isPlacing, _setIsPlacing] = useState(false);
     const availability = getAvailabilityDisplay(recommendation.factorBreakdown);
 
     return (
@@ -43,20 +46,26 @@ export function RecommendationRow({ recommendation, onSelectConsultant }: Recomm
                     </div>
                 </td>
 
-                <td className= "py-5 px-6">
-                    <div className= "flex items-center gap-2">
+                <td className= "py-5 px-6 text-center">
+                    <div className= "flex items-center justify-center gap-2">
                     <button type="button" onClick={() => setIsExpanded(!isExpanded)}
                         className="inline-flex items-center gap 2 px-3 py-2 border-slate-700 rounded-md text-sm font-bold text-slate-800 cursor-pointer">
                         Score Breakdown
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
-                    {/* <button type="button" 
-                    className="inline-flex items-center justify-center px-3 py-2 rounded-md text-sm font-bold "
-                    style={{border: "1px solid var(--color-primary)",
-                           color:"var(--color-primary)",
-                    }}>
-                        Assign Project
-                    </button> */}
+                    {recommendation.isPlaced ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-emerald-700 bg-emerald-50">Placed</span>
+                    ):(
+                    <button type="button" 
+                        onClick={() => setIsConfirming(true)}
+                        disabled= {isPlacing}
+                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg text-sm font-bold disabled:opacity-50"
+                        style={{border: "1px solid var(--color-primary)",
+                            color:"var(--color-primary)",
+                        }}>
+                            {isPlacing ? "Placing..." : "Place Consultant"}
+                    </button>
+                    )}
                     </div>
                 </td>
             </tr>

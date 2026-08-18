@@ -1,7 +1,7 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { MatchStatsGrid } from "../components/match-stats-grid";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 import { useLocation } from "react-router-dom";
@@ -33,21 +33,28 @@ export default function PlacementDashboard() {
     const [stats, setStats] = useState<MatchRunStats | null>(null);
     const rawMatchData = location.state?.rawMatchData;
 
-    const recommendations = useMemo<Recommendation[]>(() => {
+    const [recommendations, setRecommendations]= useState<Recommendation[]>([]);
+
+    useEffect(() => {
         if (rawMatchData && Array.isArray(rawMatchData)) {
-            return rawMatchData.map((result: RawMatchResult, index: number) => ({
-                consultantId: result.consultantId || result.id || "",
-                consultantName: result.consultantName || result.name || "Unknown Consultant",
-                consultantEmail: result.consultantEmail || result.email || "",
-                finalScore: result.finalScore || result.score || 0,
-                rank: result.rank || index + 1,
-                factorBreakdown: (result.factorBreakdown as Recommendation['factorBreakdown']) || [],
-                isPlaced: result.isPlaced || false
-            }));
+           setRecommendations(
+                rawMatchData.map((result: RawMatchResult, index: number) => ({
+                    consultantId: result.consultantId || result.id || "",
+                    consultantName: result.consultantName || result.name || "Unknown Consultant",
+                    consultantEmail: result.consultantEmail || result.email || "",
+                    finalScore: result.finalScore || result.score || 0,
+                    rank: result.rank || index + 1,
+                    factorBreakdown: (result.factorBreakdown as Recommendation['factorBreakdown']) || [],
+                    isPlaced: result.isPlaced || false
+                })),
+           ) ;
+        }else{
+            setRecommendations([]);
         }
-        return [];
     }, [rawMatchData]);
+
     console.log("URL Parameters:", { projectId, runId });
+
     useEffect(() => {
         const fetchStats = async () => {
             if (projectId && runId) {
@@ -74,6 +81,9 @@ export default function PlacementDashboard() {
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);
     };
+    const handlePlaceConsultant = async (consultantId: string) =>{
+        console.log("Placing consultant", consultantId);
+    }
 
     const handleViewAll = () => {
         console.log("Viewing full list");
@@ -93,7 +103,6 @@ export default function PlacementDashboard() {
                         Placement Dashboard</h1>
                          {/* <span><p className="text-lg font-medium text-slate-500 mt-1">Project Name</p></span> */}
                 </header>
-                <div className="h-6" />
                 <div className="flex-1 px-[80px] py-[32px]">
                     <MatchStatsGrid
                         scoringBasis={projectScoringBasis}
@@ -101,10 +110,10 @@ export default function PlacementDashboard() {
                         matched={projectPlaced}
                         excluded={projectExcluded}
                     />
-                    <div className="h-6" />
                     <RecommendationsTable
                         recommendations={recommendations}
                         onSelectConsultant={handleSelectConsultant}
+                        onPlaceConsultant={handlePlaceConsultant}
                         onViewAll={handleViewAll}
                     />
                 </div>

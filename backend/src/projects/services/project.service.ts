@@ -24,7 +24,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class ProjectService {
   private readonly CACHE_KEY = 'cache:projects_list';
-  private redisClient: Redis;
+  private readonly redisClient: Redis;
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,

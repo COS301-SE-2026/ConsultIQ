@@ -30,7 +30,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class ConsultantService {
   private readonly CACHE_KEY = 'cache:consultants_list';
-  private redisClient: Redis;
+  private readonly redisClient: Redis;
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,

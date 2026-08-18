@@ -1,16 +1,52 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-export class ApiError extends Error{
+export class ApiError extends Error {
     status: number;
-    constructor(message:string, status: number){
+    constructor(message: string, status: number) {
         super(message);
         this.name = 'ApiError';
         this.status = status;
     }
 }
 
-async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+let refreshTokenFn: () => Promise<string | null> = async () => {
+    throw new Error("Refresh function not injected yet");
+};
 
+let logoutFn: () => void = () => {
+    if (!window.location.pathname.startsWith('/login')) {
+        window.location.href = '/login';
+    }
+};
+
+export const injectAuth = ({
+    refreshToken,
+    logout,
+}: {
+    refreshToken: () => Promise<string | null>;
+    logout: () => void;
+}) => {
+    refreshTokenFn = refreshToken;
+    logoutFn = logout;
+};
+
+// Refresh Queue Logic
+let isRefreshing = false;
+let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = [];
+
+const processQueue = (error: unknown = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(null);
+        }
+    });
+    failedQueue = [];
+};
+
+
+async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers);
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
         headers.set('Content-Type', 'application/json');
@@ -22,9 +58,49 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         credentials: 'include'
     });
 
-
     if (response.status === 204) return {} as T;
 
+    // (Token Expiration)
+    if (response.status === 401) {
+        if (isRefreshing) {
+            return new Promise((resolve, reject) => {
+                failedQueue.push({ resolve, reject });
+            }).then(() => {
+                return fetchWithAuth<T>(endpoint, options);
+            });
+        }
+
+        isRefreshing = true;
+
+        try {
+            if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+                await navigator.locks.request('ciq-refresh-token', async () => {
+                    const lastRefresh = parseInt(localStorage.getItem('lastRefreshTime') || '0', 10);
+                    if (Date.now() - lastRefresh < 5000) return;
+
+                    await refreshTokenFn();
+                    localStorage.setItem('lastRefreshTime', Date.now().toString());
+                });
+            } else {
+                await refreshTokenFn();
+            }
+
+            processQueue(null);
+
+            return fetchWithAuth<T>(endpoint, options);
+
+        } catch (err) {
+            processQueue(err);
+
+            const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
+            if (!isAlreadyOnLoginPage) {
+                logoutFn();
+            }
+            throw new ApiError('Session expired', 401);
+        } finally {
+            isRefreshing = false;
+        }
+    }
 
     let responseData: Record<string, unknown> | null = null;
     try {
@@ -35,27 +111,13 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
 
     if (!response.ok) {
-        if (response.status === 401 && !endpoint.includes('/auth/me')) {
-            
-           const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
-
-            if (!isAlreadyOnLoginPage) {
-                window.location.href = '/login';
-            }
-        }
-
         let errorMessage = `Request failed (${response.status})`;
-
-
         if (responseData && responseData.message) {
             const msg = responseData.message;
             errorMessage = Array.isArray(msg) ? msg.join(', ') : String(msg);
         }
-
-
-        throw new ApiError(errorMessage,response.status);
+        throw new ApiError(errorMessage, response.status);
     }
-
 
     return responseData as T;
 }

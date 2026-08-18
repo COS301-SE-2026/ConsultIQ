@@ -9,7 +9,7 @@ export class RefreshTokenService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly token: TokenService,
-  ) {}
+  ) { }
 
   /**
    * Called at login — creates the first refresh token in a new family.
@@ -58,6 +58,27 @@ export class RefreshTokenService {
     // TASK-18 & 19 - Replay attack detection
     // usedAt means this token was already rotated
     if (stored.usedAt) {
+      const now = new Date();
+      const usedTime = new Date(stored.usedAt);
+
+      const GRACE_PERIOD_MS = 20 * 1000;
+
+      const timeSinceUsedMs = now.getTime() - usedTime.getTime();
+
+      if (timeSinceUsedMs <= GRACE_PERIOD_MS) {
+        const accessToken = this.jwt.sign({
+          userId: stored.userId,
+          role: stored.user.role,
+        });
+
+        const newRefreshToken = await this.createRefreshToken(
+          stored.userId,
+          stored.familyId || undefined,
+        );
+
+        return { accessToken, refreshToken: newRefreshToken };
+      }
+
       // Revoke entire family
       await this.prisma.token.updateMany({
         where: {

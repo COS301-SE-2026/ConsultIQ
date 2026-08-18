@@ -50,9 +50,9 @@ const mockNotificationService = {
 };
 
 const mockCacheManager = {
-  get: jest.fn(),
-  set: jest.fn(),
-  del: jest.fn(),
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue(undefined),
+  del: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockConfigService = {
@@ -141,7 +141,16 @@ describe('ConsultantService', () => {
         id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
       });
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-      mockPrismaService.$transaction.mockResolvedValue({ consultantId: 'new-consultant-uuid' });
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+          consultantManager: { create: jest.fn().mockResolvedValue({}) },
+          skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+          consultantSkill: { create: jest.fn().mockResolvedValue({}) },
+          consultantExperience: { create: jest.fn().mockResolvedValue({}) },
+        };
+        return callback(tx);
+      });
 
       const result = await service.createConsultantProfile(cmUserId, dto as any);
       expect(result.message).toBe('Consultant profile created successfully.');

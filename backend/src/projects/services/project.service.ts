@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -15,10 +16,51 @@ import {
   ProjectListItemDto,
 } from '../dto/project-list.dto';
 import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) { }
+  private readonly CACHE_KEY = 'cache:projects_list';
+  private redisClient: Redis;
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
+  ) {
+    const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
+    this.redisClient = new Redis(redisUrl);
+  }
+
+  onModuleDestroy() {
+    this.redisClient.quit();
+  }
+  async invalidateProjectsCache() {
+    const stream = this.redisClient.scanStream({
+      match: 'cache:projects:*',
+      count: 100,
+    });
+
+    const keysToDelete: string[] = [];
+
+    stream.on('data', (keys: string[]) => {
+      if (keys.length > 0) {
+        keysToDelete.push(...keys);
+      }
+    });
+
+    stream.on('end', async () => {
+      if (keysToDelete.length > 0) {
+        const pipeline = this.redisClient.pipeline();
+        keysToDelete.forEach((key) => pipeline.del(key));
+        await pipeline.exec();
+        console.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
+      }
+    });
+  }
+
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -36,6 +78,8 @@ export class ProjectService {
     }
 
     const result = await this.persistProject(dto, userId);
+    // Invalidate all paginated project list caches
+    await this.invalidateProjectsCache();
 
     return {
       message: 'Project created successfully',
@@ -51,6 +95,16 @@ export class ProjectService {
   ): Promise<PaginatedProjectsResponseDto> {
     let projects: any[];
     let total: number;
+
+    const cacheKey = `cache:projects:role:${userRole}:user:${userId || 'all'}:page:${page}:limit:${limit}`;
+    const cachedData = await this.cacheManager.get<PaginatedProjectsResponseDto>(cacheKey);
+
+    if (cachedData) {
+      console.log(`CACHE HIT for key: ${cacheKey}`);
+      return cachedData;
+    }
+
+    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     switch (userRole) {
       case 'ADMIN':
@@ -101,8 +155,11 @@ export class ProjectService {
       status: p.status,
       skillCount: p.skillCount,
     }));
+    const responseData = { page, limit, total, projects: mappedProjects };
 
-    return { page, limit, total, projects: mappedProjects };
+    await this.cacheManager.set(cacheKey, responseData, 300000);
+
+    return responseData;
   }
 
   async getProjectById(projectId: string) {
@@ -140,6 +197,7 @@ export class ProjectService {
         throw new BadRequestException('End date must be after start date.');
       }
     }
+    await this.invalidateProjectsCache();
     return this.persistProjectUpdate(projectId, dto);
   }
 

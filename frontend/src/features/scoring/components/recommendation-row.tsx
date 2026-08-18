@@ -10,10 +10,10 @@ interface RecommendationRowProps {
     readonly onPlaceConsultant: (consultantId: string) => Promise<void>;
 }
 
-export function RecommendationRow({ recommendation, onSelectConsultant }: RecommendationRowProps) {
+export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceConsultant }: RecommendationRowProps) {
     const [isExpanded, setIsExpanded] = useState(false);
-    const [_isConfirming, setIsConfirming] = useState(false);
-    const [isPlacing, _setIsPlacing] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
+    const [isPlacing, setIsPlacing] = useState(false);
     const availability = getAvailabilityDisplay(recommendation.factorBreakdown);
 
     return (
@@ -69,6 +69,39 @@ export function RecommendationRow({ recommendation, onSelectConsultant }: Recomm
                     </div>
                 </td>
             </tr>
+            {isConfirming && !recommendation.isPlaced &&(
+                <tr className="bg-amber-50 border-b border-slate-200">
+                    <td colSpan={5} className="px-6 py-4">
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="text-sm font-medium text-slate-800">
+                                Place {recommendation.consultantName} on this project?
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <button type="button"
+                                onClick={() =>setIsConfirming(false)}
+                                    className="px-3 py-1 text-sm font-semibold text-slate-600">
+                                    Cancel
+                                </button>
+
+                                <button type="button"
+                                disabled={isPlacing}
+                                onClick={async() =>{ setIsPlacing(true);
+                                    try{
+                                        await onPlaceConsultant(recommendation.consultantId);
+                                        setIsConfirming(true);
+                                    }finally{
+                                        setIsPlacing(false);
+                                    }
+                                }}
+                                    className="px-3 py-1 rounded-md text-sm font-semibold text-white bg-emerald-600 disabled:opacity-50">
+                                    Confirm Placement
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            )}
+
             {isExpanded && (
                 <tr className="bg-slate-50/70 border-b border-slate-200">
                     <td colSpan={5} className="p-6">

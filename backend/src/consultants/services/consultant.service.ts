@@ -525,6 +525,9 @@ export class ConsultantService {
       postalCode: consultant.postalCode,
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
+      pictureUrl: consultant.pictureData
+        ?`data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
+        : null,
       skills: consultant.skills.map((cs: any) => ({
         id: cs.id,
         skillName: cs.skill.name,
@@ -701,5 +704,67 @@ export class ConsultantService {
           })),
       },
     };
+  }
+
+  //-----------------Consultant Profile Picture-------------------
+  private readonly ALLOW_IMAGE_MIME_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ];
+  private readonly MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+  async uploadProfilePicture(
+    consultantId: string,
+    userId: string,
+    userRole: string,
+    file: Express.Multer.File,
+  ): Promise<{ pictureUrl: string; message: string }> {
+    if (!this.ALLOW_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPEG, PNG, and WEBP are allowed.');
+    }
+
+    if (file.size > this.MAX_IMAGE_SIZE_BYTES) {
+      throw new BadRequestException('Image size must not exceed 5MB.');
+    }
+
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { id: consultantId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(
+        `Consultant with id ${consultantId} not found.`,
+      );
+    }
+
+    const isSelf = consultant.userId === userId;
+    let isManagingCM = false;
+
+    if(!isSelf && userRole === 'CONSULTANT_MANAGER')
+    {
+      const managerLink = await this. prisma.consultantManager.findUnique({
+        where: { userId_consultantId: { userId, consultantId} },
+      });
+      isManagingCM = !!managerLink;
+    }
+
+    if (!isSelf && !isManagingCM) {
+      throw new ForbiddenException(
+        'You can only update your own profile picture, or a profile picture for a consultant you manage.',
+      );
+    }
+
+    await this.prisma.consultant.update({
+      where: { id: consultantId },
+      data: { 
+        pictureData: Uint8Array.from(file.buffer),
+        pictureMimeType: file.mimetype
+       },
+    });
+
+    const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+    return { pictureUrl, message: 'Profile picture uploaded successfully.' };
   }
 }

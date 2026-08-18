@@ -30,9 +30,6 @@ export class NotificationGateway
 
   async sendPushNotification(userId: string, payload: any): Promise<void> {
     const roomName = `user_notifications_${userId}`;
-    return new Promise((resolve) => {
-      this.server.to(roomName).emit('new_notification', payload);
-      resolve();
-    });
+    this.server.to(roomName).emit('new_notification', payload);
   }
 }

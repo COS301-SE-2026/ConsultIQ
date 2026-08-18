@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisUtilityService implements OnModuleDestroy {
     private readonly logger = new Logger(RedisUtilityService.name);
-    public readonly redisClient: Redis; // Make accessible if you need direct Redis access elsewhere
+    public readonly redisClient: Redis;
 
     constructor(private readonly configService: ConfigService) {
         const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
@@ -16,9 +16,6 @@ export class RedisUtilityService implements OnModuleDestroy {
         this.redisClient.quit();
     }
 
-    /**
-     * Clears all Redis cache keys matching a specific pattern using a non-blocking stream.
-     */
     async invalidateCacheByPattern(pattern: string): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             const stream = this.redisClient.scanStream({
@@ -34,22 +31,25 @@ export class RedisUtilityService implements OnModuleDestroy {
                 }
             });
 
-            stream.on('end', async () => {
-                try {
-                    if (keysToDelete.length > 0) {
-                        const pipeline = this.redisClient.pipeline();
-                        keysToDelete.forEach((key) => pipeline.del(key));
-                        await pipeline.exec();
-
-                        this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages for pattern: ${pattern}.`);
+            stream.on('end', () => {
+                (async () => {
+                    try {
+                        if (keysToDelete.length > 0) {
+                            const pipeline = this.redisClient.pipeline();
+                            keysToDelete.forEach((key) => pipeline.del(key));
+                            await pipeline.exec();
+                            this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages for pattern: ${pattern}.`);
+                        }
+                        resolve();
+                    } catch (error) {
+                        reject(error);
                     }
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
+                })();
             });
 
-            stream.on('error', reject);
+            stream.on('error', (error) => {
+                reject(error instanceof Error ? error : new Error(String(error)));
+            });
         });
     }
 }

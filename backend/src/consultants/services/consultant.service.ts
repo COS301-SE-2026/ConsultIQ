@@ -227,7 +227,7 @@ export class ConsultantService {
       console.log(`CACHE HIT for key: ${cacheKey}`);
       return cachedData;
     }
-    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from Prisma...`);
+    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     const skip = (page - 1) * limit;
     const [consultants, total] = await Promise.all([
@@ -267,7 +267,7 @@ export class ConsultantService {
         addressLine1: c.addressLine1,
         addressLine2: c.addressLine2,
         suburb: c.suburb,
-        city: c.province,
+        city: c.city,
         province: c.province,
         postalCode: c.postalCode,
         availabilityStatus: c.availability,
@@ -284,7 +284,7 @@ export class ConsultantService {
 
       return dto;
     });
-    const response = { page, total, consultants: mappedConsultants };
+    const response = { page, limit, total, consultants: mappedConsultants };
     // TTL: 5 min
     await this.cacheManager.set(cacheKey, response, 300000);
 
@@ -461,6 +461,8 @@ export class ConsultantService {
         }
       }
     });
+
+    await this.invalidateConsultantCache();
 
     return { message: 'Consultant profile updated successfully.' };
   }

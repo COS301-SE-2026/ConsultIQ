@@ -11,9 +11,8 @@ export class RedisUtilityService implements OnModuleDestroy {
         const redisUrl = this.configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
         this.redisClient = new Redis(redisUrl);
     }
-
-    onModuleDestroy() {
-        this.redisClient.quit();
+    async onModuleDestroy() {
+        await this.redisClient.quit();
     }
 
     async invalidateCacheByPattern(pattern: string): Promise<void> {
@@ -32,7 +31,8 @@ export class RedisUtilityService implements OnModuleDestroy {
             });
 
             stream.on('end', () => {
-                (async () => {
+
+                void (async () => {
                     try {
                         if (keysToDelete.length > 0) {
                             const pipeline = this.redisClient.pipeline();
@@ -42,7 +42,8 @@ export class RedisUtilityService implements OnModuleDestroy {
                         }
                         resolve();
                     } catch (error) {
-                        reject(error);
+
+                        reject(error instanceof Error ? error : new Error(String(error)));
                     }
                 })();
             });

@@ -52,6 +52,7 @@ export interface ConsultantProfileDto {
   city: string;
   province: string;
   postalCode?: string;
+  pictureUrl?: string | null;
   experience?: ExperienceDto[];
   education?: EducationDto[];
   skills?: SkillDto[];
@@ -71,14 +72,13 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     idNumber: data.idNumber || "",
     nationality: data.nationality || "",
 
-    
-   
     addressLine1: data.addressLine1,
     addressLine2: data.addressLine2 || "",
     suburb: data.suburb || "",
     city:  data.city,
     province: data.province,
     postalCode: data.postalCode || "",
+    pictureUrl: data.pictureUrl ?? null,
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,

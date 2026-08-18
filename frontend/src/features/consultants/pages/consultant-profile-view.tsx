@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
-import { updateConsultantProfile } from "../../../api/consultants.api";
+import { updateConsultantProfile, uploadConsultantPicture } from "../../../api/consultants.api";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import {
@@ -149,9 +149,13 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
             <ProfileHeroCard
               fullName={profile.fullName}
               status={profile.status}
+              pictureUrl={profile.pictureUrl}
               canEdit={canEdit}
-              onSave={async (status) => {
+              onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+                if(photo && targetConsultantId) {
+                  await uploadConsultantPicture(targetConsultantId, photo);
+                }
                 await refetch();
               }}
             />

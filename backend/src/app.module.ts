@@ -13,6 +13,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ScoringModule } from './scoring/scoring.module';
 import { NotificationModule } from './notification/notification.module';
 import { LocationModule } from './location/location.module';
+import { PlacementsModule } from './placement/placement.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { LocationModule } from './location/location.module';
     NotificationModule,
     AdminModule,
     LocationModule,
+    PlacementsModule
   ],
   controllers: [AppController],
   providers: [AppService],

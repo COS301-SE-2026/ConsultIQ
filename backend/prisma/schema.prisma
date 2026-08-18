@@ -199,27 +199,29 @@ model Token {
 }
 
 model Consultant {
-  id               String                 @id @default(uuid())
-  userId           String                 @unique
-  user             User                   @relation(fields: [userId], references: [id])
-  addressLine1     String
-  addressLine2     String?
-  suburb           String?
-  city             String
-  province         String
-  postalCode       String?
+  id            String                 @id @default(uuid())
+  userId        String                 @unique
+  user          User                   @relation(fields: [userId], references: [id])
+  addressLine1 String
+  addressLine2 String?
+  suburb       String?
+  city         String
+  province     String
+  postalCode   String?
   latitude         Float?
   longitude        Float?
   placeId          String?
   formattedAddress String?
-  phone            String?
-  idNumber         String?
-  nationality      String?
-  costToCompany    Float
-  availability     ConsultantAvailability @default(AVAILABLE)
-  tenantId         String?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  phone         String?
+  idNumber      String?
+  nationality   String?
+  costToCompany Float
+  availability  ConsultantAvailability @default(AVAILABLE)
+  tenantId      String?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  pictureData     Bytes?
+  pictureMimeType    String?
 
   skills                ConsultantSkill[]
   certificates          Certificate[]

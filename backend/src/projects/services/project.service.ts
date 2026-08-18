@@ -20,14 +20,16 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-
+import { Logger } from '@nestjs/common';
 @Injectable()
 export class ProjectService {
   private readonly CACHE_KEY = 'cache:projects_list';
   private readonly redisClient: Redis;
+  private readonly logger = new Logger(ProjectService.name);
+
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
   ) {
     const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
@@ -56,7 +58,7 @@ export class ProjectService {
         const pipeline = this.redisClient.pipeline();
         keysToDelete.forEach((key) => pipeline.del(key));
         await pipeline.exec();
-        console.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
+        this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
       }
     });
   }
@@ -100,11 +102,11 @@ export class ProjectService {
     const cachedData = await this.cacheManager.get<PaginatedProjectsResponseDto>(cacheKey);
 
     if (cachedData) {
-      console.log(`CACHE HIT for key: ${cacheKey}`);
+      this.logger.log(`CACHE HIT for key: ${cacheKey}`);
       return cachedData;
     }
 
-    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
+    this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     switch (userRole) {
       case 'ADMIN':

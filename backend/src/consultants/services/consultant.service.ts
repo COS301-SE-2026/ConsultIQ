@@ -26,15 +26,18 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class ConsultantService {
   private readonly CACHE_KEY = 'cache:consultants_list';
   private readonly redisClient: Redis;
+  private readonly logger = new Logger(ConsultantService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly configService: ConfigService,
   ) {
     const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
@@ -43,13 +46,29 @@ export class ConsultantService {
   onModuleDestroy() {
     this.redisClient.quit();
   }
-  async invalidateConsultantCache() {
-    const keys = await this.redisClient.keys('cache:consultants:*');
 
-    if (keys.length > 0) {
-      await this.redisClient.del(...keys);
-      console.log(`Cache Invalidated: Cleared ${keys.length} stale pages.`);
-    }
+  async invalidateConsultantCache() {
+    const stream = this.redisClient.scanStream({
+      match: 'cache:consultants:*',
+      count: 100,
+    });
+
+    const keysToDelete: string[] = [];
+
+    stream.on('data', (keys: string[]) => {
+      if (keys.length > 0) {
+        keysToDelete.push(...keys);
+      }
+    });
+
+    stream.on('end', async () => {
+      if (keysToDelete.length > 0) {
+        const pipeline = this.redisClient.pipeline();
+        keysToDelete.forEach((key) => pipeline.del(key));
+        await pipeline.exec();
+        this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
+      }
+    });
   }
 
   async createConsultantProfile(
@@ -224,10 +243,10 @@ export class ConsultantService {
     const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
     const cachedData = await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
     if (cachedData) {
-      console.log(`CACHE HIT for key: ${cacheKey}`);
+      this.logger.log(`CACHE HIT for key: ${cacheKey}`);
       return cachedData;
     }
-    console.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
+    this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     const skip = (page - 1) * limit;
     const [consultants, total] = await Promise.all([

@@ -9,7 +9,7 @@ import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ConfigService } from '@nestjs/config';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
 const mockPrismaService = {
   user: {
@@ -55,8 +55,8 @@ const mockCacheManager = {
   del: jest.fn().mockResolvedValue(undefined),
 };
 
-const mockConfigService = {
-  get: jest.fn().mockReturnValue('redis://localhost:6379'),
+const mockRedisUtilityService = {
+  invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
 };
 
 describe('ConsultantService', () => {
@@ -69,7 +69,7 @@ describe('ConsultantService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: RedisUtilityService, useValue: mockRedisUtilityService },
       ],
     }).compile();
 

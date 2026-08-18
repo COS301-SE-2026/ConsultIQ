@@ -5,7 +5,8 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { ProjectStatus } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ConfigService } from '@nestjs/config';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
+
 const mockTx = {
   project: {
     create: jest.fn(),
@@ -54,11 +55,9 @@ const mockCacheManager = {
   set: jest.fn(),
   del: jest.fn(),
 };
-
-const mockConfigService = {
-  get: jest.fn().mockReturnValue('redis://localhost:6379'),
+const mockRedisUtilityService = {
+  invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
 };
-
 
 const baseDto: CreateProjectDto = {
   projectName: 'Test Project',
@@ -120,7 +119,7 @@ describe('ProjectService', () => {
         ProjectService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
-        { provide: ConfigService, useValue: mockConfigService },
+        { provide: RedisUtilityService, useValue: mockRedisUtilityService },
       ],
     }).compile();
 
@@ -367,7 +366,7 @@ describe('ProjectService', () => {
 
 
       mockPrismaService.$transaction.mockImplementation(async (cb) => {
-        return cb(mockPrismaService);
+        return cb(mockTx);
       });
       mockPrismaService.project.create.mockResolvedValue({ id: 'new-proj' });
       mockPrismaService.projectManager.create.mockResolvedValue({});

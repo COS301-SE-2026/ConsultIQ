@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -18,59 +19,22 @@ import {
 import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
-import { Logger } from '@nestjs/common';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
+
 @Injectable()
 export class ProjectService {
   private readonly CACHE_KEY = 'cache:projects_list';
-  private readonly redisClient: Redis;
   private readonly logger = new Logger(ProjectService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly configService: ConfigService,
+    private readonly redisUtilityService: RedisUtilityService,
   ) {
-    const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
-    this.redisClient = new Redis(redisUrl);
-  }
-
-  onModuleDestroy() {
-    this.redisClient.quit();
   }
 
   async invalidateProjectsCache() {
-    return new Promise<void>((resolve, reject) => {
-      const stream = this.redisClient.scanStream({
-        match: 'cache:projects:*',
-        count: 100,
-      });
-
-      const keysToDelete: string[] = [];
-
-      stream.on('data', (keys: string[]) => {
-        if (keys.length > 0) {
-          keysToDelete.push(...keys);
-        }
-      });
-
-      stream.on('end', async () => {
-        try {
-          if (keysToDelete.length > 0) {
-            const pipeline = this.redisClient.pipeline();
-            keysToDelete.forEach((key) => pipeline.del(key));
-            await pipeline.exec();
-            this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
-          }
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-
-      stream.on('error', reject);
-    });
+    await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
   }
 
 

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   BadRequestException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -24,60 +25,21 @@ import {
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
-import { Logger } from '@nestjs/common';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
 @Injectable()
 export class ConsultantService {
   private readonly CACHE_KEY = 'cache:consultants_list';
-  private readonly redisClient: Redis;
   private readonly logger = new Logger(ConsultantService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly configService: ConfigService,
-  ) {
-    const redisUrl = this.configService.get('REDIS_URL') || 'redis://localhost:6379';
-    this.redisClient = new Redis(redisUrl);
-  }
-  onModuleDestroy() {
-    this.redisClient.quit();
-  }
-
+    private readonly redisUtilityService: RedisUtilityService,
+  ) { }
   async invalidateConsultantCache() {
-    return new Promise<void>((resolve, reject) => {
-      const stream = this.redisClient.scanStream({
-        match: 'cache:consultants:*',
-        count: 100,
-      });
-
-      const keysToDelete: string[] = [];
-
-      stream.on('data', (keys: string[]) => {
-        if (keys.length > 0) {
-          keysToDelete.push(...keys);
-        }
-      });
-
-      stream.on('end', async () => {
-        try {
-          if (keysToDelete.length > 0) {
-            const pipeline = this.redisClient.pipeline();
-            keysToDelete.forEach((key) => pipeline.del(key));
-            await pipeline.exec();
-            this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
-          }
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      });
-
-      stream.on('error', reject);
-    });
+    await this.redisUtilityService.invalidateCacheByPattern('cache:consultants:*');
   }
 
   async createConsultantProfile(

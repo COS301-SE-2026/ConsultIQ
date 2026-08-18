@@ -84,13 +84,11 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
           >
 
             {previewProfilePhoto || pictureUrl ? (
-              <>
                 <img
                   src={previewProfilePhoto ?? pictureUrl ?? undefined}
                   alt={fullName}
                   className="w-full h-full rounded-full object-cover"
                 />
-              </>
 
             ) : (
               getInitials(fullName)

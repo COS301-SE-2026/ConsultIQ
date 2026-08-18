@@ -1,6 +1,8 @@
 import { Card } from "../../../components/ui/card";
 // import type { ProjectFormData } from "../pages/project-specification-page";
-import type {ProjectLocation} from "../types/project.types"
+import type {ProjectLocation} from "../types/project.types";
+import { useAddressSearch } from "../../../hooks/useAddressSearch";
+import SearchBar from "../../../components/shared/search-bar";
 interface ProjectLocationCardProps {
   data: ProjectLocation;
   errors?: Partial<Record<keyof ProjectLocation, string>>;
@@ -8,6 +10,25 @@ interface ProjectLocationCardProps {
 }
 
 export default function ProjectLocationCard({ data, errors = {}, onChange }: ProjectLocationCardProps) {
+  
+  const{
+    addressSearch,
+    locationResults,
+    isAddressLoading,
+    showDropdown,
+    handleSearchAddress,
+    handleSelectAddress,
+
+  }= useAddressSearch({
+    onSelect: (parsed) =>{
+      onChange("addressLine1", parsed.addressLine1 ?? "");
+      onChange("addressLine2", parsed.addressLine2 ?? "");
+      onChange("suburb", parsed.suburb ?? "");
+      onChange("city", parsed.city ?? "");
+      onChange("province",parsed.province);
+      onChange("postalCode",(parsed.postalCode ?? "").replace(/\D/g, ""));
+    },
+  });
 
   // Helper to apply red borders when there is an error
   const getInputClass = (fieldName: keyof ProjectLocation) =>
@@ -21,6 +42,31 @@ export default function ProjectLocationCard({ data, errors = {}, onChange }: Pro
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Location
         </h2>
+
+         <div className="relative w-full mb-6">
+          <SearchBar
+            value={addressSearch}
+            onChange={handleSearchAddress}
+            placeholder="Search for an address..."
+          />
+
+          
+          {isAddressLoading && (
+            <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+          )}
+
+          {showDropdown && locationResults && (
+            <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
+              <li
+                className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
+                onClick={handleSelectAddress}
+              >
+                {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+              </li>
+            </ul>
+          )}
+
+        </div>
 
 
         <div className="flex flex-col gap-6 flex-1">

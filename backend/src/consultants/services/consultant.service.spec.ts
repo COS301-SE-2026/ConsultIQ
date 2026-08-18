@@ -8,6 +8,8 @@ import {
 import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { ConfigService } from '@nestjs/config';
 
 const mockPrismaService = {
   user: {
@@ -19,6 +21,7 @@ const mockPrismaService = {
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
   },
   consultantManager: {
     create: jest.fn(),
@@ -46,6 +49,15 @@ const mockNotificationService = {
   createAndSendNotification: jest.fn(),
 };
 
+const mockCacheManager = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn().mockReturnValue('redis://localhost:6379'),
+};
 
 describe('ConsultantService', () => {
   let service: ConsultantService;
@@ -56,6 +68,8 @@ describe('ConsultantService', () => {
         ConsultantService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -292,6 +306,55 @@ describe('ConsultantService', () => {
 
       const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER');
       expect(result.page).toBe(3);
+    });
+
+    it('should return cached data and not call the database (Cache Hit)', async () => {
+
+      const mockCachedData = { page: 1, limit: 10, total: 5, consultants: [] };
+      mockCacheManager.get.mockResolvedValue(mockCachedData);
+
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+
+      expect(mockCacheManager.get).toHaveBeenCalledWith('cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER');
+      expect(result).toEqual(mockCachedData);
+      expect(mockPrismaService.consultant.findMany).not.toHaveBeenCalled();
+      expect(mockPrismaService.consultant.count).not.toHaveBeenCalled();
+    });
+
+    it('should fetch from database and save to cache when cache is empty (Cache Miss)', async () => {
+
+      mockCacheManager.get.mockResolvedValue(null);
+
+      mockPrismaService.consultant.findMany.mockResolvedValue([]);
+      mockPrismaService.consultant.count.mockResolvedValue(0);
+
+
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+
+      expect(mockCacheManager.get).toHaveBeenCalled();
+      expect(mockPrismaService.consultant.findMany).toHaveBeenCalled();
+      expect(mockPrismaService.consultant.count).toHaveBeenCalled();
+
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        'cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER',
+        { page: 1, limit: 10, total: 0, consultants: [] },
+        300000
+      );
+    });
+
+    it('should invalidate the cache when a consultant profile is updated', async () => {
+
+      const invalidateSpy = jest.spyOn(service, 'invalidateConsultantCache').mockResolvedValue(undefined);
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: '123',
+      });
+      mockPrismaService.consultant.update.mockResolvedValue({ id: '123' });
+
+      await service.updateConsultantProfile('123', {});
+
+
+      expect(invalidateSpy).toHaveBeenCalled();
     });
   });
 

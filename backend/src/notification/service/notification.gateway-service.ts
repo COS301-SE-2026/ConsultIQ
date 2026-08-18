@@ -9,8 +9,7 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({ namespace: '/notifications', cors: true })
 export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
 
@@ -29,9 +28,11 @@ export class NotificationGateway
     return { event: 'subscribed', data: `Successfully joined ${roomName}` };
   }
 
-  sendPushNotification(userId: string, payload: any) {
+  async sendPushNotification(userId: string, payload: any): Promise<void> {
     const roomName = `user_notifications_${userId}`;
-
-    this.server.to(roomName).emit('new_notification', payload);
+    return new Promise((resolve) => {
+      this.server.to(roomName).emit('new_notification', payload);
+      resolve();
+    });
   }
 }

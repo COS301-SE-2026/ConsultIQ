@@ -48,26 +48,35 @@ export class ConsultantService {
   }
 
   async invalidateConsultantCache() {
-    const stream = this.redisClient.scanStream({
-      match: 'cache:consultants:*',
-      count: 100,
-    });
+    return new Promise<void>((resolve, reject) => {
+      const stream = this.redisClient.scanStream({
+        match: 'cache:consultants:*',
+        count: 100,
+      });
 
-    const keysToDelete: string[] = [];
+      const keysToDelete: string[] = [];
 
-    stream.on('data', (keys: string[]) => {
-      if (keys.length > 0) {
-        keysToDelete.push(...keys);
-      }
-    });
+      stream.on('data', (keys: string[]) => {
+        if (keys.length > 0) {
+          keysToDelete.push(...keys);
+        }
+      });
 
-    stream.on('end', async () => {
-      if (keysToDelete.length > 0) {
-        const pipeline = this.redisClient.pipeline();
-        keysToDelete.forEach((key) => pipeline.del(key));
-        await pipeline.exec();
-        this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
-      }
+      stream.on('end', async () => {
+        try {
+          if (keysToDelete.length > 0) {
+            const pipeline = this.redisClient.pipeline();
+            keysToDelete.forEach((key) => pipeline.del(key));
+            await pipeline.exec();
+            this.logger.log(`Cache Invalidated: Cleared ${keysToDelete.length} stale pages.`);
+          }
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+
+      stream.on('error', reject);
     });
   }
 

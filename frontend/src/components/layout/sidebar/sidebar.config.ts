@@ -68,11 +68,11 @@ export const consultantSidebarItems: SidebarItem[] = [
         path:"/notifications",
         icon:Bell
     },
-    // {
-    //     label: " My Projects",
-    //     path: "/consultant-projects",
-    //     icon: Briefcase
-    // },
+    {
+        label: " My Projects",
+        path: "/consultant-projects",
+        icon: Briefcase
+    },
      {
         label: "Help",
         path:"/help-page",

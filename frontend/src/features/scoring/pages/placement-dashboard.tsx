@@ -82,8 +82,23 @@ export default function PlacementDashboard() {
         console.log("Selected consultant for modal view", consultantId);
     };
     const handlePlaceConsultant = async (consultantId: string) =>{
-        console.log("Placing consultant", consultantId);
-    }
+        if(!projectId){
+            throw new Error("Project ID is missing.");
+        }
+        await placementService.createPlacement(projectId, {
+            consultantId,
+            startDate: new Date().toISOString(),
+            allocation: 100,
+        });
+
+        setRecommendations((currRecommendation) => 
+            currRecommendation.map((recommendation) =>
+                recommendation.consultantId === consultantId ? {...recommendation, isPlaced: true} : recommendation,
+            ),
+        );
+
+        setStats((currStats) => currStats ? {...currStats, totalPlaced: currStats.totalPlaced + 1,} : currStats,);
+    };
 
     const handleViewAll = () => {
         console.log("Viewing full list");

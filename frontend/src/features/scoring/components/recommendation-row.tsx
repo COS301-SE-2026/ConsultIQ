@@ -88,7 +88,7 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
                                 onClick={async() =>{ setIsPlacing(true);
                                     try{
                                         await onPlaceConsultant(recommendation.consultantId);
-                                        setIsConfirming(true);
+                                        setIsConfirming(false);
                                     }finally{
                                         setIsPlacing(false);
                                     }

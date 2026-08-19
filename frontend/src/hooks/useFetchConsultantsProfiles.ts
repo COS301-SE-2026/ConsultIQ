@@ -106,16 +106,16 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       confidenceLevel: s.confidenceLevel || 1,
     })),
 
-    education: (data.certificates || []).map((cert, index: number) => ({
-      id: cert.id || `edu-${index}`,
-      institution: cert.issuingBody,
-      qualification: cert.title,
-      startDate: cert.startDate 
-        ? new Date(cert.startDate).toISOString().split("T")[0]
-        : new Date(cert.uploadedAt).toISOString().split("T")[0],
-      endDate: cert.endDate 
-        ? new Date(cert.endDate).toISOString().split("T")[0]
-        : new Date(cert.uploadedAt).toISOString().split("T")[0],
+    education: (data.education || []).map((edu, index: number) => ({
+      id: edu.id || `edu-${index}`,
+      institution: edu.institution || "",
+      qualification: edu.qualification || "",
+      startDate: edu.startDate 
+        ? new Date(edu.startDate).toISOString().split("T")[0]
+        : '',
+      endDate: edu.endDate 
+        ? new Date(edu.endDate).toISOString().split("T")[0]
+        : '',
     })),
   };
 };

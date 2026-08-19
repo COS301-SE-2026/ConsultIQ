@@ -20,6 +20,7 @@ import {
   CompetencyLevel,
   ConsultantAvailability,
   JobType,
+  Role,
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
@@ -309,14 +310,36 @@ export class ConsultantService {
     return this.mapToProfileDto(consultant);
   }
 
+  private async resolveEditableConsultantId(
+    consultantId: string,
+    userRole: string,
+    requestingUserId: string,
+  ): Promise<string>{
+    if(userRole == Role.CONSULTANT){
+      const consultantProfile= await this.prisma.consultant.findUnique({
+        where: {userId: requestingUserId},
+        select: {id: true},
+      });
+        if(!consultantProfile){
+        throw new NotFoundException(`No consultant profile for the current user.`)
+      }
+
+      return consultantProfile.id;
+    }
+    
+    return consultantId;
+
+  }
   async updateConsultantProfile(
     consultantId: string,
     dto: UpdateConsultantDto,
+    userRole: string,
+    requestingUserId: string,
   ): Promise<{ message: string }> {
+
+    const resolvedConsultantId= await this.resolveEditableConsultantId(consultantId, userRole, requestingUserId);
     //Verify consultant exists
-    const existing = await this.prisma.consultant.findUnique({
-      where: { id: consultantId },
-    });
+    const existing = await this.prisma.consultant.findUnique({where: {id: resolvedConsultantId}});
 
     if (!existing) {
       throw new NotFoundException(
@@ -325,11 +348,29 @@ export class ConsultantService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+
+      const consultant= await tx.consultant.findUnique({
+        where: {id: resolvedConsultantId},
+      });
+
+      if(!consultant){
+        throw new NotFoundException(`Consultant with id ${resolvedConsultantId} not found.`,
+        );
+      }
+
+      if(dto.fullname !== undefined){
+        await tx.user.update({
+          where: {id: consultant.userId},
+          data: {
+            fullName: dto.fullname, 
+            email: dto.email,
+          },
+        });
+      }
+
       await tx.consultant.update({
-        where: { id: consultantId },
+        where: { id: resolvedConsultantId },
         data: {
-          ...(dto.fullname !== undefined && { fullname: dto.fullname }),
-          ...(dto.email !== undefined && { email: dto.email }),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
           ...(dto.nationality !== undefined && {
@@ -365,7 +406,7 @@ export class ConsultantService {
 
       if (dto.skills !== undefined) {
         await tx.consultantSkill.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const skill of dto.skills) {
@@ -384,7 +425,7 @@ export class ConsultantService {
 
           await tx.consultantSkill.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               skillId: skillRecord.id,
               competencyLevel,
               yearsExperience: skill.yearsExperience,
@@ -396,17 +437,17 @@ export class ConsultantService {
 
       if (dto.experiences !== undefined) {
         await tx.consultantExperience.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const exp of dto.experiences) {
           await tx.consultantExperience.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               jobTitle: exp.jobTitle,
               companyName: exp.companyName,
-              jobType: exp.jobType as JobType,
-              workModel: exp.workModel as WorkModel,
+              jobType: exp.jobType.toUpperCase().replace(/[\s-]/g, '_') as JobType,
+              workModel: exp.workModel.toUpperCase().replaceAll('-', '') as WorkModel,
               startDate: new Date(exp.startDate),
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,
@@ -417,13 +458,13 @@ export class ConsultantService {
 
       if (dto.certifications !== undefined) {
         await tx.certificate.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const cert of dto.certifications) {
           await tx.certificate.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               title: cert.title,
               issuingBody: cert.issuingBody,
               startDate: cert.startDate ? new Date(cert.startDate) : null,
@@ -434,13 +475,13 @@ export class ConsultantService {
 
       if (dto.education !== undefined) {
         await tx.consultantEducation.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const edu of dto.education) {
           await tx.consultantEducation.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               institution: edu.institution,
               qualification: edu.qualification,
               startDate: new Date(edu.startDate),

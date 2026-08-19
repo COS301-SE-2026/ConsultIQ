@@ -677,6 +677,84 @@ describe('ConsultantService', () => {
     });
   });
 
+  // --- getConsultantsByProject ---------------------------------------------------
+
+  describe('getConsultantsByProject', () => {
+    const referenceDate = new Date();
+
+    const mockPlacementData = {
+      id: 'placement-1',
+      projectId: 'project-123',
+      status: 'ACTIVE',
+      allocation: 80,
+      startDate: new Date('2024-01-01'),
+      endDate: null,
+      consultant: {
+        id: 'consultant-1',
+        costToCompany: 75000,
+        phone: '0987654321',
+        city: 'Pretoria',
+        user: {
+          fullName: 'Bennjamin Whitmore',
+          email: 'Bennjamin@consultiq.com',
+        },
+        skills: [
+          { skill: { name: 'Node.js' } },
+          { skill: { name: 'AWS' } },
+        ],
+      },
+    };
+
+    it('should query DB, map correctly, and omit costToCompany when role is PROJECT_MANAGER', async () => {
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([mockPlacementData]);
+
+      const result = await service.getConsultantsByProject('project-123', 'PROJECT_MANAGER');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          projectId: 'project-123',
+          status: 'ACTIVE',
+          startDate: { lte: expect.any(Date) },
+          consultant: expect.objectContaining({
+            user: expect.objectContaining({ status: 'ACTIVE' })
+          })
+        }),
+        include: expect.any(Object),
+        orderBy: { startDate: 'desc' },
+      });
+
+      expect(result.projectId).toBe('project-123');
+      expect(result.totalPlacements).toBe(1);
+
+      const mappedConsultant = result.consultants[0];
+      expect(mappedConsultant.consultantId).toBe('consultant-1');
+      expect(mappedConsultant.fullName).toBe('Bennjamin Whitmore');
+      expect(mappedConsultant.primarySkills).toEqual(['Node.js', 'AWS']);
+      expect(mappedConsultant.allocation).toBe(80);
+
+      expect(mappedConsultant.costToCompany).toBeUndefined();
+
+    });
+
+    it('should include costToCompany for roles other than PROJECT_MANAGER (ADMIN)', async () => {
+      mockCacheManager.get.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([mockPlacementData]);
+
+      const result = await service.getConsultantsByProject('project-123', 'ADMIN');
+
+      expect(result.consultants[0].costToCompany).toBe(75000);
+    });
+
+    it('should return an empty array if no active placements exist for the project', async () => {
+      mockCacheManager.get.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      const result = await service.getConsultantsByProject('empty-project', 'ADMIN');
+
+      expect(result.totalPlacements).toBe(0);
+      expect(result.consultants).toEqual([]);
+    });
+  });
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { NotificationService } from '../../notification/service/notification.service';
@@ -12,6 +12,7 @@ const mockConsultantService = {
   getAssignedProjects: jest.fn(),
   updateConsultantProfile: jest.fn(),
   getAssignedProjectDetails: jest.fn(),
+  uploadProfilePicture: jest.fn(),
 };
 
 const mockNotificationService = {
@@ -235,6 +236,53 @@ describe('ConsultantController', () => {
       await expect(
         controller.getAssignedProjectDetails('project-999', req as any),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ---------- uploadProfilePicture------------
+  describe('uploadProfilePicture', () => {
+    const mockFile = {
+      originalname: 'photo.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024,
+      buffer: Buffer.from('fake-image-data'),
+    } as Express.Multer.File;
+
+    it('should throw BadRequestException if no file is provided', async () => {
+      const req = { user: { userId: 'user-123' } };
+      await expect(
+        controller.uploadProfilePicture('consultant-1', undefined as any, req as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockConsultantService.uploadProfilePicture).not.toHaveBeenCalled();
+    });
+
+    it('should call service with consultantId, userId from JWT, and file', async () => {
+      mockConsultantService.uploadProfilePicture.mockResolvedValue({
+        pictureUrl: 'https://bucket.s3.region.amazonaws.com/profile-pictures/consultant-1/photo.jpg',
+        message: 'Profile picture uploaded successfully.',
+      });
+
+      const req = { user: { userId: 'user-123', role: 'CONSULTANT' } };
+      const result = await controller.uploadProfilePicture('consultant-1', mockFile, req as any);
+
+      expect(mockConsultantService.uploadProfilePicture).toHaveBeenCalledWith(
+        'consultant-1',
+        'user-123',
+        'CONSULTANT',
+        mockFile,
+      );
+      expect(result.message).toBe('Profile picture uploaded successfully.');
+    });
+
+    it('should propagate ForbiddenException from service', async () => {
+      mockConsultantService.uploadProfilePicture.mockRejectedValue(
+        new Error('You can only update your own profile picture.'),
+      );
+
+      const req = { user: { userId: 'user-123' } };
+      await expect(
+        controller.uploadProfilePicture('consultant-1', mockFile, req as any),
+      ).rejects.toThrow('You can only update your own profile picture.');
     });
   });
 });

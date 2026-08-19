@@ -7,6 +7,7 @@ import { Trash2 } from "lucide-react";
 interface ProfileHeroCardProps {
   readonly fullName: string;
   readonly status: "Available" | "Unavailable";
+  readonly pictureUrl?: string | null;
   readonly canEdit?: boolean;
   readonly onSave?: (status: "Available" | "Unavailable", photo?: File) => Promise<void> | void;
 }
@@ -18,7 +19,7 @@ function getInitials(fullName: string) {
   return `${firstName[0]}${lastName[0]}`.toUpperCase();
 }
 
-function ProfileHeroCard({ fullName, status, canEdit, onSave }: ProfileHeroCardProps) {
+function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: ProfileHeroCardProps) {
   const isAvailable = status === "Available";
   const [isEditing, setIsEditing] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
@@ -82,14 +83,12 @@ function ProfileHeroCard({ fullName, status, canEdit, onSave }: ProfileHeroCardP
             }}
           >
 
-            {previewProfilePhoto ? (
-              <>
+            {previewProfilePhoto || pictureUrl ? (
                 <img
-                  src={previewProfilePhoto}
+                  src={previewProfilePhoto ?? pictureUrl ?? undefined}
                   alt={fullName}
                   className="w-full h-full rounded-full object-cover"
                 />
-              </>
 
             ) : (
               getInitials(fullName)

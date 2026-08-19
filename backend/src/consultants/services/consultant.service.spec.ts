@@ -25,6 +25,8 @@ const mockPrismaService = {
   },
   consultantManager: {
     create: jest.fn(),
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
   },
   skill: {
     upsert: jest.fn(),
@@ -532,7 +534,6 @@ describe('ConsultantService', () => {
 
   //-------Consultant get assigned projects
 
-
   describe('getAssignedProjects', () => {
     it('throws NotFoundException when consultant profile does not exist', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
@@ -1022,7 +1023,6 @@ describe('ConsultantService', () => {
         latitude: -25.7479,
       });
 
-
       expect(txMock.consultant.update).toHaveBeenCalledWith({
         where: { id: consultantId },
         data: expect.objectContaining({
@@ -1034,4 +1034,100 @@ describe('ConsultantService', () => {
       });
     });
   });
+  // ---------- uploadProfilePicture------------
+  describe('uploadProfilePicture', () => {
+    const consultantId = 'consultant-uuid-1';
+    const userId = 'user-uuid-1';
+    const mockFile = {
+      originalname: 'photo.jpg',
+      mimetype: 'image/jpeg',
+      size: 1024 * 1024, // 1MB
+      buffer: Buffer.from('fake-image-data'),
+    } as Express.Multer.File;
+
+    it('should throw BadRequestException for an unsupported mime type', async () => {
+      const badFile = { ...mockFile, mimetype: 'application/pdf' };
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', badFile as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when the file exceeds the size limit', async () => {
+      const oversizedFile = { ...mockFile, size: 6 * 1024 * 1024 };
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', oversizedFile as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw NotFoundException if the consultant does not exist', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', mockFile),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException if a non-managing CONSULTANT_MANAGER tries to upload', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId: 'a-different-user',
+      });
+
+      mockPrismaService.consultantManager.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', mockFile),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException if thr caller is neither a consultant nor a consultant manger', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId: 'a-different-user',
+      });
+
+      await expect(
+        service.uploadProfilePicture(consultantId, userId, 'PROJECT_MANAGER', mockFile),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should upload successfully when the consultant uploads their own picture', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId,
+      });
+
+      mockPrismaService.consultant.update.mockResolvedValue({});
+
+      const result = await service.uploadProfilePicture(consultantId, userId, 'CONSULTANT', mockFile);
+
+      expect(mockPrismaService.consultantManager.findUnique).not.toHaveBeenCalledWith();
+      expect(mockPrismaService.consultant.update).toHaveBeenCalledWith({
+        where: { id: consultantId },
+        data: {
+          pictureData: expect.any(Uint8Array),
+          pictureMimeType: 'image/jpeg',
+        },
+      });
+      expect(result.message).toBe('Profile picture uploaded successfully.');
+      expect(result.pictureUrl).toBe(`data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`);
+    });
+
+    it("should upload successfully when the managing CONSULTANT_MANAGER uploads on the consultant's behalf", async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+        userId: 'a-different-user',
+      });
+      mockPrismaService.consultantManager.findUnique.mockResolvedValue({ id: 'link-1' });
+      mockPrismaService.consultant.update.mockResolvedValue({});
+
+      const result = await service.uploadProfilePicture(consultantId, userId, 'CONSULTANT_MANAGER', mockFile);
+
+      expect(mockPrismaService.consultantManager.findUnique).toHaveBeenCalledWith({
+        where: { userId_consultantId: { userId, consultantId } },
+      });
+      expect(result.message).toBe('Profile picture uploaded successfully.');
+    });
+  });
 });
+

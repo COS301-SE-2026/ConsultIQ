@@ -8,6 +8,7 @@ import {
 import { ConsultantService } from './consultant.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
+import { userInfo } from 'node:os';
 
 const mockPrismaService = {
   user: {
@@ -613,7 +614,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
 
       await expect(
-        service.updateConsultantProfile(consultantId, {}),
+        service.updateConsultantProfile(consultantId, {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -626,7 +627,7 @@ describe('ConsultantService', () => {
       const result = await service.updateConsultantProfile(consultantId, {
         phone: '0821234567',
         nationality: 'South African',
-      });
+      }, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
 
       expect(mockPrismaService.$transaction).toHaveBeenCalledTimes(1);
       expect(result.message).toBe('Consultant profile updated successfully.');
@@ -638,7 +639,10 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: { 
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}),
+         },
         consultantSkill: {
           deleteMany: jest.fn().mockResolvedValue({}),
           create: jest.fn().mockResolvedValue({}),
@@ -658,7 +662,7 @@ describe('ConsultantService', () => {
         skills: [
           { skillName: 'TypeScript', yearsExperience: 5, confidenceLevel: 4 },
         ],
-      });
+      }, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
 
       expect(txMock.consultantSkill.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
@@ -674,7 +678,10 @@ describe('ConsultantService', () => {
       let capturedSkillData: any = null;
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: {           
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}),
+         },
         consultantSkill: {
           deleteMany: jest.fn().mockResolvedValue({}),
           create: jest.fn().mockImplementation((args) => {
@@ -687,6 +694,7 @@ describe('ConsultantService', () => {
         },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
         certificate: { deleteMany: jest.fn(), create: jest.fn() },
+        user: {update: jest.fn()},
       };
 
       mockPrismaService.$transaction.mockImplementation(
@@ -697,7 +705,7 @@ describe('ConsultantService', () => {
         skills: [
           { skillName: 'React', yearsExperience: 5, confidenceLevel: 4 },
         ],
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(capturedSkillData.competencyLevel).toBe('EXPERT');
     });
@@ -708,7 +716,10 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: {          
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}), 
+        },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: {
@@ -733,7 +744,7 @@ describe('ConsultantService', () => {
             description: 'Built things.',
           },
         ],
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(txMock.consultantExperience.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
@@ -747,7 +758,10 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: {           
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}),
+        },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
@@ -755,6 +769,7 @@ describe('ConsultantService', () => {
           deleteMany: jest.fn().mockResolvedValue({}),
           create: jest.fn().mockResolvedValue({}),
         },
+        user: { update: jest.fn()},
       };
 
       mockPrismaService.$transaction.mockImplementation(
@@ -765,7 +780,7 @@ describe('ConsultantService', () => {
         certifications: [
           { title: 'AWS Certified Developer', issuingBody: 'Amazon' },
         ],
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(txMock.certificate.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
@@ -779,7 +794,10 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: { 
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}), 
+        },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
@@ -803,7 +821,7 @@ describe('ConsultantService', () => {
             endDate: '2025-12-01T00:00:00.000Z',
           },
         ],
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(txMock.consultantEducation.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
@@ -817,7 +835,10 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: {           
+          findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}),
+         },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
@@ -834,7 +855,7 @@ describe('ConsultantService', () => {
 
       await service.updateConsultantProfile(consultantId, {
         phone: '0821234567',
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(txMock.consultantEducation.deleteMany).not.toHaveBeenCalled();
       expect(txMock.consultantEducation.create).not.toHaveBeenCalled();
@@ -847,7 +868,9 @@ describe('ConsultantService', () => {
 
       const updateSpy = jest.fn().mockResolvedValue({});
       const txMock = {
-        consultant: { update: updateSpy },
+        consultant: { findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+                      update: updateSpy 
+                    },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
@@ -863,7 +886,7 @@ describe('ConsultantService', () => {
         addressLine1: '742 Evergreen Terrace',
         city: 'Pretoria',
         province: 'Gauteng',
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(updateSpy).toHaveBeenCalledWith({
         where: { id: consultantId },
@@ -882,7 +905,9 @@ describe('ConsultantService', () => {
 
       const updateSpy = jest.fn().mockResolvedValue({});
       const txMock = {
-        consultant: { update: updateSpy },
+        consultant: { findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+                      update: updateSpy 
+                    },
         consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
         skill: { upsert: jest.fn() },
         consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
@@ -896,7 +921,7 @@ describe('ConsultantService', () => {
 
       await service.updateConsultantProfile(consultantId, {
         availability: 'UNAVAILABLE',
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(updateSpy).toHaveBeenCalledWith({
         where: { id: consultantId },
@@ -912,7 +937,9 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: { findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+                      update: jest.fn().mockResolvedValue({}),
+         },
       };
       mockPrismaService.$transaction.mockImplementation(
         async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
@@ -923,7 +950,7 @@ describe('ConsultantService', () => {
         longitude: 28.2293,
         placeId: '123heivehew',
         formattedAddress: 'Pretoria, South Africa',
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
       expect(txMock.consultant.update).toHaveBeenCalledWith({
         where: { id: consultantId },
         data: expect.objectContaining({
@@ -941,7 +968,9 @@ describe('ConsultantService', () => {
       });
 
       const txMock = {
-        consultant: { update: jest.fn().mockResolvedValue({}) },
+        consultant: { findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1'}),
+          update: jest.fn().mockResolvedValue({}),
+         },
       };
 
       mockPrismaService.$transaction.mockImplementation(
@@ -950,7 +979,7 @@ describe('ConsultantService', () => {
 
       await service.updateConsultantProfile(consultantId, {
         latitude: -25.7479,
-      });
+      }, 'CONSULTANT', 'consultant-user-1');
 
       expect(txMock.consultant.update).toHaveBeenCalledWith({
         where: { id: consultantId },
@@ -960,6 +989,78 @@ describe('ConsultantService', () => {
           placeId: null,
           formattedAddress: null,
         }),
+      });
+    });
+
+    it('should throw when  the current consultant has no profile', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.updateConsultantProfile(
+          consultantId, 
+          {},
+          'CONSULTANT',
+          'missing-consultant-user-1',
+        ),
+      ).rejects.toThrow('No consultant profile for the current user.')
+    });
+
+    it('should throw when the consultant disappears before transaction update', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = {
+        consultant: {
+          findUnique: jest.fn().mockResolvedValue(null),
+        },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<void>) => callback(txMock),
+      );
+
+      await expect(
+        service.updateConsultantProfile(
+          consultantId,
+          {},
+          'CONSULTANT_MANAGER',
+          'cm-manager-user-1',
+        ),
+      ).rejects.toThrow(`Consultant with id ${consultantId} not found.`,);
+    });
+    
+    it('should update the linked user when fullname is provided', async() =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const userUpdate= jest.fn().mockResolvedValue({});
+      const consultantUpdate= jest.fn().mockResolvedValue({});
+      const txMock= {
+        consultant: {findUnique: jest.fn().mockResolvedValue({id: consultantId, userId: 'consultant-user-1',
+        }),
+        update : consultantUpdate, },
+        user: {update: userUpdate, }
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (callback: (tx: typeof txMock) => Promise<void>) => callback(txMock),
+      );
+
+      await service.updateConsultantProfile(
+        consultantId,
+        {fullname: 'Updated Username', email: 'updated@consultiq.com'},
+        'CONSULTANT_MANAGER',
+        'cm-manager-user-1',
+      );
+
+      expect(userUpdate).toHaveBeenCalledWith({
+        where: {id: 'consultant-user-1'},
+        data: {
+          fullName: 'Updated Username',
+          email: 'updated@consultiq.com',
+        },
       });
     });
   });

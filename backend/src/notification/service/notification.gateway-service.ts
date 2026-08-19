@@ -23,15 +23,14 @@ export class NotificationGateway
   }
 
   @SubscribeMessage('subscribeToNOtifcations')
-  handleSubscribe(client: Socket, userId: string) {
+  async handleSubscribe(client: Socket, userId: string) {
     const roomName = `user_notifications_${userId}`;
-    client.join(roomName);
+    await client.join(roomName);
     return { event: 'subscribed', data: `Successfully joined ${roomName}` };
   }
 
-  sendPushNotification(userId: string, payload: any) {
+  sendPushNotification(userId: string, payload: any): void {
     const roomName = `user_notifications_${userId}`;
-
     this.server.to(roomName).emit('new_notification', payload);
   }
 }

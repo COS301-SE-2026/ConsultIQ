@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { ConfigModule } from '@nestjs/config';
 import { EmailModule } from './email/email.module';
 import { CommonModule } from './common/common.module';
 import { ConsultantsModule } from './consultants/consultants.module';
@@ -13,6 +12,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ScoringModule } from './scoring/scoring.module';
 import { NotificationModule } from './notification/notification.module';
 import { LocationModule } from './location/location.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { createKeyv } from '@keyv/redis';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
 
 @Module({
@@ -25,6 +27,20 @@ import { PlacementsModule } from './placement/placement.module';
         limit: 100,
       },
     ]),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        return {
+          stores: [
+            createKeyv({
+              url: configService.get<string>('REDIS_URL')
+            })
+          ],
+        };
+      },
+    }),
     PrismaModule,
     EmailModule,
     CommonModule,

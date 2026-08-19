@@ -20,7 +20,7 @@ export default function LocationForm({ onComplete }: Props) {
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [error, setError] = useState("");
-  
+
   const handleDone = () => {
     if (!addressLine1.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
       setError("Address line 1, city, province and postal code are required.");
@@ -49,7 +49,7 @@ export default function LocationForm({ onComplete }: Props) {
     onComplete?.();
   };
 
-  const{
+  const {
     addressSearch,
     locationResults,
     isAddressLoading,
@@ -57,18 +57,18 @@ export default function LocationForm({ onComplete }: Props) {
     handleSearchAddress,
     handleSelectAddress,
 
-  }= useAddressSearch({
-    onSelect: (parsed) =>{
-      setAddressLine1( parsed.addressLine1 ?? "");
-      setAddressLine2( parsed.addressLine2 ?? "");
-      setSuburb( parsed.suburb ?? "");
-      setCity( parsed.city ?? "");
+  } = useAddressSearch({
+    onSelect: (parsed) => {
+      setAddressLine1(parsed.addressLine1 ?? "");
+      setAddressLine2(parsed.addressLine2 ?? "");
+      setSuburb(parsed.suburb ?? "");
+      setCity(parsed.city ?? "");
       setProvince(parsed.province);
       setPostalCode((parsed.postalCode ?? "").replace(/\D/g, ""));
     },
   });
 
-  
+
   return (
     <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col h-full mt-6">
@@ -86,11 +86,14 @@ export default function LocationForm({ onComplete }: Props) {
 
           {showDropdown && locationResults && (
             <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
-              <li
-                className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
-                onClick={handleSelectAddress}
-              >
-                {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+              <li>
+                <button
+                  type="button"
+                  className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
+                  onClick={handleSelectAddress}
+                >
+                  {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                </button>
               </li>
             </ul>
           )}

@@ -57,11 +57,14 @@ export default function ProjectLocationCard({ data, errors = {}, onChange }: Pro
 
           {showDropdown && locationResults && (
             <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
-              <li
-                className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
-                onClick={handleSelectAddress}
-              >
-                {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+              <li>
+                 <button
+                  type="button"
+                  className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
+                  onClick={handleSelectAddress}
+                >
+                  {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                </button>
               </li>
             </ul>
           )}

@@ -33,7 +33,7 @@ export function useAddressSearch({ onSelect, debounceTime = 500, minLength = 3 }
 
             if (requestId !== searchIdRef.current) return;
 
-            if (!data || !data.addressComponents) {
+            if (!data?.addressComponents) {
                 setLocationResults(null);
                 setShowDropdown(false);
                 return;

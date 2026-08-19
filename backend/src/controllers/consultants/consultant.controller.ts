@@ -23,7 +23,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('consultants')
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) {}
+  constructor(private readonly consultantService: ConsultantService) { }
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)
@@ -74,6 +74,24 @@ export class ConsultantController {
     return this.consultantService.getAssignedProjectDetails(userId, projectId);
   }
 
+  @Get('project/:projectId')
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async getConsultantsByProject(
+    @Param('projectId') projectId: string,
+    @Req() req: any,
+  ) {
+
+    const userRole = req.user?.role;
+    if (!userRole) {
+      throw new BadRequestException('Missing user role.');
+    }
+    return await this.consultantService.getConsultantsByProject(
+      projectId,
+      userRole,
+    );
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getConsultantById(@Param('id') id: string) {
@@ -94,7 +112,7 @@ export class ConsultantController {
     @Req() req: any,
     @Body() dto: UpdateConsultantDto,
   ): Promise<{ message: string }> {
-    const {userId, role} = req.user;
+    const { userId, role } = req.user;
     return await this.consultantService.updateConsultantProfile(
       consultantId,
       dto,

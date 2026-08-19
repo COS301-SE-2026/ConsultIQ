@@ -1341,6 +1341,49 @@ describe('ConsultantService', () => {
         data: { availability: 'AVAILABLE' },
       });
     });
+
+
+    it('should set status to UNAVAILABLE if restored capacity is still 0', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 0,
+      });
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 0,
+        availability: 'AVAILABLE',
+      });
+
+      await service.unassignConsultant('project-1', 'consultant-1');
+
+      expect(mockTx.consultant.update).toHaveBeenCalledWith({
+        where: { id: 'consultant-1' },
+        data: { availability: 'UNAVAILABLE' },
+      });
+    });
+
+    it('should skip updating the availability enum if the status is already correct', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 50,
+      });
+
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+
+      await service.unassignConsultant('project-1', 'consultant-1');
+      expect(mockTx.consultant.update).toHaveBeenCalledTimes(1);
+    });
+
   });
 
 });

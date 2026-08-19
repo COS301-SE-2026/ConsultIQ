@@ -537,22 +537,14 @@ export class ConsultantService {
         },
       });
 
-      let newAvailabilityStatus: 'AVAILABLE' | 'UNAVAILABLE' = 'AVAILABLE';
-
-      if (updatedConsultant.capacity >= 100) {
-        newAvailabilityStatus = 'AVAILABLE';
-
-        if (updatedConsultant.capacity > 100) {
-          await tx.consultant.update({
-            where: { id: consultantId },
-            data: { capacity: 100 }
-          });
-        }
-      } else if (updatedConsultant.capacity > 0) {
-        newAvailabilityStatus = 'AVAILABLE';
-      } else {
-        newAvailabilityStatus = 'UNAVAILABLE';
+      if (updatedConsultant.capacity > 100) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { capacity: 100 }
+        });
       }
+
+      const newAvailabilityStatus = updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
 
       if (updatedConsultant.availability !== newAvailabilityStatus) {
         await tx.consultant.update({

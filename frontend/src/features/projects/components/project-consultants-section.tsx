@@ -8,9 +8,9 @@ import { useState } from "react";
 
 
 interface ProjectConsultantsProps {
-    consultants: AssignedConsultants[];
-    projectId: string;
-    isLoading: boolean;
+    readonly consultants: AssignedConsultants[];
+    readonly projectId: string;
+    readonly isLoading: boolean;
 
 }
 

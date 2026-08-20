@@ -1,6 +1,6 @@
 import { X, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Project } from "../types/project.types";
+import type { Project, AssignedConsultants } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
 import ProjectSkillsSection from "./project-skills-section";
@@ -8,7 +8,6 @@ import { getAssignedProjectDetails } from "../../consultants/services/consultant
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
 import ProjectConsultants from "./project-consultants-section";
-import type { AssignedConsultants } from "../types/project.types";
 import { getConsultantsByProject } from "../services/project.service";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
@@ -61,7 +60,7 @@ export default function ProjectDetailsModal({
   const [fullProject, setFullProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
-  const [assignedconsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
+  const [assignedConsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
   const [consultantsLoading, setConsultantsLoading] = useState(false);
   //const isNonConsultant= !isConsultant;
   
@@ -331,7 +330,7 @@ export default function ProjectDetailsModal({
 
         
             <ProjectConsultants
-              consultants = {assignedconsultants || []}
+              consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
 

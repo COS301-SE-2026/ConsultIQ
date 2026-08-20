@@ -13,6 +13,13 @@ export interface ApiProject {
   province: string;
 }
  
+export interface ProjectPlacementContext{
+    id: string;
+    projectName: string;
+    allocation: number;
+    startDate: string;
+    endDate: string | null;
+}
 export interface PaginatedProjectsResponse{
     page: number;
     total: number;
@@ -20,4 +27,8 @@ export interface PaginatedProjectsResponse{
 }
 export const getProjects= async(page=1, limit=50)=>{
     return await apiClient.get<PaginatedProjectsResponse>(`/projects?page=${page}&limit=${limit}`);
+}
+
+export const getProjectById = async(projectId: string): Promise<ProjectPlacementContext> =>{
+    return apiClient.get<ProjectPlacementContext>(`/projects/${projectId}`);
 }

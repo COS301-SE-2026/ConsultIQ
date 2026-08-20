@@ -4,6 +4,7 @@ import { MatchStatsGrid } from "../components/match-stats-grid";
 import { useState, useEffect } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
+import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
 import { useParams } from "react-router-dom";
@@ -28,6 +29,7 @@ export default function PlacementDashboard() {
     const location = useLocation();
 
     const { projectId, runId } = useParams<{ projectId: string; runId: string }>();
+    const [project, setProject] = useState<ProjectPlacementContext | null>(null);
     const [projectScoringBasis] = useState<'Override' | 'Default'>('Override');
 
     const [stats, setStats] = useState<MatchRunStats | null>(null);
@@ -69,7 +71,21 @@ export default function PlacementDashboard() {
         };
         fetchStats();
     }, [location.state, projectId, runId])
+    
+    useEffect(() =>{
+        const loadProject = async() =>{
+            if(!projectId) return;
 
+            try{
+                const projectData= await getProjectById(projectId);
+                setProject(projectData);
+            }catch(error){
+                console.error("Failed to load project details", error);
+            }
+        };
+
+        void loadProject();
+    }, [projectId]);
 
 
     const projectMatched = stats?.totalMatched ?? recommendations.length;
@@ -82,13 +98,14 @@ export default function PlacementDashboard() {
         console.log("Selected consultant for modal view", consultantId);
     };
     const handlePlaceConsultant = async (consultantId: string) =>{
-        if(!projectId){
-            throw new Error("Project ID is missing.");
+        if(!projectId || !project){
+            throw new Error("Project information is missing.");
         }
         await placementService.createPlacement(projectId, {
             consultantId,
-            startDate: new Date().toISOString(),
-            allocation: 100,
+            startDate: project.startDate,
+            endDate: project.endDate ?? undefined,
+            allocation: project.allocation,
         });
 
         setRecommendations((currRecommendation) => 
@@ -116,7 +133,7 @@ export default function PlacementDashboard() {
                 >
                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                         Placement Dashboard</h1>
-                         {/* <span><p className="text-lg font-medium text-slate-500 mt-1">Project Name</p></span> */}
+                         <span><p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p></span>
                 </header>
                 <div className="flex-1 px-[80px] py-[32px]">
                     <MatchStatsGrid

@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { ProjectStatus } from '@prisma/client';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
 const mockTx = {
   project: {
@@ -28,12 +30,33 @@ const mockTx = {
 const mockPrismaService = {
   project: {
     findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
   },
   projectManager: {
     findUnique: jest.fn(),
+    create: jest.fn(),
+  },
+  skill: {
+    upsert: jest.fn(),
+  },
+  projectSkill: {
+    create: jest.fn(),
+    update: jest.fn(),
+    deleteMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   $transaction: jest.fn((callback: (tx: typeof mockTx) => unknown) => callback(mockTx)),
   $queryRaw: jest.fn(),
+};
+
+const mockCacheManager = {
+  get: jest.fn(),
+  set: jest.fn(),
+  del: jest.fn(),
+};
+const mockRedisUtilityService = {
+  invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
 };
 
 const baseDto: CreateProjectDto = {
@@ -95,6 +118,8 @@ describe('ProjectService', () => {
       providers: [
         ProjectService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: CACHE_MANAGER, useValue: mockCacheManager },
+        { provide: RedisUtilityService, useValue: mockRedisUtilityService },
       ],
     }).compile();
 
@@ -289,7 +314,74 @@ describe('ProjectService', () => {
       expect(result.total).toBe(1);
     });
   });
+  describe('Caching Logic', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
 
+    it('should return cached projects and not query the database (Cache Hit)', async () => {
+      const cacheKey = 'cache:projects:role:PROJECT_MANAGER:user:user-123:page:1:limit:10';
+      const mockCachedResponse = {
+        page: 1,
+        limit: 10,
+        total: 1,
+        projects: [{ id: 'proj-1', projectName: 'Cached Project' }],
+      };
+
+      mockCacheManager.get.mockResolvedValue(mockCachedResponse);
+
+      const result = await service.getAllProjects(1, 10, 'PROJECT_MANAGER', 'user-123');
+
+      expect(mockCacheManager.get).toHaveBeenCalledWith(cacheKey);
+      expect(result).toEqual(mockCachedResponse);
+
+      expect(mockPrismaService.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('should fetch from database and save to cache when cache is empty (Cache Miss)', async () => {
+      const cacheKey = 'cache:projects:role:PROJECT_MANAGER:user:user-123:page:1:limit:10';
+
+      mockCacheManager.get.mockResolvedValue(null);
+
+      mockPrismaService.$queryRaw
+        .mockResolvedValueOnce([{ id: 'proj-1', projectName: 'DB Project', skillCount: 1 }])
+        .mockResolvedValueOnce([{ count: 1n }]);
+
+
+      const result = await service.getAllProjects(1, 10, 'PROJECT_MANAGER', 'user-123');
+
+
+      expect(mockCacheManager.get).toHaveBeenCalledWith(cacheKey);
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledTimes(2);
+      expect(mockCacheManager.set).toHaveBeenCalledWith(
+        cacheKey,
+        expect.objectContaining({ page: 1, limit: 10, total: 1 }),
+        300000
+      );
+    });
+
+    it('should invalidate the cache when a new project is created', async () => {
+
+      const invalidateSpy = jest.spyOn(service, 'invalidateProjectsCache').mockResolvedValue();
+
+
+      mockPrismaService.$transaction.mockImplementation(async (cb) => {
+        return cb(mockTx);
+      });
+      mockPrismaService.project.create.mockResolvedValue({ id: 'new-proj' });
+      mockPrismaService.projectManager.create.mockResolvedValue({});
+
+      const createDto: any = {
+        projectName: 'New Cache Invalidation Test',
+        startDate: new Date().toISOString(),
+        skills: [],
+      };
+
+      await service.createProject(createDto, 'user-123', 'PROJECT_MANAGER');
+
+      expect(invalidateSpy).toHaveBeenCalled();
+    });
+  });
   describe('getAllProjects - CONSULTANT_MANAGER', () => {
     it('should return projects of managed consultants for CONSULTANT_MANAGER', async () => {
       mockPrismaService.$queryRaw

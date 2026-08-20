@@ -283,10 +283,7 @@ describe('PlacementService', () => {
       });
 
       const result = await service.getRemainingCapacity(
-        'consultant-1',
-        new Date('2026-06-01'),
-        new Date('2026-12-01'),
-      );
+        'consultant-1',);
 
       expect(result).toBe(100);
       expect(mockPrismaService.consultant.findUnique).toHaveBeenCalledWith({
@@ -302,10 +299,7 @@ describe('PlacementService', () => {
     });
 
       const result = await service.getRemainingCapacity(
-        'consultant-1',
-        new Date('2026-06-01'),
-        new Date('2026-12-01'),
-      );
+        'consultant-1',);
 
       expect(result).toBe(45);
     });
@@ -317,10 +311,7 @@ describe('PlacementService', () => {
     });
 
       const result = await service.getRemainingCapacity(
-        'consultant-1',
-        new Date('2026-06-01'),
-        new Date('2026-12-01'),
-      );
+        'consultant-1',);
 
       expect(result).toBe(0);
     });

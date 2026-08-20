@@ -67,11 +67,7 @@ export class PlacementService {
     }
 
     // -------- Capacity check --------
-    const remainingCapacity = await this.getRemainingCapacity(
-      dto.consultantId,
-      startDate,
-      endDate,
-    );
+    const remainingCapacity =  consultant.capacity;
 
     if (dto.allocation > remainingCapacity) {
       throw new BadRequestException(
@@ -124,8 +120,6 @@ export class PlacementService {
    **/
   async getRemainingCapacity(
     consultantId: string,
-    periodStart: Date,
-    periodEnd: Date | null,
   ): Promise<number> {
     const consultant = await this.prisma.consultant.findUnique({
       where: { id: consultantId},

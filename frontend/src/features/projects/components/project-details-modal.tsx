@@ -7,6 +7,7 @@ import ProjectSkillsSection from "./project-skills-section";
 import { getAssignedProjectDetails } from "../../consultants/services/consultant.service";
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
+import ProjectConsultants from "./project-consultants-section";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
@@ -298,6 +299,10 @@ export default function ProjectDetailsModal({
               onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
               isConsultant={isConsultant}
             />
+
+            <ProjectConsultants/>
+
+
         </div>
 
       </div>

@@ -13,6 +13,8 @@ const mockConsultantService = {
   updateConsultantProfile: jest.fn(),
   getAssignedProjectDetails: jest.fn(),
   uploadProfilePicture: jest.fn(),
+  getConsultantsByProject: jest.fn(),
+  unassignConsultant: jest.fn(),
 };
 
 const mockNotificationService = {
@@ -184,11 +186,14 @@ describe('ConsultantController', () => {
       });
 
       const dto = { phone: '0821234567', nationality: 'South African' };
-      const result = await controller.updateConsultantProfile('consultant-uuid-1', dto as any);
+      const req = { user: { userId: 'consultant-user-1', role: 'CONSULTANT' } };
+      const result = await controller.updateConsultantProfile('consultant-uuid-1', req as any, dto as any);
 
       expect(mockConsultantService.updateConsultantProfile).toHaveBeenCalledWith(
         'consultant-uuid-1',
         dto,
+        'CONSULTANT',
+        'consultant-user-1',
       );
       expect(result.message).toBe('Consultant profile updated successfully.');
     });
@@ -198,8 +203,9 @@ describe('ConsultantController', () => {
         new NotFoundException('Consultant with id uuid-999 not found.'),
       );
 
+      const req = { user: { userId: 'consultant-user-1', role: 'CONSULTANT' } };
       await expect(
-        controller.updateConsultantProfile('uuid-999', {} as any),
+        controller.updateConsultantProfile('uuid-999', req as any, {} as any),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -283,6 +289,92 @@ describe('ConsultantController', () => {
       await expect(
         controller.uploadProfilePicture('consultant-1', mockFile, req as any),
       ).rejects.toThrow('You can only update your own profile picture.');
+    });
+  });
+
+
+  // ---------- getConsultantsByProject ----------
+
+  describe('getConsultantsByProject', () => {
+    it('should successfully return consultants for a project', async () => {
+      const mockResponse = { projectId: 'project-123', totalPlacements: 1, consultants: [] };
+      mockConsultantService.getConsultantsByProject.mockResolvedValue(mockResponse);
+
+      const req = { user: { role: 'ADMIN' } };
+      const result = await controller.getConsultantsByProject('project-123', req);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.getConsultantsByProject).toHaveBeenCalledWith(
+        'project-123',
+        'ADMIN',
+      );
+    });
+
+    it('should pass PROJECT_MANAGER role to the service correctly', async () => {
+      const mockResponse = { projectId: 'project-123', totalPlacements: 1, consultants: [] };
+      mockConsultantService.getConsultantsByProject.mockResolvedValue(mockResponse);
+
+      const req = { user: { role: 'PROJECT_MANAGER' } };
+      const result = await controller.getConsultantsByProject('project-123', req);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.getConsultantsByProject).toHaveBeenCalledWith(
+        'project-123',
+        'PROJECT_MANAGER',
+      );
+    });
+
+    it('should throw an exception when the user role is missing from the request', async () => {
+      const req = { user: {} };
+
+      await expect(controller.getConsultantsByProject('project-123', req))
+        .rejects.toThrow(BadRequestException);
+      expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+    });
+
+    it('should throw an exception when the request user object is entirely undefined', async () => {
+      const req = {};
+
+      await expect(controller.getConsultantsByProject('project-123', req))
+        .rejects.toThrow(BadRequestException);
+
+      expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+    });
+
+  });
+  // ─── unassignConsultant ─────────────────────────────────────────────────────
+
+  describe('unassignConsultant', () => {
+    it('should call the service with correct parameters and return the result', async () => {
+      const mockResponse = {
+        message: 'Consultant successfully unassigned and capacity restored.',
+        placementId: 'placement-123',
+      };
+
+      mockConsultantService.unassignConsultant.mockResolvedValue(mockResponse);
+
+      const result = await controller.unassignConsultant('project-1', 'consultant-1');
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.unassignConsultant).toHaveBeenCalledWith(
+        'project-1',
+        'consultant-1',
+      );
+    });
+
+    it('should correctly throw exceptions thrown by the service (NotFoundException)', async () => {
+      mockConsultantService.unassignConsultant.mockRejectedValue(
+        new NotFoundException('Active placement not found'),
+      );
+
+      await expect(
+        controller.unassignConsultant('project-1', 'consultant-1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockConsultantService.unassignConsultant).toHaveBeenCalledWith(
+        'project-1',
+        'consultant-1',
+      );
     });
   });
 });

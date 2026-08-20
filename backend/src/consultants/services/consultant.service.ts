@@ -27,6 +27,7 @@ import { NotificationService } from '../../notification/service/notification.ser
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { ProjectConsultantDto, ProjectConsultantsResponseDto, } from '../dto/consultant-placement.dto';
 
 @Injectable()
 export class ConsultantService {
@@ -309,24 +310,97 @@ export class ConsultantService {
 
     return this.mapToProfileDto(consultant);
   }
+  async getConsultantsByProject(
+    projectId: string,
+    userRole: string,
+  ): Promise<ProjectConsultantsResponseDto> {
+
+    const now = new Date();
+
+    const placements = await this.prisma.projectPlacement.findMany({
+      where: {
+        projectId: projectId,
+        status: 'ACTIVE',
+
+        startDate: {
+          lte: now,
+        },
+
+        OR: [
+          { endDate: null },
+          { endDate: { gte: now } }
+        ],
+
+        consultant: {
+          user: {
+            status: 'ACTIVE',
+          },
+        },
+      },
+      include: {
+        consultant: {
+          include: {
+            user: { select: { fullName: true, email: true } },
+            skills: { include: { skill: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    const mappedConsultants: ProjectConsultantDto[] = placements.map((placement) => {
+      const c = placement.consultant;
+
+      const dto: ProjectConsultantDto = {
+        consultantId: c.id,
+        placementId: placement.id,
+        fullName: c.user.fullName,
+        email: c.user.email,
+        phone: c.phone,
+        city: c.city,
+        primarySkills: c.skills.map((cs) => cs.skill.name),
+
+        placementStatus: placement.status,
+        allocation: placement.allocation,
+        startDate: placement.startDate,
+        endDate: placement.endDate,
+      };
+
+      if (userRole !== 'PROJECT_MANAGER') {
+        dto.costToCompany = c.costToCompany;
+      }
+
+      return dto;
+    });
+
+    const response: ProjectConsultantsResponseDto = {
+      projectId,
+      totalPlacements: mappedConsultants.length,
+      consultants: mappedConsultants,
+    };
+
+    return response;
+  }
 
   private async resolveEditableConsultantId(
     consultantId: string,
     userRole: string,
     requestingUserId: string,
-  ): Promise<string>{
-    if(userRole == Role.CONSULTANT){
-      const consultantProfile= await this.prisma.consultant.findUnique({
-        where: {userId: requestingUserId},
-        select: {id: true},
+  ): Promise<string> {
+    if (userRole == Role.CONSULTANT) {
+      const consultantProfile = await this.prisma.consultant.findUnique({
+        where: { userId: requestingUserId },
+        select: { id: true },
       });
-        if(!consultantProfile){
+      if (!consultantProfile) {
         throw new NotFoundException(`No consultant profile for the current user.`)
       }
 
       return consultantProfile.id;
     }
-    
+
     return consultantId;
 
   }
@@ -337,9 +411,9 @@ export class ConsultantService {
     requestingUserId: string,
   ): Promise<{ message: string }> {
 
-    const resolvedConsultantId= await this.resolveEditableConsultantId(consultantId, userRole, requestingUserId);
+    const resolvedConsultantId = await this.resolveEditableConsultantId(consultantId, userRole, requestingUserId);
     //Verify consultant exists
-    const existing = await this.prisma.consultant.findUnique({where: {id: resolvedConsultantId}});
+    const existing = await this.prisma.consultant.findUnique({ where: { id: resolvedConsultantId } });
 
     if (!existing) {
       throw new NotFoundException(
@@ -349,20 +423,20 @@ export class ConsultantService {
 
     await this.prisma.$transaction(async (tx) => {
 
-      const consultant= await tx.consultant.findUnique({
-        where: {id: resolvedConsultantId},
+      const consultant = await tx.consultant.findUnique({
+        where: { id: resolvedConsultantId },
       });
 
-      if(!consultant){
+      if (!consultant) {
         throw new NotFoundException(`Consultant with id ${resolvedConsultantId} not found.`,
         );
       }
 
-      if(dto.fullname !== undefined){
+      if (dto.fullname !== undefined) {
         await tx.user.update({
-          where: {id: consultant.userId},
+          where: { id: consultant.userId },
           data: {
-            fullName: dto.fullname, 
+            fullName: dto.fullname,
             email: dto.email,
           },
         });
@@ -498,6 +572,69 @@ export class ConsultantService {
     return { message: 'Consultant profile updated successfully.' };
   }
 
+
+  async unassignConsultant(
+    projectId: string,
+    consultantId: string,
+  ): Promise<{ message: string; placementId: string }> {
+
+    const placement = await this.prisma.projectPlacement.findFirst({
+      where: {
+        projectId,
+        consultantId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!placement) {
+      throw new NotFoundException(
+        'Active placement not found for this consultant on the specified project.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+
+      await tx.projectPlacement.update({
+        where: { id: placement.id },
+        data: {
+          status: 'TERMINATED',
+          endDate: new Date(),
+        },
+      });
+
+      const updatedConsultant = await tx.consultant.update({
+        where: { id: consultantId },
+        data: {
+          capacity: {
+            increment: placement.allocation,
+          },
+        },
+      });
+
+      if (updatedConsultant.capacity > 100) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { capacity: 100 }
+        });
+      }
+
+      const newAvailabilityStatus = updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
+
+      if (updatedConsultant.availability !== newAvailabilityStatus) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { availability: newAvailabilityStatus as any },
+        });
+      }
+    });
+
+
+    return {
+      message: 'Consultant successfully unassigned and capacity restored.',
+      placementId: placement.id
+    };
+  }
+
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
 
   private getProfileIncludes() {
@@ -567,7 +704,7 @@ export class ConsultantService {
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
       pictureUrl: consultant.pictureData
-        ?`data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
+        ? `data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
         : null,
       skills: consultant.skills.map((cs: any) => ({
         id: cs.id,
@@ -782,10 +919,9 @@ export class ConsultantService {
     const isSelf = consultant.userId === userId;
     let isManagingCM = false;
 
-    if(!isSelf && userRole === 'CONSULTANT_MANAGER')
-    {
-      const managerLink = await this. prisma.consultantManager.findUnique({
-        where: { userId_consultantId: { userId, consultantId} },
+    if (!isSelf && userRole === 'CONSULTANT_MANAGER') {
+      const managerLink = await this.prisma.consultantManager.findUnique({
+        where: { userId_consultantId: { userId, consultantId } },
       });
       isManagingCM = !!managerLink;
     }
@@ -798,10 +934,10 @@ export class ConsultantService {
 
     await this.prisma.consultant.update({
       where: { id: consultantId },
-      data: { 
+      data: {
         pictureData: Uint8Array.from(file.buffer),
         pictureMimeType: file.mimetype
-       },
+      },
     });
 
     const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;

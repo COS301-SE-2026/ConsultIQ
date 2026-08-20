@@ -5,7 +5,7 @@ import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 import SearchBar from "../../../../components/shared/search-bar";
-
+import { useAddressSearch } from "../../../../hooks/useAddressSearch";
 interface Props {
   readonly onComplete?: () => void;
 }
@@ -20,7 +20,6 @@ export default function LocationForm({ onComplete }: Props) {
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [error, setError] = useState("");
-  const [addressSearch, setAddressSearch] = useState("");
 
   const handleDone = () => {
     if (!addressLine1.trim() || !city.trim() || !province.trim() || !postalCode.trim()) {
@@ -50,10 +49,25 @@ export default function LocationForm({ onComplete }: Props) {
     onComplete?.();
   };
 
-    const handleSearchAddress = (query: string) => {
-        setAddressSearch(query);
+  const {
+    addressSearch,
+    locationResults,
+    isAddressLoading,
+    showDropdown,
+    handleSearchAddress,
+    handleSelectAddress,
 
-    };
+  } = useAddressSearch({
+    onSelect: (parsed) => {
+      setAddressLine1(parsed.addressLine1 ?? "");
+      setAddressLine2(parsed.addressLine2 ?? "");
+      setSuburb(parsed.suburb ?? "");
+      setCity(parsed.city ?? "");
+      setProvince(parsed.province);
+      setPostalCode((parsed.postalCode ?? "").replace(/\D/g, ""));
+    },
+  });
+
 
   return (
     <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
@@ -62,11 +76,34 @@ export default function LocationForm({ onComplete }: Props) {
         <h2 className="text-3xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
           Location
         </h2>
-        <SearchBar
-          value={addressSearch}
-          onChange={handleSearchAddress}
-          placeholder="Search for an address..."
-        />
+
+        <div className="relative w-full">
+          <SearchBar
+            value={addressSearch}
+            onChange={handleSearchAddress}
+            placeholder="Search for an address..."
+          />
+
+          {showDropdown && locationResults && (
+            <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
+              <li>
+                <button
+                  type="button"
+                  className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
+                  onClick={handleSelectAddress}
+                >
+                  {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                </button>
+              </li>
+            </ul>
+          )}
+
+        </div>
+
+
+        {isAddressLoading && (
+          <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+        )}
 
         <div className="space-y-6 flex-1 flex flex-col">
           <div className="flex flex-col gap-3 mt-4">

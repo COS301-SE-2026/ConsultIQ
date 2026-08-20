@@ -677,6 +677,84 @@ describe('ConsultantService', () => {
     });
   });
 
+  // --- getConsultantsByProject ---------------------------------------------------
+
+  describe('getConsultantsByProject', () => {
+    const referenceDate = new Date();
+
+    const mockPlacementData = {
+      id: 'placement-1',
+      projectId: 'project-123',
+      status: 'ACTIVE',
+      allocation: 80,
+      startDate: new Date('2024-01-01'),
+      endDate: null,
+      consultant: {
+        id: 'consultant-1',
+        costToCompany: 75000,
+        phone: '0987654321',
+        city: 'Pretoria',
+        user: {
+          fullName: 'Bennjamin Whitmore',
+          email: 'Bennjamin@consultiq.com',
+        },
+        skills: [
+          { skill: { name: 'Node.js' } },
+          { skill: { name: 'AWS' } },
+        ],
+      },
+    };
+
+    it('should query DB, map correctly, and omit costToCompany when role is PROJECT_MANAGER', async () => {
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([mockPlacementData]);
+
+      const result = await service.getConsultantsByProject('project-123', 'PROJECT_MANAGER');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          projectId: 'project-123',
+          status: 'ACTIVE',
+          startDate: { lte: expect.any(Date) },
+          consultant: expect.objectContaining({
+            user: expect.objectContaining({ status: 'ACTIVE' })
+          })
+        }),
+        include: expect.any(Object),
+        orderBy: { startDate: 'desc' },
+      });
+
+      expect(result.projectId).toBe('project-123');
+      expect(result.totalPlacements).toBe(1);
+
+      const mappedConsultant = result.consultants[0];
+      expect(mappedConsultant.consultantId).toBe('consultant-1');
+      expect(mappedConsultant.fullName).toBe('Bennjamin Whitmore');
+      expect(mappedConsultant.primarySkills).toEqual(['Node.js', 'AWS']);
+      expect(mappedConsultant.allocation).toBe(80);
+
+      expect(mappedConsultant.costToCompany).toBeUndefined();
+
+    });
+
+    it('should include costToCompany for roles other than PROJECT_MANAGER (ADMIN)', async () => {
+      mockCacheManager.get.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([mockPlacementData]);
+
+      const result = await service.getConsultantsByProject('project-123', 'ADMIN');
+
+      expect(result.consultants[0].costToCompany).toBe(75000);
+    });
+
+    it('should return an empty array if no active placements exist for the project', async () => {
+      mockCacheManager.get.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      const result = await service.getConsultantsByProject('empty-project', 'ADMIN');
+
+      expect(result.totalPlacements).toBe(0);
+      expect(result.consultants).toEqual([]);
+    });
+  });
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1237,5 +1315,154 @@ describe('ConsultantService', () => {
       expect(result.message).toBe('Profile picture uploaded successfully.');
     });
   });
+
+
+  // ---------- unassignConsultant ----------
+
+  describe('unassignConsultant', () => {
+    let mockTx: any;
+
+    beforeEach(() => {
+
+      mockTx = {
+        projectPlacement: {
+          update: jest.fn(),
+        },
+        consultant: {
+          update: jest.fn(),
+        },
+      };
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => {
+        return callback(mockTx);
+      });
+
+    });
+
+    it('should throw NotFoundException if no active placement exists', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.unassignConsultant('project-1', 'consultant-1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockPrismaService.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should terminate placement, restore full capacity, and set status to AVAILABLE', async () => {
+
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 100,
+      });
+
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 100,
+        availability: 'UNAVAILABLE',
+      });
+
+      const result = await service.unassignConsultant('project-1', 'consultant-1');
+
+      expect(result.message).toBe('Consultant successfully unassigned and capacity restored.');
+      expect(result.placementId).toBe('placement-123');
+
+      expect(mockTx.projectPlacement.update).toHaveBeenCalledWith({
+        where: { id: 'placement-123' },
+        data: {
+          status: 'TERMINATED',
+          endDate: expect.any(Date),
+        },
+      });
+
+
+      expect(mockTx.consultant.update).toHaveBeenNthCalledWith(1, {
+        where: { id: 'consultant-1' },
+        data: {
+          capacity: { increment: 100 },
+        },
+      });
+
+      expect(mockTx.consultant.update).toHaveBeenNthCalledWith(2, {
+        where: { id: 'consultant-1' },
+        data: { availability: 'AVAILABLE' },
+      });
+    });
+
+    it('should cap capacity at 100 if the math somehow results in > 100', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 50,
+      });
+
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 120,
+        availability: 'PARTIALLY_AVAILABLE',
+      });
+
+      await service.unassignConsultant('project-1', 'consultant-1');
+
+      expect(mockTx.consultant.update).toHaveBeenCalledWith({
+        where: { id: 'consultant-1' },
+        data: { capacity: 100 },
+      });
+
+      expect(mockTx.consultant.update).toHaveBeenCalledWith({
+        where: { id: 'consultant-1' },
+        data: { availability: 'AVAILABLE' },
+      });
+    });
+
+
+    it('should set status to UNAVAILABLE if restored capacity is still 0', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 0,
+      });
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 0,
+        availability: 'AVAILABLE',
+      });
+
+      await service.unassignConsultant('project-1', 'consultant-1');
+
+      expect(mockTx.consultant.update).toHaveBeenCalledWith({
+        where: { id: 'consultant-1' },
+        data: { availability: 'UNAVAILABLE' },
+      });
+    });
+
+    it('should skip updating the availability enum if the status is already correct', async () => {
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
+        id: 'placement-123',
+        projectId: 'project-1',
+        consultantId: 'consultant-1',
+        status: 'ACTIVE',
+        allocation: 50,
+      });
+
+      mockTx.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+
+      await service.unassignConsultant('project-1', 'consultant-1');
+      expect(mockTx.consultant.update).toHaveBeenCalledTimes(1);
+    });
+
+  });
+
 });
 

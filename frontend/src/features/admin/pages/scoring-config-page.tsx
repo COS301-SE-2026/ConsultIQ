@@ -75,7 +75,6 @@ const{count: unreadCount} = useUnreadNotificationCount();
           </h1>
 
         </header>
-        <div className="h-6" />
         <main className="overflow-hidden overflow-y-auto">
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
             {error && (

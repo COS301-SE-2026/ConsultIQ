@@ -273,6 +273,54 @@ describe('PlacementService', () => {
         placementId: 'placement-2',
       });
     });
+
+    it('should update availability when the consultant availabitlity changes after placement creation', async() => {
+      const validDto ={
+        consultantId: 'consultant-1',
+        startDate: '2026-06-01',
+        endDate: '2026-12-31',
+        allocation: 100,
+      };
+
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+
+      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1',});
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+        availability: 'AVAILABLE',
+      });
+
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+
+      mockPrismaService.consultant.update.mockResolvedValueOnce({
+        id: 'consultant-1',
+        capacity: 0,
+        availability: 'AVAILABLE',
+      }).mockResolvedValueOnce({
+          id: 'consultant-1',
+          capacity: 0,
+          availability: 'UNAVAILABLE',
+      });
+
+      mockPrismaService.projectPlacement.create.mockResolvedValue({id: 'placement-3',});
+
+      await service.createPlacement('project-1', validDto, 'user-123');
+
+      expect(mockPrismaService.consultant.update).toHaveBeenNthCalledWith(1, {
+        where: {id: 'consultant-1'},
+        data: { capacity: {decrement: 100} },
+      });
+
+      expect(mockPrismaService.consultant.update).toHaveBeenNthCalledWith(2, {
+        where: {id: 'consultant-1'},
+        data: { availability: 'UNAVAILABLE' },
+      });
+    });
   });
 
   describe('getRemainingCapacity', () => {
@@ -315,6 +363,13 @@ describe('PlacementService', () => {
 
       expect(result).toBe(0);
     });
+        
+    it('should throw NotFoundException when getRemainingCapacity cannot find the consultant', async () =>{
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      await expect(service.getRemainingCapacity('missing-consultant')).rejects.toThrow(NotFoundException);
+    });
+
 
     // it('should only consider active placements', async () => {
     //   mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);

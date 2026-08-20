@@ -8,6 +8,7 @@ import {
 import { PlacementService } from './placement.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlacementStatus } from '@prisma/client';
+import { mock } from 'node:test';
 
 const mockPrismaService = {
   projectManager: {
@@ -18,12 +19,14 @@ const mockPrismaService = {
   },
   consultant: {
     findUnique: jest.fn(),
+    update: jest.fn(),
   },
   projectPlacement: {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
   },
+  $transaction: jest.fn(async (callback) => callback(mockPrismaService)),
 };
 
 describe('PlacementService', () => {
@@ -166,13 +169,10 @@ describe('PlacementService', () => {
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
+        capacity: 40,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
-
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 60 },
-      ]);
 
       await expect(
         service.createPlacement('project-1', dto, 'user-123'),
@@ -193,13 +193,15 @@ describe('PlacementService', () => {
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
+        capacity: 100,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
-
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 25 },
-      ]);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
 
       mockPrismaService.projectPlacement.create.mockResolvedValue({
         id: 'placement-1',
@@ -210,6 +212,13 @@ describe('PlacementService', () => {
         dto,
         'user-123',
       );
+
+      expect(mockPrismaService.consultant.update).toHaveBeenCalledWith({
+        where: {id: 'consultant-1'},
+        data: {
+          capacity: {decrement: 50},
+        },
+      })
 
       expect(mockPrismaService.projectPlacement.create).toHaveBeenCalledWith({
         data: {
@@ -240,14 +249,15 @@ describe('PlacementService', () => {
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
+        capacity: 50,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
-
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 50 },
-      ]);
-
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 0,
+        availability: 'UNAVAILABLE'
+      })
       mockPrismaService.projectPlacement.create.mockResolvedValue({
         id: 'placement-2',
       });
@@ -266,8 +276,11 @@ describe('PlacementService', () => {
   });
 
   describe('getRemainingCapacity', () => {
-    it('should return 100 when the consultant has no overlapping placements', async () => {
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+    it('should return the consultant remaining capacity from the persisted field', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100, 
+      });
 
       const result = await service.getRemainingCapacity(
         'consultant-1',
@@ -276,13 +289,17 @@ describe('PlacementService', () => {
       );
 
       expect(result).toBe(100);
+      expect(mockPrismaService.consultant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'consultant-1' },
+        select: { capacity: true },
+      });
     });
 
-    it('should subtract allocations from 100', async () => {
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 30 },
-        { allocation: 20 },
-      ]);
+    it('should return the remaining persisted capacity value', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 45,
+    });
 
       const result = await service.getRemainingCapacity(
         'consultant-1',
@@ -290,14 +307,14 @@ describe('PlacementService', () => {
         new Date('2026-12-01'),
       );
 
-      expect(result).toBe(50);
+      expect(result).toBe(45);
     });
 
-    it('should return 0 when total allocation is greater than 100', async () => {
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 70 },
-        { allocation: 50 },
-      ]);
+    it('should return 0 when the persisted capacity is exhausted', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 0,
+    });
 
       const result = await service.getRemainingCapacity(
         'consultant-1',
@@ -308,60 +325,60 @@ describe('PlacementService', () => {
       expect(result).toBe(0);
     });
 
-    it('should only consider active placements', async () => {
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+    // it('should only consider active placements', async () => {
+    //   mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
 
-      await service.getRemainingCapacity(
-        'consultant-1',
-        new Date('2026-06-01'),
-        new Date('2026-12-01'),
-      );
+    //   await service.getRemainingCapacity(
+    //     'consultant-1',
+    //     new Date('2026-06-01'),
+    //     new Date('2026-12-01'),
+    //   );
 
-      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
-        where: {
-          consultantId: 'consultant-1',
-          status: PlacementStatus.ACTIVE,
-          startDate: {
-            lte: new Date('2026-12-01'),
-          },
-          OR: [
-            { endDate: null },
-            { endDate: { gte: new Date('2026-06-01') } },
-          ],
-        },
-        select: {
-          allocation: true,
-        },
-      });
-    });
+    //   expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
+    //     where: {
+    //       consultantId: 'consultant-1',
+    //       status: PlacementStatus.ACTIVE,
+    //       startDate: {
+    //         lte: new Date('2026-12-01'),
+    //       },
+    //       OR: [
+    //         { endDate: null },
+    //         { endDate: { gte: new Date('2026-06-01') } },
+    //       ],
+    //     },
+    //     select: {
+    //       allocation: true,
+    //     },
+    //   });
+    // });
 
-    it('should handle an open-ended period', async () => {
-      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
-        { allocation: 40 },
-      ]);
+    // it('should handle an open-ended period', async () => {
+    //   mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+    //     { allocation: 40 },
+    //   ]);
 
-      const result = await service.getRemainingCapacity(
-        'consultant-1',
-        new Date('2026-06-01'),
-        null,
-      );
+    //   const result = await service.getRemainingCapacity(
+    //     'consultant-1',
+    //     new Date('2026-06-01'),
+    //     null,
+    //   );
 
-      expect(result).toBe(60);
+    //   expect(result).toBe(60);
 
-      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
-        where: {
-          consultantId: 'consultant-1',
-          status: PlacementStatus.ACTIVE,
-          startDate: undefined,
-          OR: [
-            { endDate: null },
-            { endDate: { gte: new Date('2026-06-01') } },
-          ],
-        },
-        select: {
-          allocation: true,
-        },
-      });
-    });
+    //   expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith({
+    //     where: {
+    //       consultantId: 'consultant-1',
+    //       status: PlacementStatus.ACTIVE,
+    //       startDate: undefined,
+    //       OR: [
+    //         { endDate: null },
+    //         { endDate: { gte: new Date('2026-06-01') } },
+    //       ],
+    //     },
+    //     select: {
+    //       allocation: true,
+    //     },
+    //   });
+    // });
   });
 });

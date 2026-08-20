@@ -38,6 +38,7 @@ export class PlacementService {
 
     const consultant = await this.prisma.consultant.findUnique({
       where: { id: dto.consultantId },
+      select: { id: true, capacity: true, availability: true },
     });
     if (!consultant) {
       throw new NotFoundException(
@@ -78,7 +79,15 @@ export class PlacementService {
       );
     }
 
-    const placement = await this.prisma.projectPlacement.create({
+    const placement = await this.prisma.$transaction(async (tx)=>{
+      const updatedConsultant = await tx.consultant.update({
+        where: {id : dto.consultantId},
+        data: {
+          capacity: {decrement: dto.allocation},
+        },
+      });
+      
+      const placement = await tx.projectPlacement.create({
       data: {
         projectId,
         consultantId: dto.consultantId,
@@ -87,6 +96,17 @@ export class PlacementService {
         allocation: dto.allocation,
         status: PlacementStatus.ACTIVE,
       },
+    });
+
+      const nextAvailability =updatedConsultant.capacity <= 0 ? 'UNAVAILABLE' : 'AVAILABLE';
+      if(updatedConsultant.availability !== nextAvailability){
+        await tx.consultant.update({
+          where: { id: dto.consultantId },
+          data: { availability: nextAvailability },
+        });
+      } 
+      
+      return placement;
     });
 
     return {
@@ -107,22 +127,15 @@ export class PlacementService {
     periodStart: Date,
     periodEnd: Date | null,
   ): Promise<number> {
-    const overlappingPlacements = await this.prisma.projectPlacement.findMany({
-      where: {
-        consultantId,
-        status: PlacementStatus.ACTIVE,
-        startDate: periodEnd ? { lte: periodEnd } : undefined,
-        OR: [{ endDate: null }, { endDate: { gte: periodStart } }],
-      },
-      select: { allocation: true },
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { id: consultantId},
+      select: { capacity: true},
     });
+    if(!consultant){
+      throw new NotFoundException(`Consultant with ID ${consultantId} not found.`);
+    }
 
-    const totalAllocated = overlappingPlacements.reduce(
-      (sum, p) => sum + p.allocation,
-      0,
-    );
-
-    return Math.max(0, 100 - totalAllocated);
+    return Math.max(0, consultant.capacity);
   }
 
   private async isProjectManagerForProject(

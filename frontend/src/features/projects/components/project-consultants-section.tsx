@@ -10,6 +10,7 @@ import { useState } from "react";
 interface ProjectConsultantsProps {
     consultants: AssignedConsultants[];
     projectId: string;
+    isLoading: boolean;
 
 }
 
@@ -23,7 +24,7 @@ const getIntials = (name: string) => {
 }
 
 
-export default function ProjectConsultants({ consultants, projectId }: ProjectConsultantsProps) {
+export default function ProjectConsultants({ consultants, projectId, isLoading }: ProjectConsultantsProps) {
     const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
 
 
@@ -69,7 +70,7 @@ export default function ProjectConsultants({ consultants, projectId }: ProjectCo
 
 
                     <tbody>
-                        {paginatedConsultants.map((user) => {
+                        {!isLoading && paginatedConsultants.map((user) => {
                             const isUnassigned= user.placementStatus === "TERMINATED" || unassigned.has(user.id);
                             return(
                                <tr key={user.id} className=" hover:bg-slate-50  align-top  ">

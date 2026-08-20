@@ -333,6 +333,8 @@ export default function ProjectDetailsModal({
             <ProjectConsultants
               consultants = {assignedconsultants || []}
               projectId={fullProject?.id || ""}
+              isLoading={consultantsLoading}
+
             />
 
          

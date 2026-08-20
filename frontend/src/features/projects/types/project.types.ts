@@ -50,7 +50,7 @@ export interface AssignedConsultants{
   placementStatus: "ACTIVE" | "COMPLETED" | "CANCELLED" | "TERMINATED";
 }
 
-export function mapToAssignedConsultant(data: any): AssignedConsultants{
+export function mapToAssignedConsultant(data: ProjectConsultantDto): AssignedConsultants{
   return{
     id: data.consultantId,
     fullName: data.fullName,

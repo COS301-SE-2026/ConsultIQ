@@ -13,6 +13,7 @@ const mockConsultantService = {
   updateConsultantProfile: jest.fn(),
   getAssignedProjectDetails: jest.fn(),
   uploadProfilePicture: jest.fn(),
+  getConsultantsByProject: jest.fn(),
   unassignConsultant: jest.fn(),
 };
 
@@ -291,6 +292,56 @@ describe('ConsultantController', () => {
     });
   });
 
+
+  // ---------- getConsultantsByProject ----------
+
+  describe('getConsultantsByProject', () => {
+    it('should successfully return consultants for a project', async () => {
+      const mockResponse = { projectId: 'project-123', totalPlacements: 1, consultants: [] };
+      mockConsultantService.getConsultantsByProject.mockResolvedValue(mockResponse);
+
+      const req = { user: { role: 'ADMIN' } };
+      const result = await controller.getConsultantsByProject('project-123', req);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.getConsultantsByProject).toHaveBeenCalledWith(
+        'project-123',
+        'ADMIN',
+      );
+    });
+
+    it('should pass PROJECT_MANAGER role to the service correctly', async () => {
+      const mockResponse = { projectId: 'project-123', totalPlacements: 1, consultants: [] };
+      mockConsultantService.getConsultantsByProject.mockResolvedValue(mockResponse);
+
+      const req = { user: { role: 'PROJECT_MANAGER' } };
+      const result = await controller.getConsultantsByProject('project-123', req);
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.getConsultantsByProject).toHaveBeenCalledWith(
+        'project-123',
+        'PROJECT_MANAGER',
+      );
+    });
+
+    it('should throw an exception when the user role is missing from the request', async () => {
+      const req = { user: {} };
+
+      await expect(controller.getConsultantsByProject('project-123', req))
+        .rejects.toThrow(BadRequestException);
+      expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+    });
+
+    it('should throw an exception when the request user object is entirely undefined', async () => {
+      const req = {};
+
+      await expect(controller.getConsultantsByProject('project-123', req))
+        .rejects.toThrow(BadRequestException);
+
+      expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+    });
+
+  });
   // ─── unassignConsultant ─────────────────────────────────────────────────────
 
   describe('unassignConsultant', () => {

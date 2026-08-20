@@ -27,6 +27,7 @@ import { NotificationService } from '../../notification/service/notification.ser
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { ProjectConsultantDto, ProjectConsultantsResponseDto, } from '../dto/consultant-placement.dto';
 
 @Injectable()
 export class ConsultantService {
@@ -308,6 +309,79 @@ export class ConsultantService {
     }
 
     return this.mapToProfileDto(consultant);
+  }
+  async getConsultantsByProject(
+    projectId: string,
+    userRole: string,
+  ): Promise<ProjectConsultantsResponseDto> {
+
+    const now = new Date();
+
+    const placements = await this.prisma.projectPlacement.findMany({
+      where: {
+        projectId: projectId,
+        status: 'ACTIVE',
+
+        startDate: {
+          lte: now,
+        },
+
+        OR: [
+          { endDate: null },
+          { endDate: { gte: now } }
+        ],
+
+        consultant: {
+          user: {
+            status: 'ACTIVE',
+          },
+        },
+      },
+      include: {
+        consultant: {
+          include: {
+            user: { select: { fullName: true, email: true } },
+            skills: { include: { skill: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    const mappedConsultants: ProjectConsultantDto[] = placements.map((placement) => {
+      const c = placement.consultant;
+
+      const dto: ProjectConsultantDto = {
+        consultantId: c.id,
+        placementId: placement.id,
+        fullName: c.user.fullName,
+        email: c.user.email,
+        phone: c.phone,
+        city: c.city,
+        primarySkills: c.skills.map((cs) => cs.skill.name),
+
+        placementStatus: placement.status,
+        allocation: placement.allocation,
+        startDate: placement.startDate,
+        endDate: placement.endDate,
+      };
+
+      if (userRole !== 'PROJECT_MANAGER') {
+        dto.costToCompany = c.costToCompany;
+      }
+
+      return dto;
+    });
+
+    const response: ProjectConsultantsResponseDto = {
+      projectId,
+      totalPlacements: mappedConsultants.length,
+      consultants: mappedConsultants,
+    };
+
+    return response;
   }
 
   private async resolveEditableConsultantId(

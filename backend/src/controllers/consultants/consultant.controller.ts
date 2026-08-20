@@ -74,6 +74,24 @@ export class ConsultantController {
     return this.consultantService.getAssignedProjectDetails(userId, projectId);
   }
 
+  @Get('project/:projectId')
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  async getConsultantsByProject(
+    @Param('projectId') projectId: string,
+    @Req() req: any,
+  ) {
+
+    const userRole = req.user?.role;
+    if (!userRole) {
+      throw new BadRequestException('Missing user role.');
+    }
+    return await this.consultantService.getConsultantsByProject(
+      projectId,
+      userRole,
+    );
+  }
+
   @Patch('project/:projectId/unassign/:consultantId')
   @Roles(Role.PROJECT_MANAGER, Role.ADMIN, Role.CONSULTANT_MANAGER)
   @HttpCode(HttpStatus.OK)

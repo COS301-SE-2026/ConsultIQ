@@ -216,6 +216,7 @@ model Consultant {
   idNumber      String?
   nationality   String?
   costToCompany Float
+  capacity         Int                    @default(100)
   availability  ConsultantAvailability @default(AVAILABLE)
   tenantId      String?
   createdAt     DateTime               @default(now())

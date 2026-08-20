@@ -573,6 +573,68 @@ export class ConsultantService {
   }
 
 
+  async unassignConsultant(
+    projectId: string,
+    consultantId: string,
+  ): Promise<{ message: string; placementId: string }> {
+
+    const placement = await this.prisma.projectPlacement.findFirst({
+      where: {
+        projectId,
+        consultantId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!placement) {
+      throw new NotFoundException(
+        'Active placement not found for this consultant on the specified project.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+
+      await tx.projectPlacement.update({
+        where: { id: placement.id },
+        data: {
+          status: 'TERMINATED',
+          endDate: new Date(),
+        },
+      });
+
+      const updatedConsultant = await tx.consultant.update({
+        where: { id: consultantId },
+        data: {
+          capacity: {
+            increment: placement.allocation,
+          },
+        },
+      });
+
+      if (updatedConsultant.capacity > 100) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { capacity: 100 }
+        });
+      }
+
+      const newAvailabilityStatus = updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
+
+      if (updatedConsultant.availability !== newAvailabilityStatus) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { availability: newAvailabilityStatus as any },
+        });
+      }
+    });
+
+
+    return {
+      message: 'Consultant successfully unassigned and capacity restored.',
+      placementId: placement.id
+    };
+  }
+
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
 
   private getProfileIncludes() {

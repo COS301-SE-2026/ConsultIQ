@@ -14,6 +14,7 @@ const mockConsultantService = {
   getAssignedProjectDetails: jest.fn(),
   uploadProfilePicture: jest.fn(),
   getConsultantsByProject: jest.fn(),
+  unassignConsultant: jest.fn(),
 };
 
 const mockNotificationService = {
@@ -338,6 +339,39 @@ describe('ConsultantController', () => {
         .rejects.toThrow(BadRequestException);
 
       expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+  // ─── unassignConsultant ─────────────────────────────────────────────────────
+
+  describe('unassignConsultant', () => {
+    it('should call the service with correct parameters and return the result', async () => {
+      const mockResponse = {
+        message: 'Consultant successfully unassigned and capacity restored.',
+        placementId: 'placement-123',
+      };
+
+      mockConsultantService.unassignConsultant.mockResolvedValue(mockResponse);
+
+      const result = await controller.unassignConsultant('project-1', 'consultant-1');
+
+      expect(result).toEqual(mockResponse);
+      expect(mockConsultantService.unassignConsultant).toHaveBeenCalledWith(
+        'project-1',
+        'consultant-1',
+      );
+    });
+
+    it('should correctly throw exceptions thrown by the service (NotFoundException)', async () => {
+      mockConsultantService.unassignConsultant.mockRejectedValue(
+        new NotFoundException('Active placement not found'),
+      );
+
+      await expect(
+        controller.unassignConsultant('project-1', 'consultant-1'),
+      ).rejects.toThrow(NotFoundException);
+
+      expect(mockConsultantService.unassignConsultant).toHaveBeenCalledWith(
+        'project-1',
+        'consultant-1',
+      );
     });
   });
 });

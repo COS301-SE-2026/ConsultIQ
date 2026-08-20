@@ -1,7 +1,6 @@
 
 import { Button } from "../../../components/ui/button";
 import { Card } from "../../../components/ui/card";
-import { getIntials } from "../../admin/components/users-tab";
 
 
 
@@ -20,7 +19,16 @@ export interface User {
 
 // }
 
-export const MOCK_CONSULTANTS: User[] = [
+ const getIntials = (name: string) => {
+  if (!name) return;
+  const splitName = name.trim().split(" ");
+  const first = splitName[0];
+  const last = splitName[1];
+
+  return `${first[0]}${last[0]}`.toUpperCase();
+}
+
+ const MOCK_CONSULTANTS: User[] = [
     {
         id: "usr-001",
         fullName: "Amahle Dlamini",

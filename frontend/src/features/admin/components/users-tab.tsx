@@ -33,7 +33,7 @@ interface UserTabProps {
   readonly error: string | null;
 }
 
-export const getIntials = (name: string) => {
+const getIntials = (name: string) => {
   if (!name) return;
   const splitName = name.trim().split(" ");
   const first = splitName[0];

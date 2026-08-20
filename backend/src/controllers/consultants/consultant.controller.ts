@@ -23,7 +23,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('consultants')
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) {}
+  constructor(private readonly consultantService: ConsultantService) { }
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)
@@ -74,6 +74,19 @@ export class ConsultantController {
     return this.consultantService.getAssignedProjectDetails(userId, projectId);
   }
 
+  @Patch('project/:projectId/unassign/:consultantId')
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN, Role.CONSULTANT_MANAGER)
+  @HttpCode(HttpStatus.OK)
+  async unassignConsultant(
+    @Param('projectId') projectId: string,
+    @Param('consultantId') consultantId: string,
+  ) {
+    return await this.consultantService.unassignConsultant(
+      projectId,
+      consultantId,
+    );
+  }
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getConsultantById(@Param('id') id: string) {
@@ -94,7 +107,7 @@ export class ConsultantController {
     @Req() req: any,
     @Body() dto: UpdateConsultantDto,
   ): Promise<{ message: string }> {
-    const {userId, role} = req.user;
+    const { userId, role } = req.user;
     return await this.consultantService.updateConsultantProfile(
       consultantId,
       dto,

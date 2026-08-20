@@ -153,8 +153,8 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
-                if(photo && targetConsultantId) {
-                  await uploadConsultantPicture(targetConsultantId, photo);
+                if(photo) {
+                  await uploadConsultantPicture(profile.id, photo);
                 }
                 await refetch();
               }}

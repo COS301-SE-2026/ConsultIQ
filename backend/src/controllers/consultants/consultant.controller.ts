@@ -89,6 +89,9 @@ export class ConsultantController {
     return await this.consultantService.getConsultantsByProject(
       projectId,
       userRole,
+    );
+  }
+
   @Patch('project/:projectId/unassign/:consultantId')
   @Roles(Role.PROJECT_MANAGER, Role.ADMIN, Role.CONSULTANT_MANAGER)
   @HttpCode(HttpStatus.OK)

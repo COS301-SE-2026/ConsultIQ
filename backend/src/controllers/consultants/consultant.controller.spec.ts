@@ -339,6 +339,9 @@ describe('ConsultantController', () => {
         .rejects.toThrow(BadRequestException);
 
       expect(mockConsultantService.getConsultantsByProject).not.toHaveBeenCalled();
+    });
+
+  });
   // ─── unassignConsultant ─────────────────────────────────────────────────────
 
   describe('unassignConsultant', () => {

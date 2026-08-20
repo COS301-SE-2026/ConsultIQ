@@ -8,7 +8,7 @@ import { getProjectById, type ProjectPlacementContext } from "../../projects/ser
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
 import { useParams } from "react-router-dom";
-
+import {toast} from "sonner";
 
 interface RawMatchResult {
     consultantId?: string;
@@ -101,7 +101,8 @@ export default function PlacementDashboard() {
         if(!projectId || !project){
             throw new Error("Project information is missing.");
         }
-        await placementService.createPlacement(projectId, {
+        try{ 
+            await placementService.createPlacement(projectId, {
             consultantId,
             startDate: project.startDate,
             endDate: project.endDate ?? undefined,
@@ -115,7 +116,13 @@ export default function PlacementDashboard() {
         );
 
         setStats((currStats) => currStats ? {...currStats, totalPlaced: currStats.totalPlaced + 1,} : currStats,);
-    };
+        toast.success("Consultant has been placed successfully");
+    }catch(err){
+        const message = err instanceof Error ? err.message : "Unable to place consultant.";
+        toast.error(message);
+        throw err;
+    }
+};
 
     const handleViewAll = () => {
         console.log("Viewing full list");

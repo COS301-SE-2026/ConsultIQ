@@ -20,9 +20,9 @@ ConsultIQ is an intelligent matching platform designed for consultancy firms. Us
     <img src="https://img.shields.io/codecov/c/github/COS301-SE-2026/ConsultIQ?style=for-the-badge&logo=codecov&logoColor=white&token=X7XEPWW7PQ" alt="Coverage" />
   </a>
 
-  <a href="https://consult-iq-red.vercel.app">
-    <img src="https://img.shields.io/uptimerobot/status/m803791290-ecfe839036e83b6ad466832e?style=for-the-badge" alt="Uptime Status" />
-  </a>
+<a href="https://consult-iq-red.vercel.app">
+  <img src="https://img.shields.io/uptimerobot/ratio/m803791290-ecfe839036e83b6ad466832e?style=for-the-badge" alt="Uptime Percentage" />
+</a>
 
 </div>
 

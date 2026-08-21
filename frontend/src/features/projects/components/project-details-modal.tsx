@@ -1,6 +1,6 @@
 import { X, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Project } from "../types/project.types";
+import type { Project, AssignedConsultants } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
 import ProjectSkillsSection from "./project-skills-section";
@@ -8,6 +8,7 @@ import { getAssignedProjectDetails } from "../../consultants/services/consultant
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
 import ProjectConsultants from "./project-consultants-section";
+import { getConsultantsByProject } from "../services/project.service";
 interface ProjectDetailsModalProps {
   readonly open: boolean;
   readonly project: Project | null;
@@ -59,6 +60,8 @@ export default function ProjectDetailsModal({
   const [fullProject, setFullProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
+  const [assignedConsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
+  const [consultantsLoading, setConsultantsLoading] = useState(false);
   //const isNonConsultant= !isConsultant;
   
   const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
@@ -245,6 +248,31 @@ export default function ProjectDetailsModal({
     fetchProjectDetails();
   }, [open, project, isConsultant]);
 
+  useEffect(() => {
+    const fetchAssignedConsultants = async () => {
+      setConsultantsLoading(true);
+
+      if(!fullProject){
+        setConsultantsLoading(false);
+        setAssignedConsultants(null);
+        return;
+      }
+
+      try {
+         const data = await getConsultantsByProject(fullProject.id);
+         setAssignedConsultants(data);
+      } catch (error) {
+        toast.error("Failed to fetch assigned consultants" + error);
+      }finally{
+        setConsultantsLoading(false);
+      }
+    }
+
+    fetchAssignedConsultants();
+
+  },[fullProject]);
+
+
   if (!open || !project) {
     return null;
   }
@@ -300,8 +328,16 @@ export default function ProjectDetailsModal({
               isConsultant={isConsultant}
             />
 
-            <ProjectConsultants/>
+        
+            <ProjectConsultants
+              consultants = {assignedConsultants || []}
+              projectId={fullProject?.id || ""}
+              isLoading={consultantsLoading}
 
+            />
+
+         
+            
 
         </div>
 

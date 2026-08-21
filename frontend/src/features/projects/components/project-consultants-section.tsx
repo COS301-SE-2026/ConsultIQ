@@ -1,74 +1,50 @@
 
 import { Button } from "../../../components/ui/button";
 import { Card } from "../../../components/ui/card";
+import type { AssignedConsultants } from "../types/project.types";
+import { unassignConsultant } from "../services/project.service";
+import { toast } from "sonner";
+import { useState } from "react";
 
 
-
-export interface User {
-    id: string;
-    fullName: string;
-    email: string;
-    skills: string[];
-    phoneNumber: string;
-    isAssigned: string;
+interface ProjectConsultantsProps {
+    readonly consultants: AssignedConsultants[];
+    readonly projectId: string;
+    readonly isLoading: boolean;
 
 }
 
-// interface ProjectConsultantsProps {
-//     users: User[];
+const getIntials = (name: string) => {
+    if (!name) return;
+    const splitName = name.trim().split(" ");
+    const first = splitName[0];
+    const last = splitName[1];
 
-// }
-
- const getIntials = (name: string) => {
-  if (!name) return;
-  const splitName = name.trim().split(" ");
-  const first = splitName[0];
-  const last = splitName[1];
-
-  return `${first[0]}${last[0]}`.toUpperCase();
+    return `${first[0]}${last[0]}`.toUpperCase();
 }
 
- const MOCK_CONSULTANTS: User[] = [
-    {
-        id: "usr-001",
-        fullName: "Amahle Dlamini",
-        email: "amahle.dlamini@example.com",
-        phoneNumber: "+27 82 123 4567",
-        skills: ["React", "TypeScript", "Tailwind CSS"],
-        isAssigned: "true",
-    },
-    {
-        id: "usr-002",
-        fullName: "Liam van der Merwe",
-        email: "liam.vdm@example.com",
-        phoneNumber: "+27 71 987 6543",
-        skills: ["Node.js", "PostgreSQL", "Prisma"],
-        isAssigned: "true",
-    },
-    {
-        id: "usr-003",
-        fullName: "Sipho Ndlovu",
-        email: "sipho.ndlovu@example.com",
-        phoneNumber: "+27 83 456 7890",
-        skills: ["Java", "Spring Boot", "Docker"],
-        isAssigned: "true",
-    },
-    {
-        id: "usr-004",
-        fullName: "Chloë Smith",
-        email: "chloe.smith@example.com",
-        phoneNumber: "+27 84 321 0987",
-        skills: ["Next.js", "GraphQL", "Jest"],
-        isAssigned: "true",
-    },
-];
+
+export default function ProjectConsultants({ consultants, projectId, isLoading }: ProjectConsultantsProps) {
+    const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
 
 
-export default function ProjectConsultants() {
-
-    const handleReassign = () => {
+    const handleReassign = async (consultantId: string) => {
+        try {
+            unassignConsultant(projectId, consultantId);
+            setUnassigned((prev) => new Set(prev).add(consultantId));
+        } catch (error) {
+            toast.error("Failed to unassign consultant" + error);
+        }
 
     }
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 4;
+    const totalPages = Math.ceil(consultants.length / rowsPerPage);
+    const paginatedConsultants = consultants.slice(
+        (currentPage - 1) * rowsPerPage,
+        currentPage * rowsPerPage
+    );
 
     return (
         <Card
@@ -79,12 +55,12 @@ export default function ProjectConsultants() {
             }}
         >
 
-            <h2 className="font-bold">Assigned Consultants</h2>
+            <h2 className="text-3xl font-bold">Assigned Consultants</h2>
 
-            <div className="w-full">
+            <div className="w-full ">
                 <table className="w-full border-separate border-spacing-y-4 text-left">
                     <thead>
-                        <tr className="bg-[#F5F9FF] h-6">
+                        <tr className=" bg-[#F5F9FF] h-6  ">
                             <th className="px-8 py-4 font-bold text-[16px]">Name</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Contact</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Skills</th>
@@ -94,9 +70,11 @@ export default function ProjectConsultants() {
 
 
                     <tbody>
-                        {MOCK_CONSULTANTS.map((user) => (
-                            <tr key={user.id} className="border-b hover:bg-slate-50 border-b-gray-200 align-top  ">
-                                <td className="flex items-center justify-center gap-4 px-8 py-4">
+                        {!isLoading && paginatedConsultants.map((user) => {
+                            const isUnassigned= user.placementStatus === "TERMINATED" || unassigned.has(user.id);
+                            return(
+                               <tr key={user.id} className=" hover:bg-slate-50  align-top  ">
+                                <td className="flex items-center justify-center gap-4 px-8  text-sm py-4">
                                     <div
                                         className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
                                         style={{
@@ -117,55 +95,80 @@ export default function ProjectConsultants() {
                                 </td>
 
                                 <td className="px-8 py-4 " >
-                                    <div className="flex flex-col">
+                                    <div className="flex flex-col text-sm">
                                         <span>
                                             {user.email}
                                         </span>
                                         <span>
-                                            {user.phoneNumber}
+                                            {user.phoneNum}
                                         </span>
                                     </div>
                                 </td>
 
                                 <td className="px-8 py-4">
                                     <div className="flex flex-wrap gap-2">
-                                         {user.skills.map((skill) => (
-                                        <span
-                                            key={skill}
-                                            className="rounded-md border whitespace-nowrap"
-                                            style={{
-                                                padding: "5px 14px",
-                                                borderColor: "var(--color-border)",
-                                                color: "var(--color-text-secondary)",
-                                                fontSize: "var(--text-h4)",
-                                            }}
-                                        >
-                                            {skill}
-                                        </span>
-                                    ))}  
+                                        {user.skills.map((skill) => (
+                                            <span
+                                                key={skill}
+                                                className="rounded-md border whitespace-nowrap"
+                                                style={{
+                                                    padding: "5px 14px",
+                                                    borderColor: "var(--color-border)",
+                                                    color: "var(--color-text-secondary)",
+                                                    fontSize: "var(--text-h4)",
+                                                }}
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
                                     </div>
-                                 
+
                                 </td>
-                                <td className="px-8 py-4">
+                                <td className="px-8 py-4 ">
                                     <Button
-                                        onClick={() => handleReassign()}
-                                        className="px-5 py-2 rounded-md text-white font-semibold bg-[#d22b2b] hover:bg-red-800"
+                                        onClick={() => handleReassign(user.id)}
+                                        disabled={isUnassigned}
+                                        className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
                                         style={{
                                             color: "white",
-                                            fontSize: "14px",
-                                            padding: "2px 6px",
+                                            fontSize: "16px",
+                                            padding: "4px 8px",
                                         }}
                                     >
-                                        Unassign
+                                        {isUnassigned ? "Unassigned" : "Unassign"}
                                     </Button>
 
                                 </td>
-                            </tr>
-                        ))}
+                            </tr>   
+                            );
+                          
+                        })}
                     </tbody>
                 </table>
             </div>
-
+            <div className="flex justify-between items-center mt-2 pt-4 border-t">
+                <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                    style={{ color: "var(--color-primary)" }}
+                >
+                    Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                    Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
+                </span>
+                <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                    style={{ color: "var(--color-primary)" }}
+                >
+                    Next
+                </button>
+            </div>
         </Card>
 
     );

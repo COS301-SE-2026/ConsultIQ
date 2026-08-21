@@ -1,6 +1,18 @@
 import { apiClient } from "../../../lib/api-client";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 
+export interface CreatePlacementPayload{
+    consultantId: string;
+    startDate: string;
+    endDate?: string;
+    allocation: number;
+}
+
+export interface CreatePlacementResponse{
+    message: string;
+    placementId: string;
+}
+
 export const placementService = {
     executeMatchRun: async (projectId: string): Promise<{ runId: string; results: Recommendation[] }> => {
         return apiClient.post<{ runId: string; results: Recommendation[] }>(`/projects/${projectId}/match-run`);
@@ -12,5 +24,9 @@ export const placementService = {
 
     getMatchRunStats: async (projectId: string, runId: string): Promise<MatchRunStats> => {
         return apiClient.get<MatchRunStats>(`/projects/${projectId}/match-run/${runId}/stats`);
-    }
+    },
+
+    createPlacement: async (projectId: string, payload: CreatePlacementPayload): Promise<CreatePlacementResponse> =>{
+        return apiClient.post<CreatePlacementResponse>(`/projects/${projectId}/placements/`, payload,);
+    },
 }

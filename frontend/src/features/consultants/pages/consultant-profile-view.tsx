@@ -10,7 +10,7 @@ import {
 import { useAuth } from "../../../hooks/useAuth";
 
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
-import { updateConsultantProfile } from "../../../api/consultants.api";
+import { updateConsultantProfile, uploadConsultantPicture } from "../../../api/consultants.api";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 import {
@@ -52,17 +52,18 @@ function ConsultantProfileViewPage() {
   const{count: unreadCount} = useUnreadNotificationCount();
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
+  const consultantIdToFetch= targetConsultantId || undefined;
 
   const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
-    targetConsultantId,
+    consultantIdToFetch,
     user?.userId
   );
 
  const [overrides, setOverrides] = useState<Partial<Profile>>({});
- const [lastConsultantId, setLastConsultantId] = useState(targetConsultantId);
+ const [lastConsultantId, setLastConsultantId] = useState(consultantIdToFetch);
 
-  if (targetConsultantId !== lastConsultantId) {
-    setLastConsultantId(targetConsultantId);
+  if (consultantIdToFetch !== lastConsultantId) {
+    setLastConsultantId(consultantIdToFetch);
     setOverrides({});
   }
 
@@ -72,13 +73,14 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-  const canEdit = fromDashboard && Boolean(targetConsultantId);
+  const canEdit =  Boolean(targetConsultantId) || !fromDashboard;
 
   async function save(partial: UpdatePayload, optimisticPatch?: Partial<Profile>) {
-    if (!targetConsultantId) {
+    const idToUpdate= targetConsultantId || user?.userId;
+    if (!idToUpdate) {
       throw new Error("Missing consultant id");
     }
-    await updateConsultantProfile(targetConsultantId, partial);
+    await updateConsultantProfile(idToUpdate, partial);
     setOverrides((prev) => ({...prev,...(optimisticPatch ?? (partial as Partial<Profile>) )}));
   }
 
@@ -147,9 +149,13 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
             <ProfileHeroCard
               fullName={profile.fullName}
               status={profile.status}
+              pictureUrl={profile.pictureUrl}
               canEdit={canEdit}
-              onSave={async (status) => {
+              onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
+                if(photo) {
+                  await uploadConsultantPicture(profile.id, photo);
+                }
                 await refetch();
               }}
             />

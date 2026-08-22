@@ -37,4 +37,30 @@ export class EmailService {
       `,
     });
   }
+
+  async sendPasswordResetEmail(
+    to: string,
+    fullName: string, 
+    resetLink: string,
+  ): Promise<void>{
+    await this.resend.emails.send({
+      from: `ConsultIQ <${this.fromEmail}>`,
+      to,
+      subject: 'Reset your ConsultIQ password',
+      html:`
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Hello ${fullName}</h2>
+          <p>We received a request to reset your ConsultIQ password. Click the button below to set a new password.</p>
+          <p>This link expires in 24 hours.</p>
+          <a href="${resetLink}"
+             style="display: inline-block; padding: 12px 24px; background-color: #1F3A8C;
+                    color: white; text-decoration: none; border-radius: 4px; margin: 16px 0;">
+            Reset Password
+          </a>
+          <p>If you did not request this, ignore this email.</p>
+        </div>
+      `
+    })
+
+  }
 }

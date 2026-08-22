@@ -147,9 +147,7 @@ export const LoginCard: React.FC = () => {
         <div className="w-96 max-w-[520px] flex justify-center mt-1">
           <Link
             to="/forgot-password"
-            className="text-sm font-semibold hover:underline"
-            style={{ color: "var(--color-text-secondary)" }}
-          >
+            className="text-sm font-semibold !text-slate-500 hover:!underline hover:!text-blue-600 transition">
             Forgot password?
           </Link>
         </div>
@@ -160,7 +158,7 @@ export const LoginCard: React.FC = () => {
         type="submit"
         disabled={loading}
         className="mx-auto w-96 max-w-[520px] h-[48px] mt-10 rounded text-white font-bold text-base transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        style={{ backgroundColor: "var(--color-accent)" }}
+        style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? (
           <>

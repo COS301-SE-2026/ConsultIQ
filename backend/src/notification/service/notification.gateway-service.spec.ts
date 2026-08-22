@@ -25,12 +25,12 @@ describe('NotificationGateway', () => {
 
 
     describe('Subscriptions', () => {
-        it('should allow a user to join their notification room', () => {
+        it('should allow a user to join their notification room', async () => {
             const client = {
                 join: jest.fn()
             } as unknown as Socket
 
-            const result = notificationGateway.handleSubscribe(client, 'user-123');
+            const result = await notificationGateway.handleSubscribe(client, 'user-123');
             expect(client.join).toHaveBeenCalledWith('user_notifications_user-123');
             expect(result).toEqual({
                 event: 'subscribed',

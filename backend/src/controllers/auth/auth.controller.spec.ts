@@ -8,6 +8,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -19,6 +20,8 @@ describe('AuthController', () => {
     activateAccount: jest.fn(),
     resendVerification: jest.fn(),
     login: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
   };
 
   const mockRefreshTokenService = {
@@ -350,6 +353,42 @@ describe('AuthController', () => {
       await expect(controller.getProfile(req as any)).rejects.toThrow(
         'User account no longer exists.',
       );
+    });
+  });
+
+  //forgot password
+  describe('forgotPassword', ()=>{
+    it('should call authService.forgotPassword and return the result', async() =>{
+      const dto= {email: "botho@consultiq.com"};
+      const expected={message: 'If that account exists, a reset link has been sent.'};
+
+      authService.forgotPassword.mockResolvedValue(expected);
+
+      const result= await controller.forgotPassword(dto as any);
+
+      expect(authService.forgotPassword).toHaveBeenCalledWith(dto.email);
+      expect(result).toEqual(expected);
+    });
+  });
+
+  describe('resetPassword', ()=>{
+    it('should call authService.resetPassword and return the result', async() =>{
+      const dto={
+        email: "botho@consultiq.com",
+        token: "raw-token-abc123",
+        password: "WalkLong@2026"
+      };
+      
+      const expected= {
+        message: "Password successfully updated. You can now login.",
+      };
+
+      authService.resetPassword.mockResolvedValue(expected);
+
+      const result= await controller.resetPassword(dto as any);
+
+      expect(authService.resetPassword).toHaveBeenCalledWith(dto);
+      expect(result).toEqual(expected);
     });
   });
 });

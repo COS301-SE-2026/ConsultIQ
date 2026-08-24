@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringFactorName } from '@prisma/client';
@@ -13,6 +14,14 @@ import {
   UpdateProjectScoringOverrideDto,
   DeleteProjectScoringOverrideDto,
 } from '../dto/update-project-scoring-override.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { Inject, Optional } from '@nestjs/common';
+
+const GLOBAL_SCORING_CONFIG_CACHE_KEY = 'scoring:config:global';
+const projectScoringConfigCacheKey = (projectId: string) =>
+  `scoring:config:project:${projectId}`;
+const SCORING_CONFIG_CACHE_TTL = 300000;
 
 const DEFAULT_FACTORS: ScoringFactorDto[] = [
   {
@@ -49,15 +58,31 @@ const DEFAULT_FACTORS: ScoringFactorDto[] = [
 
 @Injectable()
 export class ScoringService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(ScoringService.name);
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() @Inject(CACHE_MANAGER) private readonly cacheManager?: Cache,
+  ) { }
 
   // ─── Firm-Wide Config ───────────────────────────────────────────────
 
   async getScoringConfig() {
+    const cached = await this.cacheManager?.get(GLOBAL_SCORING_CONFIG_CACHE_KEY);
+    if (cached) {
+      this.logger.log('Cache Hit: Fetched Firm-Wide Scoring config From Cache...');
+      return cached as any[];
+    }
+    this.logger.log('Cache Miss: Fetching Firm-Wide Scoring Config From DB...');
+
     const factors = await this.prisma.consultancyScoringConfig.findMany();
     if (factors.length === 0) {
       return this.seedDefaults();
     }
+    await this.cacheManager?.set(
+      GLOBAL_SCORING_CONFIG_CACHE_KEY,
+      factors,
+      SCORING_CONFIG_CACHE_TTL,
+    );
     return factors;
   }
 
@@ -66,7 +91,13 @@ export class ScoringService {
       data: DEFAULT_FACTORS,
       skipDuplicates: true,
     });
-    return this.prisma.consultancyScoringConfig.findMany();
+    const factors = await this.prisma.consultancyScoringConfig.findMany();
+    await this.cacheManager?.set(
+      GLOBAL_SCORING_CONFIG_CACHE_KEY,
+      factors,
+      SCORING_CONFIG_CACHE_TTL,
+    );
+    return factors;
   }
 
   async updateScoringConfig(dto: UpdateScoringConfigDto, adminUserId: string) {
@@ -98,6 +129,8 @@ export class ScoringService {
     await this.prisma.scoringConfigAudit.create({
       data: { adminUserId, previousValues, newValues },
     });
+    await this.cacheManager?.del(GLOBAL_SCORING_CONFIG_CACHE_KEY);
+    this.logger.log('Cache Invalidate: Cleared Firm-Wide Scoring Config Cache...');
 
     return newValues;
   }
@@ -148,7 +181,11 @@ export class ScoringService {
           },
         });
       }
-      return tx.projectScoringOverride.findMany({ where: { projectId } });
+      const overrides = await tx.projectScoringOverride.findMany({ where: { projectId } });
+      this.logger.log(`Cache Invalidate: Cleared Project Scoring Override Cache for projectId: ${projectId}`);
+      await this.cacheManager?.del(projectScoringConfigCacheKey(projectId));
+      this.logger.log(`Cache Invalidate: Cleared Project Scoring Override Cache for projectId: ${projectId}`);
+      return overrides;
     });
   }
 
@@ -165,21 +202,33 @@ export class ScoringService {
       );
     }
 
-    return this.prisma.projectScoringOverride.deleteMany({
+    const result = await this.prisma.projectScoringOverride.deleteMany({
       where: { projectId },
     });
+    await this.cacheManager?.del(projectScoringConfigCacheKey(projectId));
+    this.logger.log(`Cache Invalidate: Cleared Project Scoring Override Cache for projectId: ${projectId}`);
+    return result;
   }
 
   async resolveProjectWeights(projectId: string) {
+    const cacheKey = projectScoringConfigCacheKey(projectId);
+    const cachedOverrides = await this.cacheManager?.get(cacheKey);
+
+    if (cachedOverrides) {
+      this.logger.log(`Cache Hit: Fetched Project Scoring Overrides for projectId: ${projectId}`);
+      return cachedOverrides as any[];
+    }
+    this.logger.log(`Cache Miss: Fetching Project Scoring Overrides for projectId: ${projectId} from DB...`);
     const overrides = await this.prisma.projectScoringOverride.findMany({
       where: { projectId, active: true },
     });
 
     if (overrides.length > 0) {
+      await this.cacheManager?.set(cacheKey, overrides, SCORING_CONFIG_CACHE_TTL);
       return overrides;
     }
 
-    return this.prisma.consultancyScoringConfig.findMany();
+    return this.getScoringConfig();
   }
 
   private async validateProjectOwnership(

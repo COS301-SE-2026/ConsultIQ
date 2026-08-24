@@ -49,6 +49,7 @@ import BrandColorsSection from "../brand style guide/components/brand-colors-sec
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
 import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
+import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -98,6 +99,7 @@ function AnimatedRoutes() {
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
+                    <Route path="/create-profile-entry/:userId>" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

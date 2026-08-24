@@ -54,8 +54,17 @@ export class MatchRunService {
     } else {
       const consultants = await this.prisma.consultant.findMany({
         where: { user: { status: 'ACTIVE' } },
-        include: {
-          skills: { include: { skill: true } },
+        select: {
+          id: true,
+          costToCompany: true,
+          city: true,
+          province: true,
+          skills: {
+            select: {
+              competencyLevel: true,
+              skill: { select: { name: true } },
+            },
+          },
           user: { select: { fullName: true, email: true } },
           placements: {
             where: {
@@ -80,9 +89,26 @@ export class MatchRunService {
 
       const projectDto = this.mapProjectToDto(project);
 
-      //Resolve active weights with dummy consultant
-      const { activeWeights } =
+      const scoringContext =
         await this.dataIngestion.getProjectScoringContext(projectId);
+
+      const overlappingPlacements = await this.prisma.projectPlacement.findMany({
+        where: {
+          consultantId: { in: consultants.map((consultant) => consultant.id) },
+          status: { notIn: ['TERMINATED', 'CANCELLED'] },
+          ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),
+          OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
+        },
+        select: { consultantId: true, allocation: true },
+      });
+      const allocationsByConsultant = new Map<string, number>();
+      for (const placement of overlappingPlacements) {
+        allocationsByConsultant.set(
+          placement.consultantId,
+          (allocationsByConsultant.get(placement.consultantId) ?? 0) +
+          (placement.allocation ?? 0),
+        );
+      }
 
       //score all consultants
       const scoringPromises = consultants.map(async (consultant) => {
@@ -94,7 +120,7 @@ export class MatchRunService {
           projectId,
           consultant: consultantDto,
           project: projectDto,
-        });
+        }, scoringContext, allocationsByConsultant);
         return {
           consultantId: consultant.id,
           consultantName: consultant.user?.fullName || 'Unknown consultant name',
@@ -127,7 +153,7 @@ export class MatchRunService {
       const runId = await this.saveMatchRun(
         projectId,
         executedByUserId,
-        activeWeights,
+        scoringContext.activeWeights,
         finalResults,
         logicallyExcludedCount + errorCount,
         totalPlacedCount,

@@ -20,7 +20,10 @@ describe('MatchRunService', () => {
         mockPrisma = {
             project: { findUnique: jest.fn(), },
             consultant: { findMany: jest.fn() },
-            projectPlacement: { findMany: jest.fn().mockResolvedValue([]) },
+            projectPlacement: {
+                findMany: jest.fn().mockResolvedValue([]),
+                groupBy: jest.fn().mockResolvedValue([]),
+            },
             matchRun: { create: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
             matchRunResult: { createMany: jest.fn() },
             $transaction: jest.fn((callback) => callback(mockPrisma)),
@@ -97,7 +100,7 @@ describe('MatchRunService', () => {
 
             expect(mockPrisma.project.findUnique).toHaveBeenCalledWith({ where: { id: 'project-01' }, include: expect.any(Object) });
             expect(mockPrisma.consultant.findMany).toHaveBeenCalled();
-            expect(mockPrisma.projectPlacement.findMany).toHaveBeenCalledTimes(1);
+            expect(mockPrisma.projectPlacement.groupBy).toHaveBeenCalledTimes(1);
             expect(mockDataIngestion.getProjectScoringContext).toHaveBeenCalledTimes(1);
             expect(mockScoringPipeline.scoreConsultant).toHaveBeenCalledTimes(1);
             expect(mockAggregation.buildResults).toHaveBeenCalledTimes(1);

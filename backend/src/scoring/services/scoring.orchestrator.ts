@@ -40,6 +40,7 @@ export class ScoringOrchestrator {
     project: RawProjectDto,
     resolvedWeights: Record<ScoringFactor, number>,
     activeFactors: Set<ScoringFactor>,
+    availabilityAllocations?: ReadonlyMap<string, number>,
   ): Promise<ScoringResults> {
     const scoresByFactor: Partial<Record<ScoringFactor, number>> = {};
     const detailsByFactor: Partial<Record<ScoringFactor, string>> = {};
@@ -96,7 +97,13 @@ export class ScoringOrchestrator {
     }
 
     if (activeFactors.has(ScoringFactor.AVAILABILITY)) {
-      const availabiltyResult = await this.availabilityFitScorer.score(consultant, project);
+      const availabiltyResult = await this.availabilityFitScorer.score(
+        consultant,
+        project,
+        availabilityAllocations
+          ? availabilityAllocations.get(consultant.consultantId) ?? 0
+          : undefined,
+      );
       scoresByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.score;
       if (availabiltyResult.details) {
         detailsByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.details;

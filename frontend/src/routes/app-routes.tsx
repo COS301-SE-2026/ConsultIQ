@@ -48,6 +48,7 @@ import BrandIconsSection from "../brand style guide/components/brand-icons-secti
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -77,6 +78,7 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
+
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
@@ -95,6 +97,7 @@ function AnimatedRoutes() {
                     <Route path="/notifications" element={<PageTransition><NotificationPage /></PageTransition>} />
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
+                    <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

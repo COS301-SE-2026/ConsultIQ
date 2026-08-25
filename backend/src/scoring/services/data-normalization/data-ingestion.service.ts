@@ -16,7 +16,7 @@ export class DataIngestionService {
   constructor(
     private readonly normalizationService: NormalizationService,
     private readonly scoringService: ScoringService,
-  ) {}
+  ) { }
 
   async ingestData(dto: EntryScoringDataDto): Promise<ResolvedScoringContext> {
     const projectContext = await this.getProjectScoringContext(dto.projectId);
@@ -40,12 +40,13 @@ export class DataIngestionService {
       const factor = row.factorName as ScoringFactor;
       if (row.active) {
         rawWeights[factor] =
-          'overrideWeight' in row ? row.overrideWeight : row.weight;
+          'overrideWeight' in row
+            ? row.overrideWeight
+            : (row as { weight: number }).weight;
         activeFactors.add(factor);
       }
 
-      const isExcluded =
-        'hardExlusionEnabled' in row ? row.hardExclusionEnabled : false;
+      const isExcluded = row.hardExclusionEnabled === true;
       if (isExcluded) {
         excludedFactors.add(factor);
       }

@@ -133,4 +133,64 @@ describe('ClaudeExtractionService', () => {
     expect(result.success).toBe(false);
     expect(mockCreate).toHaveBeenCalledTimes(1);
   });
+
+    it('throws on construction if ANTHROPIC_API_KEY is not configured', async () => {
+    await expect(
+      Test.createTestingModule({
+        providers: [
+          ClaudeExtractionService,
+          { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue(undefined) } },
+        ],
+      }).compile(),
+    ).rejects.toThrow('ANTHROPIC_API_KEY environment variable is not set.');
+  });
+
+  it.each([
+    ['PermissionDeniedError', Anthropic.PermissionDeniedError],
+    ['BadRequestError', Anthropic.BadRequestError],
+  ])('does not retry on a non-retryable %s', async (_label, ErrorClass) => {
+    mockCreate.mockRejectedValueOnce(fakeError(ErrorClass as any, 'non-retryable test error'));
+
+    const result = await service.extractCvData('some CV text');
+
+    expect(result.success).toBe(false);
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+  });
+
+  it('exhausts all attempts and fails if a retryable error persists, e.g. a rate limit', async () => {
+    mockCreate.mockRejectedValue(fakeError(Anthropic.RateLimitError, 'rate limited, please retry later'));
+
+    const result = await service.extractCvData('some CV text');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/rate limited/i);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  }, 10000); // real sleep between attempts, default 5s Jest timeout is too tight
+
+  it('falls back to a generic message when a non-Error value is thrown', async () => {
+    mockCreate.mockRejectedValue('a plain string rejection, not an Error instance');
+
+    const result = await service.extractCvData('some CV text');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Unknown error');
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  }, 10000);
+
+  it.each([
+    ['missing contact', { ...validParsedData, contact: undefined }],
+    ['contact not an object', { ...validParsedData, contact: 'not-an-object' }],
+    ['experiences not an array', { ...validParsedData, experiences: {} }],
+    ['certifications not an array', { ...validParsedData, certifications: null }],
+    ['education not an array', { ...validParsedData, education: undefined }],
+    ['missing confidenceScores', { ...validParsedData, confidenceScores: undefined }],
+  ])('retries when returned data has %s', async (_label, malformed) => {
+    mockCreate.mockResolvedValue(toolUseResponse(malformed));
+
+    const result = await service.extractCvData('some CV text');
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/does not match the expected schema/i);
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+  });
 });

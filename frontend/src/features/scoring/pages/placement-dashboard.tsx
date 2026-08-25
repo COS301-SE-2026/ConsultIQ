@@ -4,6 +4,7 @@ import { MatchStatsGrid } from "../components/match-stats-grid";
 import { useState, useEffect, useMemo } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
+import type { MatchRunStatus } from "../services/placement.service";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
@@ -33,7 +34,8 @@ export default function PlacementDashboard() {
     const [projectScoringBasis] = useState<'Override' | 'Default'>('Override');
 
     const [stats, setStats] = useState<MatchRunStats | null>(null);
-    const rawMatchData = location.state?.rawMatchData;
+    const [rawMatchData, setRawMatchData] = useState<RawMatchResult[]>(location.state?.rawMatchData ?? []);
+    const [matchRunStatus, setMatchRunStatus] = useState<MatchRunStatus | null>(null);
     const [placedConsultantIds, setPlacedConsultantIds] = useState<string[]>([]);
 
     const recommendations = useMemo <Recommendation[]> (()=> {
@@ -41,7 +43,9 @@ export default function PlacementDashboard() {
             return [];
         }
 
-        return rawMatchData.map((result: RawMatchResult, index: number): Recommendation => ({
+        return [...rawMatchData]
+            .sort((left, right) => (left.rank ?? Number.MAX_SAFE_INTEGER) - (right.rank ?? Number.MAX_SAFE_INTEGER))
+            .map((result: RawMatchResult, index: number): Recommendation => ({
                     consultantId: result.consultantId ?? result.id ?? "",
                     consultantName: result.consultantName ?? result.name ?? "Unknown Consultant",
                     consultantEmail: result.consultantEmail ?? result.email ?? "",
@@ -55,19 +59,41 @@ export default function PlacementDashboard() {
     console.log("URL Parameters:", { projectId, runId });
 
     useEffect(() => {
-        const fetchStats = async () => {
+        let cancelled = false;
+        const pollMatchRun = async () => {
             if (projectId && runId) {
                 try {
-                    const fetchedStats = await placementService.getMatchRunStats(projectId, runId);
-                    // console.log("Raw stats from API:", fetchedStats);
-                    setStats(fetchedStats);
+                    const status = await placementService.getMatchRunStatus(projectId, runId);
+                    if (cancelled) return;
+                    setMatchRunStatus(status);
+
+                    if (status.status === "COMPLETED") {
+                        const [fetchedStats, fetchedResults] = await Promise.all([
+                            placementService.getMatchRunStats(projectId, runId),
+                            placementService.getMatchRun(projectId, runId),
+                        ]);
+                        if (!cancelled) {
+                            setStats(fetchedStats);
+                            setRawMatchData(fetchedResults);
+                        }
+                        return;
+                    }
+
+                    if (status.status === "FAILED") {
+                        toast.error(status.errorMessage ?? "Match run failed.");
+                        return;
+                    }
+
+                    window.setTimeout(pollMatchRun, 1000);
                 } catch (error) {
                     console.error("Failed to fetch match run stats", error);
+                    if (!cancelled) window.setTimeout(pollMatchRun, 2000);
                 }
             }
         };
-        fetchStats();
-    }, [location.state, projectId, runId])
+        void pollMatchRun();
+        return () => { cancelled = true; };
+    }, [projectId, runId]);
     
     useEffect(() =>{
         const loadProject = async() =>{
@@ -135,7 +161,12 @@ export default function PlacementDashboard() {
                 >
                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                         Placement Dashboard</h1>
-                         <span><p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p></span>
+                         <span className="text-right">
+                            <p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p>
+                            {matchRunStatus?.status === "IN_PROGRESS" && (
+                                <p className="text-sm text-slate-400">Scoring in progress: {matchRunStatus.progress}%</p>
+                            )}
+                         </span>
                 </header>
                 <div className="flex-1 px-[80px] py-[32px]">
                     <MatchStatsGrid

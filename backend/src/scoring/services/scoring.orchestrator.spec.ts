@@ -161,6 +161,39 @@ describe('ScoringOrchestrator', () => {
             spy.mockRestore();
         });
 
+        it('excludes a consultant when skill hard exclusion is configured', async () => {
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant({ skills: [] }),
+                project(),
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                new Set([ScoringFactor.SKILL_ALIGNMENT]),
+            );
+
+            expect(result).toEqual({
+                excluded: true,
+                reason: 'Missing mandatory skills: C ++',
+                missingMandatorySkills: ['C ++'],
+            });
+        });
+
+        it('excludes a consultant when availability hard exclusion is configured', async () => {
+            const orchestrator = orcheStrator(false);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant(),
+                project(),
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                new Set([ScoringFactor.AVAILABILITY]),
+                new Map([['consutant-01', 100]]),
+            );
+
+            expect(result.excluded).toBe(true);
+        });
+
     })
 
     describe('Redistributed Weights', () => {

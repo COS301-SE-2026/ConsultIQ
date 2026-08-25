@@ -32,6 +32,7 @@ export class ScoringPipelineService {
         dto.project,
         result.activeWeights,
         result.activeFactors,
+        result.excludedFactors,
       );
     }
 
@@ -40,6 +41,7 @@ export class ScoringPipelineService {
       dto.project,
       result.activeWeights,
       result.activeFactors,
+      result.excludedFactors,
       availabilityAllocations,
     );
   }

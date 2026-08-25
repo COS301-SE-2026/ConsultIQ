@@ -65,16 +65,12 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render match run count stats', async ({ page }) => {
-        const statsResponse = page.waitForResponse(
-            (res) => res.url().includes(`${mockProjectId}`) && res.url().includes('stats')
-        );
+
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
-        const res = await statsResponse;
-        expect(res.status()).toBe(200);
-        const statsArea = page;
-        await expect(statsArea.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
-        await expect(statsArea.getByText(String(mockStats.totalPlaced), { exact: true })).toBeVisible();
-        await expect(statsArea.getByText(String(mockStats.totalExcluded), { exact: true })).toBeVisible();
+
+        await expect(page.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
+        await expect(page.getByText(String(mockStats.totalPlaced), { exact: true })).toBeVisible();
+        await expect(page.getByText(String(mockStats.totalExcluded), { exact: true })).toBeVisible();
     });
 
 

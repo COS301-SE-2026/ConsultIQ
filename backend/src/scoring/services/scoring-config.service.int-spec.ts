@@ -152,6 +152,10 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
     });
 
     it('should return an empty array when neither overrides nor firm-wide config are seeded', async () => {
+
+      await prisma.consultancyScoringConfig.deleteMany({});
+      await prisma.projectScoringOverride.deleteMany({});
+
       const project = await createTestProject({
         projectName: 'Empty Config Project',
       });

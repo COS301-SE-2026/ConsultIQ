@@ -243,6 +243,48 @@ describe('MatchRunService', () => {
             expect(mockPrisma.matchRun.update).toHaveBeenCalled();
             expect(mockPrisma.matchRun.create).not.toHaveBeenCalled();
         });
+
+        it('throws NotFoundException if project is not found', async () => {
+            mockPrisma.project.findUnique.mockResolvedValue(null);
+
+
+            await expect(service.executeMatchRun('invalid-id', 'user-1'))
+                .rejects.toThrow(NotFoundException);
+        });
+
+        it('throws BadRequestException if project status is not OPEN or IN_PROGRESS', async () => {
+            mockPrisma.project.findUnique.mockResolvedValue({
+                id: 'proj-1',
+                status: 'CLOSED',
+                skills: [{ id: 'skill-1' }]
+            });
+
+
+            await expect(service.executeMatchRun('proj-1', 'user-1'))
+                .rejects.toThrow(BadRequestException);
+        });
+
+        it('handles null allocation sums gracefully when building allocations map', async () => {
+
+            mockPrisma.project.findUnique.mockResolvedValue({
+                id: 'proj-1', status: 'OPEN', startDate: new Date(),
+                skills: [{ skill: { name: 'Java' }, competency: 3, mandatory: true }]
+            });
+            mockPrisma.consultant.findMany.mockResolvedValue([{ id: 'c1', skills: [] }]);
+            mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: {} });
+            mockScoringPipeline.scoreConsultant.mockResolvedValue({ excluded: false });
+            mockAggregation.buildResults.mockReturnValue([]);
+            mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-1' });
+
+
+            mockPrisma.projectPlacement.groupBy.mockResolvedValue([
+                { consultantId: 'c1', _sum: { allocation: null } }
+            ]);
+
+
+            const result = await service.executeMatchRun('proj-1', 'user-01');
+            expect(result.runId).toBe('run-1');
+        });
     })
 
 
@@ -365,6 +407,62 @@ describe('MatchRunService', () => {
 
             await expect(service.enqueueMatchRun('proj-1', 'user-1')).rejects.toThrow(mockError);
             expect(markFailedSpy).toHaveBeenCalledWith('run-1', mockError);
+        });
+    });
+
+
+    describe('MatchRun Utilities', () => {
+        describe('markMatchRunFailed', () => {
+            it('extracts message if error is an instance of Error', async () => {
+                await service.markMatchRunFailed('run-1', new Error('DB Crash'));
+                expect(mockPrisma.matchRun.update).toHaveBeenCalledWith({
+                    where: { id: 'run-1' },
+                    data: { status: 'FAILED', errorMessage: 'DB Crash' },
+                });
+            });
+
+            it('casts to string if error is not an Error instance', async () => {
+                await service.markMatchRunFailed('run-1', 'String error message');
+                expect(mockPrisma.matchRun.update).toHaveBeenCalledWith({
+                    where: { id: 'run-1' },
+                    data: { status: 'FAILED', errorMessage: 'String error message' },
+                });
+            });
+        });
+
+        describe('updateMatchRunProgress', () => {
+            it('clamps progress between 0 and 100', async () => {
+                await service.updateMatchRunProgress('run-1', 150);
+                expect(mockPrisma.matchRun.update).toHaveBeenCalledWith({
+                    where: { id: 'run-1' },
+                    data: { progress: 100 },
+                });
+
+                await service.updateMatchRunProgress('run-1', -50);
+                expect(mockPrisma.matchRun.update).toHaveBeenCalledWith({
+                    where: { id: 'run-1' },
+                    data: { progress: 0 },
+                });
+            });
+        });
+
+        describe('getMatchRunStatus', () => {
+            it('returns mapped status if found', async () => {
+                mockPrisma.matchRun.findFirst.mockResolvedValue({
+                    id: 'run-1', status: 'IN_PROGRESS', progress: 50, errorMessage: null
+                });
+
+                const result = await service.getMatchRunStatus('proj-1', 'run-1');
+                expect(result).toEqual({
+                    runId: 'run-1', status: 'IN_PROGRESS', progress: 50, errorMessage: undefined
+                });
+            });
+
+            it('throws NotFoundException if run does not exist', async () => {
+                mockPrisma.matchRun.findFirst.mockResolvedValue(null);
+                await expect(service.getMatchRunStatus('proj-1', 'run-1'))
+                    .rejects.toThrow(NotFoundException);
+            });
         });
     });
 })

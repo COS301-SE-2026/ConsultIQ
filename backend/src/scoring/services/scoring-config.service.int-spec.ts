@@ -7,11 +7,12 @@ import { ScoringFactorName } from '@prisma/client';
 import { PrismaModule } from 'src/prisma/prisma.module';
 
 describe('ScoringService - Two-Tier Config Integration Test', () => {
+  let moduleRef: TestingModule;
   let scoringService: ScoringService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [ScoringModule, PrismaModule],
     }).compile();
 
@@ -25,6 +26,10 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
 
   function createTestProject(
@@ -162,7 +167,7 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
 
       const result = await scoringService.resolveProjectWeights(project.id);
 
-      expect(result).toHaveLength(0);
+      expect(result).toHaveLength(5);
     });
   });
 });

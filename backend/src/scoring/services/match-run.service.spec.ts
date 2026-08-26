@@ -222,7 +222,7 @@ describe('MatchRunService', () => {
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-1' });
 
             const result = await service.executeMatchRun('proj-1', 'user-01');
-            expect(result.results.length).toBe(1);
+            expect(result.results).toHaveLength(1);
         });
 
         it('updates existing run if existingRunId is provided', async () => {

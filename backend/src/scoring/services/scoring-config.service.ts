@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  Inject,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -20,7 +22,6 @@ import {
 } from '../dto/update-project-scoring-override.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { Inject, Optional } from '@nestjs/common';
 
 const GLOBAL_SCORING_CONFIG_CACHE_KEY = 'scoring:config:global';
 const projectScoringConfigCacheKey = (projectId: string) =>
@@ -92,7 +93,7 @@ export class ScoringService {
     const load = this.loadGlobalConfig();
     this.configLoads.set(GLOBAL_SCORING_CONFIG_CACHE_KEY, load);
     try {
-      return await load as ConsultancyScoringConfig[];
+      return await load;
     } finally {
       if (this.configLoads.get(GLOBAL_SCORING_CONFIG_CACHE_KEY) === load) {
         this.configLoads.delete(GLOBAL_SCORING_CONFIG_CACHE_KEY);
@@ -287,7 +288,7 @@ export class ScoringService {
     })();
     this.configLoads.set(cacheKey, load);
     try {
-      return await load as ProjectScoringOverride[];
+      return (await load) as ProjectScoringOverride[];
     } finally {
       if (this.configLoads.get(cacheKey) === load) {
         this.configLoads.delete(cacheKey);

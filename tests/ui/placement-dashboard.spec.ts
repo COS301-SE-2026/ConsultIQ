@@ -104,7 +104,7 @@ test.describe('UI Test Placement Dashboard', () => {
 
         await page.goto('/');
 
-        await page.waitForTimeout(100);
+        await page.waitForSelector('#root > *', { state: 'attached' });
 
         await page.evaluate(
             ({ projectId, runId, recommendation }) => {

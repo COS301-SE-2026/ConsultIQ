@@ -33,7 +33,9 @@ export class MatchRunService {
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-    @Optional() @InjectQueue('match-run') private readonly matchRunQueue?: Queue,
+    @Optional()
+    @InjectQueue('match-run')
+    private readonly matchRunQueue?: Queue,
   ) { }
 
   async enqueueMatchRun(
@@ -123,7 +125,9 @@ export class MatchRunService {
     });
 
     if (!matchRun) {
-      throw new NotFoundException(`Match run ${runId} not found for project ${projectId}`);
+      throw new NotFoundException(
+        `Match run ${runId} not found for project ${projectId}`,
+      );
     }
 
     return {
@@ -132,6 +136,24 @@ export class MatchRunService {
       progress: matchRun.progress,
       errorMessage: matchRun.errorMessage ?? undefined,
     };
+  }
+
+  private validateProjectForMatching(project: any): void {
+    if (!project) {
+      throw new NotFoundException(`Project not found`);
+    }
+
+    if (!project.skills || project.skills.length === 0) {
+      throw new BadRequestException(
+        `Cannot execute match run: Project has no required skills.`,
+      );
+    }
+
+    if (project.status !== 'OPEN' && project.status !== 'IN_PROGRESS') {
+      throw new BadRequestException(
+        `Cannot execute match run: Project status is ${project.status}.`,
+      );
+    }
   }
 
   async executeMatchRun(
@@ -146,159 +168,148 @@ export class MatchRunService {
       include: { skills: { include: { skill: true } } },
     });
 
-    if (!project) {
-      throw new NotFoundException(`Project: ${projectId} is not found`);
-    }
-    if (!project.skills || project.skills.length === 0) {
-      throw new BadRequestException(
-        `Cannot execute match run: Project has no required skills.`,
-      );
-    }
-    if (project.status !== 'OPEN' && project.status !== 'IN_PROGRESS') {
-      throw new BadRequestException(
-        `Match run can only be initialized for open and in-progress projects. Project Status is ${project.status}`,
-      );
-    } else {
-      const consultants = await this.prisma.consultant.findMany({
-        where: { user: { status: 'ACTIVE' } },
-        select: {
-          id: true,
-          costToCompany: true,
-          city: true,
-          province: true,
-          skills: {
-            select: {
-              competencyLevel: true,
-              skill: { select: { name: true } },
-            },
-          },
-          user: { select: { fullName: true, email: true } },
-          placements: {
-            where: {
-              projectId: project.id,
-              status: 'ACTIVE',
-              //placement before or during project timeline
-              ...(project.endDate
-                ? { startDate: { lte: project.endDate } }
-                : {}),
-              OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
-            },
+    this.validateProjectForMatching(project);
+
+    const consultants = await this.prisma.consultant.findMany({
+      where: { user: { status: 'ACTIVE' } },
+      select: {
+        id: true,
+        costToCompany: true,
+        city: true,
+        province: true,
+        skills: {
+          select: {
+            competencyLevel: true,
+            skill: { select: { name: true } },
           },
         },
-      });
-
-      if (!consultants || consultants.length === 0) {
-        throw new BadRequestException(
-          `No consultants to match against an active project`,
-        );
-      }
-
-      const projectDto = this.mapProjectToDto(project);
-
-      const scoringContext =
-        await this.dataIngestion.getProjectScoringContext(projectId);
-      const dataLoadedAt = performance.now();
-      await onProgress?.(25);
-
-      const placementAllocations = await this.prisma.projectPlacement.groupBy({
-        where: {
-          consultantId: { in: consultants.map((consultant) => consultant.id) },
-          status: { notIn: ['TERMINATED', 'CANCELLED'] },
-          ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),
-          OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
-        },
-        by: ['consultantId'],
-        _sum: { allocation: true },
-      });
-      const allocationsByConsultant = new Map(
-        placementAllocations.map((placement) => [
-          placement.consultantId,
-          placement._sum.allocation ?? 0,
-        ]),
-      );
-
-      //score all consultants
-      const scoreConsultant = async (
-        consultant: (typeof consultants)[number],
-      ) => {
-        const consultantDto = this.mapConsultantToDto(consultant);
-
-        const isPlaced =
-          consultant.placements && consultant.placements.length > 0;
-        const outcome = await this.scoringPipeline.scoreConsultant(
-          {
-            consultantId: consultant.id,
-            projectId,
-            consultant: consultantDto,
-            project: projectDto,
+        user: { select: { fullName: true, email: true } },
+        placements: {
+          where: {
+            projectId: project?.id,
+            status: 'ACTIVE',
+            //placement before or during project timeline
+            ...(project?.endDate
+              ? { startDate: { lte: project?.endDate } }
+              : {}),
+            OR: [{ endDate: { gte: project?.startDate } }, { endDate: null }],
           },
-          scoringContext,
-          allocationsByConsultant,
-        );
-        return {
+        },
+      },
+    });
+
+    if (!consultants || consultants.length === 0) {
+      throw new BadRequestException(
+        `No consultants to match against an active project`,
+      );
+    }
+
+    const projectDto = this.mapProjectToDto(project);
+
+    const scoringContext =
+      await this.dataIngestion.getProjectScoringContext(projectId);
+    const dataLoadedAt = performance.now();
+    await onProgress?.(25);
+
+    const placementAllocations = await this.prisma.projectPlacement.groupBy({
+      where: {
+        consultantId: { in: consultants.map((consultant) => consultant.id) },
+        status: { notIn: ['TERMINATED', 'CANCELLED'] },
+        ...(project?.endDate ? { startDate: { lte: project.endDate } } : {}),
+        OR: [{ endDate: { gte: project?.startDate } }, { endDate: null }],
+      },
+      by: ['consultantId'],
+      _sum: { allocation: true },
+    });
+    const allocationsByConsultant = new Map(
+      placementAllocations.map((placement) => [
+        placement.consultantId,
+        placement._sum.allocation ?? 0,
+      ]),
+    );
+
+    //score all consultants
+    const scoreConsultant = async (
+      consultant: (typeof consultants)[number],
+    ) => {
+      const consultantDto = this.mapConsultantToDto(consultant);
+
+      const isPlaced =
+        consultant.placements && consultant.placements.length > 0;
+      const outcome = await this.scoringPipeline.scoreConsultant(
+        {
           consultantId: consultant.id,
-          consultantName:
-            consultant.user?.fullName || 'Unknown consultant name',
-          consultantEmail: consultant.user?.email || 'Unknown consultant email',
-          isPlaced,
-          outcome,
-        };
-      };
-      const results = await this.scoreWithConcurrency(
-        consultants,
-        scoreConsultant,
-        MatchRunService.SCORING_CONCURRENCY,
-      );
-      const scoringCompletedAt = performance.now();
-      await onProgress?.(75);
-
-      const scoredInputs: ScoredConsultantInput[] = [];
-      let errorCount = 0;
-
-      for (const result of results) {
-        if (result.status === 'fulfilled') {
-          scoredInputs.push(result.value);
-        } else {
-          this.logger.error(`Failed to score consultant: ${result.reason}`);
-          errorCount++;
-        }
-      }
-
-      const finalResults = this.aggregation.buildResults(scoredInputs);
-      const logicallyExcludedCount = scoredInputs.filter(
-        (s) => s.outcome.excluded,
-      ).length;
-
-      const totalPlacedCount = finalResults.filter((r) => r.isPlaced).length;
-
-      const runId = await this.saveMatchRun(
-        projectId,
-        executedByUserId,
-        scoringContext.activeWeights,
-        finalResults,
-        logicallyExcludedCount + errorCount,
-        totalPlacedCount,
-        existingRunId,
-      );
-      await onProgress?.(100);
-      this.logger.log(
-        JSON.stringify({
-          event: 'match_run_completed',
           projectId,
-          runId,
-          candidateCount: consultants.length,
-          resultCount: finalResults.length,
-          excludedCount: logicallyExcludedCount,
-          errorCount,
-          concurrency: MatchRunService.SCORING_CONCURRENCY,
-          loadDurationMs: Math.round(dataLoadedAt - startedAt),
-          scoringDurationMs: Math.round(scoringCompletedAt - dataLoadedAt),
-          persistenceDurationMs: Math.round(performance.now() - scoringCompletedAt),
-          totalDurationMs: Math.round(performance.now() - startedAt),
-        }),
+          consultant: consultantDto,
+          project: projectDto,
+        },
+        scoringContext,
+        allocationsByConsultant,
       );
-      return { runId, results: finalResults };
+      return {
+        consultantId: consultant.id,
+        consultantName: consultant.user?.fullName || 'Unknown consultant name',
+        consultantEmail: consultant.user?.email || 'Unknown consultant email',
+        isPlaced,
+        outcome,
+      };
+    };
+    const results = await this.scoreWithConcurrency(
+      consultants,
+      scoreConsultant,
+      MatchRunService.SCORING_CONCURRENCY,
+    );
+    const scoringCompletedAt = performance.now();
+    await onProgress?.(75);
+
+    const scoredInputs: ScoredConsultantInput[] = [];
+    let errorCount = 0;
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        scoredInputs.push(result.value);
+      } else {
+        this.logger.error(`Failed to score consultant: ${result.reason}`);
+        errorCount++;
+      }
     }
+
+    const finalResults = this.aggregation.buildResults(scoredInputs);
+    const logicallyExcludedCount = scoredInputs.filter(
+      (s) => s.outcome.excluded,
+    ).length;
+
+    const totalPlacedCount = finalResults.filter((r) => r.isPlaced).length;
+
+    const runId = await this.saveMatchRun(
+      projectId,
+      executedByUserId,
+      scoringContext.activeWeights,
+      finalResults,
+      logicallyExcludedCount + errorCount,
+      totalPlacedCount,
+      existingRunId,
+    );
+    await onProgress?.(100);
+    this.logger.log(
+      JSON.stringify({
+        event: 'match_run_completed',
+        projectId,
+        runId,
+        candidateCount: consultants.length,
+        resultCount: finalResults.length,
+        excludedCount: logicallyExcludedCount,
+        errorCount,
+        concurrency: MatchRunService.SCORING_CONCURRENCY,
+        loadDurationMs: Math.round(dataLoadedAt - startedAt),
+        scoringDurationMs: Math.round(scoringCompletedAt - dataLoadedAt),
+        persistenceDurationMs: Math.round(
+          performance.now() - scoringCompletedAt,
+        ),
+        totalDurationMs: Math.round(performance.now() - startedAt),
+      }),
+    );
+    return { runId, results: finalResults };
   }
 
   private async scoreWithConcurrency<T, R>(
@@ -398,7 +409,9 @@ export class MatchRunService {
             status: MatchRunStatus.COMPLETED,
           },
         });
-      await tx.matchRunResult.deleteMany({ where: { matchRunId: matchRun.id } });
+      await tx.matchRunResult.deleteMany({
+        where: { matchRunId: matchRun.id },
+      });
       await tx.matchRunResult.createMany({
         data: results.map((r) => ({
           matchRunId: matchRun.id,

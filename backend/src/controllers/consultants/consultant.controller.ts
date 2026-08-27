@@ -23,7 +23,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 @Controller('consultants')
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) { }
+  constructor(private readonly consultantService: ConsultantService) {}
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)
@@ -81,7 +81,6 @@ export class ConsultantController {
     @Param('projectId') projectId: string,
     @Req() req: any,
   ) {
-
     const userRole = req.user?.role;
     if (!userRole) {
       throw new BadRequestException('Missing user role.');
@@ -130,7 +129,7 @@ export class ConsultantController {
       consultantId,
       dto,
       role,
-      userId
+      userId,
     );
   }
 

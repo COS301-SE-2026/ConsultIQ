@@ -7,7 +7,7 @@ export enum CvParsingMethodDto {
 
 export class UploadCvDto {
   consultantId!: string;
-  
+
   @IsOptional()
   @IsEnum(CvParsingMethodDto)
   parsingMethod?: CvParsingMethodDto;

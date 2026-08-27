@@ -29,7 +29,9 @@ export class CvExtractionService {
     let result: CvParsingResult;
 
     try {
-      const cvFile = await this.prisma.cvFile.findUniqueOrThrow({ where: { id: cvFileId } });
+      const cvFile = await this.prisma.cvFile.findUniqueOrThrow({
+        where: { id: cvFileId },
+      });
       const fileBuffer = await this.s3.downloadFile(cvFile.s3Key);
 
       if (cvFile.parsingMethod === 'RULE_BASED') {
@@ -45,7 +47,10 @@ export class CvExtractionService {
       this.logger.error(`Unhandled error processing CvFile ${cvFileId}`, error);
       result = {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error during CV processing.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error during CV processing.',
         processingTimeMs: 0,
       };
     }
@@ -53,40 +58,51 @@ export class CvExtractionService {
     await this.persistResult(cvFileId, result);
   }
 
-  private async runRuleBased(fileBuffer: Buffer, mimeType: string): Promise<CvParsingResult> {
+  private async runRuleBased(
+    fileBuffer: Buffer,
+    mimeType: string,
+  ): Promise<CvParsingResult> {
     if (mimeType !== 'application/pdf') {
       return {
         success: false,
-        error: 'Rule-based parsing only supports the PDF CV template. This file is not a PDF.',
+        error:
+          'Rule-based parsing only supports the PDF CV template. This file is not a PDF.',
         processingTimeMs: 0,
       };
     }
     return this.ruleBasedParsing.parse(fileBuffer);
   }
 
-  private async runAiAssisted(fileBuffer: Buffer, mimeType: string): Promise<CvParsingResult> {
+  private async runAiAssisted(
+    fileBuffer: Buffer,
+    mimeType: string,
+  ): Promise<CvParsingResult> {
     const rawText = await this.ocr.extractText(fileBuffer, mimeType);
     return this.claudeExtraction.extractCvData(rawText);
   }
 
-  private async persistResult(cvFileId: string, result: CvParsingResult): Promise<void> {
-
+  private async persistResult(
+    cvFileId: string,
+    result: CvParsingResult,
+  ): Promise<void> {
     await this.prisma.cvFile.update({
       where: { id: cvFileId },
       data: {
         extractionStatus: result.success ? 'REVIEW_REQUIRED' : 'FAILED',
         parsedData: result.success
-          ? ({ 
-            data: result.data, 
-            competencySignals: result.competencySignals ?? [], 
-            fieldWarnings: result.fieldWarnings ?? [],
-           } as unknown as Prisma.InputJsonValue)
-          : ({ error: result.error} as Prisma.InputJsonValue),
-        },
+          ? ({
+              data: result.data,
+              competencySignals: result.competencySignals ?? [],
+              fieldWarnings: result.fieldWarnings ?? [],
+            } as unknown as Prisma.InputJsonValue)
+          : { error: result.error },
+      },
     });
 
     if (!result.success) {
-      this.logger.error(`Extraction failed for CvFile ${cvFileId}: ${result.error}`);
+      this.logger.error(
+        `Extraction failed for CvFile ${cvFileId}: ${result.error}`,
+      );
     }
   }
 }

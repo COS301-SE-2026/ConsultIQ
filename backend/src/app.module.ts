@@ -35,8 +35,8 @@ import { PlacementsModule } from './placement/placement.module';
         return {
           stores: [
             createKeyv({
-              url: configService.get<string>('REDIS_URL')
-            })
+              url: configService.get<string>('REDIS_URL'),
+            }),
           ],
         };
       },
@@ -51,9 +51,9 @@ import { PlacementsModule } from './placement/placement.module';
     NotificationModule,
     AdminModule,
     LocationModule,
-    PlacementsModule
+    PlacementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

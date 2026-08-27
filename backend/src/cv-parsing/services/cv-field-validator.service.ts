@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { EMAIL_PATTERN, PHONE_PATTERNS, DATE_PATTERN } from '../skills/section-patterns';
+import {
+  EMAIL_PATTERN,
+  PHONE_PATTERNS,
+  DATE_PATTERN,
+} from '../skills/section-patterns';
 import { ParsedCvData, FieldWarning } from '../types/parsed-cv.types';
 
 @Injectable()

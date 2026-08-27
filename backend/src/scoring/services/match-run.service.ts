@@ -28,7 +28,7 @@ export class MatchRunService {
     private readonly scoringPipeline: ScoringPipelineService,
     private readonly aggregation: MatchRunAggregationService,
     private readonly dataIngestion: DataIngestionService,
-  ) { }
+  ) {}
 
   async executeMatchRun(
     projectId: string,
@@ -44,7 +44,7 @@ export class MatchRunService {
     }
     if (!project.skills || project.skills.length === 0) {
       throw new BadRequestException(
-        `Cannot execute match run: Project has no required skills.`
+        `Cannot execute match run: Project has no required skills.`,
       );
     }
     if (project.status !== 'OPEN' && project.status !== 'IN_PROGRESS') {
@@ -62,13 +62,12 @@ export class MatchRunService {
               projectId: project.id,
               status: 'ACTIVE',
               //placement before or during project timeline
-              ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),
-              OR: [
-                { endDate: { gte: project.startDate } },
-                { endDate: null },
-              ],
-            }
-          }
+              ...(project.endDate
+                ? { startDate: { lte: project.endDate } }
+                : {}),
+              OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
+            },
+          },
         },
       });
 
@@ -88,7 +87,8 @@ export class MatchRunService {
       const scoringPromises = consultants.map(async (consultant) => {
         const consultantDto = this.mapConsultantToDto(consultant);
 
-        const isPlaced = consultant.placements && consultant.placements.length > 0;
+        const isPlaced =
+          consultant.placements && consultant.placements.length > 0;
         const outcome = await this.scoringPipeline.scoreConsultant({
           consultantId: consultant.id,
           projectId,
@@ -97,7 +97,8 @@ export class MatchRunService {
         });
         return {
           consultantId: consultant.id,
-          consultantName: consultant.user?.fullName || 'Unknown consultant name',
+          consultantName:
+            consultant.user?.fullName || 'Unknown consultant name',
           consultantEmail: consultant.user?.email || 'Unknown consultant email',
           isPlaced,
           outcome,
@@ -122,7 +123,7 @@ export class MatchRunService {
         (s) => s.outcome.excluded,
       ).length;
 
-      const totalPlacedCount = finalResults.filter(r => r.isPlaced).length;
+      const totalPlacedCount = finalResults.filter((r) => r.isPlaced).length;
 
       const runId = await this.saveMatchRun(
         projectId,
@@ -186,8 +187,8 @@ export class MatchRunService {
           totalConsultantsExcluded: excludedCount,
           totalConsultantsPlaced: placedCount,
           status: MatchRunStatus.COMPLETED,
-        }
-      })
+        },
+      });
       await tx.matchRunResult.createMany({
         data: results.map((r) => ({
           matchRunId: matchRun.id,
@@ -196,8 +197,8 @@ export class MatchRunService {
           totalScore: r.finalScore,
           factorScores: r.factorBreakdown as unknown as Prisma.InputJsonArray,
           isPlaced: r.isPlaced,
-        }))
-      })
+        })),
+      });
       return matchRun.id;
     });
   }
@@ -217,12 +218,12 @@ export class MatchRunService {
                   select: {
                     fullName: true,
                     email: true,
-                  }
-                }
-              }
-            }
-          }
-        }
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -243,14 +244,17 @@ export class MatchRunService {
     }));
   }
 
-  async getMatchRunStats(projectId: string, runId: string): Promise<MatchRunStats> {
+  async getMatchRunStats(
+    projectId: string,
+    runId: string,
+  ): Promise<MatchRunStats> {
     const matchRun = await this.prisma.matchRun.findUnique({
       where: { id: runId, projectId },
       select: {
         totalConsultantsScored: true,
         totalConsultantsExcluded: true,
         totalConsultantsPlaced: true,
-      }
+      },
     });
 
     if (!matchRun) {
@@ -258,10 +262,11 @@ export class MatchRunService {
     }
 
     return {
-      totalEvaluated: matchRun.totalConsultantsScored + matchRun.totalConsultantsExcluded,
+      totalEvaluated:
+        matchRun.totalConsultantsScored + matchRun.totalConsultantsExcluded,
       totalExcluded: matchRun.totalConsultantsExcluded,
       totalMatched: matchRun.totalConsultantsScored,
       totalPlaced: matchRun.totalConsultantsPlaced,
-    }
+    };
   }
 }

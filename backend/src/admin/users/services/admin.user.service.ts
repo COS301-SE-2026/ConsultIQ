@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AdminUserService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // async deleteUser(userId: string) {
   //   try {
@@ -30,7 +30,6 @@ export class AdminUserService {
   // }
 
   async getAllUsers(page: number = 1, limit: number = 10) {
-
     const pageNum = Number(page);
     const limitNum = Number(limit);
 
@@ -42,11 +41,9 @@ export class AdminUserService {
     const listWhere = {
       ...baseWhere,
       status: {
-        not: 'PENDING' as const
+        not: 'PENDING' as const,
       },
     };
-
-
 
     const [users, totalUsers, activeUsers, suspendedUsers] =
       await this.prisma.$transaction([
@@ -68,13 +65,15 @@ export class AdminUserService {
 
         this.prisma.user.count({
           where: {
-            ...baseWhere, status: 'ACTIVE'
+            ...baseWhere,
+            status: 'ACTIVE',
           },
         }),
 
         this.prisma.user.count({
           where: {
-            ...baseWhere, status: 'SUSPENDED'
+            ...baseWhere,
+            status: 'SUSPENDED',
           },
         }),
       ]);

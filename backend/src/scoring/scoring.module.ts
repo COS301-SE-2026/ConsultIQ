@@ -43,4 +43,4 @@ import { MatchRunService } from './services/match-run.service';
   ],
   exports: [ScoringPipelineService],
 })
-export class ScoringModule { }
+export class ScoringModule {}

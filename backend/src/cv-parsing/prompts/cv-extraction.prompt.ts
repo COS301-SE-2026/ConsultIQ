@@ -24,7 +24,7 @@ Core rules:
 
 10. Contact address fields (addressLine1, suburb, city, province, postalCode, etc.) should be split into their component parts if the CV gives a combined address string. Leave any component out entirely if it cannot be confidently separated from the rest.
 
-Always respond by calling the record_cv_data tool with the complete extraction. Do not respond with plain text.`
+Always respond by calling the record_cv_data tool with the complete extraction. Do not respond with plain text.`;
 
 export function buildExtractionUserMessage(rawText: string): string {
   return `Extract structured data from the following CV text:\n\n---\n${rawText}\n---`;

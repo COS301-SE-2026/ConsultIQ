@@ -7,4 +7,4 @@ import { CvController } from '../controllers/cv/cv.controller';
   controllers: [CvController],
   providers: [CVUploadService, S3Service],
 })
-export class CvParsingModule { }
+export class CvParsingModule {}

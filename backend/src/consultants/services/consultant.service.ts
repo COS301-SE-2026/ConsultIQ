@@ -27,7 +27,10 @@ import { NotificationService } from '../../notification/service/notification.ser
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
-import { ProjectConsultantDto, ProjectConsultantsResponseDto, } from '../dto/consultant-placement.dto';
+import {
+  ProjectConsultantDto,
+  ProjectConsultantsResponseDto,
+} from '../dto/consultant-placement.dto';
 
 @Injectable()
 export class ConsultantService {
@@ -39,9 +42,11 @@ export class ConsultantService {
     private readonly notificationService: NotificationService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly redisUtilityService: RedisUtilityService,
-  ) { }
+  ) {}
   async invalidateConsultantCache() {
-    await this.redisUtilityService.invalidateCacheByPattern('cache:consultants:*');
+    await this.redisUtilityService.invalidateCacheByPattern(
+      'cache:consultants:*',
+    );
   }
 
   async createConsultantProfile(
@@ -163,7 +168,6 @@ export class ConsultantService {
         return { consultantId: consultant.id };
       })
       .then(async (result) => {
-
         // Invalidate all paginated consultant list caches
         await this.invalidateConsultantCache();
 
@@ -212,9 +216,9 @@ export class ConsultantService {
     limit: number,
     userRole: string,
   ): Promise<PaginatedConsultantsResponseDto> {
-
     const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
-    const cachedData = await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
+    const cachedData =
+      await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
     if (cachedData) {
       this.logger.log(`CACHE HIT for key: ${cacheKey}`);
       return cachedData;
@@ -314,7 +318,6 @@ export class ConsultantService {
     projectId: string,
     userRole: string,
   ): Promise<ProjectConsultantsResponseDto> {
-
     const now = new Date();
 
     const placements = await this.prisma.projectPlacement.findMany({
@@ -326,10 +329,7 @@ export class ConsultantService {
           lte: now,
         },
 
-        OR: [
-          { endDate: null },
-          { endDate: { gte: now } }
-        ],
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
 
         consultant: {
           user: {
@@ -350,30 +350,32 @@ export class ConsultantService {
       },
     });
 
-    const mappedConsultants: ProjectConsultantDto[] = placements.map((placement) => {
-      const c = placement.consultant;
+    const mappedConsultants: ProjectConsultantDto[] = placements.map(
+      (placement) => {
+        const c = placement.consultant;
 
-      const dto: ProjectConsultantDto = {
-        consultantId: c.id,
-        placementId: placement.id,
-        fullName: c.user.fullName,
-        email: c.user.email,
-        phone: c.phone,
-        city: c.city,
-        primarySkills: c.skills.map((cs) => cs.skill.name),
+        const dto: ProjectConsultantDto = {
+          consultantId: c.id,
+          placementId: placement.id,
+          fullName: c.user.fullName,
+          email: c.user.email,
+          phone: c.phone,
+          city: c.city,
+          primarySkills: c.skills.map((cs) => cs.skill.name),
 
-        placementStatus: placement.status,
-        allocation: placement.allocation,
-        startDate: placement.startDate,
-        endDate: placement.endDate,
-      };
+          placementStatus: placement.status,
+          allocation: placement.allocation,
+          startDate: placement.startDate,
+          endDate: placement.endDate,
+        };
 
-      if (userRole !== 'PROJECT_MANAGER') {
-        dto.costToCompany = c.costToCompany;
-      }
+        if (userRole !== 'PROJECT_MANAGER') {
+          dto.costToCompany = c.costToCompany;
+        }
 
-      return dto;
-    });
+        return dto;
+      },
+    );
 
     const response: ProjectConsultantsResponseDto = {
       projectId,
@@ -395,14 +397,15 @@ export class ConsultantService {
         select: { id: true },
       });
       if (!consultantProfile) {
-        throw new NotFoundException(`No consultant profile for the current user.`)
+        throw new NotFoundException(
+          `No consultant profile for the current user.`,
+        );
       }
 
       return consultantProfile.id;
     }
 
     return consultantId;
-
   }
   async updateConsultantProfile(
     consultantId: string,
@@ -410,10 +413,15 @@ export class ConsultantService {
     userRole: string,
     requestingUserId: string,
   ): Promise<{ message: string }> {
-
-    const resolvedConsultantId = await this.resolveEditableConsultantId(consultantId, userRole, requestingUserId);
+    const resolvedConsultantId = await this.resolveEditableConsultantId(
+      consultantId,
+      userRole,
+      requestingUserId,
+    );
     //Verify consultant exists
-    const existing = await this.prisma.consultant.findUnique({ where: { id: resolvedConsultantId } });
+    const existing = await this.prisma.consultant.findUnique({
+      where: { id: resolvedConsultantId },
+    });
 
     if (!existing) {
       throw new NotFoundException(
@@ -422,13 +430,13 @@ export class ConsultantService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-
       const consultant = await tx.consultant.findUnique({
         where: { id: resolvedConsultantId },
       });
 
       if (!consultant) {
-        throw new NotFoundException(`Consultant with id ${resolvedConsultantId} not found.`,
+        throw new NotFoundException(
+          `Consultant with id ${resolvedConsultantId} not found.`,
         );
       }
 
@@ -466,15 +474,15 @@ export class ConsultantService {
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
           }),
-          ...(
-            (dto.latitude !== undefined || dto.longitude !== undefined ||
-              dto.placeId !== undefined || dto.formattedAddress !== undefined) && {
-              latitude: dto.latitude ?? null,
-              longitude: dto.longitude ?? null,
-              placeId: dto.placeId ?? null,
-              formattedAddress: dto.formattedAddress ?? null,
-            }
-          ),
+          ...((dto.latitude !== undefined ||
+            dto.longitude !== undefined ||
+            dto.placeId !== undefined ||
+            dto.formattedAddress !== undefined) && {
+            latitude: dto.latitude ?? null,
+            longitude: dto.longitude ?? null,
+            placeId: dto.placeId ?? null,
+            formattedAddress: dto.formattedAddress ?? null,
+          }),
         },
       });
 
@@ -520,8 +528,12 @@ export class ConsultantService {
               consultantId: resolvedConsultantId,
               jobTitle: exp.jobTitle,
               companyName: exp.companyName,
-              jobType: exp.jobType.toUpperCase().replace(/[\s-]/g, '_') as JobType,
-              workModel: exp.workModel.toUpperCase().replaceAll('-', '') as WorkModel,
+              jobType: exp.jobType
+                .toUpperCase()
+                .replace(/[\s-]/g, '_') as JobType,
+              workModel: exp.workModel
+                .toUpperCase()
+                .replaceAll('-', '') as WorkModel,
               startDate: new Date(exp.startDate),
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,
@@ -572,12 +584,10 @@ export class ConsultantService {
     return { message: 'Consultant profile updated successfully.' };
   }
 
-
   async unassignConsultant(
     projectId: string,
     consultantId: string,
   ): Promise<{ message: string; placementId: string }> {
-
     const placement = await this.prisma.projectPlacement.findFirst({
       where: {
         projectId,
@@ -593,7 +603,6 @@ export class ConsultantService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-
       await tx.projectPlacement.update({
         where: { id: placement.id },
         data: {
@@ -614,11 +623,12 @@ export class ConsultantService {
       if (updatedConsultant.capacity > 100) {
         await tx.consultant.update({
           where: { id: consultantId },
-          data: { capacity: 100 }
+          data: { capacity: 100 },
         });
       }
 
-      const newAvailabilityStatus = updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
+      const newAvailabilityStatus =
+        updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
 
       if (updatedConsultant.availability !== newAvailabilityStatus) {
         await tx.consultant.update({
@@ -628,10 +638,9 @@ export class ConsultantService {
       }
     });
 
-
     return {
       message: 'Consultant successfully unassigned and capacity restored.',
-      placementId: placement.id
+      placementId: placement.id,
     };
   }
 
@@ -936,7 +945,7 @@ export class ConsultantService {
       where: { id: consultantId },
       data: {
         pictureData: Uint8Array.from(file.buffer),
-        pictureMimeType: file.mimetype
+        pictureMimeType: file.mimetype,
       },
     });
 

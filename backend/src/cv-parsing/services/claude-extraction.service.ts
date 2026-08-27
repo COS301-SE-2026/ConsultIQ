@@ -9,7 +9,11 @@ import {
   CV_EXTRACTION_SYSTEM_PROMPT,
   buildExtractionUserMessage,
 } from '../prompts/cv-extraction.prompt';
-import { CvParsingResult, ParsedCvData, SkillCompetencySignal } from '../types/parsed-cv.types';
+import {
+  CvParsingResult,
+  ParsedCvData,
+  SkillCompetencySignal,
+} from '../types/parsed-cv.types';
 
 const MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 8192;
@@ -67,7 +71,9 @@ export class ClaudeExtractionService {
           continue;
         }
 
-        const rawOutput = toolUseBlock.input as ParsedCvData & { competencySignals: SkillCompetencySignal[] };
+        const rawOutput = toolUseBlock.input as ParsedCvData & {
+          competencySignals: SkillCompetencySignal[];
+        };
         const shapeError = this.validateParsedCvData(rawOutput);
         if (shapeError) {
           lastError = `Claude returned data that does not match the expected schema: ${shapeError}`;
@@ -128,7 +134,8 @@ export class ClaudeExtractionService {
     if (!Array.isArray(data.education)) return 'missing education array';
     if (!data.confidenceScores || typeof data.confidenceScores !== 'object')
       return 'missing confidenceScores object';
-    if ( !Array.isArray(data.competencySignals)) return 'missing competencySignals array';
+    if (!Array.isArray(data.competencySignals))
+      return 'missing competencySignals array';
     return null;
   }
 }

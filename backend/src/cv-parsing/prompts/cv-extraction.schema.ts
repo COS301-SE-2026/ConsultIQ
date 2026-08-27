@@ -136,6 +136,22 @@ export const cvExtractionSchema: Anthropic.Tool = {
                 },
                 required: ['contact', 'skills', 'experience', 'certifications', 'education', 'overall'],
             },
+            competencySignals: {
+            type: 'array',
+            description: 'One entry per skill listed in "skills", giving your advisory competency inference and the reasoning behind it. This is shown to a human reviewer and is never written to a profile automatically — it does not need to be certain, but it does need to be checkable.',
+            items: {
+            type: 'object',
+            properties: {
+                skillName: { type: 'string', description: 'Must match a skillName from the skills array exactly.' },
+                inferredCompetency: { type: 'string', enum: ['BEGINNER', 'INTERMEDIATE', 'EXPERT'] },
+                reasoning: {
+                type: 'string',
+                description: 'A short, concrete explanation citing specific evidence from the CV — years of experience, role seniority, project scope, or explicit proficiency statements. Not a generic justification.',
+                },
+            },
+            required: ['skillName', 'inferredCompetency', 'reasoning'],
+            },
+        },
         },
         required: ['contact', 'skills', 'experiences', 'certifications', 'education', 'confidenceScores'],
     },

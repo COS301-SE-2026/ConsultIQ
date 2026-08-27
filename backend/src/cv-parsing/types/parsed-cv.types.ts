@@ -1,8 +1,7 @@
 export interface ParsedSkill {
   skillName: string;
   yearsExperience: number;
-  competencyLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT';
-  confidenceLevel: number;
+  extractionConfidence: number; //parser's certainty in extraction
 }
 
 export interface ParsedExperience {
@@ -59,9 +58,17 @@ export interface ParsedCvData {
     confidenceScores: ConfidenceScores;
 }
 
+// Only used by AI Parsing
+export interface SkillCompetencySignal {
+  skillName: string; // links back to a skill in ParsedCvData.skills
+  inferredCompetency: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT';
+  reasoning: string;
+}
+
 export interface CvParsingResult {
   success: boolean;
   data?: ParsedCvData;
+  competencySignals?: SkillCompetencySignal[];
   error?: string;
   processingTimeMs: number;
 }

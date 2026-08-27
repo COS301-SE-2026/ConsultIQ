@@ -59,6 +59,7 @@ export class MatchRunService {
           user: { select: { fullName: true, email: true } },
           placements: {
             where: {
+              projectId: project.id,
               status: 'ACTIVE',
               //placement before or during project timeline
               ...(project.endDate ? { startDate: { lte: project.endDate } } : {}),

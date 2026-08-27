@@ -22,7 +22,7 @@ import { LocationModule } from '../location/location.module';
 
 @Module({
   imports: [LocationModule, BullModule.registerQueue({
-    name: 'match-run-queue',
+    name: 'match-run',
   })],
   controllers: [MatchRunController, ScoringController],
   providers: [

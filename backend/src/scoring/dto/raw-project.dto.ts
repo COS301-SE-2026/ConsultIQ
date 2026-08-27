@@ -7,8 +7,6 @@ import {
   Min,
   ValidateNested,
   IsOptional,
-  IsBoolean,
-  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RequiredSkillDto } from './required-skill.dto';

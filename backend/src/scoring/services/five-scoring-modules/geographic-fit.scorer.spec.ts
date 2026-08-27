@@ -152,12 +152,12 @@ describe('GeographicFitScorer', () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
             const proj = project('Johannesburg', 'Gauteng', false, -26.2041, 28.0473);
 
-            // Simulate API returning null (e.g., negative cache / no route found)
+
             locationService.calculateTravelMetrics.mockResolvedValueOnce(null);
 
             const result = await scorer.score(cons, proj);
 
-            expect(result.score).toBe(0.5); // Fallback for Same Province
+            expect(result.score).toBe(0.5);
             expect(result.dataSource).toBe('fallback');
             expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
         });
@@ -208,6 +208,80 @@ describe('GeographicFitScorer', () => {
             expect(results[2].dataSource).toBe('api-duration');
 
             expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('Cache Eviction and Error Handling (Edge Cases)', () => {
+
+        it('deletes the cache entry if it has expired', async () => {
+            jest.useFakeTimers();
+            const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
+            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 30000,
+                distanceText: '30 km',
+                durationSeconds: 2700,
+                durationText: '45 mins',
+            });
+
+            await scorer.score(cons, proj);
+            expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
+            jest.advanceTimersByTime(25 * 60 * 60 * 1000);
+
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 30000,
+                distanceText: '30 km',
+                durationSeconds: 2700,
+                durationText: '45 mins',
+            });
+
+            await scorer.score(cons, proj);
+
+            expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(2);
+            jest.useRealTimers();
+        });
+
+        it('handles API rejection (catch block) and falls back to string match', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
+            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+
+            locationService.calculateTravelMetrics.mockRejectedValueOnce(new Error('Google Maps API Down'));
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBe(0.5);
+            expect(result.dataSource).toBe('fallback');
+
+            expect(Logger.prototype.warn).toHaveBeenCalledWith(
+                expect.stringContaining('API failed for'),
+                expect.any(Error)
+            );
+        });
+
+        it('evicts the oldest cache entry when MAX_CACHE_SIZE is exceeded', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
+            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+
+            const cache = (scorer as any).distanceCache;
+
+            for (let i = 0; i < 5000; i++) {
+                cache.set(`dummy_key_${i}`, { metrics: null, expiresAt: Date.now() + 100000 });
+            }
+
+            expect(cache.size).toBe(5000);
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 30000,
+                distanceText: '30 km',
+                durationSeconds: 2700,
+                durationText: '45 mins',
+            });
+
+            await scorer.score(cons, proj);
+            expect(cache.size).toBe(5000);
+            expect(cache.has('dummy_key_0')).toBe(false);
         });
     });
 });

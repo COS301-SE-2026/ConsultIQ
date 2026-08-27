@@ -33,7 +33,12 @@ const validParsedData = {
   certifications: [],
   education: [],
   confidenceScores: { contact: 0.9, skills: 0.8, experience: 0.5, certifications: 0.5, education: 0.5, overall: 0.7 },
+  competencySignals: [
+    { skillName: 'TypeScript', inferredCompetency: 'INTERMEDIATE', reasoning: 'Three years of stated hands-on use across two listed roles.' },
+  ],
 };
+
+const { competencySignals: _validSignals, ...validParsedDataOnly } = validParsedData;
 
 function toolUseResponse(input: unknown) {
   return { content: [{ type: 'tool_use', id: 'toolu_1', name: CV_EXTRACTION_TOOL_NAME, input }] };
@@ -79,7 +84,8 @@ describe('ClaudeExtractionService', () => {
     const result = await service.extractCvData('some CV text');
 
     expect(result.success).toBe(true);
-    expect(result.data).toEqual(validParsedData);
+    expect(result.data).toEqual(validParsedDataOnly);
+    expect(result.competencySignals).toEqual(validParsedData.competencySignals);
     expect(mockCreate).toHaveBeenCalledTimes(1);
   });
 
@@ -184,6 +190,7 @@ describe('ClaudeExtractionService', () => {
     ['certifications not an array', { ...validParsedData, certifications: null }],
     ['education not an array', { ...validParsedData, education: undefined }],
     ['missing confidenceScores', { ...validParsedData, confidenceScores: undefined }],
+    ['missing competencySignals', { ...validParsedData, competencySignals: undefined }],
   ])('retries when returned data has %s', async (_label, malformed) => {
     mockCreate.mockResolvedValue(toolUseResponse(malformed));
 

@@ -46,7 +46,7 @@ function project(overrides: Partial<RawProjectDto> = {}): RawProjectDto {
 
     } as RawProjectDto;
 }
-
+const locationServiceMock = {};
 function orcheStrator(emptyPlacement: boolean) {
     const prismaMock = {
         projectPlacement: {
@@ -57,7 +57,7 @@ function orcheStrator(emptyPlacement: boolean) {
         new SkillAligmentScorer(),
         new CompetencyMatchScorer(),
         new CostFitScorer(),
-        new GeographicFitScorer(),
+        new GeographicFitScorer(locationServiceMock as any),
         new AvailabilityFitScorer(prismaMock as any),
     );
 }

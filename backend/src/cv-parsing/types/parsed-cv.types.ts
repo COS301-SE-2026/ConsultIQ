@@ -48,6 +48,7 @@ export interface ConfidenceScores {
   experience: number;
   certifications: number;
   overall: number;
+  education: number;
 }
 
 export interface ParsedCvData {
@@ -56,6 +57,7 @@ export interface ParsedCvData {
     experiences: ParsedExperience[];
     certifications: ParsedCertification[];
     confidenceScores: ConfidenceScores;
+    education: ParsedEducation[];
 }
 
 // Only used by AI Parsing

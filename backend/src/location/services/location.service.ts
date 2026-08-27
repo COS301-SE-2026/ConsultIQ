@@ -51,7 +51,7 @@ export class LocationService {
       if (data.status === 'OK') {
         const element = data.rows[0]?.elements[0];
 
-        if (element && element.status === 'OK') {
+        if (element?.status === 'OK') {
           return {
             distanceMeters: element.distance.value,
             distanceText: element.distance.text,

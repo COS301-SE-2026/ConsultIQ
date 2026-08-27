@@ -1,4 +1,4 @@
-export const DATE_PATTERNS = /^\d{4}-\d{2}-\d{2}$/;
+export const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export const PHONE_PATTERNS: RegExp[] = [
   /\b0\d{9}\b/,

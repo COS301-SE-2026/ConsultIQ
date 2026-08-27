@@ -40,6 +40,8 @@ export class ScoringOrchestrator {
     project: RawProjectDto,
     resolvedWeights: Record<ScoringFactor, number>,
     activeFactors: Set<ScoringFactor>,
+    excludedFactors: Set<ScoringFactor> = new Set(),
+    availabilityAllocations?: ReadonlyMap<string, number>,
   ): Promise<ScoringResults> {
     const scoresByFactor: Partial<Record<ScoringFactor, number>> = {};
     const detailsByFactor: Partial<Record<ScoringFactor, string>> = {};
@@ -49,6 +51,15 @@ export class ScoringOrchestrator {
 
       if (skillResult.triggerHardExclusion) {
         const missingSkills = skillResult.missingMandatorySkills ?? [];
+
+        if (excludedFactors.has(ScoringFactor.SKILL_ALIGNMENT)) {
+          return {
+            excluded: true,
+            reason: `Missing mandatory skills: ${missingSkills.join(', ')}`,
+            missingMandatorySkills: missingSkills,
+          };
+        }
+
         skillResult.score = Math.max(0, skillResult.score - this.MANDATORY_SKILL_PENALTY);
 
         const penaltyNotice = `[-15% PENALTY APPLIED] Missing mandatory skills: ${missingSkills.join(', ')}`;
@@ -96,7 +107,23 @@ export class ScoringOrchestrator {
     }
 
     if (activeFactors.has(ScoringFactor.AVAILABILITY)) {
-      const availabiltyResult = await this.availabilityFitScorer.score(consultant, project);
+      const availabiltyResult = await this.availabilityFitScorer.score(
+        consultant,
+        project,
+        availabilityAllocations
+          ? availabilityAllocations.get(consultant.consultantId) ?? 0
+          : undefined,
+      );
+      if (
+        availabiltyResult.triggerHardExclusion &&
+        excludedFactors.has(ScoringFactor.AVAILABILITY)
+      ) {
+        return {
+          excluded: true,
+          reason: availabiltyResult.details ?? 'Consultant is unavailable',
+          missingMandatorySkills: [],
+        };
+      }
       scoresByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.score;
       if (availabiltyResult.details) {
         detailsByFactor[ScoringFactor.AVAILABILITY] = availabiltyResult.details;

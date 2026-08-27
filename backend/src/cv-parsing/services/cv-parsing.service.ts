@@ -177,7 +177,7 @@ export class CvParsingService {
 
   private educationConfidence(raw: RawTemplateData['education'][number]): number {
     let confidence = 1.0;
-    if (raw.start && !this.isValidDate(raw.start)) confidence -= 0.3;
+    if (!raw.start || !this.isValidDate(raw.start)) confidence -= 0.3;
     if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
     return Math.max(0, confidence);
   }

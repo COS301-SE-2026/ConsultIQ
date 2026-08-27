@@ -8,11 +8,13 @@ import {
     HttpCode,
     HttpStatus,
     BadRequestException,
+    Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
+import { UploadCvDto, CvParsingMethodDto } from 'src/cv-parsing/dto/upload-cv.dto';
 
 @Controller('cv')
 @Controller('cv')
@@ -27,11 +29,12 @@ export class CvController {
     async uploadCv(
         @Param('consultantId') consultantId: string,
         @UploadedFile() file: Express.Multer.File,
+        @Body() dto: UploadCvDto
     ): Promise<{ cvFileId: string; message: string }> {
         if (!file) {
         throw new BadRequestException('No file was uploaded.');
         }
-        return this.cvUploadService.uploadCV(consultantId, file);
+        return this.cvUploadService.uploadCV(consultantId, file, dto.parsingMethod);
     }
 
     @Get(':cvFileId/url')

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from './s3.service';
+import { CvParsingMethodDto } from '../dto/upload-cv.dto';
 
 const ALLOWED_MIME_TYPES = [
     'application/pdf',
@@ -23,7 +24,8 @@ export class CVUploadService {
     ) {}
 
     async uploadCV( consultantId: string, 
-        file: Express.Multer.File
+        file: Express.Multer.File,
+        parsingMethod?: CvParsingMethodDto
     ): Promise<{cvFileId: string; message: string}> {
 
         if(!ALLOWED_MIME_TYPES.includes(file.mimetype)){
@@ -65,6 +67,7 @@ export class CVUploadService {
                 s3Url,
                 uploadStatus: 'UPLOADED',
                 extractionStatus: 'PENDING',
+                parsingMethod: parsingMethod || 'RULE_BASED', // Default to RULE_BASED if not provided
             },
         });
 

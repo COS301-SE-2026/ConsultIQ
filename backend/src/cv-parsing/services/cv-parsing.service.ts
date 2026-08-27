@@ -1,5 +1,3 @@
-// src/cv-parsing/services/cv-parsing.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { CvFormReaderService, RawTemplateData } from './cv-form-reader.service';
 import { SKILLS_CANONICAL_MAP } from '../skills/skills.dictionary';

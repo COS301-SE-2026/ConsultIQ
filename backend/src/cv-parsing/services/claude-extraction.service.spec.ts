@@ -1,5 +1,3 @@
-// src/cv-parsing/services/claude-extraction.service.spec.ts
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';

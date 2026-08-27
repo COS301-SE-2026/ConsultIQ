@@ -10,5 +10,5 @@ export interface FactorScoreResult {
   details?: string;
 
   // Tracks the origin of the geographic score (or other future scorers)
-  dataSource?: 'api-duration' | 'api-distance' | 'fallback' | 'remote' | 'error' | string;
+  dataSource?: 'api-duration' | 'api-distance' | 'fallback' | 'remote' | 'error' | (string & {});
 }

@@ -1,18 +1,23 @@
-import { RawConsultantDto } from "../../dto/raw-consultant.dto";
-import { RawProjectDto } from "../../dto/raw-project.dto";
-import { GeographicFitScorer } from "./geographic-fit.scorer";
+import { Test, TestingModule } from '@nestjs/testing';
+import { RawConsultantDto } from '../../dto/raw-consultant.dto';
+import { RawProjectDto } from '../../dto/raw-project.dto';
+import { GeographicFitScorer } from './geographic-fit.scorer';
+import { LocationService } from '../../../location/services/location.service';
+import { Logger } from '@nestjs/common';
 
-function consultant(city: string, province: string): RawConsultantDto {
+function consultant(city: string, province: string, latitude?: number, longitude?: number): RawConsultantDto {
     return {
-        consultantId: 'consutant-01',
+        consultantId: 'consultant-01',
         skills: [],
         costToCompany: 0,
         city,
-        province
+        province,
+        latitude,
+        longitude
     } as RawConsultantDto;
 }
 
-function project(city: string, province: string): RawProjectDto {
+function project(city: string, province: string, isRemote = false, latitude?: number, longitude?: number): RawProjectDto {
     return {
         projectId: 'project-01',
         requiredSkills: [],
@@ -21,39 +26,188 @@ function project(city: string, province: string): RawProjectDto {
         province,
         startDate: '2026-01-01',
         endDate: '2026-06-30',
-        requiredAllocationPercentage: 50
+        requiredAllocationPercentage: 50,
+        isRemote,
+        latitude,
+        longitude
     } as RawProjectDto;
 }
 
-
-
-
 describe('GeographicFitScorer', () => {
     let scorer: GeographicFitScorer;
+    let locationService: jest.Mocked<LocationService>;
 
-    beforeEach(() => {
-        scorer = new GeographicFitScorer();
-    })
+    beforeEach(async () => {
+        const mockLocationService = {
+            calculateTravelMetrics: jest.fn(),
+        };
 
+        const module: TestingModule = await Test.createTestingModule({
+            providers: [
+                GeographicFitScorer,
+                { provide: LocationService, useValue: mockLocationService }
+            ],
+        }).compile();
 
-    it('scores 1.0 for a consultant in the same city and province', async () => {
-        expect(scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng')).score).toBe(1.0);
-        const result = scorer.score(consultant('Johannesburg', 'Gauteng'), project('Johannesburg', 'Gauteng'));
-        expect(result.details).toBe('Located in the exact project city (Johannesburg, Gauteng)');
-    })
+        scorer = module.get<GeographicFitScorer>(GeographicFitScorer);
+        locationService = module.get(LocationService);
 
-    it('scores 0.6 for a consultant in the same province but different city', async () => {
-        expect(scorer.score(consultant('Pretoria', 'Gauteng'), project('Johannesburg', 'Gauteng')).score).toBe(0.6);
+        jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => { });
+        jest.spyOn(Logger.prototype, 'debug').mockImplementation(() => { });
+    });
 
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
 
-        const result = scorer.score(consultant('Pretoria', 'Gauteng'), project('Johannesburg', 'Gauteng'));
-        expect(result.details).toBe('Located in the same province (Gauteng), but a different city (Pretoria vs Johannesburg)');
-    })
+    // describe('Remote Short-Circuit', () => {
+    //     it('scores 1.0 immediately if the project is remote', async () => {
+    //         const cons = consultant('Cape Town', 'Western Cape');
+    //         const proj = project('Johannesburg', 'Gauteng', true);
 
-    it('scores 0.2 for a consultant in a different province', async () => {
-        expect(scorer.score(consultant('Cape Town', 'Western Cape'), project('Johannesburg', 'Gauteng')).score).toBe(0.2);
+    //         const result = await scorer.score(cons, proj);
 
-        const result = scorer.score(consultant('Cape Town', 'Western Cape'), project('Johannesburg', 'Gauteng'));
-        expect(result.details).toBe('Located in (Western Cape, Cape Town). Project requires Gauteng (Johannesburg)');
-    })
-})
+    //         expect(result.score).toBe(1.0);
+    //         expect(result.dataSource).toBe('remote');
+    //         expect(result.details).toBe('Project is fully remote. Geographic fit is bypassed.');
+    //         expect(locationService.calculateTravelMetrics).not.toHaveBeenCalled();
+    //     });
+    // });
+
+    describe('API Distance/Duration Scoring', () => {
+        it('scores using continuous decay based on travel duration', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
+            const proj = project('Midrand', 'Gauteng', false, -25.9988, 28.1283);
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 30000,
+                distanceText: '30 km',
+                durationSeconds: 2700,
+                durationText: '45 mins',
+            });
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBeCloseTo(0.3678, 3);
+            expect(result.dataSource).toBe('api-duration');
+            expect(result.details).toContain('Travel time: 45 mins (30.0 km).');
+        });
+
+        it('falls back to distance decay if duration is 0', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
+            const proj = project('Midrand', 'Gauteng', false, -25.9988, 28.1283);
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 40000,
+                distanceText: '40 km',
+                durationSeconds: 0,
+                durationText: '',
+            });
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBeCloseTo(0.3678, 3);
+            expect(result.dataSource).toBe('api-distance');
+            expect(result.details).toContain('Distance: 40.0 km.');
+        });
+
+    });
+
+    describe('Fallback String Matching (Missing Coords or API Failure)', () => {
+        it('scores 0.8 for the exact same city when API is skipped', async () => {
+            const cons = consultant('Johannesburg', 'Gauteng');
+            const proj = project('Johannesburg', 'Gauteng');
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBe(0.8);
+            expect(result.dataSource).toBe('fallback');
+            expect(result.details).toBe('Located in the exact project city (Johannesburg, Gauteng)');
+            expect(locationService.calculateTravelMetrics).not.toHaveBeenCalled();
+        });
+
+        it('scores 0.5 for the same province but different city', async () => {
+            const cons = consultant('Pretoria', 'Gauteng');
+            const proj = project('Johannesburg', 'Gauteng');
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBe(0.5);
+            expect(result.dataSource).toBe('fallback');
+            expect(result.details).toBe('Located in the same province (Gauteng), but a different city');
+        });
+
+        it('scores 0.1 for a different province', async () => {
+            const cons = consultant('Cape Town', 'Western Cape');
+            const proj = project('Johannesburg', 'Gauteng');
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBe(0.1);
+            expect(result.dataSource).toBe('fallback');
+            expect(result.details).toBe('Located in (Western Cape). Project requires Gauteng');
+        });
+
+        it('falls back to string matching if API returns null/fails', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
+            const proj = project('Johannesburg', 'Gauteng', false, -26.2041, 28.0473);
+
+            // Simulate API returning null (e.g., negative cache / no route found)
+            locationService.calculateTravelMetrics.mockResolvedValueOnce(null);
+
+            const result = await scorer.score(cons, proj);
+
+            expect(result.score).toBe(0.5); // Fallback for Same Province
+            expect(result.dataSource).toBe('fallback');
+            expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('Caching and Concurrency (Stampede Protection)', () => {
+        it('returns cached metrics on subsequent calls without hitting the API again', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
+            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+
+            locationService.calculateTravelMetrics.mockResolvedValueOnce({
+                distanceMeters: 30000,
+                distanceText: '30 km',
+                durationSeconds: 2700,
+                durationText: '45 mins',
+            });
+
+            await scorer.score(cons, proj);
+
+            const secondResult = await scorer.score(cons, proj);
+
+            expect(secondResult.dataSource).toBe('api-duration');
+            expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
+        });
+
+        it('batches concurrent requests for the same coordinates into a single API call', async () => {
+            const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
+            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+
+            locationService.calculateTravelMetrics.mockImplementation(async () => {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                return {
+                    distanceMeters: 30000,
+                    distanceText: '30 km',
+                    durationSeconds: 2700,
+                    durationText: '45 mins',
+                };
+            });
+
+            const results = await Promise.all([
+                scorer.score(cons, proj),
+                scorer.score(cons, proj),
+                scorer.score(cons, proj)
+            ]);
+
+            expect(results[0].dataSource).toBe('api-duration');
+            expect(results[1].dataSource).toBe('api-duration');
+            expect(results[2].dataSource).toBe('api-duration');
+
+            expect(locationService.calculateTravelMetrics).toHaveBeenCalledTimes(1);
+        });
+    });
+});

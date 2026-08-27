@@ -1,149 +1,225 @@
-/* eslint-disable */
-import { Injectable, Logger } from '@nestjs/common';
+// src/cv-parsing/services/cv-parsing.service.ts
+
+import { Injectable } from '@nestjs/common';
+import { CvFormReaderService, RawTemplateData } from './cv-form-reader.service';
+import { SKILLS_CANONICAL_MAP } from '../skills/skills.dictionary';
+import { DATE_PATTERN, EMAIL_PATTERN, PHONE_PATTERNS } from '../skills/section-patterns';
 import {
-  SECTION_PATTERNS,
-  DATE_PATTERNS,
-  PHONE_PATTERNS,
-  EMAIL_PATTERN,
-  JOB_TYPE_PATTERNS,
-  WORK_MODEL_PATTERNS,
-} from '../skills/section-patterns';
-import {
-  SKILLS_DICTIONARY,
-  SKILLS_CANONICAL_MAP,
-} from '../skills/skills.dictionary';
-import type {
+  CvParsingResult,
   ParsedCvData,
-  ParsedContactInfo,
-  ParsedExperience,
   ParsedSkill,
+  ParsedExperience,
   ParsedCertification,
+  ParsedEducation,
+  ParsedContactInfo,
   ConfidenceScores,
 } from '../types/parsed-cv.types';
 
-interface RawSections {
-  contact: string;
-  experience: string;
-  skills: string;
-  certifications: string;
-  education: string;
-}
+// Deliberately low, not zero 
+const UNMATCHED_SKILL_CONFIDENCE = 0.3;
+const MATCHED_SKILL_MISSING_YEARS_CONFIDENCE = 0.5;
+const MATCHED_SKILL_CONFIDENCE = 1.0;
 
 @Injectable()
 export class CvParsingService {
-  private readonly logger = new Logger(CvParsingService.name);
+  constructor(private readonly formReader: CvFormReaderService) {}
 
-  /**
-   * Splits the raw CV text into labelled sections based on heading
-   * Assuming contact info is on top: Everything before first heading is considered to be contact info
-   */
-   private identifySections(text: string): RawSections {
-       const lines = text.split('\n');
-       const sections: RawSections = {
-         contact: '',
-         experience: '',
-         skills: '',
-         certifications: '',
-         education: '',
-       };
+  async parse(pdfBuffer: Buffer): Promise<CvParsingResult> {
+    const startTime = Date.now();
 
-       let currentSection: keyof RawSections = 'contact';
+    try {
+      const raw = await this.formReader.read(pdfBuffer);
 
-       for (const line of lines) {
-         const trimmedLine = line.trim();
-         const matchedSection = this.matchSectionHeading(trimmedLine);
+      if (!raw.contact.fullName) {
+        return {
+          success: false,
+          error: 'Template has no name filled in — cannot proceed.',
+          processingTimeMs: Date.now() - startTime,
+        };
+      }
 
-         if (matchedSection) {
-           currentSection = matchedSection;
-           continue;
-         }
-         sections[currentSection] += line + '\n';
-       }
+      const contact = this.buildContact(raw.contact);
+      const skills = raw.skills.map((s) => this.buildSkill(s));
+      const experiences = raw.experiences.map((e) => this.buildExperience(e));
+      const certifications = raw.certifications.map((c) => this.buildCertification(c));
+      const education = raw.education.map((e) => this.buildEducation(e));
 
-       return sections;
-   }
+      const confidenceScores = this.computeConfidenceScores(
+        contact.confidence,
+        skills,
+        raw.experiences,
+        raw.certifications,
+        raw.education,
+      );
 
-  /**
-   * Checks if a single line is a section heading, and if so, which section
-   * it belongs to. Headings are typically short.
-   */
-  private matchSectionHeading(line: string): keyof RawSections | null {
-      // We assume the heading is short
-      if (line.length > 60) return null;
+      const data: ParsedCvData = {
+        contact: contact.value,
+        skills,
+        experiences,
+        certifications,
+        education,
+        confidenceScores,
+      };
 
-      // Doesn't include contact section because that's usually at the top of the CV (catering for that type of template).
-      // When a line matches the word,we treat that as the start of a new section. Everything between that heading and the next heading belongs to that section.
-      if (SECTION_PATTERNS.experience.test(line)) return 'experience';
-      if (SECTION_PATTERNS.skills.test(line)) return 'skills';
-      if (SECTION_PATTERNS.certifications.test(line)) return 'certifications';
-      if (SECTION_PATTERNS.education.test(line)) return 'education';
-
-     return null;
+      return { success: true, data, processingTimeMs: Date.now() - startTime };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error during rule-based parsing.',
+        processingTimeMs: Date.now() - startTime,
+      };
+    }
   }
 
-  /**
-   * Extracts phone number and email from the contact section of the CV.
-   * Falls back to scanning the full text if nothing is found in the
-   * dedicated contact section, might possibly be included inline elsewhere.
-   */
-  private extractContactInfo(
-    contactSectionText: string,
-    fullText: string,
-  ): ParsedContactInfo {
-    const contact: ParsedContactInfo = {};
+  // ---------------- Contact ----------------
 
-    const phone = this.findFirstMatch(PHONE_PATTERNS, contactSectionText)
-      ?? this.findFirstMatch(PHONE_PATTERNS, fullText);
-    if (phone) {
-      contact.phone = phone.replace(/[\s()]/g, '');
-    }
+  private buildContact(raw: RawTemplateData['contact']): { value: ParsedContactInfo; confidence: number } {
+    let confidence = 1.0;
 
-    const emailMatch = contactSectionText.match(EMAIL_PATTERN)
-      ?? fullText.match(EMAIL_PATTERN);
-    if (emailMatch) {
-      contact.email = emailMatch[0];
-    }
+    if (raw.email && !EMAIL_PATTERN.test(raw.email)) confidence -= 0.4;
+    if (raw.phone && !PHONE_PATTERNS.some((p) => p.test(raw.phone))) confidence -= 0.3;
 
-    const fullName = this.guessFullName(contactSectionText);
-    if (fullName) {
-      contact.fullName = fullName;
-    }
+    const value: ParsedContactInfo = {
+      fullName: raw.fullName || undefined,
+      email: raw.email || undefined,
+      phone: raw.phone || undefined,
+      nationality: raw.nationality || undefined,
+      addressLine1: raw.addressLine1 || undefined,
+      suburb: raw.suburb || undefined,
+      city: raw.city || undefined,
+      province: raw.province || undefined,
+      postalCode: raw.postalCode || undefined,
+    };
 
-    return contact;
+    return { value, confidence: Math.max(0, confidence) };
   }
 
-  /**
-   * Tries each pattern in order against the given text and returns the
-   * first match found, or null if none match.
-   */
-  private findFirstMatch(patterns: RegExp[], text: string): string | null {
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match) return match[0];
+  // ---------------- Skills ----------------
+
+  private buildSkill(raw: RawTemplateData['skills'][number]): ParsedSkill {
+    const canonical = SKILLS_CANONICAL_MAP.get(raw.name.trim().toLowerCase());
+    const { value: years, valid: yearsValid } = this.parseYears(raw.years);
+
+    let extractionConfidence: number;
+    if (!canonical) {
+      extractionConfidence = UNMATCHED_SKILL_CONFIDENCE;
+    } else if (!yearsValid) {
+      extractionConfidence = MATCHED_SKILL_MISSING_YEARS_CONFIDENCE;
+    } else {
+      extractionConfidence = MATCHED_SKILL_CONFIDENCE;
     }
-    return null;
+
+    return {
+      // Unmatched skills keep the consultant's own typed text 
+      skillName: canonical ?? raw.name.trim(),
+      yearsExperience: years,
+      extractionConfidence,
+    };
   }
 
-  /**
-   * Best-effort guess at the consultant's full name. Most CVs put the
-   * person's name as the very first non-empty line of the document.
-   */
-  private guessFullName(contactSectionText: string): string | null {
-    const lines = contactSectionText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
+  private parseYears(raw: string): { value: number; valid: boolean } {
+    if (!raw) return { value: 0, valid: false };
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 0) return { value: 0, valid: false };
+    return { value: Math.round(n), valid: true };
+  }
 
-    if (lines.length === 0) return null;
+  // ---------------- Experience ----------------
 
-    const firstLine = lines[0];
+  private buildExperience(raw: RawTemplateData['experiences'][number]): ParsedExperience {
+    return {
+      jobTitle: raw.title,
+      companyName: raw.company,
+      jobType: raw.jobType as ParsedExperience['jobType'],
+      workModel: raw.workModel as ParsedExperience['workModel'],
+      startDate: raw.start,
+      endDate: raw.end || undefined,
+      description: raw.description,
+    };
+  }
 
-    // A name line shouldn't contain digits, @ symbols, or be excessively long
-    const looksLikeName =
-      firstLine.length > 2 &&
-      firstLine.length < 100 &&
-      !/[\d@]/.test(firstLine);
+  private experienceConfidence(raw: RawTemplateData['experiences'][number]): number {
+    let confidence = 1.0;
+    if (!this.isValidDate(raw.start) || !raw.start) confidence -= 0.5;
+    if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
+    return Math.max(0, confidence);
+  }
 
-    return looksLikeName ? firstLine : null;
+  // ---------------- Certifications ----------------
+
+  private buildCertification(raw: RawTemplateData['certifications'][number]): ParsedCertification {
+    return {
+      title: raw.title,
+      issuingBody: raw.issuingBody,
+      startDate: raw.start || undefined,
+      endDate: raw.end || undefined,
+    };
+  }
+
+  private certificationConfidence(raw: RawTemplateData['certifications'][number]): number {
+    let confidence = 1.0;
+    if (raw.start && !this.isValidDate(raw.start)) confidence -= 0.3;
+    if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
+    return Math.max(0, confidence);
+  }
+
+  // ---------------- Education ----------------
+
+  private buildEducation(raw: RawTemplateData['education'][number]): ParsedEducation {
+    return {
+      institution: raw.institution,
+      qualification: raw.qualification,
+      fieldOfStudy: raw.fieldOfStudy || undefined,
+      startDate: raw.start || undefined,
+      endDate: raw.end || undefined,
+    };
+  }
+
+  private educationConfidence(raw: RawTemplateData['education'][number]): number {
+    let confidence = 1.0;
+    if (raw.start && !this.isValidDate(raw.start)) confidence -= 0.3;
+    if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
+    return Math.max(0, confidence);
+  }
+
+  // ---------------- Shared ----------------
+
+  private isValidDate(value: string): boolean {
+    return value === '' || DATE_PATTERN.test(value);
+  }
+
+  private average(values: number[]): number {
+    if (values.length === 0) return 1.0; // nothing present to be uncertain about
+    return values.reduce((a, b) => a + b, 0) / values.length;
+  }
+
+  private computeConfidenceScores(
+    contactConfidence: number,
+    skills: ParsedSkill[],
+    rawExperiences: RawTemplateData['experiences'],
+    rawCertifications: RawTemplateData['certifications'],
+    rawEducation: RawTemplateData['education'],
+  ): ConfidenceScores {
+    const skillsConfidence = this.average(skills.map((s) => s.extractionConfidence));
+    const experienceConfidence = this.average(rawExperiences.map((e) => this.experienceConfidence(e)));
+    const certificationsConfidence = this.average(rawCertifications.map((c) => this.certificationConfidence(c)));
+    const educationConfidence = this.average(rawEducation.map((e) => this.educationConfidence(e)));
+
+    const overall = this.average([
+      contactConfidence,
+      skillsConfidence,
+      experienceConfidence,
+      certificationsConfidence,
+      educationConfidence,
+    ]);
+
+    return {
+      contact: contactConfidence,
+      skills: skillsConfidence,
+      experience: experienceConfidence,
+      certifications: certificationsConfidence,
+      education: educationConfidence,
+      overall,
+    };
   }
 }

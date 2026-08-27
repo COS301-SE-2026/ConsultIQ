@@ -14,13 +14,15 @@ Core rules:
 
 5. Skills: extract both explicitly listed skills (e.g. a "Skills" section) and skills clearly demonstrated through role descriptions (e.g. a role description mentioning "built REST APIs in Node.js" implies Node.js). Normalise skill names to their standard form (e.g. "JavaScript" not "JS"; "PostgreSQL" not "postgres" or "Postgres DB").
 
-6. Competency level and years of experience for a skill should be inferred from the total time spent in roles where that skill was used, combined with how the CV itself describes the candidate's proficiency, where stated. Where nothing supports an inference, use your best reasonable estimate and reflect the uncertainty in a lower confidence score - do not leave the field empty, since it is required.
+6. Years of experience for a skill should be inferred from the total time spent in roles where that skill was used, combined with any explicit statement in the CV. If genuinely nothing supports an inference, use 0 rather than guessing an arbitrary number.
 
-7. Confidence scores (both per-skill confidenceLevel and the overall confidenceScores object) should reflect how directly the data was stated versus inferred: content taken verbatim or near-verbatim from a clearly labelled section warrants a score near 1. Content pieced together from context across the document, or reasonably inferred rather than stated, warrants a lower score. A CV section that is missing, garbled beyond interpretation, or ambiguous warrants a low score for that section rather than a confident guess.
+7. extractionConfidence scores (both per-skill confidenceLevel and the overall confidenceScores object) is about your certainty in the EXTRACTION itself — how directly the data was stated versus inferred — not a judgement of the candidate. Content taken verbatim or near-verbatim from a clearly labelled section warrants a score near 1. Content pieced together from context across the document, or reasonably inferred rather than stated, warrants a lower score. A CV section that is missing, garbled beyond interpretation, or ambiguous warrants a low score for that section rather than a confident guess.
 
-8. The CV may not follow a conventional layout or standard section headings. Use judgment to locate contact details, work history, skills, certifications, and education wherever they actually appear, rather than expecting a fixed structure.
+8. For every skill you extract, also provide one corresponding entry in competencySignals: your best inference of the candidate's competency level for that skill (BEGINNER, INTERMEDIATE, or EXPERT) and a short, concrete explanation of the reasoning — referencing specific evidence such as years of experience, role seniority, project scope, or an explicit proficiency statement, not a generic justification. This is advisory information shown to a human reviewer alongside the extraction; it is never written to a profile automatically, so a transparent, checkable explanation matters more than sounding confident.
 
-9. Contact address fields (addressLine1, suburb, city, province, postalCode, etc.) should be split into their component parts if the CV gives a combined address string. Leave any component out entirely if it cannot be confidently separated from the rest.
+9. The CV may not follow a conventional layout or standard section headings. Use judgment to locate contact details, work history, skills, certifications, and education wherever they actually appear, rather than expecting a fixed structure.
+
+10. Contact address fields (addressLine1, suburb, city, province, postalCode, etc.) should be split into their component parts if the CV gives a combined address string. Leave any component out entirely if it cannot be confidently separated from the rest.
 
 Always respond by calling the record_cv_data tool with the complete extraction. Do not respond with plain text.`
 

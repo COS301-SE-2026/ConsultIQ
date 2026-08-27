@@ -190,3 +190,25 @@ export const SKILLS_DICTIONARY_LOWERCASE: Set<string> = new Set(
 export const SKILLS_CANONICAL_MAP: Map<string, string> = new Map(
   SKILLS_DICTIONARY.map((skill) => [skill.toLowerCase(), skill]),
 );
+
+const SKILL_ALIASES: [string, string][] = [
+  ['golang', 'Go'],
+  ['node', 'Node.js'],
+  ['nodejs', 'Node.js'],
+  ['node js', 'Node.js'],
+  ['csharp', 'C#'],
+  ['c sharp', 'C#'],
+  ['cpp', 'C++'],
+  ['c plus plus', 'C++'],
+  ['vuejs', 'Vue.js'],
+  ['nextjs', 'Next.js'],
+  ['reactjs', 'React'],
+  ['js', 'JavaScript'],
+  ['ts', 'TypeScript'],
+  ['postgres', 'PostgreSQL'],
+  ['k8s', 'Kubernetes'],
+];
+
+for (const [alias, canonical] of SKILL_ALIASES) {
+  SKILLS_CANONICAL_MAP.set(alias, canonical);
+}

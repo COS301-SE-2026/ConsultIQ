@@ -111,6 +111,11 @@ enum MatchRunStatus {
   FAILED
 }
 
+enum CvParsingMethod {
+  AI_ASSISTED
+  RULE_BASED
+}
+
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -312,6 +317,7 @@ model CvFile {
   s3Url            String
   uploadStatus     UploadStatus     @default(UPLOADED)
   extractionStatus ExtractionStatus @default(PENDING)
+  parsingMethod    CvParsingMethod  @default(RULE_BASED)
   rawText          String?
   parsedData       Json?
   uploadedAt       DateTime         @default(now())

@@ -1,7 +1,10 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from './s3.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { CvParsingMethodDto } from '../dto/upload-cv.dto';
+import { CV_PROCESSING_QUEUE, CV_PARSE_JOB } from '../queues/cv-processing.queue';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
@@ -17,6 +20,7 @@ export class CVUploadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
+    @InjectQueue(CV_PROCESSING_QUEUE) private readonly cvQueue: Queue,
   ) {}
 
   async uploadCV(
@@ -62,6 +66,8 @@ export class CVUploadService {
         parsingMethod: parsingMethod || 'RULE_BASED', // Default to RULE_BASED if not provided
       },
     });
+
+    await this.cvQueue.add(CV_PARSE_JOB, { cvFieleId: cvFile.id});
 
     this.logger.log(`CV uploaded for consultant ${consultantId}: ${cvFile.id}`);
 

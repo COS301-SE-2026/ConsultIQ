@@ -65,7 +65,7 @@ export class AvailabilityFitScorer {
     if (remainingCapacity <= 0) {
       this.logger.debug(
         `Consultant Excluded [Project: ${project.projectId} | Consultant: ${consultant.consultantId}]. ` +
-        `Reason: No availability - 0% capacity remaining (Requires ${reqAlloc}%).`
+          `Reason: No availability - 0% capacity remaining (Requires ${reqAlloc}%).`,
       );
       return {
         score: 0,

@@ -30,13 +30,11 @@ export class ProjectService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly redisUtilityService: RedisUtilityService,
-  ) {
-  }
+  ) {}
 
   async invalidateProjectsCache() {
     await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
   }
-
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -73,7 +71,8 @@ export class ProjectService {
     let total: number;
 
     const cacheKey = `cache:projects:role:${userRole}:user:${userId || 'all'}:page:${page}:limit:${limit}`;
-    const cachedData = await this.cacheManager.get<PaginatedProjectsResponseDto>(cacheKey);
+    const cachedData =
+      await this.cacheManager.get<PaginatedProjectsResponseDto>(cacheKey);
 
     if (cachedData) {
       this.logger.log(`CACHE HIT for key: ${cacheKey}`);
@@ -401,17 +400,20 @@ export class ProjectService {
   private buildProjectUpdateData(
     coreFields: Omit<UpdateProjectDto, 'skills' | 'removeSkillIds'>,
   ): Prisma.ProjectUpdateInput {
-    const updateData = Object.entries(coreFields).reduce((acc, [key, value]) => {
-      if (value !== undefined) {
-        acc[key] = value;
-      }
-      return acc;
-    }, {} as Prisma.ProjectUpdateInput & {
-      latitude?: number | null;
-      longitude?: number | null;
-      placeId?: string | null;
-      formattedAddress?: string | null;
-    });
+    const updateData = Object.entries(coreFields).reduce(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {} as Prisma.ProjectUpdateInput & {
+        latitude?: number | null;
+        longitude?: number | null;
+        placeId?: string | null;
+        formattedAddress?: string | null;
+      },
+    );
 
     if (updateData.startDate !== undefined) {
       updateData.startDate = new Date(updateData.startDate as string | Date);
@@ -453,9 +455,8 @@ export class ProjectService {
         where: {
           projectId: projectId,
           skillId: skillRecord.id,
-        }
+        },
       });
-
 
       if (existingProjectSkill) {
         await tx.projectSkill.update({

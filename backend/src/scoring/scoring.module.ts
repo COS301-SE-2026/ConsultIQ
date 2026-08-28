@@ -47,4 +47,4 @@ import { MatchRunProcessor } from './queues/match-run.processor';
   ],
   exports: [ScoringPipelineService],
 })
-export class ScoringModule { }
+export class ScoringModule {}

@@ -6,4 +6,4 @@ import { RedisUtilityService } from './services/redis-utility.service';
   providers: [TokenService, RedisUtilityService],
   exports: [TokenService, RedisUtilityService],
 })
-export class CommonModule { }
+export class CommonModule {}

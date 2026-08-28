@@ -36,8 +36,8 @@ import { BullModule } from '@nestjs/bullmq';
         return {
           stores: [
             createKeyv({
-              url: configService.get<string>('REDIS_URL')
-            })
+              url: configService.get<string>('REDIS_URL'),
+            }),
           ],
         };
       },
@@ -61,9 +61,9 @@ import { BullModule } from '@nestjs/bullmq';
     NotificationModule,
     AdminModule,
     LocationModule,
-    PlacementsModule
+    PlacementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

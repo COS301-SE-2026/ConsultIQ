@@ -1,9 +1,11 @@
-// src/cv-parsing/services/cv-parsing.service.ts
-
 import { Injectable } from '@nestjs/common';
 import { CvFormReaderService, RawTemplateData } from './cv-form-reader.service';
 import { SKILLS_CANONICAL_MAP } from '../skills/skills.dictionary';
-import { DATE_PATTERN, EMAIL_PATTERN, PHONE_PATTERNS } from '../skills/section-patterns';
+import {
+  DATE_PATTERN,
+  EMAIL_PATTERN,
+  PHONE_PATTERNS,
+} from '../skills/section-patterns';
 import {
   CvParsingResult,
   ParsedCvData,
@@ -15,7 +17,7 @@ import {
   ConfidenceScores,
 } from '../types/parsed-cv.types';
 
-// Deliberately low, not zero 
+// Deliberately low, not zero
 const UNMATCHED_SKILL_CONFIDENCE = 0.3;
 const MATCHED_SKILL_MISSING_YEARS_CONFIDENCE = 0.5;
 const MATCHED_SKILL_CONFIDENCE = 1.0;
@@ -41,7 +43,9 @@ export class CvParsingService {
       const contact = this.buildContact(raw.contact);
       const skills = raw.skills.map((s) => this.buildSkill(s));
       const experiences = raw.experiences.map((e) => this.buildExperience(e));
-      const certifications = raw.certifications.map((c) => this.buildCertification(c));
+      const certifications = raw.certifications.map((c) =>
+        this.buildCertification(c),
+      );
       const education = raw.education.map((e) => this.buildEducation(e));
 
       const confidenceScores = this.computeConfidenceScores(
@@ -65,7 +69,10 @@ export class CvParsingService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error during rule-based parsing.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error during rule-based parsing.',
         processingTimeMs: Date.now() - startTime,
       };
     }
@@ -73,11 +80,15 @@ export class CvParsingService {
 
   // ---------------- Contact ----------------
 
-  private buildContact(raw: RawTemplateData['contact']): { value: ParsedContactInfo; confidence: number } {
+  private buildContact(raw: RawTemplateData['contact']): {
+    value: ParsedContactInfo;
+    confidence: number;
+  } {
     let confidence = 1.0;
 
     if (raw.email && !EMAIL_PATTERN.test(raw.email)) confidence -= 0.4;
-    if (raw.phone && !PHONE_PATTERNS.some((p) => p.test(raw.phone))) confidence -= 0.3;
+    if (raw.phone && !PHONE_PATTERNS.some((p) => p.test(raw.phone)))
+      confidence -= 0.3;
 
     const value: ParsedContactInfo = {
       fullName: raw.fullName || undefined,
@@ -110,7 +121,7 @@ export class CvParsingService {
     }
 
     return {
-      // Unmatched skills keep the consultant's own typed text 
+      // Unmatched skills keep the consultant's own typed text
       skillName: canonical ?? raw.name.trim(),
       yearsExperience: years,
       extractionConfidence,
@@ -126,7 +137,9 @@ export class CvParsingService {
 
   // ---------------- Experience ----------------
 
-  private buildExperience(raw: RawTemplateData['experiences'][number]): ParsedExperience {
+  private buildExperience(
+    raw: RawTemplateData['experiences'][number],
+  ): ParsedExperience {
     return {
       jobTitle: raw.title,
       companyName: raw.company,
@@ -138,7 +151,9 @@ export class CvParsingService {
     };
   }
 
-  private experienceConfidence(raw: RawTemplateData['experiences'][number]): number {
+  private experienceConfidence(
+    raw: RawTemplateData['experiences'][number],
+  ): number {
     let confidence = 1.0;
     if (!this.isValidDate(raw.start) || !raw.start) confidence -= 0.5;
     if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
@@ -147,7 +162,9 @@ export class CvParsingService {
 
   // ---------------- Certifications ----------------
 
-  private buildCertification(raw: RawTemplateData['certifications'][number]): ParsedCertification {
+  private buildCertification(
+    raw: RawTemplateData['certifications'][number],
+  ): ParsedCertification {
     return {
       title: raw.title,
       issuingBody: raw.issuingBody,
@@ -156,7 +173,9 @@ export class CvParsingService {
     };
   }
 
-  private certificationConfidence(raw: RawTemplateData['certifications'][number]): number {
+  private certificationConfidence(
+    raw: RawTemplateData['certifications'][number],
+  ): number {
     let confidence = 1.0;
     if (raw.start && !this.isValidDate(raw.start)) confidence -= 0.3;
     if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
@@ -165,7 +184,9 @@ export class CvParsingService {
 
   // ---------------- Education ----------------
 
-  private buildEducation(raw: RawTemplateData['education'][number]): ParsedEducation {
+  private buildEducation(
+    raw: RawTemplateData['education'][number],
+  ): ParsedEducation {
     return {
       institution: raw.institution,
       qualification: raw.qualification,
@@ -175,7 +196,9 @@ export class CvParsingService {
     };
   }
 
-  private educationConfidence(raw: RawTemplateData['education'][number]): number {
+  private educationConfidence(
+    raw: RawTemplateData['education'][number],
+  ): number {
     let confidence = 1.0;
     if (!raw.start || !this.isValidDate(raw.start)) confidence -= 0.3;
     if (raw.end && !this.isValidDate(raw.end)) confidence -= 0.3;
@@ -200,10 +223,18 @@ export class CvParsingService {
     rawCertifications: RawTemplateData['certifications'],
     rawEducation: RawTemplateData['education'],
   ): ConfidenceScores {
-    const skillsConfidence = this.average(skills.map((s) => s.extractionConfidence));
-    const experienceConfidence = this.average(rawExperiences.map((e) => this.experienceConfidence(e)));
-    const certificationsConfidence = this.average(rawCertifications.map((c) => this.certificationConfidence(c)));
-    const educationConfidence = this.average(rawEducation.map((e) => this.educationConfidence(e)));
+    const skillsConfidence = this.average(
+      skills.map((s) => s.extractionConfidence),
+    );
+    const experienceConfidence = this.average(
+      rawExperiences.map((e) => this.experienceConfidence(e)),
+    );
+    const certificationsConfidence = this.average(
+      rawCertifications.map((c) => this.certificationConfidence(c)),
+    );
+    const educationConfidence = this.average(
+      rawEducation.map((e) => this.educationConfidence(e)),
+    );
 
     const overall = this.average([
       contactConfidence,

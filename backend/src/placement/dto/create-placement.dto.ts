@@ -4,22 +4,22 @@ import {
   IsDateString,
   Min,
   Max,
-  IsString
+  IsString,
 } from 'class-validator';
 
-export class CreatePlacementDto{
-    @IsString()
-    consultantId!: string;
+export class CreatePlacementDto {
+  @IsString()
+  consultantId!: string;
 
-    @IsDateString()
-    startDate!: string;
+  @IsDateString()
+  startDate!: string;
 
-    @IsOptional()
-    @IsDateString()
-    endDate?: string;
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 
-    @IsInt()
-    @Min(1)
-    @Max(100)
-    allocation!: number;
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  allocation!: number;
 }

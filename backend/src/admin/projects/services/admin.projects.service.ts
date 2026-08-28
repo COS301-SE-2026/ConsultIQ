@@ -3,7 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
 export class AdminProjectService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async archiveProject(projectId: string, adminUserId: string) {
     try {

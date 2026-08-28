@@ -17,23 +17,23 @@ import { Role } from '../../auth/enums/role.enum';
 import { UploadCvDto } from '../../cv-parsing/dto/upload-cv.dto';
 
 @Controller('cv')
-@Controller('cv')
 export class CvController {
   constructor(private readonly cvUploadService: CVUploadService) {}
 
-  @Post('upload/:consultantId')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.CONSULTANT_MANAGER)
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadCv(
-    @Param('consultantId') consultantId: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: UploadCvDto,
-  ): Promise<{ cvFileId: string; message: string }> {
-    if (!file) {
-      throw new BadRequestException('No file was uploaded.');
-    }
-    return this.cvUploadService.uploadCV(consultantId, file, dto?.parsingMethod);
+    @Post('upload/:userId')
+    @HttpCode(HttpStatus.CREATED)
+    @Roles(Role.CONSULTANT_MANAGER)
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadCv(
+        @Param('userId') userId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() dto?: UploadCvDto,
+    ): Promise<{ cvFileId: string; message: string }> {
+        if (!file) {
+        throw new BadRequestException('No file was uploaded.');
+        }
+    
+    return this.cvUploadService.uploadCV(userId, file, dto?.parsingMethod);
   }
 
   @Get(':cvFileId/url')

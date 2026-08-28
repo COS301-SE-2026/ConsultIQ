@@ -10,9 +10,6 @@ const mockPrismaService = {
   user: {
     findUnique: jest.fn(),
   },
-  consultant: {
-    findUnique: jest.fn(),
-  },
   cvFile: {
     create: jest.fn(),
     findUnique: jest.fn(),
@@ -79,7 +76,7 @@ describe('CVUploadService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if consultant does not exist', async () => {
+    it('should throw BadRequestException if user does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       const file = mockFile();
 
@@ -88,8 +85,21 @@ describe('CVUploadService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException if user is not CONSULTANT', async () =>{
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: userId,
+        role: 'PROJECT_MANAGER',
+        status: 'ACTIVE',
+      });
+      const file = mockFile();
+
+      await expect(
+        service.uploadCV(userId, file),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should upload file and create CvFile record for valid PDF', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.pdf');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({
@@ -109,7 +119,7 @@ describe('CVUploadService', () => {
     });
 
     it('should upload file for valid DOCX', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.docx');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({
@@ -128,8 +138,8 @@ describe('CVUploadService', () => {
       expect(result.cvFileId).toBe('cvfile-uuid-2');
     });
 
-    it('should create CvFile record with correct upload and extraction status', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+    it('should create CvFile record with correct userId, consultantId, upload and extraction status', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.pdf');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({

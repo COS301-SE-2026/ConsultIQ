@@ -1,7 +1,8 @@
-import {UploadCloud, ArrowLeft, CheckCircle2} from "lucide-react";
+import {UploadCloud, ArrowLeft, CheckCircle2, Download, Loader2} from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {consultantManagerSidebarItems} from "../../../components/layout/sidebar/sidebar.config";
+import { cvParsingService } from "../services/cv-parsing.service";
 import {Card}  from "../../../components/ui/card";
 import React, {useState} from "react";
 import type {DragEvent} from "react";
@@ -10,18 +11,63 @@ import { toast } from "sonner";
 
 export default function CVUpload (){
     const navigate = useNavigate();
-    const {userId}= useParams<{userId: string}>();
-    const [_isDragging,setDragging]= useState(false);
-    const [isFileUploaded, _setIsFileUploaded]= useState(false);
-    const [fileName, _setFileName]= useState("");
+    const { consultantId }= useParams<{consultantId: string}>();
+    const [isDragging,setDragging]= useState(false);
+    const [isUploading, setIsUploading]= useState(false);
+    const [uploadedCv, setUploadedCv]= useState<{
+        cvFileId: string;
+        fileName: string;
+        fileSize: number;
+    } | null>(null);
 
-    const handleFileChange= (e: React.ChangeEvent<HTMLInputElement>)=> {
+    const handleFileChange =async (e: React.ChangeEvent<HTMLInputElement>)=> {
       const filSelected= e.target.files?.[0];
+
       if(!filSelected) return;
-      toast.success("File successfully uploaded",{description: filSelected.name, duration: 3500,});
-      e.target.value= "";
-      navigate(`/cv-extraction-preview-page/${userId}`)
-      };
+
+      const allowedMimeTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+     ];
+
+     if(!allowedMimeTypes.includes(filSelected.type)){
+        toast.error("Only PDF and DOCX files are supported.");
+        e.target.value = "";
+        return;
+     }
+
+     if(filSelected.size > 10*1024*1024){
+        toast.error("File size must not exceed 10MB.");
+        e.target.value = "";
+        return;
+     }
+
+     if(!consultantId){
+        toast.error("Consultant information is missing.");
+        return;
+     }
+
+     try{
+        setIsUploading(true);
+
+        const response = await cvParsingService.upload(consultantId, filSelected,);
+
+        setUploadedCv({
+            cvFileId: response.cvFieldId,
+            fileName: filSelected.name,
+            fileSize: filSelected.size,
+        });
+
+        toast.success("CV uploaded successfully.");
+     }catch(error){
+        toast.error(error instanceof Error ? error.message : "Failed to upload CV.");
+     }finally {
+        setIsUploading(false);
+        e.target.value = "";
+     }
+    };
+
+
     return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantManagerSidebarItems} />
@@ -52,11 +98,11 @@ export default function CVUpload (){
                         Upload a CV file and we will extract the information to help you create the profile faster. </p>
                 </div>
                 {
-                  isFileUploaded? (
+                  uploadedCv? (
                     <div className="w-full border border-gray-100 rounded-xl flex flex-col items-center justify-center ">
                       <CheckCircle2 className="h-14 w-14 text-green-600 animate-bounce"/>
                       <h3 className="text-2xl font-bold mb-2">File successfully uploaded</h3>
-                      <p className="text-base ">{fileName}</p>
+                      <p className="text-base ">{uploadedCv.fileName}</p>
                     </div>
                   ):(
                 <div className= "w-full border rounded-xl flex flex-col items-center justify-center"

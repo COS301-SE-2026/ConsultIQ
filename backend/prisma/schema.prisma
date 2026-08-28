@@ -2,6 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator fieldEncryptionMigrations {
+  provider = "prisma-field-encryption"
+  output   = "./encryption-migrations"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -322,7 +327,7 @@ model CvFile {
   uploadStatus     UploadStatus     @default(UPLOADED)
   extractionStatus ExtractionStatus @default(PENDING)
   parsingMethod    CvParsingMethod  @default(RULE_BASED)
-  rawText          String?
+  rawText          String?          /// @encrypted
   parsedData       Json?
   uploadedAt       DateTime         @default(now())
   updatedAt        DateTime         @updatedAt

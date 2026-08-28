@@ -27,6 +27,24 @@ interface LocationForm {
   postalCode: string;
 }
 
+interface FormFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+}
+
+function FormField({ label,value,onChange,error}: FormFieldProps) {
+  return (
+
+    <div>
+      <label className="text-sm font-medium " htmlFor="form-address-line-one">{label}</label>
+      <Input value={value} onChange={(e) => onChange( e.target.value)} />
+      {error && <span className="text-red-500 text-xs mt-1 block">{error}</span>}
+    </div>
+  );
+}
+
 
 export default function LocationCard({
   addressLine1,
@@ -41,13 +59,6 @@ export default function LocationCard({
 }: LocationCardProps) {
 
   const [isEditing, setIsEditing] = useState(false);
-  // const [address1, setAddress1] = useState(addressLine1);
-  // const [address2, setAddress2] = useState(addressLine2 ?? "");
-  // const [Suburb, setSuburb] = useState(suburb ?? "");
-  // const [City, setCity] = useState(city);
-  // const [Province, setProvince] = useState(province);
-  // const [postalCode, setPostalCode] = useState(initialPostalCode ?? "");
-
   const [address1Error, setAddress1Error] = useState("");
   const [cityError, setCityError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -64,9 +75,9 @@ export default function LocationCard({
   const [location, setLocation] = useState<LocationForm>(createLocation);
 
   const updateLocation = (field: keyof LocationForm, value: string) => {
-    setLocation(prev => ({...prev,[field]: value}));
+    setLocation(prev => ({ ...prev, [field]: value }));
   };
-  
+
   const resetLocation = () => {
     setLocation(createLocation());
   };
@@ -109,7 +120,7 @@ export default function LocationCard({
   };
 
   const handleCancel = () => {
-   resetLocation();
+    resetLocation();
     setIsEditing(false);
 
   }
@@ -135,7 +146,7 @@ export default function LocationCard({
         suburb: parsed.suburb ?? "",
         city: parsed.city ?? "",
         province: parsed.province,
-        postalCode: (parsed.postalCode ?? "").replace(/\D/g,""),
+        postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
       });
     },
   });
@@ -195,27 +206,33 @@ export default function LocationCard({
 
             <>
 
-              <div>
-                <label className="text-sm font-medium " htmlFor="form-address-line-one">Address line 1</label>
-                <Input value={location.addressLine1} onChange={(e) => updateLocation("addressLine1",e.target.value)} />
-                {address1Error && <span className="text-red-500 text-xs mt-1 block">{address1Error}</span>}
-              </div>
+              <FormField
+                label="Address line 1"
+                 value={location.addressLine1}
+                 onChange={(e) => updateLocation("addressLine1", e)}
+                 error={address1Error}
+              />
 
-              <div>
-                <label className="text-sm font-medium" htmlFor="from-address-line-two">Address line 2</label>
-                <Input value={location.addressLine2} onChange={(e) => updateLocation("addressLine2",e.target.value)} />
-              </div>
+              <FormField
+                label="Address line 2"
+                value={location.addressLine2}
+                onChange={(e) => updateLocation("addressLine2", e)}
+              />
+             
+             <FormField
+                label="Suburb"
+                value={location.suburb}
+                onChange={(e) => updateLocation("suburb", e)}
+             />
 
-              <div>
-                <label className="text-sm font-medium" htmlFor="form-suburb">Suburb</label>
-                <Input value={location.suburb} onChange={(e) => updateLocation("suburb",e.target.value)} />
-              </div>
+              <FormField
+                label="City"
+                value={location.city}
+                onChange={(e) => updateLocation("city", e)}
+                error={cityError}
+             />
 
-              <div>
-                <label className="text-sm font-medium" htmlFor="form-city">City</label>
-                <Input value={location.city} onChange={(e) =>updateLocation("city",e.target.value)} />
-                {cityError && <span className="text-red-500 text-xs mt-1 block">{cityError}</span>}
-              </div>
+             
 
               <div>
                 <label className="text-sm font-medium" htmlFor="form-province">Province</label>
@@ -223,7 +240,7 @@ export default function LocationCard({
                   id="province"
                   className="flex h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#002D72]"
                   value={location.province}
-                  onChange={(e) => { updateLocation("province",e.target.value) }}
+                  onChange={(e) => { updateLocation("province", e.target.value) }}
                 >
                   <option value="" disabled>Select Province</option>
                   <option value="Eastern Cape">Eastern Cape</option>
@@ -238,10 +255,11 @@ export default function LocationCard({
                 </select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium " htmlFor="form-postal-code">Postal code</label>
-                <Input value={location.postalCode} onChange={(e) => updateLocation("postalCode",e.target.value)} />
-              </div>
+             <FormField
+                label="Postal Code"
+                value={location.postalCode}
+                onChange={(e) => updateLocation("postalCode", e)}
+             />
 
             </>
           ) : (

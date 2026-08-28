@@ -18,9 +18,9 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 @Injectable()
 export class CVUploadService {
-  private readonly logger = new Logger(CVUploadService.name);
+    private readonly logger = new Logger(CVUploadService.name);
 
-  constructor(
+    constructor(
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
     @InjectQueue(CV_PROCESSING_QUEUE) private readonly cvQueue: Queue,

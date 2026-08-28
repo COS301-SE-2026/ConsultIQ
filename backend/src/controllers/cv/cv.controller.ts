@@ -33,7 +33,7 @@ export class CvController {
     if (!file) {
       throw new BadRequestException('No file was uploaded.');
     }
-    return this.cvUploadService.uploadCV(consultantId, file, dto.parsingMethod);
+    return this.cvUploadService.uploadCV(consultantId, file, dto?.parsingMethod);
   }
 
   @Get(':cvFileId/url')

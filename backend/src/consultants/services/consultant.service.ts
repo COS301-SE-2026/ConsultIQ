@@ -107,6 +107,12 @@ export class ConsultantService {
           },
         });
 
+        // Link any CV uploaded for this user
+        await tx.cvFile.updateMany({
+          where: { userId: dto.consultantUserId, consultantId: null},
+          data: { consultantId: consultant.id}
+        })
+
         // Link the CM to this consultant
         await tx.consultantManager.create({
           data: {

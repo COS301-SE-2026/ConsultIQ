@@ -10,6 +10,7 @@ import { CvFormReaderService } from './services/cv-form-reader.service';
 import { CvParsingService } from './services/cv-parsing.service';
 import { CvFieldValidatorService } from './services/cv-field-validator.service';
 import { CvExtractionService } from './services/cv-extraction.service';
+import { CV_PROCESSING_QUEUE } from './queues/cv-processing.queue';
 import { CvProcessingProcessor } from './queues/cv-processing.processor';
 
 @Module({
@@ -23,7 +24,7 @@ import { CvProcessingProcessor } from './queues/cv-processing.processor';
       }),
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({ name: 'cv-processing' }),
+    BullModule.registerQueue({ name: CV_PROCESSING_QUEUE }),
   ],
 
   controllers: [CvController],

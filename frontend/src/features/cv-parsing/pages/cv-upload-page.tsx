@@ -1,11 +1,10 @@
-import {UploadCloud, ArrowLeft, CheckCircle2, Download, Loader2} from "lucide-react";
+import {UploadCloud, ArrowLeft, CheckCircle2, /*Download, Loader2*/ } from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {consultantManagerSidebarItems} from "../../../components/layout/sidebar/sidebar.config";
 import { cvParsingService } from "../services/cv-parsing.service";
 import {Card}  from "../../../components/ui/card";
 import React, {useState} from "react";
-import type {DragEvent} from "react";
 import { toast } from "sonner";
 
 
@@ -14,52 +13,37 @@ export default function CVUpload (){
     const { userId }= useParams<{userId: string}>();
     const [isDragging,setDragging]= useState(false);
     const [isUploading, setIsUploading]= useState(false);
+    const [stagedFile, setStagedFile] = useState<File | null>(null);
     const [uploadedCv, setUploadedCv]= useState<{
         cvFileId: string;
         fileName: string;
         fileSize: number;
     } | null>(null);
 
-    const handleSelectedFile =async (filSelected: File)=> {
-
+    const validateFile = (file: File) : boolean =>{
       const allowedMimeTypes = [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
      ];
 
-     if(!allowedMimeTypes.includes(filSelected.type)){
+     if(!allowedMimeTypes.includes(file.type)){
         toast.error("Only PDF and DOCX files are supported.");
-        return;
+        return false;
      }
 
-     if(filSelected.size > 10*1024*1024){
+     if(file.size > 10*1024*1024){
         toast.error("File size must not exceed 10MB.");
-        return;
+        return false;
      }
 
-     if(!userId){
-        toast.error("Consultant information is missing.");
-        return;
-     }
+     return true;
 
-     try{
-        setIsUploading(true);
+  }
 
-        const response = await cvParsingService.upload(userId, filSelected,);
-
-        setUploadedCv({
-            cvFileId: response.cvFileId,
-            fileName: filSelected.name,
-            fileSize: filSelected.size,
-        });
-
-        toast.success("CV uploaded successfully.");
-     }catch(error){
-        toast.error(error instanceof Error ? error.message : "Failed to upload CV.");
-     }finally {
-        setIsUploading(false);
-     }
-    };
+  const handleSelectedFile =async (fileSelected: File)=> {
+    if(!validateFile(fileSelected)) return;
+    setStagedFile(fileSelected);
+  };
 
     const handleFileChange= (event: React.ChangeEvent<HTMLInputElement>) =>{
       const fileSelected = event.target.files?.[0];
@@ -69,7 +53,33 @@ export default function CVUpload (){
       }
 
       event.target.value = "";
-    };
+  };
+
+  const handleConfirmUpload = async() => {
+    if(!stagedFile || !userId) return;
+
+    try{
+      setIsUploading(true);
+      const response = await cvParsingService.upload(userId, stagedFile);
+
+      setUploadedCv({
+        cvFileId: response.cvFileId,
+        fileName: stagedFile.name,
+        fileSize: stagedFile.size,
+      });
+      setStagedFile(null);
+      //setIsConfirmationOpen(true);
+      toast.success("CV uploaded successfully.");
+    }catch(error){
+      toast.error(error instanceof Error ? error.message : "Failed to upload file.")
+    }finally{
+      setIsUploading(false);
+    }
+  };
+
+  const handleChangeFile = () =>{
+    setStagedFile(null);
+  }
 
 
     return (
@@ -101,47 +111,59 @@ export default function CVUpload (){
                     <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
                         Upload a CV file and we will extract the information to help you create the profile faster. </p>
                 </div>
-                {
-                  uploadedCv? (
+                {isUploading  &&(
+                  <p className="text-sm">Uploading CV...</p>
+                )}
+                { uploadedCv? (
                     <div className="w-full border border-gray-100 rounded-xl flex flex-col items-center justify-center ">
-                      <CheckCircle2 className="h-14 w-14 text-green-600 animate-bounce"/>
+                      <CheckCircle2 className="h-14 w-14 text-green-600"/>
                       <h3 className="text-2xl font-bold mb-2">File successfully uploaded</h3>
                       <p className="text-base ">{uploadedCv.fileName}</p>
                     </div>
+                ): stagedFile ?(
+                  <div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 py-10">
+                    <p className="text-lg font-semibold">{stagedFile.name}</p>
+                    <p className="text-sm text-secondary">{(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+
+                    <div className="flex gap-4 mt-2">
+                      <button type="button"
+                      className="h-12 px-6 rounded-lg border font-semibold"
+                      style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+                      onClick={handleChangeFile}
+                      disabled={isUploading}
+                      >
+                        Change File
+                      </button>
+
+                      <button type="button"
+                      className="h-12 px-6 rounded-lg font-semibold text-white"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                      onClick={handleConfirmUpload}
+                      disabled={isUploading}
+                      >
+                        {isUploading ? "Uploading..." : "Confirm & Upload"}
+                      </button>
+                    </div>  
+                  </div>
                   ):(
                 <div className= "w-full border rounded-xl flex flex-col items-center justify-center"
                   style={{border: "3px dashed var(--color-primary)", color: "var(--color-primary)", backgroundColor: isDragging ? "#e8f0ff" : "transparent"}}
-                    
-                      onDragEnter={(event) =>{
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setDragging(true);
-                      }}
-
+                   
                       onDragOver= {(event) =>{
                           event.preventDefault();
-                          event.stopPropagation();
                           event.dataTransfer.dropEffect = "copy";
                           setDragging(true);
                           }}
 
-                      onDragLeave={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
+                      onDragLeave={() => {
                         setDragging(false)
-                      }}
-
-                      onDragEnd={() =>{
-                        setDragging(false);
                       }}
 
                       onDrop={(event) =>{
                         event.preventDefault();
-                        event.stopPropagation();
                         setDragging(false);
 
-                        const droppedFile = event.dataTransfer.files[0];
-
+                        const droppedFile = event.dataTransfer.files.item(0);
                         if(droppedFile){
                           handleSelectedFile(droppedFile);
                         }

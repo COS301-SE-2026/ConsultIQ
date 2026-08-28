@@ -9,11 +9,11 @@ export const cvParsingService = {
     },
 
     async getDownloadUrl(cvField: string): Promise<{url: string}>{
-        return apiClient.get<{ url: string}>(`cv/${cvField}/url`)
+        return apiClient.get<{ url: string}>(`/cv/${cvField}/url`)
     },
 
     async getStatus(cvFileId: string) : Promise<CvFileStatus>{
-        return apiClient.get<CvFileStatus>(`cv/${cvFileId}/status`);
+        return apiClient.get<CvFileStatus>(`/cv/${cvFileId}/status`);
     },
 
 };

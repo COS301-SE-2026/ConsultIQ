@@ -1,4 +1,4 @@
-import {UploadCloud, ArrowLeft, CheckCircle2, /*Download, Loader2*/ } from "lucide-react";
+import {UploadCloud, ArrowLeft, CheckCircle2, Download } from "lucide-react";
 import {useNavigate, useParams} from "react-router-dom";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {consultantManagerSidebarItems} from "../../../components/layout/sidebar/sidebar.config";
@@ -19,6 +19,7 @@ export default function CVUpload (){
         fileName: string;
         fileSize: number;
     } | null>(null);
+    const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
 
     const validateFile = (file: File) : boolean =>{
       const allowedMimeTypes = [
@@ -68,7 +69,7 @@ export default function CVUpload (){
         fileSize: stagedFile.size,
       });
       setStagedFile(null);
-      //setIsConfirmationOpen(true);
+      setIsConfirmationOpen(true);
       toast.success("CV uploaded successfully.");
     }catch(error){
       toast.error(error instanceof Error ? error.message : "Failed to upload file.")
@@ -79,6 +80,23 @@ export default function CVUpload (){
 
   const handleChangeFile = () =>{
     setStagedFile(null);
+  }
+
+  const handleDownload = async () =>{
+    if(!uploadedCv) return;
+
+    try{
+      const { url } = await cvParsingService.getDownloadUrl(uploadedCv.cvFileId);
+      window.open(url, "_blank", "noopener,noreferrer");
+    }catch(error){
+      toast.error(error instanceof Error ? error.message : "Unable to download the uploaded CV.");
+    }
+  };
+
+  const handleContinueToExtraction = () =>{
+    if(!userId  || !uploadedCv) return;
+    toast.success("Navigating to the extraction page.");
+   // navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
   }
 
 
@@ -187,6 +205,47 @@ export default function CVUpload (){
                   )}
               </div>
             </Card>
+            {isConfirmationOpen && uploadedCv && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+                role="dialog"
+                aria-modal ="true"
+                aria-labelledby = "cv-upload-confirmation-title"
+              >
+                <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl">
+                  <div className="flex flex-col items-center text-center">
+                    <CheckCircle2 className=" mb-4 h-14 w-14 text-green-600"/>
+
+                    <h2 id="cv-upload-confirmation-title" className="text-2xl font-bold">
+                      CV uploaded successfully
+                    </h2>
+                    <p className="mt-3 break-all text-base">{uploadedCv.fileName}</p>
+
+                    <div className="mt-6 flex w-full flex-col gap-3">
+                      <button type="button"
+                      className = "flex h-12 items-center justify-center gap-2 rounded-lg border font-semibold"
+                      style={{borderColor: "var(--color-primary)", color: "var(--color-primary)"}}
+                      onClick={handleDownload}
+                      >
+                        <Download className="h-5 h-4"/>
+                        Download CV
+                      </button>
+                      
+                      <button type="button"
+                      className="h-12 rounded-lg font-semibold text-white"
+                      style={{ backgroundColor: "var(--color-primary)" }}
+                      onClick={handleContinueToExtraction}
+                      >
+                        Continue to extraction review
+                      </button>
+
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )
+
+            }
         </main> 
     </div>
 </div>)}

@@ -16,6 +16,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
+import { EncryptionModule } from './common/encryption/encryption.module';
 
 @Module({
   imports: [
@@ -51,7 +52,8 @@ import { PlacementsModule } from './placement/placement.module';
     NotificationModule,
     AdminModule,
     LocationModule,
-    PlacementsModule
+    PlacementsModule,
+    EncryptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

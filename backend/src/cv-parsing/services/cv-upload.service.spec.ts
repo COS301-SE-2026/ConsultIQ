@@ -3,6 +3,8 @@ import { CVUploadService } from './cv-upload.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from './s3.service';
 import { BadRequestException } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bullmq';
+import { CV_PROCESSING_QUEUE } from '../queues/cv-processing.queue';
 
 const mockPrismaService = {
   user: {
@@ -18,6 +20,10 @@ const mockS3Service = {
   generateS3Key: jest.fn(),
   uploadFile: jest.fn(),
   generatePresignedUrl: jest.fn(),
+};
+
+const mockCvQueue = {
+  add: jest.fn(),
 };
 
 const mockFile = (overrides: Partial<Express.Multer.File> = {}): Express.Multer.File => ({
@@ -43,6 +49,7 @@ describe('CVUploadService', () => {
         CVUploadService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: S3Service, useValue: mockS3Service },
+        { provide: getQueueToken(CV_PROCESSING_QUEUE), useValue: mockCvQueue },
       ],
     }).compile();
 
@@ -106,6 +113,7 @@ describe('CVUploadService', () => {
 
       expect(mockS3Service.uploadFile).toHaveBeenCalledTimes(1);
       expect(mockPrismaService.cvFile.create).toHaveBeenCalledTimes(1);
+      expect(mockCvQueue.add).toHaveBeenCalledWith('cv-parse-job', { cvFileId: expect.any(String) });
       expect(result.cvFileId).toBe('cvfile-uuid-1');
       expect(result.message).toBe('CV uploaded successfully.');
     });

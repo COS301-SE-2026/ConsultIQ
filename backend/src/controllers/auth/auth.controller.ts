@@ -125,14 +125,18 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<{message: string}>{
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
     return await this.authService.forgotPassword(dto.email);
   }
 
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(@Body() dto: ActivateAccountDto): Promise<{message: string}>{
+  async resetPassword(
+    @Body() dto: ActivateAccountDto,
+  ): Promise<{ message: string }> {
     return await this.authService.resetPassword(dto);
   }
 

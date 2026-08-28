@@ -9,6 +9,8 @@ interface RecommendationTableProps{
 }
 
 export function RecommendationsTable({recommendations, onSelectConsultant, onPlaceConsultant, onViewAll}: RecommendationTableProps){
+    const orderedRecommendations = [...recommendations].sort((left, right) => left.rank - right.rank);
+
     return(
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 ">
             <h2 className="text-lg font-bold">Top Recommendations</h2>
@@ -24,7 +26,7 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
                         </tr>
                     </thead>
                     <tbody>
-                        {recommendations.map((item) =>(
+                        {orderedRecommendations.map((item) =>(
                             <RecommendationRow
                             key={item.consultantId}
                             recommendation={item}

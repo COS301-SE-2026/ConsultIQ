@@ -17,6 +17,7 @@ import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
 import { CvParsingModule } from './cv-parsing/cv-parsing.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -36,11 +37,20 @@ import { CvParsingModule } from './cv-parsing/cv-parsing.module';
         return {
           stores: [
             createKeyv({
-              url: configService.get<string>('REDIS_URL')
-            })
+              url: configService.get<string>('REDIS_URL'),
+            }),
           ],
         };
       },
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+        },
+      }),
     }),
     PrismaModule,
     EmailModule,
@@ -58,4 +68,4 @@ import { CvParsingModule } from './cv-parsing/cv-parsing.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

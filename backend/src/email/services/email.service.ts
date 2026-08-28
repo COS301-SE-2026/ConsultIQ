@@ -40,14 +40,14 @@ export class EmailService {
 
   async sendPasswordResetEmail(
     to: string,
-    fullName: string, 
+    fullName: string,
     resetLink: string,
-  ): Promise<void>{
+  ): Promise<void> {
     await this.resend.emails.send({
       from: `ConsultIQ <${this.fromEmail}>`,
       to,
       subject: 'Reset your ConsultIQ password',
-      html:`
+      html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Hello ${fullName}</h2>
           <p>We received a request to reset your ConsultIQ password. Click the button below to set a new password.</p>
@@ -59,8 +59,7 @@ export class EmailService {
           </a>
           <p>If you did not request this, ignore this email.</p>
         </div>
-      `
-    })
-
+      `,
+    });
   }
 }

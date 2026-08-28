@@ -22,7 +22,7 @@ type ValidScoredConsultant = ScoredConsultantInput & {
 
 @Injectable()
 export class MatchRunAggregationService {
-  constructor(private readonly weightedAggregator: WeightedAggregator) { }
+  constructor(private readonly weightedAggregator: WeightedAggregator) {}
 
   buildResults(inputs: ScoredConsultantInput[]): ConsultantMatchResult[] {
     const eligibleConsultants = this.filterEligibleConsultants(inputs);

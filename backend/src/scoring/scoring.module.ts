@@ -15,7 +15,10 @@ import { ScoringService } from './services/scoring-config.service';
 import { ScoringController } from '../controllers/scoring/scoring.controller';
 //import { PrismaService } from '../prisma/prisma.service';
 import { MatchRunService } from './services/match-run.service';
+import { BullModule } from '@nestjs/bullmq';
+import { MatchRunProcessor } from './queues/match-run.processor';
 @Module({
+  imports: [BullModule.registerQueue({ name: 'match-run' })],
   controllers: [MatchRunController, ScoringController],
   providers: [
     ScoringService,
@@ -40,7 +43,8 @@ import { MatchRunService } from './services/match-run.service';
 
     MatchRunAggregationService,
     WeightedAggregator,
+    MatchRunProcessor,
   ],
   exports: [ScoringPipelineService],
 })
-export class ScoringModule { }
+export class ScoringModule {}

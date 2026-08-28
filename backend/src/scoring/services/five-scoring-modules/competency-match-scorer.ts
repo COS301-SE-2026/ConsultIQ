@@ -4,7 +4,6 @@ import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { COMPETENCY_RANK } from '../../enums/competency-level.enum';
 
-
 @Injectable()
 export class CompetencyMatchScorer {
   private readonly MANDATORY_WEIGHT = 2.0;
@@ -66,21 +65,17 @@ export class CompetencyMatchScorer {
         if (requiredRank <= 0) {
           skillScore = 1;
         } else {
-
           const rankDifference = consultantRank.rank - requiredRank;
 
           if (rankDifference === 0) {
             skillScore = 1.0;
-          }
-          else if (rankDifference > 0) {
+          } else if (rankDifference > 0) {
             //overqualified consultants are pernalized by their level of qualification
             const penalty = rankDifference * this.OVER_QUALIFIED_PENALTY;
             skillScore = Math.max(0.7, 1.0 - penalty);
-          }
-          else {
+          } else {
             skillScore = consultantRank.rank / requiredRank;
           }
-
         }
       }
 
@@ -116,7 +111,7 @@ export class CompetencyMatchScorer {
     const baseFormatted = (baseScore * 100).toFixed(1);
 
     const bonusFormatted = (skillCountBonus * 100).toFixed(1);
-    let detailString = `Competency Match: ${baseFormatted}%.`
+    let detailString = `Competency Match: ${baseFormatted}%.`;
 
     if (extraSkillCount > 0) {
       detailString += ` Bonus applied for ${extraSkillCount} extra skill(s): +${bonusFormatted}%.`;

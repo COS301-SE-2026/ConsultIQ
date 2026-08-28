@@ -121,4 +121,56 @@ describe('DataIngestionService', () => {
 
 
     })
+
+    describe('Conditional logic and edge cases', () => {
+        it('uses overrideWeight when present instead of the default weight', async () => {
+            scoringService.resolveProjectWeights.mockResolvedValue([
+
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 10, overrideWeight: 90, active: true, hardExclusionEnabled: false },
+                { factorName: ScoringFactor.COST_TO_COMPANY, weight: 10, active: true, hardExclusionEnabled: false },
+            ] as any);
+
+            const result = await service.ingestData({ projectId: 'proj-1', consultantId: 'cons-1' } as any);
+            expect(result.activeWeights[ScoringFactor.SKILL_ALIGNMENT]).toBeCloseTo(0.9);
+            expect(result.activeWeights[ScoringFactor.COST_TO_COMPANY]).toBeCloseTo(0.1);
+        });
+
+        it('ignores inactive factors', async () => {
+            scoringService.resolveProjectWeights.mockResolvedValue([
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 100, active: true, hardExclusionEnabled: false },
+
+                { factorName: ScoringFactor.LOCATION, weight: 50, active: false, hardExclusionEnabled: false },
+            ] as any);
+
+            const result = await service.ingestData({ projectId: 'proj-1', consultantId: 'cons-1' } as any);
+
+            expect(result.activeFactors.has(ScoringFactor.SKILL_ALIGNMENT)).toBe(true);
+            expect(result.activeFactors.has(ScoringFactor.LOCATION)).toBe(false);
+            expect(result.activeWeights[ScoringFactor.LOCATION]).toBeUndefined();
+        });
+
+        it('adds factors to excludedFactors when hardExclusionEnabled is true', async () => {
+            scoringService.resolveProjectWeights.mockResolvedValue([
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 100, active: true, hardExclusionEnabled: false },
+
+                { factorName: ScoringFactor.AVAILABILITY, weight: 0, active: false, hardExclusionEnabled: true },
+            ] as any);
+
+            const result = await service.ingestData({ projectId: 'proj-1', consultantId: 'cons-1' } as any);
+
+            expect(result.excludedFactors.has(ScoringFactor.AVAILABILITY)).toBe(true);
+            expect(result.excludedFactors.has(ScoringFactor.SKILL_ALIGNMENT)).toBe(false);
+        });
+
+        it('maps the correct projectId and consultantId to the final context', async () => {
+            scoringService.resolveProjectWeights.mockResolvedValue([
+                { factorName: ScoringFactor.SKILL_ALIGNMENT, weight: 10, active: true, hardExclusionEnabled: false }
+            ] as any);
+
+            const result = await service.ingestData({ projectId: 'test-proj', consultantId: 'test-cons' } as any);
+
+            expect(result.projectId).toBe('test-proj');
+            expect(result.consultantId).toBe('test-cons');
+        });
+    });
 })

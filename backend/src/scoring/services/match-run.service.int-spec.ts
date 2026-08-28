@@ -114,11 +114,12 @@ async function createProject(
   return project;
 }
 describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
+  let moduleRef: TestingModule;
   let matchRunService: MatchRunService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [ScoringModule, PrismaModule],
     }).compile();
 
@@ -132,6 +133,9 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
 
   describe('executeMatchRun function validation', () => {

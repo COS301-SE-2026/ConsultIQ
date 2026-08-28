@@ -4,7 +4,10 @@ import { S3Service } from './s3.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { CvParsingMethodDto } from '../dto/upload-cv.dto';
-import { CV_PROCESSING_QUEUE, CV_PARSE_JOB } from '../queues/cv-processing.queue';
+import {
+  CV_PROCESSING_QUEUE,
+  CV_PARSE_JOB,
+} from '../queues/cv-processing.queue';
 
 const ALLOWED_MIME_TYPES = [
   'application/pdf',
@@ -67,7 +70,7 @@ export class CVUploadService {
       },
     });
 
-    await this.cvQueue.add(CV_PARSE_JOB, { cvFieleId: cvFile.id});
+    await this.cvQueue.add(CV_PARSE_JOB, { cvFieleId: cvFile.id });
 
     this.logger.log(`CV uploaded for consultant ${consultantId}: ${cvFile.id}`);
 

@@ -29,7 +29,7 @@ import { CvProcessingProcessor } from './queues/cv-processing.processor';
 
   controllers: [CvController],
   providers: [
-    CVUploadService, 
+    CVUploadService,
     S3Service,
     CvOcrService,
     ClaudeExtractionService,

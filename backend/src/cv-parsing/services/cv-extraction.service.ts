@@ -27,8 +27,8 @@ export class CvExtractionService {
 
   async processExtraction(cvFileId: string): Promise<void> {
     await this.prisma.cvFile.update({
-      where: {id: cvFileId},
-      data: { extractionStatus: 'PROCESSING'}
+      where: { id: cvFileId },
+      data: { extractionStatus: 'PROCESSING' },
     });
 
     let result: CvParsingResult;
@@ -100,7 +100,7 @@ export class CvExtractionService {
               competencySignals: result.competencySignals ?? [],
               fieldWarnings: result.fieldWarnings ?? [],
             } as unknown as Prisma.InputJsonValue)
-          : { error: result.error } as unknown as Prisma.InputJsonValue,
+          : { error: result.error },
       },
     });
 

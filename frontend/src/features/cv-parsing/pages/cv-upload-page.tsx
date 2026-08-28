@@ -20,10 +20,7 @@ export default function CVUpload (){
         fileSize: number;
     } | null>(null);
 
-    const handleFileChange =async (e: React.ChangeEvent<HTMLInputElement>)=> {
-      const filSelected= e.target.files?.[0];
-
-      if(!filSelected) return;
+    const handleSelectedFile =async (filSelected: File)=> {
 
       const allowedMimeTypes = [
         "application/pdf",
@@ -32,13 +29,11 @@ export default function CVUpload (){
 
      if(!allowedMimeTypes.includes(filSelected.type)){
         toast.error("Only PDF and DOCX files are supported.");
-        e.target.value = "";
         return;
      }
 
      if(filSelected.size > 10*1024*1024){
         toast.error("File size must not exceed 10MB.");
-        e.target.value = "";
         return;
      }
 
@@ -53,7 +48,7 @@ export default function CVUpload (){
         const response = await cvParsingService.upload(userId, filSelected,);
 
         setUploadedCv({
-            cvFileId: response.cvFieldId,
+            cvFileId: response.cvFileId,
             fileName: filSelected.name,
             fileSize: filSelected.size,
         });
@@ -63,8 +58,17 @@ export default function CVUpload (){
         toast.error(error instanceof Error ? error.message : "Failed to upload CV.");
      }finally {
         setIsUploading(false);
-        e.target.value = "";
      }
+    };
+
+    const handleFileChange= (event: React.ChangeEvent<HTMLInputElement>) =>{
+      const fileSelected = event.target.files?.[0];
+
+      if(fileSelected){
+        void handleSelectedFile(fileSelected);
+      }
+
+      event.target.value = "";
     };
 
 
@@ -106,20 +110,57 @@ export default function CVUpload (){
                     </div>
                   ):(
                 <div className= "w-full border rounded-xl flex flex-col items-center justify-center"
-                  style={{border: "3px dashed var(--color-primary)", color: "var(--color-primary)",}}
-                    onDragOver= {(e: DragEvent<HTMLDivElement>) =>{e.preventDefault()
-                                setDragging(true);}}>
-                <div className="h-6"/>
-                <UploadCloud className="h-14 w-14 mb-4"/>
-                <p className="text-lg">Drag and drop CV here</p>
-                <span className="text-lg "style={{ color: "var(--color-text-secondary)" }}>or</span>
-                <input type="file" id="cv-upload" className="hidden" accept=".pdf,.docx" onChange={handleFileChange}></input>
-                <label htmlFor="cv-upload" role="button" 
-                className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] text-white rounded-lg font-semi-bold text-lg shadow-md" style={{ backgroundColor: "var(--color-primary)", color: "white" }}
-                >Choose file</label>
-                <div className="h-2"/>
-                <span className ="text-sm"style={{ color: "var(--color-text-secondary)" }}>PDF or DOCX up to 10MB </span>
-                <div className="h-6"/>
+                  style={{border: "3px dashed var(--color-primary)", color: "var(--color-primary)", backgroundColor: isDragging ? "#e8f0ff" : "transparent"}}
+                    
+                      onDragEnter={(event) =>{
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDragging(true);
+                      }}
+
+                      onDragOver= {(event) =>{
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.dataTransfer.dropEffect = "copy";
+                          setDragging(true);
+                          }}
+
+                      onDragLeave={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDragging(false)
+                      }}
+
+                      onDragEnd={() =>{
+                        setDragging(false);
+                      }}
+
+                      onDrop={(event) =>{
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDragging(false);
+
+                        const droppedFile = event.dataTransfer.files[0];
+
+                        if(droppedFile){
+                          handleSelectedFile(droppedFile);
+                        }
+                      }}
+                      >
+
+                  <div className="h-6"/>
+                  <UploadCloud className="h-14 w-14 mb-4"/>
+                  <p className="text-lg">Drag and drop CV here</p>
+                  <span className="text-lg "style={{ color: "var(--color-text-secondary)" }}>or</span>
+                  <input type="file" id="cv-upload" className="hidden" accept=".pdf,.docx" onChange={handleFileChange}></input>
+                    <label htmlFor="cv-upload" role="button" 
+                    className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] text-white rounded-lg font-semi-bold text-lg shadow-md" 
+                    style={{ backgroundColor: "var(--color-primary)", color: "white" }}>
+                      Choose file
+                    </label>
+                  <div className="h-2"/>
+                  <span className ="text-sm"style={{ color: "var(--color-text-secondary)" }}>PDF or DOCX up to 10MB </span>
+                  <div className="h-6"/>
                 </div>
                   )}
               </div>

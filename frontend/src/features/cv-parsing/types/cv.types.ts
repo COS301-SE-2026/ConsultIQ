@@ -11,7 +11,7 @@ export interface CvFileStatus{
 }
 
 export interface CvUploadResponse{
-    cvFieldId: string;
+    cvFileId: string;
     message: string;
 }
 

@@ -70,7 +70,7 @@ export class CVUploadService {
       },
     });
 
-    await this.cvQueue.add(CV_PARSE_JOB, { cvFieleId: cvFile.id });
+    await this.cvQueue.add(CV_PARSE_JOB, { cvFileId: cvFile.id });
 
     this.logger.log(`CV uploaded for consultant ${userId}: ${cvFile.id}`);
 

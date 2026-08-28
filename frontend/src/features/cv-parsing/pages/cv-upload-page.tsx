@@ -20,6 +20,7 @@ export default function CVUpload (){
         fileSize: number;
     } | null>(null);
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(() => sessionStorage.getItem("cv_parsing_disclaimer_ack") !== "true");
 
     const validateFile = (file: File) : boolean =>{
       const allowedMimeTypes = [
@@ -99,6 +100,10 @@ export default function CVUpload (){
    // navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
   }
 
+  const handleAcknowledgeDisclaimer = () =>{
+    sessionStorage.setItem("cv_parsing_disclaimer_ack", "true");
+    setIsDisclaimerOpen(false);
+  };
 
     return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -205,6 +210,62 @@ export default function CVUpload (){
                   )}
               </div>
             </Card>
+            {isDisclaimerOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+                role="dialog"
+                aria-modal ="true"
+                aria-labelledby = "parsing-disclaimer-title"
+              >
+                <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-8 shadow-xl">
+                  <h2 id="parsing-disclaimer-title" className="text-2xl font-bold mb-4">
+                    How CV parsing works
+                  </h2>
+
+                  <div className="space-y-4 text-base" style={{ color: "var(--color-text-secondary)" }}>
+                    <p>
+                      <strong>Rule-based parsing(default)</strong> keeps your CV entirely within our own systems and does not share it with any outside service.
+                      It works best with our standard CV template and is currently optimised for software and IT consulting profiles -CVs
+                       outside this format or industry may be extracted less accurately, or need more manual review.
+                    </p>
+
+                    <p>
+                      <strong>AI-assisted parsing</strong> reads a much wider range of CV formats and industries more accurately, 
+                      and does not require a fixed template, but involves sending your CV's text to Anthropic's Claude AI service
+                     for processing.
+                    </p>
+
+                    <p>
+                      Either way, no extracted information is added to a consultant's profile automatically - you'll review and confirm everything before it's saved.
+                    </p>
+
+                    <div>
+                      <h3 className="font-semibold text-black mb-2">Security</h3>
+                      <ul className="list-disc pl-5 space-y-1">
+                        <li>
+                          Anthropic's published policy is not to use API data to train its models - this is not a chat product, and CVs processed this way are not used to improve Anthropic's AI.
+                        </li>
+                        <li>
+                          Rule-based parsing never leaves our own infrastructure, hosted in South Africa, if you'd rather not use AI-assisted mode at all.
+                        </li>
+                        <li>
+                          Nothing is written to a consultant's profile without your review and explicit confirmation, regardless of which mode was used.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <button type="button"
+                  className = "text-lg mt-6 h-12 w-full rounded-lg font-semibold text-white"
+                  style={{ backgroundColor: "var(--color-primary)" }}
+                  onClick={handleAcknowledgeDisclaimer}>
+                    I understand, continue
+                  </button>
+                </div>
+              </div>
+            )
+              
+            }
+
             {isConfirmationOpen && uploadedCv && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
                 role="dialog"

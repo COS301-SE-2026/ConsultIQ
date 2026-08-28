@@ -12,8 +12,12 @@ export const cvParsingService = {
         return apiClient.get<{ url: string}>(`/cv/${cvField}/url`)
     },
 
-    async getStatus(cvFileId: string) : Promise<CvFileStatus>{
-        return apiClient.get<CvFileStatus>(`/cv/${cvFileId}/status`);
+    async getCvFile(cvFileId: string) : Promise<CvFileStatus>{
+        return apiClient.get<CvFileStatus>(`/cv/${cvFileId}`);
+    },
+
+    async discard(cvFileId: string) : Promise<{ message : string}>{
+        return apiClient.delete<{message: string}>(`/cv/${cvFileId}`);
     },
 
 };

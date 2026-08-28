@@ -14,7 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
-import { UploadCvDto } from 'src/cv-parsing/dto/upload-cv.dto';
+import { UploadCvDto } from '../../cv-parsing/dto/upload-cv.dto';
 
 @Controller('cv')
 @Controller('cv')

@@ -2,10 +2,10 @@ import { apiClient } from "../../../lib/api-client";
 import type { CvFileStatus, CvUploadResponse } from "../types/cv.types";
 
 export const cvParsingService = {
-    async upload(consultantId: String, file: File): Promise<CvUploadResponse>{
+    async upload(userId: String, file: File): Promise<CvUploadResponse>{
         const formData = new FormData();
         formData.append("file", file);
-        return apiClient.post<CvUploadResponse>(`/cv/upload/${consultantId}`, formData,);
+        return apiClient.post<CvUploadResponse>(`/cv/upload/${userId}`, formData,);
     },
 
     async getDownloadUrl(cvField: string): Promise<{url: string}>{

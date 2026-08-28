@@ -15,23 +15,22 @@ import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
 
 @Controller('cv')
-@Controller('cv')
 export class CvController {
 
     constructor(private readonly cvUploadService: CVUploadService) {}
 
-    @Post('upload/:consultantId')
+    @Post('upload/:userId')
     @HttpCode(HttpStatus.CREATED)
     @Roles(Role.CONSULTANT_MANAGER)
     @UseInterceptors(FileInterceptor('file'))
     async uploadCv(
-        @Param('consultantId') consultantId: string,
+        @Param('userId') userId: string,
         @UploadedFile() file: Express.Multer.File,
     ): Promise<{ cvFileId: string; message: string }> {
         if (!file) {
         throw new BadRequestException('No file was uploaded.');
         }
-        return this.cvUploadService.uploadCV(consultantId, file);
+        return this.cvUploadService.uploadCV(userId, file);
     }
 
     @Get(':cvFileId/url')

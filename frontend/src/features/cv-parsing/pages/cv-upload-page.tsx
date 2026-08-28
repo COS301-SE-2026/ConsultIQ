@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export default function CVUpload (){
     const navigate = useNavigate();
-    const { consultantId }= useParams<{consultantId: string}>();
+    const { userId }= useParams<{userId: string}>();
     const [isDragging,setDragging]= useState(false);
     const [isUploading, setIsUploading]= useState(false);
     const [uploadedCv, setUploadedCv]= useState<{
@@ -42,7 +42,7 @@ export default function CVUpload (){
         return;
      }
 
-     if(!consultantId){
+     if(!userId){
         toast.error("Consultant information is missing.");
         return;
      }
@@ -50,7 +50,7 @@ export default function CVUpload (){
      try{
         setIsUploading(true);
 
-        const response = await cvParsingService.upload(consultantId, filSelected,);
+        const response = await cvParsingService.upload(userId, filSelected,);
 
         setUploadedCv({
             cvFileId: response.cvFieldId,

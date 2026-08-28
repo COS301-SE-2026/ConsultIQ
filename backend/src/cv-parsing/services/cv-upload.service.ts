@@ -22,7 +22,7 @@ export class CVUploadService {
         private readonly s3Service: S3Service,
     ) {}
 
-    async uploadCV( consultantId: string, 
+    async uploadCV( userId: string, 
         file: Express.Multer.File
     ): Promise<{cvFileId: string; message: string}> {
 
@@ -38,18 +38,23 @@ export class CVUploadService {
             );
         }
 
-        const consultant =await this.prisma.consultant.findUnique({
-            where: {id: consultantId},
+        const user =await this.prisma.user.findUnique({
+            where: {id: userId},
+            select: {
+                id: true,
+                role: true,
+                status: true,
+            },
         });
 
-        if(!consultant) {
+        if(!user || user.role !== "CONSULTANT") {
             throw new BadRequestException(
-                `Consultant with id ${consultantId} not found.`,
+                `Consultant with id ${userId} not found.`,
             );
         }
 
         // Generate the s3 key and upload
-        const s3Key = this.s3Service.generateS3Key(consultantId, file.originalname);
+        const s3Key = this.s3Service.generateS3Key(userId, file.originalname);
         await this.s3Service.uploadFile(s3Key, file.buffer, file.mimetype);
 
         const s3Url = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
@@ -57,7 +62,8 @@ export class CVUploadService {
         // Then create record
         const cvFile = await this.prisma.cvFile.create({
             data: {
-                consultantId,
+                userId,
+                consultantId: null,
                 fileName: file.originalname,
                 mimeType: file.mimetype,
                 fileSize: file.size,
@@ -68,7 +74,7 @@ export class CVUploadService {
             },
         });
 
-        this.logger.log(`CV uploaded for consultant ${consultantId}: ${cvFile.id}`);
+        this.logger.log(`CV uploaded for consultant ${userId}: ${cvFile.id}`);
 
         return {
             cvFileId: cvFile.id,

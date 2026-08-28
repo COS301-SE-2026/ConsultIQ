@@ -186,6 +186,7 @@ model User {
   adminActionsPerformed AdminAuditLog[]      @relation("AdminActions")
   adminActionsReceived  AdminAuditLog[]      @relation("AdminTargets")
 
+  @@index([status])
   @@map("users")
 }
 
@@ -276,6 +277,7 @@ model ConsultantSkill {
   skill           Skill           @relation(fields: [skillId], references: [id])
 
   @@unique([consultantId, skillId])
+  @@index([skillId, consultantId])
   @@map("consultant_skills")
 }
 
@@ -401,6 +403,8 @@ model ProjectPlacement {
   project      Project         @relation(fields: [projectId], references: [id])
   consultant   Consultant      @relation(fields: [consultantId], references: [id])
 
+  @@index([consultantId, status, startDate, endDate])
+  @@index([projectId, consultantId, status])
   @@map("project_placements")
 }
 
@@ -526,11 +530,16 @@ model MatchRun {
   totalConsultantsScored   Int              @default(0)
   totalConsultantsExcluded Int              @default(0)
   totalConsultantsPlaced   Int              @default(0)
+  progress                 Int              @default(0)
+  errorMessage             String?
   results                  MatchRunResult[]
   configurationSnapshot    Json
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([projectId, createdAt])
+  @@index([projectId, status])
 }
 
 model MatchRunResult {
@@ -544,4 +553,8 @@ model MatchRunResult {
   isPlaced     Boolean    @default(false)
   consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@unique([matchRunId, consultantId])
+  @@index([matchRunId, rank])
+  @@index([consultantId])
 }

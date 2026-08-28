@@ -79,6 +79,7 @@ describe('ScoringPipelineService', () => {
             mockDto.project,
             mockedActiveWeights,
             mockActiveFactors,
+            mockExcludedFactors,
         );
 
         expect(result).toEqual(mockScoringResults);
@@ -117,4 +118,69 @@ describe('ScoringPipelineService', () => {
 
         expect(dataIngestionService.ingestData).toHaveBeenCalledTimes(1);
     })
+
+    it('should use provided resolvedContext and skip data ingestion', async () => {
+        const mockDto = { consultant: {}, project: {} } as EntryScoringDataDto;
+        const mockResolvedContext = {
+            projectId: 'project-01',
+            activeWeights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.5 },
+            activeFactors: new Set([ScoringFactor.SKILL_ALIGNMENT]),
+            excludedFactors: new Set(),
+        } as any;
+
+        const mockScoringResults: ScoringResults = {
+            excluded: false,
+            factorScores: {},
+            redistributedWeights: {},
+            factorDetails: {},
+        };
+
+        scoringOrchestrator.scoreConsultant.mockResolvedValue(mockScoringResults);
+
+        const result = await service.scoreConsultant(mockDto, mockResolvedContext);
+
+        expect(dataIngestionService.ingestData).not.toHaveBeenCalled();
+
+        expect(scoringOrchestrator.scoreConsultant).toHaveBeenCalledWith(
+            mockDto.consultant,
+            mockDto.project,
+            mockResolvedContext.activeWeights,
+            mockResolvedContext.activeFactors,
+            mockResolvedContext.excludedFactors,
+        );
+        expect(result).toEqual(mockScoringResults);
+    });
+
+    it('should pass availabilityAllocations to the orchestrator when provided', async () => {
+        const mockDto = { consultant: {}, project: {} } as EntryScoringDataDto;
+
+        const mockResolvedContext = {
+            projectId: 'project-01',
+            activeWeights: { [ScoringFactor.SKILL_ALIGNMENT]: 0.5 },
+            activeFactors: new Set([ScoringFactor.SKILL_ALIGNMENT]),
+            excludedFactors: new Set(),
+        } as any;
+
+        const mockAllocations = new Map<string, number>([['consultant-01', 50]]);
+
+        const mockScoringResults: ScoringResults = {
+            excluded: false,
+            factorScores: {},
+            redistributedWeights: {},
+            factorDetails: {},
+        };
+
+        scoringOrchestrator.scoreConsultant.mockResolvedValue(mockScoringResults);
+
+        await service.scoreConsultant(mockDto, mockResolvedContext, mockAllocations);
+
+        expect(scoringOrchestrator.scoreConsultant).toHaveBeenCalledWith(
+            mockDto.consultant,
+            mockDto.project,
+            mockResolvedContext.activeWeights,
+            mockResolvedContext.activeFactors,
+            mockResolvedContext.excludedFactors,
+            mockAllocations,
+        );
+    });
 })

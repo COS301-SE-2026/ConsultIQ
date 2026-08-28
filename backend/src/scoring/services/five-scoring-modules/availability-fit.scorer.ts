@@ -16,34 +16,39 @@ export class AvailabilityFitScorer {
   async score(
     consultant: RawConsultantDto,
     project: RawProjectDto,
+    preloadedAllocation?: number,
   ): Promise<FactorScoreResult> {
-    const dateConditions: any[] = [];
+    let totalAllocation = preloadedAllocation;
 
-    //start date must be lesser than the endate
-    if (project.endDate) {
-      dateConditions.push({ startDate: { lte: project.endDate } });
+    if (totalAllocation === undefined) {
+      const dateConditions: any[] = [];
+
+      //start date must be lesser than the endate
+      if (project.endDate) {
+        dateConditions.push({ startDate: { lte: project.endDate } });
+      }
+
+      dateConditions.push({
+        OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
+      });
+
+      const overlapping = await this.prisma.projectPlacement.findMany({
+        where: {
+          consultantId: consultant.consultantId,
+          // Filter out consultants that have been been removed earlier during a project
+          status: { notIn: ['TERMINATED', 'CANCELLED'] },
+          AND: dateConditions,
+        },
+        select: {
+          allocation: true,
+        },
+      });
+
+      totalAllocation = overlapping.reduce(
+        (sum, placement) => sum + (placement.allocation ?? 0),
+        0,
+      );
     }
-
-    dateConditions.push({
-      OR: [{ endDate: { gte: project.startDate } }, { endDate: null }],
-    });
-
-    const overlapping = await this.prisma.projectPlacement.findMany({
-      where: {
-        consultantId: consultant.consultantId,
-        // Filter out consultants that have been been removed earlier during a project
-        status: { notIn: ['TERMINATED', 'CANCELLED'] },
-        AND: dateConditions,
-      },
-      select: {
-        allocation: true,
-      },
-    });
-
-    const totalAllocation = overlapping.reduce(
-      (sum, placement) => sum + (placement.allocation ?? 0),
-      0,
-    );
 
     const remainingCapacity = 100 - totalAllocation;
     const reqAlloc = project.requiredAllocationPercentage;

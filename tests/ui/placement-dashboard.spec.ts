@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
 
-
 const mockProjectId = 'project-01';
 const mockRunId = 'run-01';
 
@@ -18,45 +17,66 @@ const mockRecommendation = {
     finalScore: 85,
     rank: 1,
     isPlaced: false,
-}
+};
 
-type Role = 'ADMIN' | 'PROJECT_MANAGER' | 'CONSULTANT_MANAGER' | 'CONSULTANT';
-
-
-//Mock logged in admin with retrieved user account
-async function mockAuth(page: Page, role: Role = 'ADMIN') {
-    await page.route('***/auth/me', async (route) => {
+async function mockAuth(page: Page) {
+    await page.route('**/auth/me', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
                 userId: 'test-admin-id',
                 email: 'admin@consultiq.com',
-                role,
+                role: 'ADMIN',
                 dashboardRoute: '/admin-dashboard',
             })
-        })
-    })
+        });
+    });
 }
 
-async function mockStatsEndpoint(page: Page,
-    { status = 200, body = mockStats }: { status?: number; body?: unknown } = {}) {
-    await page.route(`**/projects/${mockProjectId}/match-run/${mockRunId}/stats`, async (route) => {
+async function mockNetworkRequests(page: Page) {
+
+    await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}`), async (route) => {
         await route.fulfill({
-            status,
+            status: 200,
             contentType: 'application/json',
-            body: JSON.stringify(body),
-        })
-    })
+            body: JSON.stringify({ id: mockProjectId, projectName: 'Mock Dashboard Project', status: 'OPEN' }),
+        });
+    });
+
+    await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}`), async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([mockRecommendation]),
+        });
+    });
+
+    await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}/stats`), async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(mockStats),
+        });
+    });
+
+    await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}/status`), async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({ runId: mockRunId, status: 'COMPLETED', progress: 100 }),
+        });
+    });
 }
 
 test.describe('UI Test Placement Dashboard', () => {
     test.beforeEach(async ({ page }) => {
         await mockAuth(page);
-        await mockStatsEndpoint(page);
-    })
+        await mockNetworkRequests(page);
+    });
 
     test('should render dashboard header', async ({ page }) => {
+
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
 
         await expect(
@@ -65,23 +85,26 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render match run count stats', async ({ page }) => {
-        const statsResponse = page.waitForResponse(
-            (res) => res.url().includes(`${mockProjectId}`) && res.url().includes('stats')
-        );
+
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
-        const res = await statsResponse;
-        expect(res.status()).toBe(200);
-        const statsArea = page;
-        await expect(statsArea.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
-        await expect(statsArea.getByText(String(mockStats.totalPlaced), { exact: true })).toBeVisible();
-        await expect(statsArea.getByText(String(mockStats.totalExcluded), { exact: true })).toBeVisible();
+
+        await expect(page.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
+        await expect(page.getByText(String(mockStats.totalPlaced), { exact: true })).toBeVisible();
+        await expect(page.getByText(String(mockStats.totalExcluded), { exact: true })).toBeVisible();
     });
 
-
     test('should render recommendations passed using router location state', async ({ page }) => {
+        await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}/status`), async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({ runId: mockRunId, status: 'IN_PROGRESS', progress: 50 })
+            });
+        });
+
         await page.goto('/');
 
-        await page.waitForLoadState('networkidle');
+        await page.waitForSelector('#root > *', { state: 'attached' });
 
         await page.evaluate(
             ({ projectId, runId, recommendation }) => {
@@ -91,11 +114,11 @@ test.describe('UI Test Placement Dashboard', () => {
                     `/placement-dashboard/${projectId}/${runId}`
                 );
                 window.dispatchEvent(new PopStateEvent('popstate'));
-
-            }, { projectId: mockProjectId, runId: mockRunId, recommendation: mockRecommendation }
+            },
+            { projectId: mockProjectId, runId: mockRunId, recommendation: mockRecommendation }
         );
 
         await expect(page.getByText(mockRecommendation.consultantName)).toBeVisible();
         await expect(page.getByText(String(mockRecommendation.finalScore))).toBeVisible();
-    })
-})
+    });
+});

@@ -7,7 +7,7 @@ ConsultIQ is an intelligent matching platform designed for consultancy firms. Us
 
 <div align="center">
 
-  <a href="https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/SRS.pdf">
+  <a href="https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%202/SRS%20V2.pdf">
     <img src="https://img.shields.io/badge/Requirements-SRS_Document-0284c7?style=for-the-badge&logo=googledocs&logoColor=white" alt="Requirements" />
   </a>
   <a href="https://github.com/COS301-SE-2026/ConsultIQ/actions">
@@ -19,6 +19,10 @@ ConsultIQ is an intelligent matching platform designed for consultancy firms. Us
   <a href="https://codecov.io/gh/COS301-SE-2026/ConsultIQ">
     <img src="https://img.shields.io/codecov/c/github/COS301-SE-2026/ConsultIQ?style=for-the-badge&logo=codecov&logoColor=white&token=X7XEPWW7PQ" alt="Coverage" />
   </a>
+
+<a href="https://consult-iq-red.vercel.app">
+  <img src="https://img.shields.io/uptimerobot/ratio/m803791290-ecfe839036e83b6ad466832e?style=for-the-badge" alt="Uptime Percentage" />
+</a>
 
 </div>
 

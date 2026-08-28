@@ -260,5 +260,25 @@ describe('ScoringService', () => {
 
       expect(result).toEqual(validFactors);
     });
+
+    it('coalesces concurrent project configuration cache misses', async () => {
+      let releaseLoad!: (value: typeof validOverrideFactors) => void;
+      const pendingLoad = new Promise<typeof validOverrideFactors>((resolve) => {
+        releaseLoad = resolve;
+      });
+      mockPrisma.projectScoringOverride.findMany.mockReturnValue(pendingLoad);
+
+      const firstRequest = service.resolveProjectWeights('project-1');
+      const secondRequest = service.resolveProjectWeights('project-1');
+
+      await Promise.resolve();
+      expect(mockPrisma.projectScoringOverride.findMany).toHaveBeenCalledTimes(1);
+
+      releaseLoad(validOverrideFactors);
+      await expect(Promise.all([firstRequest, secondRequest])).resolves.toEqual([
+        validOverrideFactors,
+        validOverrideFactors,
+      ]);
+    });
   });
 });

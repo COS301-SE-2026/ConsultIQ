@@ -7,11 +7,12 @@ import { AdminModule } from '../../admin.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
 
 describe('AdminUserService - Integration Test', () => {
+  let moduleRef: TestingModule;
   let service: AdminUserService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [AdminModule, PrismaModule],
     }).compile();
 
@@ -25,6 +26,9 @@ describe('AdminUserService - Integration Test', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
 
   //---------getAllUsers------------

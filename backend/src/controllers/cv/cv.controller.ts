@@ -20,8 +20,6 @@ import { UploadCvDto } from '../../cv-parsing/dto/upload-cv.dto';
 export class CvController {
   constructor(private readonly cvUploadService: CVUploadService) {}
 
-    constructor(private readonly cvUploadService: CVUploadService) {}
-
     @Post('upload/:userId')
     @HttpCode(HttpStatus.CREATED)
     @Roles(Role.CONSULTANT_MANAGER)
@@ -29,13 +27,13 @@ export class CvController {
     async uploadCv(
         @Param('userId') userId: string,
         @UploadedFile() file: Express.Multer.File,
+        @Body() dto?: UploadCvDto,
     ): Promise<{ cvFileId: string; message: string }> {
         if (!file) {
         throw new BadRequestException('No file was uploaded.');
         }
-        return this.cvUploadService.uploadCV(userId, file);
-    }
-    return this.cvUploadService.uploadCV(consultantId, file, dto?.parsingMethod);
+    
+    return this.cvUploadService.uploadCV(userId, file, dto?.parsingMethod);
   }
 
   @Get(':cvFileId/url')

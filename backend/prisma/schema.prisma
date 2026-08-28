@@ -186,7 +186,6 @@ model User {
   cvFiles               CvFile[]
   adminActionsPerformed AdminAuditLog[]      @relation("AdminActions")
   adminActionsReceived  AdminAuditLog[]      @relation("AdminTargets")
-  cvFiles               CvFile[]
 
   @@index([status])
   @@map("users")

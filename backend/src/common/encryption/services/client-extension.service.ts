@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { ENCRYPTION_MAP } from "./encryption.config"
-import { encrypt, decrypt } from "./crypto.service"
+import { getEncryptedFields, hasEncryptedFields } from "./encryption.config"
+import { encrypt, decrypt, } from "./crypto.service"
 
 @Injectable()
 export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -41,12 +41,12 @@ export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit
             query: {
                 $allModels: {
                     async $allOperations({ model, operation, args, query }) {
-                        const tableName = model?.toLowerCase();
-                        const fieldsToEncrypt = tableName ? ENCRYPTION_MAP[tableName] : null;
 
-                        if (!fieldsToEncrypt || fieldsToEncrypt.length === 0) {
+                        if(!hasEncryptedFields(model ?? "")){
                             return query(args);
                         }
+
+                        const fieldsToEncrypt= getEncryptedFields(model);
 
                         if (["create", "update", "upsert", "createMany", "updateMany"].includes(operation)) {
                             const writableArgs= args as {data?: unknown};

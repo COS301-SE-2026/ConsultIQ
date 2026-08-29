@@ -171,6 +171,21 @@ export class ConsultantService {
           }
         }
 
+        //create education
+        if (dto.education) {
+          for (const edu of dto.education) {
+            await tx.consultantEducation.create({
+              data: {
+                consultantId: consultant.id,
+                institution: edu.institution,
+                qualification: edu.qualification,
+                startDate: new Date(edu.startDate) ,
+                endDate: edu.endDate ? new Date(edu.endDate) : null,
+              },
+            });
+          }
+        }
+
         return { consultantId: consultant.id };
       })
       .then(async (result) => {

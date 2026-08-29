@@ -67,6 +67,7 @@ jobs:
           POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
           POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
+          ENCRYPTION_KEY: ${{secrets.ENCRYPTION_KEY}}
         ports:
           - 5432:5432
         options: >-

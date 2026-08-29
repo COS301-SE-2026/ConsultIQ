@@ -4,8 +4,10 @@ import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
- import { cvParsingService } from "../services/cv-parsing.service";
-//  import { createConsultantProfile } from "../../consultants/services/consultant.service";    
+import { cvParsingService } from "../services/cv-parsing.service";
+import { createConsultantProfile } from "../../consultants/services/consultant.service";  
+import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
+
 import type {
     CvFileStatus,
     ParsedCvData,
@@ -30,7 +32,26 @@ interface SkillFormRow extends ParsedSkill {
     confidenceLevel: number;
 }
 
- const POLL_INTERVAL_MS = 2000;
+
+//normalize job type and work model options to match backend enum values
+const JOB_TYPE_OPTIONS = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "FREELANCE"] as const;
+const WORK_MODEL_OPTIONS = ["ONSITE", "REMOTE", "HYBRID"] as const;
+
+type JobType = (typeof JOB_TYPE_OPTIONS)[number];
+type WorkModel = (typeof WORK_MODEL_OPTIONS)[number];
+
+interface ExperienceFormRow extends Omit<ParsedExperience, "jobType" | "workModel"> {
+    jobType?: JobType;
+    workModel?: WorkModel;
+}
+
+const normaliseEnum = <T extends string>(raw: string | undefined, options: readonly T[]): T | "" => {
+    if(!raw) return "";
+    const cleaned = raw.trim().toUpperCase().replace(/[\s-]+/g, "_");
+    return (options as readonly string[]).includes(cleaned) ? (cleaned as T) : "";
+}
+
+const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 
 export default function CVExtractionReview(){
@@ -44,7 +65,7 @@ export default function CVExtractionReview(){
 
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
-    const [experiences, setExperiences] = useState<ParsedExperience[]>([]);
+    const [experiences, setExperiences] = useState<ExperienceFormRow[]>([]);
     const [certifications, setCertifications] = useState<ParsedCertification[]>([]);
     const [education, setEducation] = useState<ParsedEducation[]>([]);
     const [manualFields, setManualFields] = useState<ManualFields>({
@@ -53,7 +74,7 @@ export default function CVExtractionReview(){
         availability: "AVAILABLE",
     });
 
-    const [isSubmitting, _setIsSubmitting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDiscarding, setIsDiscarding] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
@@ -103,7 +124,13 @@ export default function CVExtractionReview(){
               confidenceLevel: 1,
             })),
           );
-          setExperiences(data.experiences ?? []);
+          setExperiences(
+            (data.experiences ?? []).map((e) =>({
+                ...e,
+                jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
+                workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
+          })), );
+
           setCertifications(data.certifications ?? []);
           setEducation(data.education ?? []);
         }
@@ -132,7 +159,7 @@ export default function CVExtractionReview(){
         setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch} : s)));
     };
 
-    const updateExperience = (idx: number, patch: Partial<ParsedExperience>) =>{
+    const updateExperience = (idx: number, patch: Partial<ExperienceFormRow>) =>{
         setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
     }
 
@@ -144,9 +171,78 @@ export default function CVExtractionReview(){
         setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
     }
 
+    const validateBeforeSubmit = () : {error: string} | {error  : null; experiences : ParsedExperience[]} =>{
+        const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
+
+        if(!contact.fullName) return {error : "Full name is required."};
+        if(!/^\d{10}$/.test(normalisedPhone)) {
+            return {error : "Phone number must be exactly 10 digits."};
+        }
+        if(!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
+            return { error : "Please enter a valid South African ID number."};
+        }
+        if(manualFields.costToCompany && isNaN(Number(manualFields.costToCompany))) {
+            return { error : "Cost to company must be a valid number."};
+        }
+        if(!contact.city || !contact.province || !contact.addressLine1){
+            return {error : "Adress, city and province are required."};
+        }
+
+        const invalidIdx = experiences.findIndex(
+            (e) => !e.jobType || !e.workModel,
+        );
+
+        if(invalidIdx !== -1){
+            return { error : "Please select a job type and work model for every experience entry." };
+        }
+        return { error : null , experiences: experiences as ParsedExperience[]};
+    };
+
     const handleApprove = async  () =>{
-        
-    }
+        if(!userId) return;
+
+        const validationError = validateBeforeSubmit();
+        if(validationError){
+            toast.error(validationError.error ?? "Validation failed.");
+            return;
+        }
+
+        try{
+            setIsSubmitting(true);
+
+            const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
+            await createConsultantProfile({
+                consultantUserId: userId,
+                idNumber: manualFields.idNumber,
+                phone: normalisedPhone,
+                nationality: contact.nationality ?? "",
+                addressLine1: contact.addressLine1 ?? "",
+                addressLine2: contact.addressLine2,
+                suburb: contact.suburb,
+                city: contact.city ?? "",
+                province: contact.province ?? "",
+                postalCode: contact.postalCode,
+                costToCompany: Number(manualFields.costToCompany),
+                availability: manualFields.availability,
+                skills: skills.map((s) => ({
+                skillName: s.skillName,
+                competencyLevel: s.competencyLevel,
+                yearsExperience: s.yearsExperience,
+                confidenceLevel: s.confidenceLevel,
+                })),
+                experiences: experiences as ParsedExperience[],
+                certifications,
+                education,
+            });
+            ""
+            toast.success("Consultant profile created successfully");
+            navigate("/consultants-manager");
+        }catch(error){ 
+            toast.error(error instanceof Error ? error.message : "Failed to create consultant profile.");
+        }finally{
+            setIsSubmitting(false);
+        } 
+    };
 
     const handleDiscard = async  () =>{
         if(!cvFileId) return;
@@ -230,7 +326,7 @@ export default function CVExtractionReview(){
 
                 { viewState === "review" && cvFile &&(
                         <div className="max-w-4xl mx-auto flex flex-col gap-8">
-                            <Card className="p-6">
+                            <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
                                     Contact details
                                     {isLowConfidence("contact") && " (low extraction confidence — please verify) "}
@@ -262,15 +358,15 @@ export default function CVExtractionReview(){
                                     <label className="flex flex-col gap-1">
                                         <span className="text-sm font-medium">Availability</span>
                                         <select className="border rounded-lg h-10 px-2">
-                                            <option value="AVAILABILITY" >Availability</option>
-                                            <option value="UNAVAILABILITY">Unavailable</option>
+                                            <option value="AVAILABLE" >Available</option>
+                                            <option value="UNAVAILABLE">Unavailable</option>
                                             <option value="ON_LEAVE">On leave</option>
                                         </select>
                                     </label>
                                 </div>
                             </Card>
 
-                            <Card className="p-6">
+                            <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4"  style={{ color: isLowConfidence("skills") ? "#b45309" : undefined }} >
                                     Skills
                                     {isLowConfidence("skills") && " (low extraction confidence — please verify) "}
@@ -305,27 +401,47 @@ export default function CVExtractionReview(){
                                 ))}
                             </Card>
 
-                            <Card className="p-6">
+                            <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("experience") ? "#b45309" : undefined }}>
                                     Experience
                                 </h2>
                                 {experiences.map((exp, i) =>(
-                                    <div>
+                                    <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
                                         <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
+                                        <label className="flex flex-col gap-1">
+                                            <span className="text-sm">Job type</span>
+                                            <select value={ exp.jobType ?? ""} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
+                                                <option value="" disabled>Select job type</option>
+                                                <option value="FULL_TIME">Full-time</option>
+                                                <option value="PART_TIME">Part-time</option>
+                                                <option value="CONTRACT">Contract</option>
+                                                <option value="INTERNSHIP">Internship</option>
+                                                <option value="FREELANCE">Freelance</option>
+                                            </select>
+                                        </label>
+                                        <label className="flex flex-col gap-1">
+                                            <span className="text-sm">Work model</span>
+                                            <select value={exp.workModel ?? ""} onChange={(e) => updateExperience(i, { workModel: e.target.value as WorkModel })}>
+                                                <option value="">Select work model</option>
+                                                <option value="ONSITE">Onsite</option>
+                                                <option value="REMOTE">Remote</option>
+                                                <option value="HYBRID">Hybrid</option>
+                                            </select>
+                                        </label>
                                         <FormField label="Start date" value={exp.startDate} onChange={(v) => updateExperience(i, { startDate: v })} />
                                         <FormField label="End date" value={exp.endDate ?? ""} onChange={(v) => updateExperience(i, { endDate: v })} />
-                                        <div>
+                                        <div className="col-span-2">
                                             <FormField label="Description" value={exp.description} onChange={(v) => updateExperience(i, { description: v })} />
                                         </div>
                                     </div>
                                 ))}
                             </Card>
 
-                            <Card className="p-6">
+                            <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4"> Certifications</h2>
                                 {certifications.map((cert, i) =>(
-                                    <div>
+                                    <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Title" value={cert.title} onChange={(v) => updateCertification(i, { title: v })} />
                                         <FormField label="Issuing body" value={cert.issuingBody} onChange={(v) => updateCertification(i, { issuingBody: v })} />
                                         <FormField label="Start date" value={cert.startDate ?? ""} onChange={(v) => updateCertification(i, { startDate: v })} />
@@ -334,10 +450,10 @@ export default function CVExtractionReview(){
                                 ))}
                             </Card>
 
-                            <Card className="p-6">
+                            <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4"> Education</h2>
                                 {education.map((edu, i) =>(
-                                    <div>
+                                    <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Institution" value={edu.institution} onChange={(v) => updateEducation(i, { institution: v })} />
                                         <FormField label="Qualification" value={edu.qualification} onChange={(v) => updateEducation(i, { qualification: v })} />
                                         <FormField label="Start date" value={edu.startDate ?? ""} onChange={(v) => updateEducation(i, { startDate: v })} />

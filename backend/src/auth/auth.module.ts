@@ -11,6 +11,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { RefreshTokenService } from './services/auth.refresh-token.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TokenService } from '../common/services/token.service';
 @Module({
   imports: [
     // Rate-limit the /auth/login route at the HTTP layer as a first defence.
@@ -38,6 +39,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     LockoutService,
     AuditLogService,
     RefreshTokenService,
+    TokenService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

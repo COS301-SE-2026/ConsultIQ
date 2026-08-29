@@ -6,7 +6,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import {EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
+//import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
@@ -72,7 +73,7 @@ describe('ConsultantService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConsultantService,
-        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: EncryptionPrismaClient, useValue: mockPrismaService },
         { provide: NotificationService, useValue: mockNotificationService },
         { provide: CACHE_MANAGER, useValue: mockCacheManager },
         { provide: RedisUtilityService, useValue: mockRedisUtilityService },

@@ -18,13 +18,14 @@ interface LocationCardProps {
   readonly onSave?: (updatedLocation: { addressLine1: string; addressLine2?: string; suburb?: string; city: string; province: string, postalCode?: string }) => void;
 }
 
-interface LocationForm {
-  addressLine1: string;
-  addressLine2: string;
-  suburb: string;
-  city: string;
-  province: string;
-  postalCode: string;
+
+interface LocationForm{
+  readonly addressLine1: string;
+  readonly addressLine2: string;
+  readonly suburb: string;
+  readonly city: string;
+  readonly province: string;
+  readonly postalCode: string
 }
 
 interface FormFieldProps {
@@ -104,9 +105,9 @@ export default function LocationCard({
     try {
       await onSave?.({
         addressLine1: location.addressLine1.trim(),
-        addressLine2: location.addressLine2.trim() || undefined,
+        addressLine2: location.addressLine2?.trim() || undefined,
         suburb: location.suburb || undefined,
-        city: location.suburb.trim(),
+        city: location.city.trim(),
         province: location.province,
         postalCode: location.postalCode.trim() || undefined,
       });
@@ -151,6 +152,21 @@ export default function LocationCard({
     },
   });
 
+  const Field_Map: {key: keyof LocationForm;label:string;error?:string }[]=[
+  {key:"addressLine1",label:"Address line 1"},
+  {key:"addressLine2",label:"Address line 2"},
+  {key:"suburb",label:"Suburb"},
+  {key:"city",label:"City"},
+  {key:"postalCode",label:"Postal Code"},
+
+];
+
+const fieldErrors:Partial<Record<keyof LocationForm,string>>={
+  addressLine1: address1Error,
+  city: cityError,
+}
+
+
   return (
     <div className="relative">
 
@@ -183,7 +199,7 @@ export default function LocationCard({
                   <li>
                     <button
                       type="button"
-                      className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl"
+                      className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl w-full flex justify-start"
                       onClick={handleSelectAddress}
                     >
                       {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
@@ -195,7 +211,7 @@ export default function LocationCard({
             </div>
 
             {isAddressLoading && (
-              <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+              <p className="text-sm text-brand-muted animate-pulse">Finding address details...</p>
             )}
           </>
 
@@ -205,34 +221,15 @@ export default function LocationCard({
           {isEditing ? (
 
             <>
-
-              <FormField
-                label="Address line 1"
-                 value={location.addressLine1}
-                 onChange={(e) => updateLocation("addressLine1", e)}
-                 error={address1Error}
-              />
-
-              <FormField
-                label="Address line 2"
-                value={location.addressLine2}
-                onChange={(e) => updateLocation("addressLine2", e)}
-              />
-             
-             <FormField
-                label="Suburb"
-                value={location.suburb}
-                onChange={(e) => updateLocation("suburb", e)}
-             />
-
-              <FormField
-                label="City"
-                value={location.city}
-                onChange={(e) => updateLocation("city", e)}
-                error={cityError}
-             />
-
-             
+              {Field_Map.map(({key,label})=>(
+                <FormField
+                  key={key}
+                  label={label}
+                  value={location[key]}
+                  onChange={(v)=>updateLocation(key,v)}
+                  error={fieldErrors[key]}
+                />
+              ))}
 
               <div>
                 <label className="text-sm font-medium" htmlFor="form-province">Province</label>
@@ -255,21 +252,19 @@ export default function LocationCard({
                 </select>
               </div>
 
-             <FormField
-                label="Postal Code"
-                value={location.postalCode}
-                onChange={(e) => updateLocation("postalCode", e)}
-             />
-
             </>
           ) : (
             <>
-              <DetailField label="Address line 1" value={location.addressLine1} variant="compact" />
-              <DetailField label="Address line 2" value={location.addressLine2 ?? "Address line 2 not provided"} variant="compact" />
-              <DetailField label="Suburb" value={location.suburb ?? "Suburb not provided"} variant="compact" />
-              <DetailField label="City" value={location.city} variant="compact" />
+            {Field_Map.map(({key,label})=>(
+              <DetailField
+                key={key}
+                label={key === "postalCode" ? "Postal code" : label}
+                value={location[key] || `${label} not provided`}
+                variant="compact"
+              />
+            ))}
+            
               <DetailField label="Province" value={location.province} variant="compact" />
-              <DetailField label="Postal code" value={location.postalCode ?? "Postal code not provided"} variant="compact" />
             </>
           )}
 

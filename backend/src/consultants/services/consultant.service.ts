@@ -31,7 +31,7 @@ import {
   ProjectConsultantDto,
   ProjectConsultantsResponseDto,
 } from '../dto/consultant-placement.dto';
-import { EncryptionPrismaClient } from 'src/common/encryption/services/client-extension.service';
+import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
 
 @Injectable()
 export class ConsultantService {

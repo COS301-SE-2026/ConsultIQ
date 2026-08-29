@@ -3,7 +3,8 @@ import { ConsultantController } from '../controllers/consultants/consultant.cont
 import { ConsultantService } from './services/consultant.service';
 import { EncryptionModule } from 'src/common/encryption/encryption.module';
 @Module({
+  imports:[EncryptionModule],
   controllers: [ConsultantController],
-  providers: [ConsultantService,EncryptionModule],
+  providers: [ConsultantService],
 })
 export class ConsultantsModule { } 

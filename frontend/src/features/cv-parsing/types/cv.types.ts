@@ -23,8 +23,8 @@ export interface CvUploadResponse{
 
 export interface ParsedSkill{
     skillName: string;
-    yearsExperience: string;
-    extractionConfidence: string;
+    yearsExperience: number;
+    extractionConfidence: number;
 }
 
 export interface ParsedExperience {

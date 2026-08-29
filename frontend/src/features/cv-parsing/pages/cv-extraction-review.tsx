@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
-import { cvParsingService } from "../services/cv-parsing.service";
-import { createConsultantProfile } from "../../consultants/services/consultant.service";    
+// import { cvParsingService } from "../services/cv-parsing.service";
+// import { createConsultantProfile } from "../../consultants/services/consultant.service";    
 import type {
     CvFileStatus,
     ParsedCvData,
     ParsedSkill,
     ParsedExperience,
-    ParsedEducation,
-    ParsedCertification,
+    // ParsedEducation,
+    // ParsedCertification,
     FieldWarning,
 } from "../types/cv.types";
 
@@ -29,39 +29,47 @@ interface SkillFormRow extends ParsedSkill {
     confidenceLevel: number;
 }
 
-const POLL_INTERVAL_MS = 2000;
+// const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 
 export default function CVExtractionReview(){
     const navigate = useNavigate();
-    const { userId, cvField } = useParams<{userId: string; cvField: string}>();
+    const { userId, /*cvField */} = useParams<{userId: string; /*cvField: string*/}>();
 
-    const [viewState, setViewState] = useState<ViewState>("loading");
-    const [cvFile, setCvFile] = useState<CvFileStatus | null>(null);
-    const [fieldWarnings, setFieldWarnings] = useState<FieldWarning[]>([]);
-    const [failureReason, setFailureReason] = useState<string>("");
+    const [viewState, _setViewState] = useState<ViewState>("loading");
+    const [cvFile, _setCvFile] = useState<CvFileStatus | null>(null);
+    const [fieldWarnings, _setFieldWarnings] = useState<FieldWarning[]>([]);
+    const [failureReason, _setFailureReason] = useState<string>("");
 
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
     const [experiences, setExperiences] = useState<ParsedExperience[]>([]);
-    const [certificaions, setCertifications] = useState<ParsedCertification[]>([]);
-    const [education, setEducation] = useState<ParsedEducation[]>([]);
+    // const [certificaions, setCertifications] = useState<ParsedCertification[]>([]);
+    // const [education, setEducation] = useState<ParsedEducation[]>([]);
     const [manualFields, setManualFields] = useState<ManualFields>({
         idNumber: "",
         costToCompany: "",
         availability: "AVAILABLE",
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDiscarding, setIsDiscarding] = useState(false);
-    const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-    const confidenceScores = cvFile?.parsedData?.confidenceScores;
+    // const [isSubmitting, setIsSubmitting] = useState(false);
+    // const [isDiscarding, setIsDiscarding] = useState(false);
+    // const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+    // const confidenceScores = cvFile?.parsedData?.confidenceScores;
 
     const warningByPath = useMemo(() =>{
         const map = new Map<string, string>();
         fieldWarnings.forEach((w) => map.set(w.path, w.message));
         return map;
     }, [fieldWarnings]);
+
+    const updateSkill = (idx: number, patch:Partial<SkillFormRow>) =>{
+        setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch} : s)));
+    };
+
+    const updateExperience = (idx: number, patch: Partial<ParsedExperience>) =>{
+        setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
+    }
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -168,8 +176,10 @@ export default function CVExtractionReview(){
                                 </h2>
                                 {skills.map((skill, i) =>(
                                     <div key={i} className="grid grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
-                                        {/* <FormField label="Skill" value={skill.skillName} />
-                                        <FormField label="Years experience" value={String(skill.yearsExperience)} /> */}
+                                        <FormField label="Skill" value={skill.skillName} onChange={(v) => updateSkill(i, { skillName: v})}/>
+                                        <FormField label="Years experience" value={String(skill.yearsExperience)} 
+                                        onChange={(v) => updateSkill(i, {yearsExperience: Number(v) || 0})} />
+                                        
                                         <label className="flex flex-col gap-1">
                                             <span className="text-sm font-medium">Competency</span>
                                             <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel}>
@@ -178,11 +188,36 @@ export default function CVExtractionReview(){
                                                 <option value="EXPERT">Expert</option>
                                             </select>
                                         </label>
-                                        <label>
+                                        <label className="flex flex-col gap-1">
+                                            <span className="text-sm font-medium"> Confidence (1-4) </span>
+                                            <input type="number" min={1} max={4} className="border rounded-lg h-10 px-2"
+                                                value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {confidenceLevel: Number(e.target.value)})}
+                                             />
                                         </label>
+                                        {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
+                                            <p className="col-span-4 text-xs text-amber-700">
+                                                Low extraction confidence for this skill — please verify.
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
+                            </Card>
 
+                            <Card className="p-6">
+                                <h2 className="text-xl font-bold mb-4">
+                                    Experience
+                                </h2>
+                                {experiences.map((exp, i) =>(
+                                    <div>
+                                        <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
+                                        <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
+                                        <FormField label="Start date" value={exp.startDate} onChange={(v) => updateExperience(i, { startDate: v })} />
+                                        <FormField label="End date" value={exp.endDate ?? ""} onChange={(v) => updateExperience(i, { endDate: v })} />
+                                        <div>
+                                            <FormField label="Description" value={exp.description} onChange={(v) => updateExperience(i, { description: v })} />
+                                        </div>
+                                    </div>
+                                ))}
                             </Card>
                         </div>
                     )

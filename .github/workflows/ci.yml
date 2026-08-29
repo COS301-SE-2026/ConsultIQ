@@ -67,7 +67,6 @@ jobs:
           POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
           POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
           POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
-          ENCRYPTION_KEY: ${{secrets.ENCRYPTION_KEY}}
         ports:
           - 5432:5432
         options: >-
@@ -106,6 +105,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
           echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+          echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> .env
 
       - name: Initialize Test Database
         working-directory: backend

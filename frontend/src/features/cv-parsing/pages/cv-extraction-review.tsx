@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
@@ -11,8 +11,8 @@ import type {
     ParsedCvData,
     ParsedSkill,
     ParsedExperience,
-    // ParsedEducation,
-    // ParsedCertification,
+    ParsedEducation,
+    ParsedCertification,
     FieldWarning,
 } from "../types/cv.types";
 
@@ -44,16 +44,16 @@ export default function CVExtractionReview(){
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
     const [experiences, setExperiences] = useState<ParsedExperience[]>([]);
-    // const [certificaions, setCertifications] = useState<ParsedCertification[]>([]);
-    // const [education, setEducation] = useState<ParsedEducation[]>([]);
+    const [certifications, setCertifications] = useState<ParsedCertification[]>([]);
+    const [education, setEducation] = useState<ParsedEducation[]>([]);
     const [manualFields, setManualFields] = useState<ManualFields>({
         idNumber: "",
         costToCompany: "",
         availability: "AVAILABLE",
     });
 
-    // const [isSubmitting, setIsSubmitting] = useState(false);
-    // const [isDiscarding, setIsDiscarding] = useState(false);
+    const [isSubmitting, _setIsSubmitting] = useState(false);
+    const [isDiscarding, _setIsDiscarding] = useState(false);
     // const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     // const confidenceScores = cvFile?.parsedData?.confidenceScores;
 
@@ -69,6 +69,22 @@ export default function CVExtractionReview(){
 
     const updateExperience = (idx: number, patch: Partial<ParsedExperience>) =>{
         setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
+    }
+
+    const updateCertification = (idx: number, patch: Partial<ParsedCertification>) =>{
+        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch} : c)))
+    }
+
+    const updateEducation = (idx: number, patch: Partial<ParsedEducation>) =>{
+        setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
+    }
+
+    const handleApprove = async  () =>{
+        
+    }
+
+    const handleDiscard = async  () =>{
+        
     }
 
     return (
@@ -219,12 +235,48 @@ export default function CVExtractionReview(){
                                     </div>
                                 ))}
                             </Card>
+
+                            <Card className="p-6">
+                                <h2 className="text-xl font-bold mb-4"> Certifications</h2>
+                                {certifications.map((cert, i) =>(
+                                    <div>
+                                        <FormField label="Title" value={cert.title} onChange={(v) => updateCertification(i, { title: v })} />
+                                        <FormField label="Issuing body" value={cert.issuingBody} onChange={(v) => updateCertification(i, { issuingBody: v })} />
+                                        <FormField label="Start date" value={cert.startDate ?? ""} onChange={(v) => updateCertification(i, { startDate: v })} />
+                                        <FormField label="End date" value={cert.endDate ?? ""} onChange={(v) => updateCertification(i, { endDate: v })} />
+                                    </div>
+                                ))}
+                            </Card>
+
+                            <Card className="p-6">
+                                <h2 className="text-xl font-bold mb-4"> Education</h2>
+                                {education.map((edu, i) =>(
+                                    <div>
+                                        <FormField label="Institution" value={edu.institution} onChange={(v) => updateEducation(i, { institution: v })} />
+                                        <FormField label="Qualification" value={edu.qualification} onChange={(v) => updateEducation(i, { qualification: v })} />
+                                        <FormField label="Start date" value={edu.startDate ?? ""} onChange={(v) => updateEducation(i, { startDate: v })} />
+                                        <FormField label="End date" value={edu.endDate ?? ""} onChange={(v) => updateEducation(i, { endDate: v })} />
+                                    </div>
+                                ))}
+                            </Card>
+
+                            <div className="flex justify-between items-center pb-10">
+                                <button className="flex items-center gap-2 h-12 px-6 rounded-lg font-semibold border border-red-300 text-red-600"
+                                    onClick={handleDiscard} disabled={isDiscarding || isSubmitting} >
+                                    <Trash2 className="h-5 w-5" />
+                                    {isDiscarding ? "Discarding..." : "Discard this CV"}
+                                </button>
+
+                                <button className="h-12 px-8 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700"
+                                    onClick={handleApprove} disabled={isSubmitting || isDiscarding} >
+                                    {isSubmitting ? "Creating profile..." : "Approve and create profile"}
+                                </button>
+                            </div>
                         </div>
-                    )
-                }
+                    )}
             </main>
         </div>
-        </div>
+    </div>
     );
 }
 

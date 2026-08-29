@@ -15,31 +15,31 @@ export interface ParsedExperience {
 }
 
 export interface ParsedCertification {
-    title: string;
-    issuingBody: string;
-    startDate?: string;
-    endDate?: string;
+  title: string;
+  issuingBody: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ParsedEducation {
-    institution: string;
-    qualification: string;
-    fieldOfStudy?: string;
-    startDate?: string;
-    endDate?: string;
+  institution: string;
+  qualification: string;
+  fieldOfStudy?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface ParsedContactInfo {
-    fullName?: string;
-    email?: string;
-    phone?: string;
-    nationality?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    suburb?: string;
-    city?: string;
-    province?: string;
-    postalCode?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  nationality?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  suburb?: string;
+  city?: string;
+  province?: string;
+  postalCode?: string;
 }
 
 export interface ConfidenceScores {
@@ -52,12 +52,12 @@ export interface ConfidenceScores {
 }
 
 export interface ParsedCvData {
-    contact: ParsedContactInfo;
-    skills: ParsedSkill[];
-    experiences: ParsedExperience[];
-    certifications: ParsedCertification[];
-    confidenceScores: ConfidenceScores;
-    education: ParsedEducation[];
+  contact: ParsedContactInfo;
+  skills: ParsedSkill[];
+  experiences: ParsedExperience[];
+  certifications: ParsedCertification[];
+  confidenceScores: ConfidenceScores;
+  education: ParsedEducation[];
 }
 
 // Only used by AI Parsing
@@ -71,6 +71,12 @@ export interface CvParsingResult {
   success: boolean;
   data?: ParsedCvData;
   competencySignals?: SkillCompetencySignal[];
+  fieldWarnings?: FieldWarning[];
   error?: string;
   processingTimeMs: number;
+}
+
+export interface FieldWarning {
+  path: string; // e.g. "contact.email", "experiences[1].endDate"
+  message: string; // human-readable, shown directly on the review screen
 }

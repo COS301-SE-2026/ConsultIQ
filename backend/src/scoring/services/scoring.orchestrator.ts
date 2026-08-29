@@ -10,16 +10,16 @@ import { RawConsultantDto } from '../dto/raw-consultant.dto';
 
 export type ScoringResults =
   | {
-    excluded: false;
-    factorScores: Partial<Record<ScoringFactor, number>>;
-    redistributedWeights: Partial<Record<ScoringFactor, number>>;
-    factorDetails: Partial<Record<ScoringFactor, string>>;
-  }
+      excluded: false;
+      factorScores: Partial<Record<ScoringFactor, number>>;
+      redistributedWeights: Partial<Record<ScoringFactor, number>>;
+      factorDetails: Partial<Record<ScoringFactor, string>>;
+    }
   | {
-    excluded: true;
-    reason: string;
-    missingMandatorySkills: string[];
-  };
+      excluded: true;
+      reason: string;
+      missingMandatorySkills: string[];
+    };
 /*
 Calcaute the five scoring factors considering the avtive ones and redistributing inactive weights into the active weights if the weights are not redistributed
 */
@@ -33,7 +33,7 @@ export class ScoringOrchestrator {
     private readonly costFitScorer: CostFitScorer,
     private readonly geographicFitScorer: GeographicFitScorer,
     private readonly availabilityFitScorer: AvailabilityFitScorer,
-  ) { }
+  ) {}
 
   async scoreConsultant(
     consultant: RawConsultantDto,
@@ -82,7 +82,8 @@ export class ScoringOrchestrator {
       scoresByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.score;
 
       if (competencyResult.details) {
-        detailsByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.details;
+        detailsByFactor[ScoringFactor.COMPETENCY_LEVEL] =
+          competencyResult.details;
       }
     }
 

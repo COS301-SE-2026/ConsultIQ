@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CvController } from './cv.controller';
 import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
 import { BadRequestException } from '@nestjs/common';
+import { CvParsingMethodDto, UploadCvDto } from '../../cv-parsing/dto/upload-cv.dto';
+import { CvParsingMethod } from '@prisma/client';
 
 const mockCVUploadService = {
   uploadCV: jest.fn(),
@@ -37,23 +39,42 @@ describe('CvController', () => {
   });
 
   describe('uploadCv', () => {
-    it('should call service with consultantId and file and return result', async () => {
+    it('should call service with consultantId, file and the parsing method and return result', async () => {
       mockCVUploadService.uploadCV.mockResolvedValue({
         cvFileId: 'cvfile-uuid-1',
         message: 'CV uploaded successfully.',
       });
 
       const file = mockFile();
-      const result = await controller.uploadCv('consultant-uuid-1', file);
+      const dto: UploadCvDto = { parsingMethod: CvParsingMethodDto.AI_ASSISTED };
+      const result = await controller.uploadCv('consultant-uuid-1', file, dto);
 
-      expect(mockCVUploadService.uploadCV).toHaveBeenCalledWith('consultant-uuid-1', file);
+      expect(mockCVUploadService.uploadCV).toHaveBeenCalledWith('consultant-uuid-1', file, CvParsingMethod.AI_ASSISTED);
       expect(result.cvFileId).toBe('cvfile-uuid-1');
       expect(result.message).toBe('CV uploaded successfully.');
     });
 
+    it('does not throw when dto itself is undefined, and passes undefined through for the service to default', async () => {
+      mockCVUploadService.uploadCV.mockResolvedValue({
+        cvFileId: 'cvfile-uuid-2',
+        message: 'CV uploaded successfully.',
+      });
+
+      const file = mockFile();
+      const result = await controller.uploadCv('consultant-uuid-1', file, undefined as any);
+
+      expect(mockCVUploadService.uploadCV).toHaveBeenCalledWith(
+        'consultant-uuid-1',
+        file,
+        undefined,
+      );
+
+      expect(result.cvFileId).toBe('cvfile-uuid-2');
+    });
+
     it('should throw BadRequestException if no file is uploaded', async () => {
       await expect(
-        controller.uploadCv('consultant-uuid-1', undefined as any),
+        controller.uploadCv('consultant-uuid-1', undefined as any, undefined as any),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -63,7 +84,7 @@ describe('CvController', () => {
       );
 
       await expect(
-        controller.uploadCv('consultant-uuid-1', mockFile()),
+        controller.uploadCv('consultant-uuid-1', mockFile(), {} as UploadCvDto),
       ).rejects.toThrow(BadRequestException);
     });
   });

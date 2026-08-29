@@ -8,4 +8,4 @@ import { LocationService } from './services/location.service';
     exports: [LocationService],
 
 })
-export class LocationModule { }
+export class LocationModule {}

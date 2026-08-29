@@ -1,4 +1,4 @@
-// Reads a filled CV template PDF by field name via pdf-lib 
+// Reads a filled CV template PDF by field name via pdf-lib
 // Only gets the raw text
 
 import { Injectable, Logger } from '@nestjs/common';
@@ -18,7 +18,7 @@ export interface RawContact {
 
 export interface RawSkillEntry {
   name: string;
-  years: string; 
+  years: string;
 }
 
 export interface RawExperienceEntry {
@@ -79,32 +79,34 @@ export class CvFormReaderService {
   private text(form: PDFForm, name: string): string {
     try {
       return form.getTextField(name).getText()?.trim() ?? '';
-    } catch { 
-        this.logger.warn(`Expected text field "${name}" not found on template.`);
-        return '';
+    } catch {
+      this.logger.warn(`Expected text field "${name}" not found on template.`);
+      return '';
     }
   }
 
   private choice(form: PDFForm, name: string): string {
     try {
-        return form.getDropdown(name).getSelected()[0] ?? '';
+      return form.getDropdown(name).getSelected()[0] ?? '';
     } catch {
-        this.logger.warn(`Expected dropdown field "${name}" not found on template.`);
-        return '';
+      this.logger.warn(
+        `Expected dropdown field "${name}" not found on template.`,
+      );
+      return '';
     }
   }
 
   private readContact(form: PDFForm): RawContact {
     return {
-        fullName: this.text(form, 'full_name'),
-        email: this.text(form, 'email'),
-        phone: this.text(form, 'phone'),
-        addressLine1: this.text(form, 'address_line1'),
-        suburb: this.text(form, 'suburb'),
-        city: this.text(form, 'city'),
-        province: this.text(form, 'province'),
-        postalCode: this.text(form, 'postal_code'),
-        nationality: this.text(form, 'nationality'),
+      fullName: this.text(form, 'full_name'),
+      email: this.text(form, 'email'),
+      phone: this.text(form, 'phone'),
+      addressLine1: this.text(form, 'address_line1'),
+      suburb: this.text(form, 'suburb'),
+      city: this.text(form, 'city'),
+      province: this.text(form, 'province'),
+      postalCode: this.text(form, 'postal_code'),
+      nationality: this.text(form, 'nationality'),
     };
   }
 
@@ -139,13 +141,13 @@ export class CvFormReaderService {
   private readCertifications(form: PDFForm): RawCertificationEntry[] {
     const certs: RawCertificationEntry[] = [];
     for (let i = 1; i <= MAX_CERTS; i++) {
-        const title = this.text(form, `cert_${i}_title`);
-        if (!title) continue;
-        certs.push({
-            title,
-            issuingBody: this.text(form, `cert_${i}_body`),
-            start: this.text(form, `cert_${i}_start`),
-            end: this.text(form, `cert_${i}_end`),
+      const title = this.text(form, `cert_${i}_title`);
+      if (!title) continue;
+      certs.push({
+        title,
+        issuingBody: this.text(form, `cert_${i}_body`),
+        start: this.text(form, `cert_${i}_start`),
+        end: this.text(form, `cert_${i}_end`),
       });
     }
     return certs;
@@ -154,15 +156,15 @@ export class CvFormReaderService {
   private readEducation(form: PDFForm): RawEducationEntry[] {
     const edu: RawEducationEntry[] = [];
     for (let i = 1; i <= MAX_EDU; i++) {
-        const qualification = this.text(form, `edu_${i}_qualification`);
-        if (!qualification) continue;
-        edu.push({
-            qualification,
-            institution: this.text(form, `edu_${i}_institution`),
-            fieldOfStudy: this.text(form, `edu_${i}_field`),
-            start: this.text(form, `edu_${i}_start`),
-            end: this.text(form, `edu_${i}_end`),
-        });
+      const qualification = this.text(form, `edu_${i}_qualification`);
+      if (!qualification) continue;
+      edu.push({
+        qualification,
+        institution: this.text(form, `edu_${i}_institution`),
+        fieldOfStudy: this.text(form, `edu_${i}_field`),
+        start: this.text(form, `edu_${i}_start`),
+        end: this.text(form, `edu_${i}_end`),
+      });
     }
     return edu;
   }

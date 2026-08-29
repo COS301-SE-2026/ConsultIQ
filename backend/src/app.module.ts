@@ -16,6 +16,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
+import { CvParsingModule } from './cv-parsing/cv-parsing.module';
 import { BullModule } from '@nestjs/bullmq';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
@@ -37,8 +38,8 @@ import { HealthModule } from './health/health.module';
         return {
           stores: [
             createKeyv({
-              url: configService.get<string>('REDIS_URL')
-            })
+              url: configService.get<string>('REDIS_URL'),
+            }),
           ],
         };
       },
@@ -65,8 +66,9 @@ import { HealthModule } from './health/health.module';
     PlacementsModule,
     RedisModule,
     HealthModule,
+    CvParsingModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

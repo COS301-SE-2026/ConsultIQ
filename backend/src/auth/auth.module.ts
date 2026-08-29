@@ -51,4 +51,4 @@ import { TokenService } from '../common/services/token.service';
   ],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

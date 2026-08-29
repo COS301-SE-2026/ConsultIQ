@@ -42,12 +42,12 @@ export class S3Service {
 
   /**
    * Generates S3 key for a CV file.
-   * Format: cvs/{consultantId}/{uuid}-{sanitisedFileName}
+   * Format: cvs/{userId}/{uuid}-{sanitisedFileName}
    */
-  generateS3Key(consultantId: string, fileName: string): string {
+  generateS3Key(userId: string, fileName: string): string {
     const sanitisedFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const uniqueId = randomUUID();
-    return `cvs/${consultantId}/${uniqueId}-${sanitisedFileName}`;
+    return `cvs/${userId}/${uniqueId}-${sanitisedFileName}`;
   }
 
   /**

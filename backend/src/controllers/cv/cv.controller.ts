@@ -9,6 +9,7 @@ import {
   HttpStatus,
   BadRequestException,
   Body,
+  Delete,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
@@ -52,5 +53,14 @@ export class CvController {
     @Param('cvFileId') cvFileId: string,
   ): Promise<{ cvFileId: string; fileName: string; fileSize: number; mimeType: string; uploadStatus: string; extractionStatus: string; parsedData?: any; updatedAt: Date }> {
     return this.cvUploadService.getCvFile(cvFileId);
+  }
+
+  @Delete(':cvFileId')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.CONSULTANT_MANAGER)
+  async discardCvFile(
+    @Param('cvFileId') cvFileId: string,
+  ): Promise<{ message: string }> {
+    return this.cvUploadService.discardCvFile(cvFileId);
   }
 }

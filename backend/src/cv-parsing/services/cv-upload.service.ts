@@ -116,4 +116,25 @@ export class CVUploadService {
     const {id, ...rest} = cvFile;
     return { cvFileId: id, ...rest };
   }
+
+  async discardCvFile(cvFileId: string) : Promise<{message: string}>{
+    const cvFile = await this.prisma.cvFile.findUnique({
+      where: {id: cvFileId},
+    });
+
+    if(!cvFile){
+      throw new BadRequestException(`CV file with if ${cvFileId} not found.`)
+    }
+
+    if(cvFile.consultantId){
+      throw new BadRequestException('Cannot discard a CV that has already been linked to a consultant profile.');
+    };
+  
+
+  await this.s3Service.deleteFile(cvFile.s3Key);
+  await this.prisma.cvFile.delete({where: {id: cvFileId}});
+
+  return { message: 'CV discarded successfully.'};
+  }
+  
 }

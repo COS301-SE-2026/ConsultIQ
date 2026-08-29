@@ -5,7 +5,7 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
  import { cvParsingService } from "../services/cv-parsing.service";
- import { createConsultantProfile } from "../../consultants/services/consultant.service";    
+//  import { createConsultantProfile } from "../../consultants/services/consultant.service";    
 import type {
     CvFileStatus,
     ParsedCvData,
@@ -15,6 +15,7 @@ import type {
     ParsedCertification,
     FieldWarning,
 } from "../types/cv.types";
+import { toast } from "sonner";
 
 type ViewState = "loading" | "processing" | "review" | "failed";
 
@@ -52,7 +53,7 @@ export default function CVExtractionReview(){
         availability: "AVAILABLE",
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitting, _setIsSubmitting] = useState(false);
     const [isDiscarding, setIsDiscarding] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
@@ -148,8 +149,26 @@ export default function CVExtractionReview(){
     }
 
     const handleDiscard = async  () =>{
-        
-    }
+        if(!cvFileId) return;
+
+        const confirmed = window.confirm("This will permanently delete the uploaded CV. Continue?");
+
+        if(!confirmed) return;
+
+        try{
+            setIsDiscarding(true);
+            await cvParsingService.discard(cvFileId);
+            toast.success("CV discarded.");
+            navigate(`/create-profile-entry/${userId}`);
+        }catch(error){
+            toast.error(error instanceof Error ? error.message : "Failed to discard cv.");
+        }finally{
+            setIsDiscarding(false);
+        }
+    };
+
+    const isLowConfidence = (section: keyof NonNullable<typeof confidenceScores>) => (confidenceScores?.[section] ?? 1) < LOW_CONFIDENCE_THRESHOLD;
+    
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -212,8 +231,9 @@ export default function CVExtractionReview(){
                 { viewState === "review" && cvFile &&(
                         <div className="max-w-4xl mx-auto flex flex-col gap-8">
                             <Card className="p-6">
-                                <h2 className="text-xl font-bold mb-4" /*</Card>style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}*/>
+                                <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
                                     Contact details
+                                    {isLowConfidence("contact") && " (low extraction confidence — please verify) "}
                                 </h2>
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField label="Full name" value={contact.fullName?? ""} warning={warningByPath.get("contact.fullName")} onChange={(v) => setContact((c) => ({...c, fullName:  v}))} />
@@ -251,8 +271,10 @@ export default function CVExtractionReview(){
                             </Card>
 
                             <Card className="p-6">
-                                <h2 className="text-xl font-bold mb-4" /* style={{ color: isLowConfidence("skills") ? "#b45309" : undefined }} */>
+                                <h2 className="text-xl font-bold mb-4"  style={{ color: isLowConfidence("skills") ? "#b45309" : undefined }} >
                                     Skills
+                                    {isLowConfidence("skills") && " (low extraction confidence — please verify) "}
+
                                 </h2>
                                 {skills.map((skill, i) =>(
                                     <div key={i} className="grid grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
@@ -284,7 +306,7 @@ export default function CVExtractionReview(){
                             </Card>
 
                             <Card className="p-6">
-                                <h2 className="text-xl font-bold mb-4">
+                                <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("experience") ? "#b45309" : undefined }}>
                                     Experience
                                 </h2>
                                 {experiences.map((exp, i) =>(

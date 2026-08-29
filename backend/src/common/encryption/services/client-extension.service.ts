@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { ENCRYPTION_MAP } from "./encryption.config"
-import { encrypt, decrypt, generateKey } from "./crypto.service"
-import { isString } from "class-validator";
+import { encrypt, decrypt } from "./crypto.service"
 
 @Injectable()
 export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -36,6 +35,7 @@ export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit
     }
 
     private buildExtendedClient() {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self= this;
         return this.$extends({
             query: {

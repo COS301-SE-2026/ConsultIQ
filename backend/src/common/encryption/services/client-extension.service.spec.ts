@@ -44,10 +44,33 @@ describe("EncryptionPrismaClient", () => {
         process.env = ENV;
     });
 
-    function getAllOperations(client: EncryptionPrismaClient){
-        const extended: any = client.client;
-        return extended.query.$allModels.$allOperations;
-    }
+    describe("constructor", () =>{
+        it("throws if encryption key is not set", () => {
+            delete process.env.ENCRYPTION_KEY;
+            expect(() => new EncryptionPrismaClient()).toThrow(
+                "ENCRYPTION_KEY environment variable is not set",
+            );
+        });
+
+        it("stores the secret key when set", () => {
+            const client = new EncryptionPrismaClient();
+            expect((client as any).secretKey).toBe("test-ket");
+        });
+    });
+
+    describe("onModuleInit and onModuleDestory",() => {
+        it("connects on module init", async () => {
+            const client = new EncryptionPrismaClient();
+            await client.onModuleInit();
+            expect((client as any).$connect).toHaveBeenCalled();
+        });
+
+         it("disconnects on module destroy", async () => {
+            const client = new EncryptionPrismaClient();
+            await client.onModuleDestroy();
+            expect((client as any).$disconnect).toHaveBeenCalled();
+        })
+    });
 
     describe("client getter", () => {
         it("build the extended client", () => {

@@ -160,21 +160,22 @@ export default function CVExtractionReview(){
     };
 
     const updateExperience = (idx: number, patch: Partial<ExperienceFormRow>) =>{
-        setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
+        setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
     }
 
     const updateCertification = (idx: number, patch: Partial<ParsedCertification>) =>{
-        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch} : c)))
+        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch} : c)));
     }
 
     const updateEducation = (idx: number, patch: Partial<ParsedEducation>) =>{
-        setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)))
+        setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
     }
 
     const validateBeforeSubmit = () : {error: string} | {error  : null; experiences : ParsedExperience[]} =>{
         const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
 
         if(!contact.fullName) return {error : "Full name is required."};
+        
         if(!/^\d{10}$/.test(normalisedPhone)) {
             return {error : "Phone number must be exactly 10 digits."};
         }
@@ -201,9 +202,9 @@ export default function CVExtractionReview(){
     const handleApprove = async  () =>{
         if(!userId) return;
 
-        const validationError = validateBeforeSubmit();
-        if(validationError){
-            toast.error(validationError.error ?? "Validation failed.");
+        const validation = validateBeforeSubmit();
+        if(validation.error){
+            toast.error(validation.error ?? "Validation failed.");
             return;
         }
 
@@ -402,7 +403,7 @@ export default function CVExtractionReview(){
                             </Card>
 
                             <Card className="p-6 rounded-lg">
-                                <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("experience") ? "#b45309" : undefined }}>
+                                <h2 className="text-xl font-bold mb-4" >
                                     Experience
                                 </h2>
                                 {experiences.map((exp, i) =>(

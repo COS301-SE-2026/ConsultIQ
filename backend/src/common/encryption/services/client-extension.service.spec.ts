@@ -54,7 +54,7 @@ describe("EncryptionPrismaClient", () => {
 
         it("stores the secret key when set", () => {
             const client = new EncryptionPrismaClient();
-            expect((client as any).secretKey).toBe("test-ket");
+            expect((client as any).secretKey).toBe("test-key");
         });
     });
 

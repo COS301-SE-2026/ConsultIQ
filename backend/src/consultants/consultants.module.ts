@@ -7,4 +7,4 @@ import { EncryptionModule } from 'src/common/encryption/encryption.module';
   controllers: [ConsultantController],
   providers: [ConsultantService],
 })
-export class ConsultantsModule { } 
+export class ConsultantsModule {}

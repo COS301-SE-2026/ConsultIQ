@@ -110,10 +110,9 @@ export default function ProjectScoringOverridePage() {
             const response = await placementService.executeMatchRun(projectId);
 
             const runId = response.runId;
-            const rawMatchData = response.results;
 
             navigate(`/placement-dashboard/${projectId}/${runId}`, {
-                state: { rawMatchData }
+                state: { matchRunStatus: response.status }
             });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);

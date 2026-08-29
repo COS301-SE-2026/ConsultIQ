@@ -16,6 +16,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
+import { CvParsingModule } from './cv-parsing/cv-parsing.module';
+import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 
 @Module({
@@ -36,11 +38,20 @@ import { EncryptionModule } from './common/encryption/encryption.module';
         return {
           stores: [
             createKeyv({
-              url: configService.get<string>('REDIS_URL')
-            })
+              url: configService.get<string>('REDIS_URL'),
+            }),
           ],
         };
       },
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        connection: {
+          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+        },
+      }),
     }),
     PrismaModule,
     EmailModule,
@@ -53,9 +64,10 @@ import { EncryptionModule } from './common/encryption/encryption.module';
     AdminModule,
     LocationModule,
     PlacementsModule,
+    CvParsingModule,
     EncryptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

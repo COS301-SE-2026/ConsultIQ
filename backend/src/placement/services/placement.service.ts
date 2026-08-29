@@ -67,7 +67,7 @@ export class PlacementService {
     }
 
     // -------- Capacity check --------
-    const remainingCapacity =  consultant.capacity;
+    const remainingCapacity = consultant.capacity;
 
     if (dto.allocation > remainingCapacity) {
       throw new BadRequestException(
@@ -75,33 +75,34 @@ export class PlacementService {
       );
     }
 
-    const placement = await this.prisma.$transaction(async (tx)=>{
+    const placement = await this.prisma.$transaction(async (tx) => {
       const updatedConsultant = await tx.consultant.update({
-        where: {id : dto.consultantId},
+        where: { id: dto.consultantId },
         data: {
-          capacity: {decrement: dto.allocation},
+          capacity: { decrement: dto.allocation },
         },
       });
-      
-      const placement = await tx.projectPlacement.create({
-      data: {
-        projectId,
-        consultantId: dto.consultantId,
-        startDate,
-        endDate,
-        allocation: dto.allocation,
-        status: PlacementStatus.ACTIVE,
-      },
-    });
 
-      const nextAvailability =updatedConsultant.capacity <= 0 ? 'UNAVAILABLE' : 'AVAILABLE';
-      if(updatedConsultant.availability !== nextAvailability){
+      const placement = await tx.projectPlacement.create({
+        data: {
+          projectId,
+          consultantId: dto.consultantId,
+          startDate,
+          endDate,
+          allocation: dto.allocation,
+          status: PlacementStatus.ACTIVE,
+        },
+      });
+
+      const nextAvailability =
+        updatedConsultant.capacity <= 0 ? 'UNAVAILABLE' : 'AVAILABLE';
+      if (updatedConsultant.availability !== nextAvailability) {
         await tx.consultant.update({
           where: { id: dto.consultantId },
           data: { availability: nextAvailability },
         });
-      } 
-      
+      }
+
       return placement;
     });
 
@@ -118,15 +119,15 @@ export class PlacementService {
     A null endDate is treated as open-ended (overlaps everything from its
     startDate onward).
    **/
-  async getRemainingCapacity(
-    consultantId: string,
-  ): Promise<number> {
+  async getRemainingCapacity(consultantId: string): Promise<number> {
     const consultant = await this.prisma.consultant.findUnique({
-      where: { id: consultantId},
-      select: { capacity: true},
+      where: { id: consultantId },
+      select: { capacity: true },
     });
-    if(!consultant){
-      throw new NotFoundException(`Consultant with ID ${consultantId} not found.`);
+    if (!consultant) {
+      throw new NotFoundException(
+        `Consultant with ID ${consultantId} not found.`,
+      );
     }
 
     return Math.max(0, consultant.capacity);

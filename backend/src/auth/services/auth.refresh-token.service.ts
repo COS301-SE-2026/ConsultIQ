@@ -9,7 +9,7 @@ export class RefreshTokenService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly token: TokenService,
-  ) { }
+  ) {}
 
   /**
    * Called at login — creates the first refresh token in a new family.

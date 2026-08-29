@@ -14,7 +14,9 @@ describe('MatchRunController', () => {
 
         mockMatchRunService = {
             executeMatchRun: jest.fn(),
+            enqueueMatchRun: jest.fn(),
             getMatchRun: jest.fn(),
+            getMatchRunStatus: jest.fn(),
             getMatchRunStats: jest.fn(),
         }
 
@@ -44,20 +46,30 @@ describe('MatchRunController', () => {
                 user: { userId: userId },
             };
 
-            const mockResult: ConsultantMatchResult[] = [
-                { consultantId: 'consultant-01', consultantName: 'Benji', consultantEmail: 'Benji@gmail.com', finalScore: 90, rank: 1, isPlaced: false, factorBreakdown: [] },
-            ];
-            mockMatchRunService.executeMatchRun.mockResolvedValue(mockResult);
+            const mockResult = { runId: 'run-01', status: 'IN_PROGRESS' as const };
+            mockMatchRunService.enqueueMatchRun.mockResolvedValue(mockResult);
             const result = await controller.executeMatchRun(projectId, mockRequest);
 
-            expect(mockMatchRunService.executeMatchRun).toHaveBeenCalledWith(projectId, userId);
-            expect(mockMatchRunService.executeMatchRun).toHaveBeenCalledTimes(1);
+            expect(mockMatchRunService.enqueueMatchRun).toHaveBeenCalledWith(projectId, userId);
+            expect(mockMatchRunService.enqueueMatchRun).toHaveBeenCalledTimes(1);
 
             expect(result).toEqual(mockResult);
         })
 
 
     })
+
+    describe('getMatchRunStatus', () => {
+        it('retrieves match run status using the route project id', async () => {
+            const status = { runId: 'run-01', status: 'COMPLETED', progress: 100 };
+            mockMatchRunService.getMatchRunStatus.mockResolvedValue(status);
+
+            const result = await controller.getMatchRunStatus('project-01', 'run-01');
+
+            expect(mockMatchRunService.getMatchRunStatus).toHaveBeenCalledWith('project-01', 'run-01');
+            expect(result).toEqual(status);
+        });
+    });
 
 
     describe('getMatchRun', () => {

@@ -18,7 +18,7 @@
     return sum % 10 === 0;
   }
 
-  export const normaliseSAPhone = (raw :String) : string =>{
+  export const normaliseSAPhone = (raw :string) : string =>{
     let digits = raw.replace(/[\s\-()]/g, "");
 
     if(digits.startsWith("+27")){

@@ -235,7 +235,7 @@ export default function CVExtractionReview(){
                 certifications,
                 education,
             });
-            ""
+            
             toast.success("Consultant profile created successfully");
             navigate("/consultants-manager");
         }catch(error){ 
@@ -301,7 +301,7 @@ export default function CVExtractionReview(){
                 )}
 
                 {viewState === "processing" &&(
-                    <div className="flex items-center justify-center h-full gap-3">
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                         <Loader2  className="h-10 w-10 animate-spin" style={{color: "var(--color-primary"}}/>
                         <p className="text-lg">Extracting CV details...</p>  
                         <p className="text-sm text-gray-500">
@@ -311,7 +311,7 @@ export default function CVExtractionReview(){
                 )}
 
                 {viewState === "failed" &&(
-                    <div className="flex items-center justify-center h-full gap-3">
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                         <AlertTriangle  className="h-10 w-10 text-red-600"/>
                         <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>  
                         <p className="text-sm ">

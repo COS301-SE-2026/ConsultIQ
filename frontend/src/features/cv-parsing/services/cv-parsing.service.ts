@@ -2,9 +2,10 @@ import { apiClient } from "../../../lib/api-client";
 import type { CvFileStatus, CvUploadResponse } from "../types/cv.types";
 
 export const cvParsingService = {
-    async upload(userId: string, file: File): Promise<CvUploadResponse>{
+    async upload(userId: string, file: File, parsingMethod: "RULE_BASED" | "AI_ASSISTED" = "RULE_BASED"): Promise<CvUploadResponse>{
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("parsingMethod", parsingMethod);
         return apiClient.post<CvUploadResponse>(`/cv/upload/${userId}`, formData,);
     },
 

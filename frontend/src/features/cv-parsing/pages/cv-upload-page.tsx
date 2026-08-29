@@ -20,7 +20,8 @@ export default function CVUpload (){
         fileSize: number;
     } | null>(null);
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(() => sessionStorage.getItem("cv_parsing_disclaimer_ack") !== "true");
+    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(true);
+    const [selectedParsingMethod, setSelectedParsingMethod] = useState<"RULE_BASED" | "AI_ASSISTED">("RULE_BASED");
 
     const validateFile = (file: File) : boolean =>{
       const allowedMimeTypes = [
@@ -62,7 +63,7 @@ export default function CVUpload (){
 
     try{
       setIsUploading(true);
-      const response = await cvParsingService.upload(userId, stagedFile);
+      const response = await cvParsingService.upload(userId, stagedFile, selectedParsingMethod);
 
       setUploadedCv({
         cvFileId: response.cvFileId,
@@ -101,7 +102,6 @@ export default function CVUpload (){
   }
 
   const handleAcknowledgeDisclaimer = () =>{
-    sessionStorage.setItem("cv_parsing_disclaimer_ack", "true");
     setIsDisclaimerOpen(false);
   };
 
@@ -135,7 +135,7 @@ export default function CVUpload (){
                         Upload a CV file and we will extract the information to help you create the profile faster. </p>
                 </div>
                 {isUploading  &&(
-                  <p className="text-sm">Uploading CV...</p>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)"}}>Uploading CV...</p>
                 )}
                 { uploadedCv? (
                     <div className="w-full border border-gray-100 rounded-xl flex flex-col items-center justify-center ">
@@ -145,12 +145,30 @@ export default function CVUpload (){
                     </div>
                 ): stagedFile ?(
                   <div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 py-10">
-                    <p className="text-lg font-semibold">{stagedFile.name}</p>
-                    <p className="text-sm text-secondary">{(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                    <p className="text-lg text-primary"><strong>{stagedFile.name}</strong> : {(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
 
+                    <div className="flex items-center  gap-4 mt-2">
+                        {/* <p className="mb-2 text-lg font-medium text-primary" >
+                          Parsing method :
+                        </p> */}
+                        <div className="flex gap-3">
+                          <label className="flex items-center gap-2 rounded-full border border-gray-300 px-3 py-2">
+                            <input type="radio" name="parsingMethod" value="RULE_BASED"
+                            checked = {selectedParsingMethod === "RULE_BASED"}
+                            onChange={() => setSelectedParsingMethod("RULE_BASED")} />
+                            <span>Rule-based Parsing</span>
+                          </label>
+                          <label className="flex items-center gap-2 rounded-full border border-gray-300 px-3 py-2">
+                            <input type="radio" name="parsingMethod" value="AI_ASSISTED"
+                            checked = {selectedParsingMethod === "AI_ASSISTED"}
+                            onChange={() => setSelectedParsingMethod("AI_ASSISTED")} />
+                            <span>AI-assisted Parsing</span>
+                          </label>
+                        </div>
+                    </div>
                     <div className="flex gap-4 mt-2">
                       <button type="button"
-                      className="h-12 px-6 rounded-lg border font-semibold"
+                      className="h-12 px-8 rounded-lg border font-semibold text-lg"
                       style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
                       onClick={handleChangeFile}
                       disabled={isUploading}
@@ -159,7 +177,7 @@ export default function CVUpload (){
                       </button>
 
                       <button type="button"
-                      className="h-12 px-6 rounded-lg font-semibold text-white"
+                      className="h-12 px-8 rounded-lg font-semibold text-white text-lg"
                       style={{ backgroundColor: "var(--color-primary)" }}
                       onClick={handleConfirmUpload}
                       disabled={isUploading}

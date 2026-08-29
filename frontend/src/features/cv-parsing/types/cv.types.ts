@@ -5,22 +5,6 @@ export interface FieldWarning{
     message: string;
 }
 
-export interface CvFileStatus{
-    id: string;
-    fileName: string;
-    fileSize: string;
-    mimeType: string;
-    uploadStatus: string;
-    extractionStatus: ExtractionStatus;
-    parsedData : ParsedCvData | null;
-    updatedAt: string;
-}
-
-export interface CvUploadResponse{
-    cvFileId: string;
-    message: string;
-}
-
 export interface ParsedSkill{
     skillName: string;
     yearsExperience: number;
@@ -88,4 +72,20 @@ export interface CvParsedDataEnvelope {
     comptencySignals?: unknown[];
     fieldWarnings?: FieldWarning[];
     error?: string;
+}
+
+export interface CvFileStatus{
+    id: string;
+    fileName: string;
+    fileSize: string;
+    mimeType: string;
+    uploadStatus: string;
+    extractionStatus: ExtractionStatus;
+    parsedData : CvParsedDataEnvelope | null;
+    updatedAt: string;
+}
+
+export interface CvUploadResponse{
+    cvFileId: string;
+    message: string;
 }

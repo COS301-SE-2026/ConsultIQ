@@ -96,8 +96,8 @@ export default function CVUpload (){
 
   const handleContinueToExtraction = () =>{
     if(!userId  || !uploadedCv) return;
-    toast.success("Navigating to the extraction page.");
-   // navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
+    navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
+
   }
 
   const handleAcknowledgeDisclaimer = () =>{

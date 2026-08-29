@@ -93,4 +93,27 @@ export class CVUploadService {
 
     return { url };
   }
+
+  async getCvFile(cvFileId: string){
+    const cvFile = await this.prisma.cvFile.findUnique({
+      where: {id: cvFileId},
+      select: {
+        id: true,
+        fileName: true,
+        fileSize: true ,
+        mimeType: true,
+        uploadStatus: true,
+        extractionStatus: true,
+        parsedData: true,
+        updatedAt: true,
+      },
+    });
+
+    if(!cvFile){
+      throw new BadRequestException(`CV file with id ${cvFileId} not found.`)
+    }
+    
+    const {id, ...rest} = cvFile;
+    return { cvFileId: id, ...rest };
+  }
 }

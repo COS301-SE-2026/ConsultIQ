@@ -1,11 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
-// import { cvParsingService } from "../services/cv-parsing.service";
-// import { createConsultantProfile } from "../../consultants/services/consultant.service";    
+ import { cvParsingService } from "../services/cv-parsing.service";
+ import { createConsultantProfile } from "../../consultants/services/consultant.service";    
 import type {
     CvFileStatus,
     ParsedCvData,
@@ -29,17 +29,17 @@ interface SkillFormRow extends ParsedSkill {
     confidenceLevel: number;
 }
 
-// const POLL_INTERVAL_MS = 2000;
+ const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 
 export default function CVExtractionReview(){
     const navigate = useNavigate();
-    const { userId, /*cvField */} = useParams<{userId: string; /*cvField: string*/}>();
+    const { userId, cvFileId } = useParams<{userId: string; cvFileId: string }>();
 
-    const [viewState, _setViewState] = useState<ViewState>("loading");
-    const [cvFile, _setCvFile] = useState<CvFileStatus | null>(null);
-    const [fieldWarnings, _setFieldWarnings] = useState<FieldWarning[]>([]);
-    const [failureReason, _setFailureReason] = useState<string>("");
+    const [viewState, setViewState] = useState<ViewState>("loading");
+    const [cvFile, setCvFile] = useState<CvFileStatus | null>(null);
+    const [fieldWarnings, setFieldWarnings] = useState<FieldWarning[]>([]);
+    const [failureReason, setFailureReason] = useState<string>("");
 
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
@@ -52,16 +52,80 @@ export default function CVExtractionReview(){
         availability: "AVAILABLE",
     });
 
-    const [isSubmitting, _setIsSubmitting] = useState(false);
-    const [isDiscarding, _setIsDiscarding] = useState(false);
-    // const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-    // const confidenceScores = cvFile?.parsedData?.confidenceScores;
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDiscarding, setIsDiscarding] = useState(false);
+    const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+    const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
 
     const warningByPath = useMemo(() =>{
         const map = new Map<string, string>();
         fieldWarnings.forEach((w) => map.set(w.path, w.message));
         return map;
     }, [fieldWarnings]);
+
+    useEffect(() => {
+    if (!cvFileId) return; 
+
+    let cancelled = false;
+
+    const fetchOnce = async () => {
+      try {
+        const result = await cvParsingService.getCvFile(cvFileId);
+        if (cancelled) return;
+
+        setCvFile(result);
+
+        if (result.extractionStatus === "PENDING" || result.extractionStatus === "PROCESSING") {
+          setViewState("processing");
+          return;
+        }
+
+        if (result.extractionStatus ==="FAILED") {
+          setViewState("failed");
+          setFailureReason(result.parsedData?.error ?? "CV extraction failed.");
+          if (pollTimer.current) clearInterval(pollTimer.current);
+          return;
+        }
+
+        // REVIEW_REQUIRED status
+        if (pollTimer.current) clearInterval(pollTimer.current);
+
+        const data = result.parsedData?.data;
+        setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
+
+        if (data) {
+          setContact(data.contact ?? {});
+          setSkills(
+            (data.skills ?? []).map((s) => ({
+              ...s,
+              competencyLevel: "BEGINNER",
+              confidenceLevel: 1,
+            })),
+          );
+          setExperiences(data.experiences ?? []);
+          setCertifications(data.certifications ?? []);
+          setEducation(data.education ?? []);
+        }
+
+        setViewState("review");
+      } catch (error) {
+        if (cancelled) return;
+        setViewState("failed");
+        setFailureReason(
+          error instanceof Error ? error.message : "Unable to load CV details.",
+        );
+        if (pollTimer.current) clearInterval(pollTimer.current);
+      }
+    };
+
+    void fetchOnce();
+    pollTimer.current = setInterval(fetchOnce, POLL_INTERVAL_MS);
+
+    return () => {
+      cancelled = true;
+      if (pollTimer.current) clearInterval(pollTimer.current);
+    };
+  }, [cvFileId]);
 
     const updateSkill = (idx: number, patch:Partial<SkillFormRow>) =>{
         setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch} : s)));
@@ -97,7 +161,7 @@ export default function CVExtractionReview(){
             style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
             >
             <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
-                Create Profile
+               Review Extracted CV Details
             </h1>
 
             <div className="flex gap-6">
@@ -267,7 +331,8 @@ export default function CVExtractionReview(){
                                     {isDiscarding ? "Discarding..." : "Discard this CV"}
                                 </button>
 
-                                <button className="h-12 px-8 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700"
+                                <button className="h-12 px-8 rounded-lg font-semibold text-white "
+                                style={{ backgroundColor: "var(--color-primary)" }}
                                     onClick={handleApprove} disabled={isSubmitting || isDiscarding} >
                                     {isSubmitting ? "Creating profile..." : "Approve and create profile"}
                                 </button>
@@ -283,12 +348,13 @@ export default function CVExtractionReview(){
 function FormField({label, value, warning, onChange}: {
     label: string; value: string; warning?: string; onChange: (value:string) =>void; }){
     return(
-        <label>
-            <span>{label}</span>
+        <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium">{label}</span>
             <input  className="border rounded-lg h-10 px-3"
         style={{ borderColor: warning ? "#f59e0b" : undefined }}
         value={value}
         onChange={(e) => onChange(e.target.value)}/>
+        {warning && <span className="text-sm text-yellow-500">{warning}</span>}
         </label>
     )
 }

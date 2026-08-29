@@ -20,7 +20,7 @@ import CreateProfilePage from "../features/consultants/pages/create-profile-page
 import ConsultantProjects from "../features/consultants/pages/consultant-projects";
 import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
-
+import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
@@ -101,6 +101,8 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

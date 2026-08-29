@@ -44,4 +44,13 @@ export class CvController {
   ): Promise<{ url: string }> {
     return this.cvUploadService.getPresignedUrl(cvFileId);
   }
+
+   @Get(':cvFileId')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.CONSULTANT_MANAGER)
+  async getCvFile(
+    @Param('cvFileId') cvFileId: string,
+  ): Promise<{ cvFileId: string; fileName: string; fileSize: number; mimeType: string; uploadStatus: string; extractionStatus: string; parsedData?: any; updatedAt: Date }> {
+    return this.cvUploadService.getCvFile(cvFileId);
+  }
 }

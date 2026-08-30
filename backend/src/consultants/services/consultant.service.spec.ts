@@ -284,52 +284,43 @@ describe('ConsultantService', () => {
       expect(result.message).toBe('Consultant profile created successfully.');
     });
 
-    it('should create education record when education data is provided', async () =>{
-      mockPrismaService.user.findUnique.mockResolvedValue({ 
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-
-      const txMock = {
-        consultant : { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid'})},
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0})},
-        consultantManager: { create: jest.fn().mockResolvedValue({})},
-        skill: {upsert: jest.fn().mockResolvedValue({ id: 'skill-1'})},
-        consultantSkill: {create: jest.fn().mockResolvedValue({})},
-        consultantExperience: {create: jest.fn().mockResolvedValue({})},
-        certificate: {create: jest.fn().mockResolvedValue({})},
-        consultantEducation: { create: jest.fn().mockResolvedValue({})},
-      };
-      mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
-      
-      const dtoIncludingEducation = {
-        ...dto,
-        education: [
-          {
-        institution: 'University of Cape Town',
-        qualification: 'BSc Computer Science',
-        startDate: '2020-01-01T00:00:00.000Z',
-        endDate: '2023-12-31T00:00:00.000Z',
-          },
-        ],
-      } as any;
-
-      const result = await service.createConsultantProfile(cmUserId, dtoIncludingEducation);
-
-      expect(txMock.consultantEducation.create).toHaveBeenCalledWith({
-        data: {
+    it.each([
+      {
+        label: 'education',
+        txKey: 'consultantEducation',
+        dtoKey: 'education',
+        payload: {
+          institution: 'University of Cape Town',
+          qualification: 'BSc Computer Science',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '2023-12-31T00:00:00.000Z'
+        },
+        expected: {
           consultantId: 'new-consultant-uuid',
           institution: 'University of Cape Town',
           qualification: 'BSc Computer Science',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'),
+          endDate: new Date('2023-12-31T00:00:00.000Z'), 
         },
-      });
-
-      expect(result.message).toBe('Consultant profile created successfully.');
-      expect(result.consultantId).toBe('new-consultant-uuid');
-    })
-
-     it('should create certificate record when certificate data is provided', async () =>{
+      },{
+        label: 'certificate',
+        txKey: 'certificate',
+        dtoKey: 'certifications',
+        payload: {
+          title: 'AWS Certified Developer',
+          issuingBody: 'Amazon',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '2023-12-31T00:00:00.000Z',
+        },
+        expected: {
+          consultantId: 'new-consultant-uuid',
+          title: 'AWS Certified Developer',
+          issuingBody: 'Amazon',
+          startDate: new Date('2020-01-01T00:00:00.000Z'),
+          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+        },
+      },
+    ])('should create $label record when $label data is provided', async ({txKey, dtoKey, payload, expected}) =>{
       mockPrismaService.user.findUnique.mockResolvedValue({ 
         id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
@@ -346,28 +337,15 @@ describe('ConsultantService', () => {
       };
       mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
       
-      const dtoIncludingCertifications = {
+      const dtoIncludingRelatedData = {
         ...dto,
-        certifications: [
-          {
-        title: 'AWS Certified Developer',
-        issuingBody: 'Amazon',
-        startDate: '2020-01-01T00:00:00.000Z',
-        endDate: '2023-12-31T00:00:00.000Z',
-          },
-        ],
+        [dtoKey] : [payload],
       } as any;
 
-      const result = await service.createConsultantProfile(cmUserId, dtoIncludingCertifications);
+      const result = await service.createConsultantProfile(cmUserId, dtoIncludingRelatedData);
 
-      expect(txMock.certificate.create).toHaveBeenCalledWith({
-        data: {
-          consultantId: 'new-consultant-uuid',
-          title: 'AWS Certified Developer',
-          issuingBody: 'Amazon',
-          startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'),
-        },
+      expect(txMock[txKey as 'certificate' | 'consultantEducation'].create).toHaveBeenCalledWith({
+        data: expected,
       });
 
       expect(result.message).toBe('Consultant profile created successfully.');

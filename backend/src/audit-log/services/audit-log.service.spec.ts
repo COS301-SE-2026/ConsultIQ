@@ -44,87 +44,39 @@ describe('AuditLogService', () => {
     loggerErrorSpy.mockRestore();
   });
 
-
-
   describe('successful write', () => {
     beforeEach(() => {
       mockAuditLog.create.mockResolvedValue(undefined);
     });
 
-    it('resolves without throwing', async () => {
+    it('resolves without throwing and writes exactly once', async () => {
       await expect(service.log(makeEntry())).resolves.toBeUndefined();
-    });
-
-    it('calls prisma.auditLog.create exactly once', async () => {
-      await service.log(makeEntry());
       expect(mockAuditLog.create).toHaveBeenCalledTimes(1);
     });
 
-    it('persists the correct action', async () => {
-      await service.log(makeEntry({ action: AuditAction.CV_EXTRACTED }));
+    // Table-driven: each row checks that a single field on the entry ends
+    // up in the exact same spot in the Prisma `data` payload.
+    it.each<[keyof AuditLogEntry, unknown]>([
+      ['action', AuditAction.CV_EXTRACTED],
+      ['actingUserId', 'user-42'],
+      ['entityType', 'CvFile'],
+      ['entityId', 'cv-99'],
+      ['metadata', { consultantId: 'consultant-1', allocation: 50 }],
+    ])('passes %s through to prisma.auditLog.create', async (field, value) => {
+      await service.log(makeEntry({ [field]: value } as Partial<AuditLogEntry>));
 
       expect(mockAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ action: AuditAction.CV_EXTRACTED }),
+          data: expect.objectContaining({ [field]: value }),
         }),
       );
     });
 
-    it('persists the acting user id', async () => {
-      await service.log(makeEntry({ actingUserId: 'user-42' }));
-
-      expect(mockAuditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ actingUserId: 'user-42' }),
-        }),
-      );
-    });
-
-    it('persists the entity type and entity id', async () => {
-      await service.log(
-        makeEntry({ entityType: 'CvFile', entityId: 'cv-99' }),
-      );
-
-      expect(mockAuditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            entityType: 'CvFile',
-            entityId: 'cv-99',
-          }),
-        }),
-      );
-    });
-
-    it('passes metadata through unchanged when provided', async () => {
-      const metadata = { consultantId: 'consultant-1', allocation: 50 };
-      await service.log(makeEntry({ metadata }));
-
-      expect(mockAuditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ metadata }),
-        }),
-      );
-    });
-
-    it('sends the full data payload with all fields', async () => {
+    it('sends the full data payload with all fields, unmodified', async () => {
       const entry = makeEntry();
       await service.log(entry);
 
-      expect(mockAuditLog.create).toHaveBeenCalledWith({
-        data: {
-          action: entry.action,
-          actingUserId: entry.actingUserId,
-          entityType: entry.entityType,
-          entityId: entry.entityId,
-          metadata: entry.metadata,
-        },
-      });
-    });
-  });
-
-  describe('optional field defaults', () => {
-    beforeEach(() => {
-      mockAuditLog.create.mockResolvedValue(undefined);
+      expect(mockAuditLog.create).toHaveBeenCalledWith({ data: { ...entry } });
     });
 
     it('defaults metadata to undefined when omitted', async () => {
@@ -138,8 +90,6 @@ describe('AuditLogService', () => {
     });
   });
 
-  // ------------ Error handling --------------------------
-
   describe('when Prisma throws', () => {
     const dbError = new Error('Connection lost');
 
@@ -147,73 +97,49 @@ describe('AuditLogService', () => {
       mockAuditLog.create.mockRejectedValue(dbError);
     });
 
-    it('does NOT rethrow — resolves silently (append-only writes must never break the calling operation)', async () => {
+    it('does not rethrow, still calls create, and logs via Logger.error with the stack', async () => {
       await expect(service.log(makeEntry())).resolves.toBeUndefined();
-    });
 
-    it('logs an error via Logger.error', async () => {
-      await service.log(makeEntry());
+      expect(mockAuditLog.create).toHaveBeenCalledTimes(1);
       expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
-    });
 
-    it('error message contains the action', async () => {
-      await service.log(makeEntry({ action: AuditAction.PLACEMENT_CANCELLED }));
-
-      const [message] = loggerErrorSpy.mock.calls[0];
-      expect(message).toContain('PLACEMENT_CANCELLED');
-    });
-
-    it('error message contains the entity type and id', async () => {
-      await service.log(
-        makeEntry({ entityType: 'CvFile', entityId: 'cv-77' }),
-      );
-
-      const [message] = loggerErrorSpy.mock.calls[0];
-      expect(message).toContain('CvFile');
-      expect(message).toContain('cv-77');
-    });
-
-    it('error message contains the underlying error message', async () => {
-      await service.log(makeEntry());
-
-      const [message] = loggerErrorSpy.mock.calls[0];
+      const [message, stack] = loggerErrorSpy.mock.calls[0];
+      expect(stack).toBe(dbError.stack);
       expect(message).toContain('Connection lost');
     });
 
-    it('passes the error stack as the second argument to Logger.error', async () => {
-      await service.log(makeEntry());
+    it('includes the action and entity identifiers in the error message', async () => {
+      await service.log(
+        makeEntry({
+          action: AuditAction.PLACEMENT_CANCELLED,
+          entityType: 'CvFile',
+          entityId: 'cv-77',
+        }),
+      );
 
-      const [, stack] = loggerErrorSpy.mock.calls[0];
-      expect(stack).toBe(dbError.stack);
-    });
-
-    it('still calls Prisma.create before catching — does not short-circuit', async () => {
-      await service.log(makeEntry());
-      expect(mockAuditLog.create).toHaveBeenCalledTimes(1);
+      const [message] = loggerErrorSpy.mock.calls[0];
+      expect(message).toContain('PLACEMENT_CANCELLED');
+      expect(message).toContain('CvFile');
+      expect(message).toContain('cv-77');
     });
   });
-
-
-  // ------------ All AuditAction values are persisted correctly ------------- 
-
 
   describe('action enum coverage', () => {
     beforeEach(() => {
       mockAuditLog.create.mockResolvedValue(undefined);
     });
 
-    const actions = Object.values(AuditAction);
+    it.each(Object.values(AuditAction))(
+      'persists action %s without throwing',
+      async (action) => {
+        await expect(
+          service.log(makeEntry({ action })),
+        ).resolves.toBeUndefined();
 
-    it.each(actions)('persists action %s without throwing', async (action) => {
-      await expect(
-        service.log(makeEntry({ action })),
-      ).resolves.toBeUndefined();
-
-      expect(mockAuditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ action }),
-        }),
-      );
-    });
+        expect(mockAuditLog.create).toHaveBeenCalledWith(
+          expect.objectContaining({ data: expect.objectContaining({ action }) }),
+        );
+      },
+    );
   });
 });

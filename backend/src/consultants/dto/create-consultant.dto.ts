@@ -79,6 +79,25 @@ export class CreateCertificationDto {
   endDate?: string;
 }
 
+export class CreateConsultantEducationDto {
+  @IsString()
+  institution!: string;
+
+  @IsString()
+  qualification!: string;
+
+  @IsOptional()
+  @IsString()
+  fieldOfStudy?: string;
+
+  @IsDateString({}, { message: 'startDate must be a valid ISO date string' })
+  startDate!: string;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'startDate must be a valid ISO date string' })
+  endDate?: string;
+}
+
 export class CreateConsultantDto extends BaseLocationDto {
   @IsUUID('4', { message: 'consultantUserId must be a valid UUID' })
   consultantUserId!: string;
@@ -119,6 +138,12 @@ export class CreateConsultantDto extends BaseLocationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateCertificationDto)
   certifications?: CreateCertificationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateConsultantEducationDto)
+  education?: CreateConsultantEducationDto[];
 }
 
 export class ConsultantListItemDto {

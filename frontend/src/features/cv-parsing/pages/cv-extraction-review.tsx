@@ -182,7 +182,7 @@ export default function CVExtractionReview(){
         if(!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
             return { error : "Please enter a valid South African ID number."};
         }
-        if(manualFields.costToCompany && isNaN(Number(manualFields.costToCompany))) {
+        if(manualFields.costToCompany && Number.isNaN(Number(manualFields.costToCompany))) {
             return { error : "Cost to company must be a valid number."};
         }
         if(!contact.city || !contact.province || !contact.addressLine1){
@@ -485,7 +485,7 @@ export default function CVExtractionReview(){
 }
 
 function FormField({label, value, warning, onChange}: {
-    label: string; value: string; warning?: string; onChange: (value:string) =>void; }){
+    readonly label: string; readonly value: string; readonly warning?: string; readonly onChange: (value:string) =>void; }){
     return(
         <label className="flex flex-col gap-1">
             <span className="text-sm font-medium">{label}</span>

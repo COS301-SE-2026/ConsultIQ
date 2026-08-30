@@ -122,7 +122,7 @@ describe('CvController', () => {
         fileName:'cv.pdf',
         fileSize: 1024,
         mimeType: 'application/pdf',
-        uploadStatus: 'COMPLETED',
+        uploadStatus: 'UPLOADED',
         extractionStatus: 'PENDING',
         parsedData : null,
         updatedAt,

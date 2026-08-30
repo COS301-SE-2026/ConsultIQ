@@ -9,7 +9,7 @@ import { PlacementService } from './placement.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlacementStatus, AuditAction } from '@prisma/client';
 import { mock } from 'node:test';
-import { AuditLogService } from '../../auth/services/auth.audit-log.service';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 
 const mockPrismaService = {
   projectManager: {

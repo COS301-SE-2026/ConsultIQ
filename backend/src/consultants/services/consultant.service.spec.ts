@@ -12,6 +12,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
 import { userInfo } from 'node:os';
 import { create } from 'node:domain';
+import { title } from 'node:process';
 
 const mockPrismaService = {
   user: {
@@ -319,6 +320,51 @@ describe('ConsultantService', () => {
           consultantId: 'new-consultant-uuid',
           institution: 'University of Cape Town',
           qualification: 'BSc Computer Science',
+          startDate: new Date('2020-01-01T00:00:00.000Z'),
+          endDate: new Date('2023-12-31T00:00:00.000Z'),
+        },
+      });
+
+      expect(result.message).toBe('Consultant profile created successfully.');
+      expect(result.consultantId).toBe('new-consultant-uuid');
+    })
+
+     it('should create certificate record when certificate data is provided', async () =>{
+      mockPrismaService.user.findUnique.mockResolvedValue({ 
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      const txMock = {
+        consultant : { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid'})},
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0})},
+        consultantManager: { create: jest.fn().mockResolvedValue({})},
+        skill: {upsert: jest.fn().mockResolvedValue({ id: 'skill-1'})},
+        consultantSkill: {create: jest.fn().mockResolvedValue({})},
+        consultantExperience: {create: jest.fn().mockResolvedValue({})},
+        certificate: {create: jest.fn().mockResolvedValue({})},
+        consultantEducation: { create: jest.fn().mockResolvedValue({})},
+      };
+      mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
+      
+      const dtoIncludingCertifications = {
+        ...dto,
+        certifications: [
+          {
+        title: 'AWS Certified Developer',
+        issuingBody: 'Amazon',
+        startDate: '2020-01-01T00:00:00.000Z',
+        endDate: '2023-12-31T00:00:00.000Z',
+          },
+        ],
+      } as any;
+
+      const result = await service.createConsultantProfile(cmUserId, dtoIncludingCertifications);
+
+      expect(txMock.certificate.create).toHaveBeenCalledWith({
+        data: {
+          consultantId: 'new-consultant-uuid',
+          title: 'AWS Certified Developer',
+          issuingBody: 'Amazon',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
           endDate: new Date('2023-12-31T00:00:00.000Z'),
         },

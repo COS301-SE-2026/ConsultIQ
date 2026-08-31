@@ -8,6 +8,8 @@ import { CvParsingMethod } from '@prisma/client';
 const mockCVUploadService = {
   uploadCV: jest.fn(),
   getPresignedUrl: jest.fn(),
+  getCvFile: jest.fn(),
+  discardCvFile: jest.fn(),
 };
 
 const mockFile = (): Express.Multer.File => ({
@@ -109,6 +111,54 @@ describe('CvController', () => {
       await expect(
         controller.getPresignedUrl('nonexistent'),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('getCvFile', () => {
+    it('should return the CV metadata for a valid cvFileId', async () =>{
+      const updatedAt= new  Date('2026-01-15T00:00:00.000Z');
+      mockCVUploadService.getCvFile.mockResolvedValue({
+        cvFileId: 'cvfile-uuid-1',
+        fileName:'cv.pdf',
+        fileSize: 1024,
+        mimeType: 'application/pdf',
+        uploadStatus: 'UPLOADED',
+        extractionStatus: 'PENDING',
+        parsedData : null,
+        updatedAt,
+      });
+
+      const result = await controller.getCvFile('cvfile-uuid-1');
+
+      expect(mockCVUploadService.getCvFile).toHaveBeenCalledWith('cvfile-uuid-1');
+      expect(result.cvFileId).toBe('cvfile-uuid-1');
+      expect(result.fileName).toBe('cv.pdf');
+      expect(result.uploadStatus).toBe('UPLOADED');
+    });
+
+    it('should propagate errors from the service', async () =>{
+      mockCVUploadService.getCvFile.mockRejectedValue(
+      new BadRequestException('CV file with id nonexistent not found.'),
+    );
+
+    await expect(controller.getCvFile('nonexistent')).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('discardCvFile', () =>{
+    it('should discard a CV and return the success message', async () =>{
+      mockCVUploadService.discardCvFile.mockResolvedValue({ message : 'CV discarded successfully.'});
+
+      const result = await controller.discardCvFile('cvfile-uuid-1');
+
+      expect(mockCVUploadService.discardCvFile).toHaveBeenCalledWith('cvfile-uuid-1');
+      expect(result.message).toBe('CV discarded successfully.');
+    });
+
+    it('should propage errors from the service', async () =>{
+      mockCVUploadService.discardCvFile.mockRejectedValue(new BadRequestException('Cannot discard a CV that has already been linked to a consultant profile.'),
+    );
+    await expect(controller.discardCvFile('consultant-linked-cv')).rejects.toThrow(BadRequestException);
     });
   });
 });

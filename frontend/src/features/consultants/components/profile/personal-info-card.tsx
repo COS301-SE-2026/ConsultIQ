@@ -4,6 +4,7 @@ import {useState} from "react";
 import { toast } from "sonner";
 import { Input } from "../../../../components/ui/input";
 import EditControls from "./edit-controls";
+import { validateSAID } from "./validation-helpers";
 
 interface PersonalInfoCardProps {
   readonly fullName: string;
@@ -15,25 +16,6 @@ interface PersonalInfoCardProps {
   readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => Promise<void> | void;
 }
 
-    function validateSAID(id: string): boolean {
-    if (!/^\d{13}$/.test(id)) return false;
-    const month = Number.parseInt(id.substring(2, 4));
-    const day = Number.parseInt(id.substring(4, 6));
-    if (month < 1 || month > 12) return false;
-    if (day < 1 || day > 31) return false;
-    let sum = 0;
-    let isEven = false;
-    for (let i = id.length - 1; i >= 0; i--) {
-      let digit = Number.parseInt(id[i]);
-      if (isEven) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
-      }
-      sum += digit;
-      isEven = !isEven;
-    }
-    return sum % 10 === 0;
-  }
 
 
 export default function PersonalInfoCard({

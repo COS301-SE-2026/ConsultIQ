@@ -1,4 +1,10 @@
 
+export class OverallUtilisationDto {   
+    totalConsultants!: number;
+    utilisedConsultants!: number;
+    utilisationPercent!: number;
+}
+
 export class UtilisationBySkillDto {
     category!: string;
     totalConsultants!: number;
@@ -9,6 +15,10 @@ export class UtilisationBySkillDto {
 export class BenchBySkillDto {
     category!: string;
     benchCount!: number;
+}
+
+export class BenchCountDto {
+    count!: number;
 }
 
 export class SkillDistributionDto {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SkillDistributionDto, PlacementsYTDDto } from '../dto/analytics-response.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -11,4 +12,37 @@ export class AnalyticsService {
     // getBenchBySkillCategory()
     // getPlacementsBySkillCategory()
     // getCvParsingStats()
+
+    async SkillDistribution(): Promise<SkillDistributionDto[]> {
+        const totalConsultants = await this.prisma.consultant.count();
+
+        const categories = await this.prisma.skill.findMany({
+            distinct: ['category'],
+            select: { category: true},
+        });
+
+        const results: SkillDistributionDto[] = [];
+
+        for (const { category } of categories) {
+            const consultantCount = await this.prisma.consultant.count({
+                where: {
+                    skills: {
+                        some: {
+                            skill: { category },
+                        },
+                    },
+                },
+            });
+
+            results.push({
+                category,
+                consultantCount,
+                percentageOfPool:
+                    totalConsultants > 0
+                        ? Math.round((consultantCount / totalConsultants) * 100)
+                        : 0,
+            });
+        }
+        return results;
+    }
 }

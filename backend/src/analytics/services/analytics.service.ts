@@ -6,6 +6,7 @@ export class AnalyticsService {
     constructor(private readonly prisma: PrismaService) {}
 
     // TO DO:
+    // getOverallUtilisation()
     // getUtilisationBySkillCategory()
     // getBenchBySkillCategory()
     // getPlacementsBySkillCategory()

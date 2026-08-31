@@ -585,7 +585,7 @@ export function writeConsultantJourney(data) {
 
         const availabilityOptions = ['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'];
         const payload = JSON.stringify({
-            availability: availabilityOptions[Math.floor(Math.random() * availabilityOptions.length)],
+            availability: availabilityOptions[Math.floor(Math.random() * availabilityOptions.length)], // NOSONAR
         });
         const res = http.patch(`${data.baseUrl}/consultants/${consultantId}`, payload, {
             headers: { 'Content-Type': 'application/json' },

@@ -161,7 +161,7 @@ jobs:
         run: npx --no-install prisma db push --accept-data-loss
 
       - name: Install wait-on explicitly
-        run: npm install -g wait-on@7.2.0
+        run: npm install -g wait-on@7.2.0 --ignore-scripts
 
       - name: Wait for backend to become healthy
         run: wait-on http://localhost:3000/health -t 30000

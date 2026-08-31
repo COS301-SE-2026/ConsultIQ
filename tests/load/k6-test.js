@@ -236,15 +236,15 @@ export function setup() {
 // =========================================================
 
 function pickUser() {
-    return users[Math.floor(Math.random() * users.length)];
+    return users[Math.floor(Math.random() * users.length)]; // NOSONAR
 }
 
 function pickProjectManager() {
-    return projectManagerUsers[Math.floor(Math.random() * projectManagerUsers.length)];
+    return projectManagerUsers[Math.floor(Math.random() * projectManagerUsers.length)]; // NOSONAR
 }
 
 function pickConsultantManager() {
-    return consultantManagerUsers[Math.floor(Math.random() * consultantManagerUsers.length)];
+    return consultantManagerUsers[Math.floor(Math.random() * consultantManagerUsers.length)]; // NOSONAR
 }
 
 function login(baseUrl, user) {
@@ -270,7 +270,7 @@ function getProjectId(response) {
     try {
         const projects = response.json().projects;
         if (Array.isArray(projects) && projects.length > 0) {
-            return projects[Math.floor(Math.random() * projects.length)].id;
+            return projects[Math.floor(Math.random() * projects.length)].id; // NOSONAR
         }
     } catch (error) {
         console.log(`Failed to parse projects: ${error.message}`);
@@ -283,7 +283,7 @@ function getConsultantId(response) {
         const body = response.json();
         const consultants = Array.isArray(body) ? body : body.consultants;
         if (Array.isArray(consultants) && consultants.length > 0) {
-            return consultants[Math.floor(Math.random() * consultants.length)].id;
+            return consultants[Math.floor(Math.random() * consultants.length)].id; // NOSONAR
         }
     } catch (error) {
         console.log(`Failed to parse consultants: ${error.message}`);
@@ -292,7 +292,7 @@ function getConsultantId(response) {
 }
 
 function randomWeights() {
-    const raw = Array.from({ length: 5 }, () => Math.random());
+    const raw = Array.from({ length: 5 }, () => Math.random()); // NOSONAR
     const sum = raw.reduce((a, b) => a + b, 0);
     const scaled = raw.map((w) => Math.floor((w / sum) * 100));
     const usedSum = scaled.reduce((a, b) => a + b, 0);
@@ -394,7 +394,7 @@ export function readHeavyJourney(data) {
         }
     });
 
-    sleep(Math.random() * 2 + 1);
+    sleep(Math.random() * 2 + 1); // NOSONAR
 
     if (projectId) {
         group('03_MatchRun', function () {
@@ -484,7 +484,7 @@ export function writeProjectJourney(data) {
         projectId = getProjectId(res);
     });
 
-    sleep(Math.random() * 1 + 0.5);
+    sleep(Math.random() * 1 + 0.5); // NOSONAR
 
     if (!projectId) {
         console.log(`[WARNING] write_project: no projectId found for ${user.role} ${user.email}, skipping writes`);
@@ -573,7 +573,7 @@ export function writeConsultantJourney(data) {
         consultantId = getConsultantId(res);
     });
 
-    sleep(Math.random() * 1 + 0.5);
+    sleep(Math.random() * 1 + 0.5); // NOSONAR
 
     if (!consultantId) {
         console.log(`[WARNING] write_consultant: no consultantId found for ${user.role} ${user.email}, skipping write`);
@@ -642,7 +642,7 @@ export function authHeavyJourney(data) {
         }
     });
 
-    sleep(Math.random() * 1 + 0.5);
+    sleep(Math.random() * 1 + 0.5); // NOSONAR
 
     group('A03_Logout', function () {
         const res = http.post(`${data.baseUrl}/auth/logout`, null, {

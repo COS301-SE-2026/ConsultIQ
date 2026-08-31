@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # ==========================================================================
 # NFR evidence runner.
 #
@@ -12,7 +11,6 @@
 #
 # Each phase's raw k6 output is saved under ./load-test-results/<timestamp>/
 # ==========================================================================
-
 set -e
 
 ROOT_DIR=$(pwd)
@@ -29,24 +27,25 @@ echo "Results will be saved to: $RESULTS_DIR"
 # ==========================================
 cleanup() {
   echo -e "\n [Cleanup] Tearing down performance test environment..."
-
-  if [ -n "$SERVER_PID" ]; then
+  if [[ -n "$SERVER_PID" ]]; then
     echo "Stopping NestJS server process group (PID: $SERVER_PID)..."
     kill -- -"$SERVER_PID" 2>/dev/null || true
   fi
 
   PORT_PID=$(lsof -ti tcp:"$PORT" || true)
-  if [ -n "$PORT_PID" ]; then
+  if [[ -n "$PORT_PID" ]]; then
     echo "Killing leftover process on port $PORT (PID: $PORT_PID)"
     kill -9 $PORT_PID || true
   fi
 
   echo "Cleaning testing database..."
   cd "$BACKEND_DIR"
-  DATABASE_URL="$TEST_DB_URL" npx ts-node prisma/prisma-test-utils.ts
+  DATABASE_URL="$TEST_DB_URL" npx --no-install ts-node prisma/prisma-test-utils.ts
   cd "$ROOT_DIR"
+  
   echo "[Cleanup] Complete. Evidence saved under: $RESULTS_DIR"
 }
+
 trap cleanup EXIT
 
 # ==========================================
@@ -55,7 +54,7 @@ trap cleanup EXIT
 echo "[Setup] Initializing environment and database..."
 cd "$BACKEND_DIR"
 
-if [ ! -f ".env.test" ]; then
+if [[ ! -f ".env.test" ]]; then
   echo "FATAL: .env.test not found in $BACKEND_DIR"
   exit 1
 fi
@@ -66,13 +65,13 @@ REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
 TARGET_URL=$(grep '^TARGET_URL=' .env.test | cut -d '=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
 TARGET_URL="${TARGET_URL:-http://localhost:$PORT}"
 
-if [ -z "$TEST_DB_URL" ]; then
+if [[ -z "$TEST_DB_URL" ]]; then
   echo "FATAL: Could not extract DATABASE_URL from .env.test"
   exit 1
 fi
 
 EXISTING_PID=$(lsof -ti tcp:"$PORT" || true)
-if [ -n "$EXISTING_PID" ]; then
+if [[ -n "$EXISTING_PID" ]]; then
   echo "Port $PORT already in use by PID $EXISTING_PID - killing it first"
   kill -9 $EXISTING_PID || true
   sleep 1
@@ -82,8 +81,8 @@ echo " [Setup] Clean build of backend..."
 rm -rf dist
 npm run build
 
-DATABASE_URL="$TEST_DB_URL" npx prisma db push --accept-data-loss
-DATABASE_URL="$TEST_DB_URL" npx ts-node prisma/seed-test.ts
+DATABASE_URL="$TEST_DB_URL" npx --no-install prisma db push --accept-data-loss
+DATABASE_URL="$TEST_DB_URL" npx --no-install ts-node prisma/seed-test.ts
 
 # ==========================================
 # 3. Start the Backend Server
@@ -91,11 +90,10 @@ DATABASE_URL="$TEST_DB_URL" npx ts-node prisma/seed-test.ts
 echo "[Setup] Starting the backend server..."
 DATABASE_URL="$TEST_DB_URL" setsid node dist/main.js &
 SERVER_PID=$!
-
 cd "$ROOT_DIR"
 
 echo " [Setup] Waiting for server to become healthy..."
-npx wait-on "$TARGET_URL/health" -t 30000
+npx --no-install wait-on "$TARGET_URL/health" -t 30000
 echo "Server is up and accepting connections!"
 
 # ==========================================
@@ -135,6 +133,7 @@ if command -v redis-cli >/dev/null 2>&1; then
 else
   echo " redis-cli not found - skipping FLUSHALL. Cold-read numbers may not reflect a genuinely empty cache."
 fi
+
 TARGET_URL="$TARGET_URL" \
   k6 run tests/load/k6-cache-warmcold.js 2>&1 | tee "$RESULTS_DIR/5-cache_warmcold.log"
 

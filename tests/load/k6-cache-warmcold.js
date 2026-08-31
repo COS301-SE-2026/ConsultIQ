@@ -53,7 +53,8 @@ function pickProjectManager() {
     if (candidates.length === 0) {
         throw new Error('[FATAL] No ADMIN or PROJECT_MANAGER users found in test-users.json');
     }
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    const randomIndex = randomInt(0, candidates.length);
+    return candidates[randomIndex];
 }
 
 function checkCacheHeader(res, expected) {

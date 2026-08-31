@@ -1,6 +1,7 @@
 name: Performance Tests (Manual)
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       target_mode:
@@ -37,7 +38,7 @@ env:
   BACKEND_IMAGE: ghcr.io/cos301-se-2026/consultiq-backend
 
 concurrency:
-  group: performance-tests-${{ github.event.inputs.target_mode }}
+  group: performance-tests-${{ github.event.inputs.target_mode || 'pr'}}
   cancel-in-progress: false
 
 jobs:
@@ -66,7 +67,7 @@ jobs:
 
   performance-test-emulated:
     name: Run k6 (emulated staging, ephemeral DB)
-    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' }}
+    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read     
@@ -187,7 +188,7 @@ jobs:
         working-directory: tests/load
         env:
           TARGET_URL: 'http://localhost:3000'
-          TEST_PROFILE: ${{ github.event.inputs.test_profile }}
+          TEST_PROFILE: ${{ github.event.inputs.test_profile || 'match_run_isolated' }}
         run: |
           set -e
           mkdir -p ../../perf-results

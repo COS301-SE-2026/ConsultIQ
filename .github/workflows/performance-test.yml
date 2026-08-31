@@ -1,71 +1,4 @@
-name: Performance Tests (Manual)
-
-on:
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      target_mode:
-        description: 'emulated_ephemeral = safe, throwaway DB with the staging image. real_staging = hits live staging data.'
-        required: true
-        type: choice
-        default: 'emulated_ephemeral'
-        options:
-          - emulated_ephemeral
-          - real_staging
-      test_profile:
-        description: 'Which test profile to run'
-        required: true
-        type: choice
-        default: 'match_run_isolated'
-        options:
-          - match_run_isolated
-          - match_run_burst
-          - pool_stress
-          - full
-          - cache_warmcold
-          - all
-      backend_image_tag:
-        description: '(emulated_ephemeral only) Image tag to pull, e.g. "staging" or "latest". Leave blank to use this commit''s SHA - only works if this exact commit was already pushed to main/dev and built by Deploy.yml.'
-        required: false
-        default: ''
-      confirm_staging_writes:
-        description: '(real_staging only) Type "yes" to allow write-touching profiles (full, cache_warmcold, all) to run against real staging data.'
-        required: false
-        default: 'no'
-
-env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/cos301-se-2026/consultiq-backend
-
-concurrency:
-  group: performance-tests-${{ github.event.inputs.target_mode || 'pr'}}
-  cancel-in-progress: false
-
-jobs:
-  guard-write-confirmation:
-    name: Verify write confirmation (real_staging only)
-    if: ${{ github.event.inputs.target_mode == 'real_staging' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: none 
-    steps:
-      - name: Check confirmation for write-touching profiles
-        run: |
-          PROFILE="${{ github.event.inputs.test_profile }}"
-          CONFIRM="${{ github.event.inputs.confirm_staging_writes }}"
-          WRITE_PROFILES="full cache_warmcold all"
-
-          if echo "$WRITE_PROFILES" | grep -qw "$PROFILE"; then
-            if [ "$CONFIRM" != "yes" ]; then
-              echo "::error::Profile '$PROFILE' performs real writes against staging. Re-run with confirm_staging_writes set to 'yes' to proceed."
-              exit 1
-            fi
-            echo "Write confirmation received for profile '$PROFILE'. Proceeding."
-          else
-            echo "Profile '$PROFILE' is read-only - no write confirmation required."
-          fi
-
-  performance-test-emulated:
+performance-test-emulated:
     name: Run k6 (emulated staging, ephemeral DB)
     if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
@@ -82,7 +15,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U ${{ secrets.TESTING_DB_USER }}"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -106,7 +39,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install backend dependencies (for seeding)
+      - name: Install backend dependencies
         working-directory: backend
         run: npm ci --ignore-scripts
 
@@ -120,7 +53,7 @@ jobs:
           TAG="${{ github.event.inputs.backend_image_tag }}"
           if [ -z "$TAG" ]; then
             TAG="${{ github.sha }}"
-            echo "No backend_image_tag given - defaulting to this commit's SHA ($TAG). This only works if this exact commit was already pushed to main/dev and built by Deploy.yml."
+            echo "No backend_image_tag given - defaulting to this commit's SHA ($TAG)."
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
@@ -131,16 +64,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull backend image
+      - name: Pull backend image (with Native Fallback)
+        id: pull_image
         run: |
           IMAGE="${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
-          echo "Pulling $IMAGE ..."
-          if ! docker pull "$IMAGE"; then
-            echo "::error::Could not pull $IMAGE. If you left backend_image_tag blank, this commit may never have been pushed to main/dev (no image was built for it). Try backend_image_tag=staging or backend_image_tag=latest instead."
-            exit 1
+          echo "Attempting to pull $IMAGE ..."
+          
+          # If docker pull fails, we set a flag to run natively instead
+          if docker pull "$IMAGE"; then
+            echo "Successfully pulled Docker image."
+            echo "USE_DOCKER=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Image not found for this commit. Falling back to native build from source (Integration Test style)."
+            echo "USE_DOCKER=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Run backend container against ephemeral services
+      - name: Build backend from source (Fallback)
+        if: env.USE_DOCKER == 'false'
+        working-directory: backend
+        run: npm run build
+
+      - name: Start backend from source (Fallback)
+        if: env.USE_DOCKER == 'false'
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+          REDIS_URL: redis://localhost:6379
+          PORT: 3000
+          AWS_REGION: ${{ secrets.AWS_REGION || 'af-south-1' }}
+          AWS_S3_BUCKET: ${{ secrets.TEST_AWS_S3_BUCKET || 'consultiq-test-bucket' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}
+          ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
+        run: |
+          node dist/main.js &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Run backend container (Docker)
+        if: env.USE_DOCKER == 'true'
         env:
           TEST_DB_URL: ${{ secrets.TESTING_DB_URL }}
         run: |
@@ -171,7 +132,6 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
-    
         run: npx --no-install ts-node prisma/seed-test.ts 
 
       - name: Verify seeded test-users.json exists
@@ -182,7 +142,7 @@ jobs:
           fi
 
       - name: Set up k6
-        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065
+        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065 
 
       - name: Run selected profile(s)
         working-directory: tests/load
@@ -221,69 +181,11 @@ jobs:
           path: perf-results/
           retention-days: 30
 
-      - name: Stop backend container
+      - name: Stop backend
         if: always()
-        run: docker stop backend && docker rm backend || true
-
-  performance-test-real-staging:
-    name: Run k6 (real staging)
-    if: ${{ github.event.inputs.target_mode == 'real_staging' }}
-    runs-on: ubuntu-latest
-    needs: guard-write-confirmation
-    environment: staging-performance
-    permissions:
-      contents: read   
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
-
-      - name: Set up k6
-        uses: grafana/setup-k6-action@89ba7149a4242d5930b42fbb6b42b78119eb8e52 
-
-      - name: Write staging test-user credentials
-        working-directory: tests/load
-        env:
-          STAGING_TEST_USERS_JSON: ${{ secrets.STAGING_TEST_USERS_JSON }}
         run: |
-          if [ -z "$STAGING_TEST_USERS_JSON" ]; then
-            echo "::error::Secret STAGING_TEST_USERS_JSON is not set. Add a repo or environment secret containing the JSON array of staging test users (email/password/role) k6-test.js expects."
-            exit 1
+          if [ "${{ env.USE_DOCKER }}" = "true" ]; then
+            docker stop backend && docker rm backend || true
+          elif [ -n "${{ env.BACKEND_PID }}" ]; then
+            kill ${{ env.BACKEND_PID }} || true
           fi
-          echo "$STAGING_TEST_USERS_JSON" > test-users.json
-
-      - name: Run selected profile(s)
-        working-directory: tests/load
-        env:
-          TARGET_URL: ${{ secrets.STAGING_TARGET_URL }}
-          TEST_PROFILE: ${{ github.event.inputs.test_profile }}
-        run: |
-          set -e
-          mkdir -p ../../perf-results
-
-          run_profile() {
-            local profile="$1"
-            echo "::group::Phase: $profile"
-            if [ "$profile" = "cache_warmcold" ]; then
-              echo "NOTE: Redis is NOT flushed before this run against real staging - 'cold' readings here are not a true cold-cache measurement."
-              k6 run k6-cache-warmcold.js | tee "../../perf-results/$profile.log"
-            else
-              TEST_PROFILE="$profile" k6 run k6-test.js | tee "../../perf-results/$profile.log"
-            fi
-            echo "::endgroup::"
-          }
-
-          if [ "$TEST_PROFILE" = "all" ]; then
-            for profile in match_run_isolated match_run_burst pool_stress full cache_warmcold; do
-              run_profile "$profile"
-            done
-          else
-            run_profile "$TEST_PROFILE"
-          fi
-
-      - name: Upload k6 results
-        if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 
-        with:
-          name: k6-performance-results-staging-${{ github.run_id }}
-          path: perf-results/
-          retention-days: 30

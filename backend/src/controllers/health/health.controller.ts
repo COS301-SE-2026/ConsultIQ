@@ -10,9 +10,9 @@ import { Public } from '../../common/decorators/public.decorator';
 @Controller('health')
 export class HealthController {
     constructor(
-        private health: HealthCheckService,
-        private db: PrismaHealthIndicator,
-        private prisma: PrismaService,
+        private readonly health: HealthCheckService,
+        private readonly db: PrismaHealthIndicator,
+        private readonly prisma: PrismaService,
     ) { }
 
     @Public()

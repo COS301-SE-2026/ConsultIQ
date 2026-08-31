@@ -36,10 +36,6 @@ env:
   REGISTRY: ghcr.io
   BACKEND_IMAGE: ghcr.io/cos301-se-2026/consultiq-backend
 
-permissions:
-  contents: read
-  packages: read
-
 concurrency:
   group: performance-tests-${{ github.event.inputs.target_mode }}
   cancel-in-progress: false
@@ -49,6 +45,8 @@ jobs:
     name: Verify write confirmation (real_staging only)
     if: ${{ github.event.inputs.target_mode == 'real_staging' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: none 
     steps:
       - name: Check confirmation for write-touching profiles
         run: |
@@ -70,6 +68,9 @@ jobs:
     name: Run k6 (emulated staging, ephemeral DB)
     if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read     
+      packages: read     
     services:
       postgres:
         image: postgres:15
@@ -95,10 +96,10 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ff24f5d10a061d751e51 
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -123,7 +124,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -152,9 +153,6 @@ jobs:
             -e AWS_SECRET_ACCESS_KEY="${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}" \
             -e ANTHROPIC_API_KEY="${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}" \
             "${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
-          # --network host lets the container reach the postgres/redis
-          # service containers via localhost, since GitHub Actions maps
-          # their ports onto the runner host itself.
 
       - name: Push Prisma schema to ephemeral DB
         working-directory: backend
@@ -162,14 +160,18 @@ jobs:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
         run: npx --no-install prisma db push --accept-data-loss
 
+      - name: Install wait-on explicitly
+        run: npm install -g wait-on@7.2.0
+
       - name: Wait for backend to become healthy
-        run: npx --yes wait-on http://localhost:3000/health -t 30000
+        run: wait-on http://localhost:3000/health -t 30000
 
       - name: Seed ephemeral DB (200 consultants, per NFR4)
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
-        run: npx ts-node prisma/seed-test.ts
+    
+        run: npx --no-install ts-node prisma/seed-test.ts 
 
       - name: Verify seeded test-users.json exists
         run: |
@@ -179,7 +181,7 @@ jobs:
           fi
 
       - name: Set up k6
-        uses: grafana/setup-k6-action@v1
+        uses: grafana/setup-k6-action@89ba7149a4242d5930b42fbb6b42b78119eb8e52 
 
       - name: Run selected profile(s)
         working-directory: tests/load
@@ -212,7 +214,7 @@ jobs:
 
       - name: Upload k6 results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 
         with:
           name: k6-performance-results-emulated-${{ github.run_id }}
           path: perf-results/
@@ -228,12 +230,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: guard-write-confirmation
     environment: staging-performance
+    permissions:
+      contents: read   
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
 
       - name: Set up k6
-        uses: grafana/setup-k6-action@v1
+        uses: grafana/setup-k6-action@89ba7149a4242d5930b42fbb6b42b78119eb8e52 
 
       - name: Write staging test-user credentials
         working-directory: tests/load
@@ -277,7 +281,7 @@ jobs:
 
       - name: Upload k6 results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 
         with:
           name: k6-performance-results-staging-${{ github.run_id }}
           path: perf-results/

@@ -1,6 +1,6 @@
 type GapSeverity = "ADEQUATELY_COVERED" | "PARTIALLY_COVERED" | "NOT_COVERED";
 
-interface SkillGapItem {
+export interface SkillGapItem {
     skillName: string;
     requiredCount: number;
     availableCount: number;
@@ -8,27 +8,27 @@ interface SkillGapItem {
     severity: GapSeverity;
 }
 
-interface SkillGapSummary {
+export interface SkillGapSummary {
     overallCoveragePercentage: number;
     adequatelyCoveredCount: number;
     partiallyCoveredCount: number;
     notCoveredCount : number;
 }
 
-interface ProjectSkillGapResponse {
+export interface ProjectSkillGapResponse {
     projectId: string;
     projectName: string;
     summary: SkillGapSummary;
     skills: SkillGapItem[];
 }
 
-interface PortfolioSkillGapResponse {
+export interface PortfolioSkillGapResponse {
     summary: SkillGapSummary;
     skills: SkillGapItem[];
     alerts: ProjectGapAlert[];
 }
 
-interface ProjectGapAlert {
+export interface ProjectGapAlert {
     projectId: string;
     projectName: string;
     severity: GapSeverity;

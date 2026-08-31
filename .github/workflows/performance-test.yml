@@ -1,4 +1,40 @@
-performance-test-emulated:
+name: Performance Testing
+
+on:
+  pull_request:
+    branches: [dev]  
+  workflow_dispatch:
+    inputs:
+      target_mode:
+        description: 'Target mode'
+        required: true
+        default: 'emulated_ephemeral'
+        type: choice
+        options:
+          - emulated_ephemeral
+      backend_image_tag:
+        description: 'Backend image tag (defaults to commit SHA if empty)'
+        required: false
+        type: string
+      test_profile:
+        description: 'k6 test profile to run'
+        required: false
+        default: match_run_isolated
+        type: choice
+        options:
+          - match_run_isolated
+          - match_run_burst
+          - pool_stress
+          - full
+          - cache_warmcold
+          - all
+
+env:
+  REGISTRY: ghcr.io                     
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend 
+
+jobs:
+  performance-test-emulated:
     name: Run k6 (emulated staging, ephemeral DB)
     if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest

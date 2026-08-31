@@ -13,7 +13,7 @@ export class AnalyticsService {
     // getPlacementsBySkillCategory()
     // getCvParsingStats()
 
-    async SkillDistribution(): Promise<SkillDistributionDto[]> {
+    async getSkillDistribution(): Promise<SkillDistributionDto[]> {
         const totalConsultants = await this.prisma.consultant.count();
 
         const categories = await this.prisma.skill.findMany({
@@ -44,5 +44,17 @@ export class AnalyticsService {
             });
         }
         return results;
+    }
+
+    async getPlacementYTD() : Promise<PlacementsYTDDto> {
+        const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+        const distinctConsultants = await this.prisma.projectPlacement.findMany({
+            where: { createdAt: { gte: startOfYear} },
+            distinct: [ 'consultantId' ],
+            select: { consultantId: true },
+        });
+
+        return { count: distinctConsultants.length };
     }
 }

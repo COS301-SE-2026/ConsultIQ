@@ -1,8 +1,6 @@
 name: Performance Testing
 
 on:
-  pull_request:
-    branches: [dev]  
   workflow_dispatch:
     inputs:
       target_mode:
@@ -36,7 +34,7 @@ env:
 jobs:
   performance-test-emulated:
     name: Run k6 
-    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' || github.event_name == 'pull_request' }}
+    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read     

@@ -139,7 +139,12 @@ export class SkillGapService {
             const hasCritical = projectGap.skills.some(s => s.severity === "CRITICAL");
             const hasRisk = projectGap.skills.some(s => s.severity === "AT_RISK");
 
-            const worstSeverity: GapSeverity = hasCritical ? "CRITICAL" : (hasRisk ? "AT_RISK" : "COVERED");
+            let worstSeverity: GapSeverity = "COVERED";
+            if (hasCritical) {
+                worstSeverity = "CRITICAL";
+            } else if (hasRisk) {
+                worstSeverity = "AT_RISK";
+            }
 
             if (worstSeverity !== "COVERED") {
                 alerts.push({
@@ -187,8 +192,13 @@ export class SkillGapService {
                 });
 
                 const coveragePercent = (availableCount / data.requiredCount) * 100;
-                let severity: GapSeverity =
-                    coveragePercent >= 100 ? "COVERED" : coveragePercent >= 50 ? "AT_RISK" : "CRITICAL";
+
+                let severity: GapSeverity = "CRITICAL";
+                if (coveragePercent >= 100) {
+                    severity = "COVERED";
+                } else if (coveragePercent >= 50) {
+                    severity = "AT_RISK";
+                }
 
                 return {
                     skillId,

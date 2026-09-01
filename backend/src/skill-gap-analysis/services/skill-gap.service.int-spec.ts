@@ -5,6 +5,7 @@ import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { SkillGapService } from './skill-gap.service';
 import { SkillGapModule } from '../skill-gap.module';
 import { CompetencyLevel, ConsultantAvailability, ProjectStatus } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 describe('SkillGapService - Integration Test', () => {
     let moduleRef: TestingModule;
@@ -65,7 +66,7 @@ describe('SkillGapService - Integration Test', () => {
 
         const user = await prisma.user.create({
             data: {
-                email: `test-${Date.now()}-${Math.random()}@example.com`,
+                email: `test-${randomUUID()}@example.com`,
                 fullName: 'Test User',
                 role: 'CONSULTANT',
             }
@@ -159,7 +160,7 @@ describe('SkillGapService - Integration Test', () => {
                 skills: { create: [{ skillId: javaSkill.id, competency: CompetencyLevel.INTERMEDIATE, years: 3 }] }
             });
 
-            const projectB = await createTestProject({
+            await createTestProject({
                 projectName: 'Frontend Migration',
                 status: ProjectStatus.IN_PROGRESS,
                 teamSize: 1,

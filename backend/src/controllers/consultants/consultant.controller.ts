@@ -18,16 +18,15 @@ import {
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
 import { UpdateConsultantDto } from '../../consultants/dto/update-consultant.dto';
-import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { RolesGuard, Roles } from '../../common/guards/roles.guard';
 import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 @Controller('consultants')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) {}
+  constructor(private readonly consultantService: ConsultantService) { }
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)

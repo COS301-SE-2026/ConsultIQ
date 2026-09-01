@@ -5,7 +5,7 @@ import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { SkillGapService } from './skill-gap.service';
 import { SkillGapModule } from '../skill-gap.module';
 import { CompetencyLevel, ConsultantAvailability, ProjectStatus } from '@prisma/client';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 describe('SkillGapService - Integration Test', () => {
     let moduleRef: TestingModule;

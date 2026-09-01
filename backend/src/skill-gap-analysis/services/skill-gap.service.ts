@@ -31,7 +31,7 @@ const COMPETENCY_RANK: Record<CompetencyLevel, number> = {
 export function getValidCompetencies(minCompetency: CompetencyLevel): CompetencyLevel[] {
     const minRank = COMPETENCY_RANK[minCompetency] || 1;
     return Object.entries(COMPETENCY_RANK)
-        .filter(([_, rank]) => rank >= minRank)
+        .filter(([, rank]) => rank >= minRank)
         .map(([level]) => level as CompetencyLevel);
 }
 

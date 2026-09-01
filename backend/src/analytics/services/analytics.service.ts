@@ -4,8 +4,10 @@ import {
     BenchBySkillDto,
     BenchCountDto,
     OverallUtilisationDto,
+    PlacementsBySkillDto,
     UtilisationBySkillDto,
 } from '../dto/analytics-response.dto';
+import { ParsedCvData } from '../../cv-parsing/types/parsed-cv.types';
 
 @Injectable()
 export class AnalyticsService {
@@ -57,6 +59,41 @@ export class AnalyticsService {
         }));
     }
 
+    async getPlacementsBySkillCategory(): Promise<PlacementsBySkillDto[]> {
+        const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+        const placements = await this.prisma.projectPlacement.findMany({
+            where: { startDate: { gte: startOfYear } },
+            select: {
+            project: {
+                select: {
+                skills: {
+                    where: { mandatory: true },
+                    select: { skill: { select: { category: true } } },
+                },
+                },
+            },
+            },
+        });
+
+        const counts = new Map<string, number>();
+
+        for (const placement of placements) {
+            // A Set, dedupes categories within a single placement, so a project mandating both AWS and Docker (both
+            // "Cloud & DevOps") doesn't count that one placement twice toward
+            // the same category. 
+            const categories = new Set(placement.project.skills.map((s) => s.skill.category));
+            for (const category of categories) {
+            counts.set(category, (counts.get(category) ?? 0) + 1);
+            }
+        }
+
+        return Array.from(counts.entries()).map(([category, placementCount]) => ({
+            category,
+            placementCount,
+        }));
+    }
+
     private toPercent(part: number, total: number): number {
         if (total === 0) return 0;
         return Math.round((part / total) * 1000) / 10;
@@ -81,7 +118,7 @@ export class AnalyticsService {
 
         return byCategory;
     }
-      
+
     // getPlacementsBySkillCategory()
     // getCvParsingStats()
 }

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
     BenchBySkillDto,
     BenchCountDto,
+    CvParsingStatsDto,
     OverallUtilisationDto,
     PlacementsBySkillDto,
     UtilisationBySkillDto,
@@ -94,6 +95,34 @@ export class AnalyticsService {
         }));
     }
 
+    async getCvParsingStats(): Promise<CvParsingStatsDto> {
+        const processedFiles = await this.prisma.cvFile.findMany({
+            where: { extractionStatus: { in: ['REVIEW_REQUIRED', 'FAILED'] } },
+            select: { parsingMethod: true, extractionStatus: true, parsedData: true },
+        });
+
+        const totalProcessed = processedFiles.length;
+        const ruleBasedCount = processedFiles.filter((f) => f.parsingMethod === 'RULE_BASED').length;
+        const aiAssistedCount = processedFiles.filter((f) => f.parsingMethod === 'AI_ASSISTED').length;
+        const successCount = processedFiles.filter((f) => f.extractionStatus === 'REVIEW_REQUIRED').length;
+        const failedCount = processedFiles.filter((f) => f.extractionStatus === 'FAILED').length;
+
+        // Filtering to REVIEW_REQUIRED first, then guarding
+        // with the type-predicate filter below, means a malformed or
+        // unexpectedly-shaped row is silently excluded from the average rather
+        // than corrupting it with NaN or crashing the whole query.
+        const confidenceScores = processedFiles
+            .filter((f) => f.extractionStatus === 'REVIEW_REQUIRED')
+            .map((f) => (f.parsedData as { data?: ParsedCvData })?.data?.confidenceScores?.overall)
+            .filter((score): score is number => typeof score === 'number');
+
+        const averageConfidence = confidenceScores.length > 0
+            ? Math.round((confidenceScores.reduce((sum, s) => sum + s, 0) / confidenceScores.length) * 100) / 100
+            : 0;
+
+        return { totalProcessed, ruleBasedCount, aiAssistedCount, successCount, failedCount, averageConfidence };
+    }
+
     private toPercent(part: number, total: number): number {
         if (total === 0) return 0;
         return Math.round((part / total) * 1000) / 10;
@@ -118,7 +147,4 @@ export class AnalyticsService {
 
         return byCategory;
     }
-
-    // getPlacementsBySkillCategory()
-    // getCvParsingStats()
 }

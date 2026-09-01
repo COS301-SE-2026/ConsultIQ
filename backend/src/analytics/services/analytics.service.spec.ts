@@ -128,4 +128,36 @@ describe('AnalyticsService', () => {
             });
         });
     });
-})
+
+    describe('getPlacementYTD', () => {
+        it('returns the count of distinct consultants placed since the start of this year', async () => {
+            mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+                { consultantId: 'consultant-1' },
+                { consultantId: 'consultant-2' },
+            ])
+
+            const result = await service.getPlacementYTD()
+            expect(result).toEqual({ count: 2 });
+        });
+
+        it('returns 0 when no placements have occurred this year', async () => {
+            mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+            const result = await service.getPlacementYTD();
+            expect(result).toEqual({ count: 0 });
+        });
+
+        it('queries with distinct consultantId and a createdAt filter from Jan 1st of the current year', async () => {
+            mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+            await service.getPlacementYTD();
+
+            const callArg = mockPrismaService.projectPlacement.findMany.mock.calls[0][0];
+            const expectedStartOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+            expect(callArg.distinct).toEqual(['consultantId']);
+            expect(callArg.select).toEqual({ consultantId: true });
+            expect(callArg.where.createdAt.gte).toEqual(expectedStartOfYear);
+        });
+    });
+});

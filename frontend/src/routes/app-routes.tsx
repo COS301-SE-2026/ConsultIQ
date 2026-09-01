@@ -18,6 +18,9 @@ import UnderConstructionPage from "../features/consultants/pages/under-construct
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 import ConsultantProjects from "../features/consultants/pages/consultant-projects";
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
+import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
+import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
@@ -49,8 +52,6 @@ import BrandIconsSection from "../brand style guide/components/brand-icons-secti
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
-import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
-import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -101,6 +102,8 @@ function AnimatedRoutes() {
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
                     <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

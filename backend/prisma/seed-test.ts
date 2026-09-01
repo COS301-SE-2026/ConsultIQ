@@ -17,7 +17,7 @@ async function main() {
     const defaultPassword = 'SecureTestPass123!';
     const passwordHash = await bcrypt.hash(defaultPassword, 12);
 
-    console.log('👤 Seeding authorized accounts...');
+    console.log('Seeding authorized accounts...');
 
     const adminUser = await prisma.user.create({
         data: {
@@ -55,11 +55,11 @@ async function main() {
         { id: cmUser.id, email: cmUser.email, password: defaultPassword, role: Role.CONSULTANT_MANAGER }
     );
 
-    console.log('🛠️ Seeding base skills...');
+    console.log('Seeding base skills...');
     const javaSkill = await prisma.skill.create({ data: { name: 'Java', category: 'Backend' } });
     const reactSkill = await prisma.skill.create({ data: { name: 'React', category: 'Frontend' } });
 
-    console.log('👥 Seeding consultants for Match Run logic...');
+    console.log('Seeding consultants for Match Run logic...');
     const consultantsToCreate = 200;
 
     for (let i = 1; i <= consultantsToCreate; i++) {

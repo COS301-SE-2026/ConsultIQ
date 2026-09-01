@@ -35,7 +35,7 @@ env:
 
 jobs:
   performance-test-emulated:
-    name: Run k6 (emulated staging, ephemeral DB)
+    name: Run k6 
     if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' || github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     permissions:
@@ -101,7 +101,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull backend image (with Native Fallback)
+      - name: Pull backend image 
         id: pull_image
         run: |
           IMAGE="${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
@@ -116,12 +116,12 @@ jobs:
             echo "USE_DOCKER=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Build backend from source (Fallback)
+      - name: Build backend from source 
         if: env.USE_DOCKER == 'false'
         working-directory: backend
         run: npm run build
 
-      - name: Start backend from source (Fallback)
+      - name: Start backend from source
         if: env.USE_DOCKER == 'false'
         working-directory: backend
         env:
@@ -167,7 +167,7 @@ jobs:
       - name: Wait for backend to become healthy
         run: wait-on http://localhost:3000/health -t 30000
 
-      - name: Seed ephemeral DB (200 consultants, per NFR4)
+      - name: Seed ephemeral DB 
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}

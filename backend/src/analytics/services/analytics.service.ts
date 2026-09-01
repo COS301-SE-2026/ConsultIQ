@@ -25,23 +25,8 @@ export class AnalyticsService {
     }
 
     async getUtilisationBySkillCategory(): Promise<UtilisationBySkillDto[]> {
-        const rows = await this.prisma.consultantSkill.findMany({
-            select: {
-            consultantId: true,
-            skill: { select: { category: true } },
-            consultant: { select: { capacity: true } },
-            },
-        });
 
-        // category -> (consultantId -> capacity). Dedupes a consultant who holds two skills
-        // in the same category ensures they're not counted twice.
-        const byCategory = new Map<string, Map<string, number>>();
-
-        for (const row of rows) {
-            const category = row.skill.category;
-            if (!byCategory.has(category)) byCategory.set(category, new Map());
-            byCategory.get(category)!.set(row.consultantId, row.consultant.capacity);
-        }
+        const byCategory = await this.groupConsultantsByCategory();
 
         return Array.from(byCategory.entries()).map(([category, consultants]) => {
             const totalConsultants = consultants.size;
@@ -63,6 +48,21 @@ export class AnalyticsService {
     }
 
     async getBenchBySkillCategory(): Promise<BenchBySkillDto[]> {
+        
+        const byCategory = await this.groupConsultantsByCategory();
+
+        return Array.from(byCategory.entries()).map(([category, consultants]) => ({
+            category,
+            benchCount: Array.from(consultants.values()).filter((c) => c === 100).length,
+        }));
+    }
+
+    private toPercent(part: number, total: number): number {
+        if (total === 0) return 0;
+        return Math.round((part / total) * 1000) / 10;
+    }
+
+    private async groupConsultantsByCategory(): Promise<Map<string, Map<string, number>>> {
         const rows = await this.prisma.consultantSkill.findMany({
             select: {
             consultantId: true,
@@ -79,17 +79,9 @@ export class AnalyticsService {
             byCategory.get(category)!.set(row.consultantId, row.consultant.capacity);
         }
 
-        return Array.from(byCategory.entries()).map(([category, consultants]) => ({
-            category,
-            benchCount: Array.from(consultants.values()).filter((c) => c === 100).length,
-        }));
+        return byCategory;
     }
-
-    private toPercent(part: number, total: number): number {
-        if (total === 0) return 0;
-        return Math.round((part / total) * 1000) / 10;
-    }
-    
+      
     // getPlacementsBySkillCategory()
     // getCvParsingStats()
 }

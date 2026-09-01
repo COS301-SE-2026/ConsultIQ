@@ -133,6 +133,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}
           ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
+          RESEND_API_KEY: ${{ secrets.TEST_RESEND_API_KEY || 're_test_dummy_key' }}
         run: |
           node dist/main.js &
           echo "BACKEND_PID=$!" >> "$GITHUB_ENV"

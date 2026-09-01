@@ -1,17 +1,83 @@
-import { Folder } from "lucide-react";
+import { Folder, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
+import type React from "react";
 
 interface ProjectCardProps {
   readonly project: Project;
   readonly onViewDetails: (project: Project) => void;
   readonly onConfigureScore?: (project: Project)=> void;
+  readonly onViewSkillGap?: (project: Project) => void;
+}
+
+interface GapBadgeProps {
+  readonly severity?: "ADEQUATELY_COVERED" | "PARTIALLY_COVERED" | "NOT_COVERED";
+  readonly onClick: () => void;
+}
+
+const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
+  if(!severity) return null;
+
+  const config = {
+    ADEQUATELY_COVERED: {
+      bg: "bg-green-50",
+      border: "border-green-200",
+      text: "text-green-800",
+      icon: CheckCircle2,
+      label: "Covered",
+      tooltip: "All required  skills are adequately covered."
+    },
+    PARTIALLY_COVERED: {
+      bg: "bg-yellow-50",
+      border: "border-yellow-200",
+      text: "text-yellow-800",
+      icon: AlertCircle,
+      label: "At Risk",
+      tooltip: "Some skills have insufficient coverage"
+    },
+    NOT_COVERED: {
+      bg: "bg-red-50",
+      border: "border-red-200",
+      text: "text-red-800",
+      icon: AlertTriangle,
+      label: "Critical",
+      tooltip: "Critical skill gaps detected - placement not recommended"
+    },
+  };
+
+  const style = config[severity];
+  const Icon = style.icon;
+
+  return (
+    <div className="group relative">
+      <button type="button" onClick={onClick}
+        title={style.tooltip}
+        className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
+      >
+        <Icon size={16} />
+        <span>{style.label}</span>
+      </button>
+
+      <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block">
+        <div className={`px-3 py-2 rounded-lg text-xs font-medium text-white whitespace-nowrap shadow-lg
+         ${severity === "NOT_COVERED" ? "bg-red-600" : severity === "PARTIALLY_COVERED" ? "bg-yellow-600" : "bg-green-600"}`}
+        > 
+          {style.tooltip}
+          <div className={`absolute top-full right-2 border-4 border-transparent 
+          ${severity === "NOT_COVERED" ? "border-t-red-600" : severity === "PARTIALLY_COVERED" ? "border-t-yellow-600" : "border-t-green-600"}`}
+          />
+        </div>
+      </div>
+    </div>
+  )
+
 }
 
 export default function ProjectCard({
   project,
   onViewDetails,
   onConfigureScore,
+  onViewSkillGap,
 }: ProjectCardProps) {
   return (
     <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white overflow-hidden">
@@ -59,7 +125,11 @@ export default function ProjectCard({
               </p>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 ml-auto">
+            {project.gapSeverity && (
+              <GapBadge severity={project.gapSeverity} onClick={() => onViewSkillGap?.(project)} />
+            )}
+
             {onConfigureScore && (
               <button type="button" onClick={() =>onConfigureScore(project)}
                 className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"

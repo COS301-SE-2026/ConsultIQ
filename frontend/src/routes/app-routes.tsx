@@ -24,6 +24,7 @@ import ProjectSpecificationPage from "../features/projects/pages/project-specifi
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
 import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
+import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
@@ -50,8 +51,6 @@ import BrandChangeLogSection from "../brand style guide/components/brand-changel
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
 import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
-
-import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -101,8 +100,7 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
-                    <Route path="/skill-gap" element={<PageTransition><SkillGapPage /></PageTransition>} />
-
+                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

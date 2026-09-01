@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { OverallUtilisationDto } from '../dto/analytics-response.dto';
+import { OverallUtilisationDto, UtilisationBySkillDto } from '../dto/analytics-response.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -19,12 +19,42 @@ export class AnalyticsService {
         };
     }
 
+    async getUtilisationBySkillCategory(): Promise<UtilisationBySkillDto[]> {
+        const rows = await this.prisma.consultantSkill.findMany({
+            select: {
+            consultantId: true,
+            skill: { select: { category: true } },
+            consultant: { select: { capacity: true } },
+            },
+        });
+
+        // category -> (consultantId -> capacity). Dedupes a consultant who holds two skills
+        // in the same category ensures they're not counted twice.
+        const byCategory = new Map<string, Map<string, number>>();
+
+        for (const row of rows) {
+            const category = row.skill.category;
+            if (!byCategory.has(category)) byCategory.set(category, new Map());
+            byCategory.get(category)!.set(row.consultantId, row.consultant.capacity);
+        }
+
+        return Array.from(byCategory.entries()).map(([category, consultants]) => {
+            const totalConsultants = consultants.size;
+            const utilisedConsultants = Array.from(consultants.values()).filter((c) => c < 100).length;
+            return {
+            category,
+            totalConsultants,
+            utilisedConsultants,
+            utilisationPercent: this.toPercent(utilisedConsultants, totalConsultants),
+            };
+        });
+        }
+
     private toPercent(part: number, total: number): number {
         if (total === 0) return 0;
-        return Math.round((part / total) * 1000) / 10; // one decimal place, matches the 83.5% style in the reference dashboard
+        return Math.round((part / total) * 1000) / 10;
     }
     
-    // getUtilisationBySkillCategory()
     // getBenchBySkillCategory()
     // getPlacementsBySkillCategory()
     // getCvParsingStats()

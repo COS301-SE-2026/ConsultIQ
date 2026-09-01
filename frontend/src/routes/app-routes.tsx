@@ -51,6 +51,8 @@ import BrandLogoSection from "../brand style guide/components/brand-logo-section
 import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
 
+import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
+
 function AnimatedRoutes() {
     const location = useLocation();
 
@@ -79,7 +81,6 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
-
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
@@ -100,6 +101,8 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/skill-gap" element={<PageTransition><SkillGapPage /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

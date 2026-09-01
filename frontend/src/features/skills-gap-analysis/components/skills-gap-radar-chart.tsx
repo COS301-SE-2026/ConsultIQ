@@ -7,7 +7,7 @@ interface SkillGapRadarChartProps {
     readonly height?: number;
 }
 
-export const SkillGapRadarChartProps : React.FC<SkillGapRadarChartProps> =({data, height = 400}) =>{
+export const SkillGapRadarChart : React.FC<SkillGapRadarChartProps> =({data, height = 400}) =>{
     //only top 10 skills, to avoid cluttering
     const radarData = data.slice(0, 10).map((item) => ({
         name: item.skillName,

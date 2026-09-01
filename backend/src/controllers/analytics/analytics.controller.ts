@@ -17,7 +17,7 @@ export class AnalyticsController {
 
     @Get('placement-ytd')
     @HttpCode(HttpStatus.OK)
-    async geyPlacementsYTD(): Promise<PlacementsYTDDto> {
+    async getPlacementYTD(): Promise<PlacementsYTDDto> {
         return this.analyticsService.getPlacementYTD();
     }
 }

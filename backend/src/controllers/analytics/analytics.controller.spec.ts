@@ -47,4 +47,23 @@ describe('AnalyticsController', () =>{
             expect(mockAnalyticsService.getSkillDistribution).toHaveBeenCalledWith();
         });
     });
+
+    describe('getPlacementsYTD', () => {
+        it('returns exactly what the service returns', async () => {
+            const expected = { count: 7 };
+            mockAnalyticsService.getPlacementYTD.mockResolvedValue(expected);
+
+            const result = await controller.getPlacementYTD();
+            expect(result).toEqual(expected);
+        });
+
+        it('calls the service exactly once with no arguments', async () => {
+            mockAnalyticsService.getPlacementYTD.mockResolvedValue({ count: 0 });
+
+            await controller.getPlacementYTD();
+            
+            expect(mockAnalyticsService.getPlacementYTD).toHaveBeenCalledTimes(1);
+            expect(mockAnalyticsService.getPlacementYTD).toHaveBeenCalledWith();
+        });
+    });
 });

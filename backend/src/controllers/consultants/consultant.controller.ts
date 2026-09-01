@@ -21,7 +21,11 @@ import { UpdateConsultantDto } from '../../consultants/dto/update-consultant.dto
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 @Controller('consultants')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ConsultantController {
   constructor(private readonly consultantService: ConsultantService) {}
 
@@ -44,6 +48,7 @@ export class ConsultantController {
   }
 
   @Get()
+  @Roles(Role.CONSULTANT_MANAGER, Role.ADMIN)
   async getAllConsultants(
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
@@ -58,6 +63,7 @@ export class ConsultantController {
   }
 
   @Get('assigned/project')
+  @Roles(Role.CONSULTANT)
   @HttpCode(HttpStatus.OK)
   async getAssignedProjects(@Req() req: any) {
     const userId = req.user?.userId;
@@ -65,6 +71,7 @@ export class ConsultantController {
   }
 
   @Get('assigned/projects/:projectId')
+  @Roles(Role.CONSULTANT)
   @HttpCode(HttpStatus.OK)
   async getAssignedProjectDetails(
     @Param('projectId') projectId: string,
@@ -105,12 +112,14 @@ export class ConsultantController {
   }
 
   @Get(':id')
+  @Roles(Role.CONSULTANT_MANAGER, Role.PROJECT_MANAGER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async getConsultantById(@Param('id') id: string) {
     return await this.consultantService.getConsultantById(id);
   }
 
   @Get('user/:userId')
+  @Roles(Role.CONSULTANT_MANAGER, Role.PROJECT_MANAGER, Role.ADMIN)
   getConsultantByUserId(@Param('userId') userId: string) {
     return this.consultantService.getConsultantByUserId(userId);
   }

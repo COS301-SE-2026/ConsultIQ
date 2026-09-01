@@ -17,6 +17,8 @@ import { ProjectService } from '../../projects/services/project.service';
 import { CreateProjectDto } from '../../projects/dto/create-project.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { UpdateProjectDto } from '../../projects/dto/update-project.dto';
+import { Role } from '../../auth/enums/role.enum';
+import { Roles } from '../../common/guards/roles.guard';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -24,6 +26,7 @@ export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async createProject(@Body() dto: CreateProjectDto, @Req() req: any) {
@@ -34,6 +37,7 @@ export class ProjectController {
   }
 
   @Get()
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async getAllProjects(
     @Query('page') page: string = '1',
@@ -55,6 +59,7 @@ export class ProjectController {
   }
 
   @Get(':id')
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   async getProjectById(@Param('id') id: string) {
     return await this.projectService.getProjectById(id);
@@ -62,6 +67,7 @@ export class ProjectController {
 
   //------------Update Project-----------------
   @Patch(':id')
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateProject(

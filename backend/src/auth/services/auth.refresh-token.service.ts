@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { TokenService } from '../../common/services/token.service';
+import Redis from 'ioredis';
 
 @Injectable()
 export class RefreshTokenService {
@@ -9,12 +10,11 @@ export class RefreshTokenService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly token: TokenService,
-  ) {}
+    @Inject('REDIS_CLIENT') private readonly redis: Redis,
+  ) { }
 
   /**
    * Called at login — creates the first refresh token in a new family.
-   * familyId groups all rotated tokens from the same login session together
-   * so we can revoke them all if replay is detected.
    */
   async createRefreshToken(userId: string, familyId?: string): Promise<string> {
     const { rawToken, hashedToken } = this.token.generateRefreshToken();
@@ -55,44 +55,6 @@ export class RefreshTokenService {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    // TASK-18 & 19 - Replay attack detection
-    // usedAt means this token was already rotated
-    if (stored.usedAt) {
-      const now = new Date();
-      const usedTime = new Date(stored.usedAt);
-
-      const GRACE_PERIOD_MS = 20 * 1000;
-
-      const timeSinceUsedMs = now.getTime() - usedTime.getTime();
-
-      if (timeSinceUsedMs <= GRACE_PERIOD_MS) {
-        const accessToken = this.jwt.sign({
-          userId: stored.userId,
-          role: stored.user.role,
-        });
-
-        const newRefreshToken = await this.createRefreshToken(
-          stored.userId,
-          stored.familyId || undefined,
-        );
-
-        return { accessToken, refreshToken: newRefreshToken };
-      }
-
-      // Revoke entire family
-      await this.prisma.token.updateMany({
-        where: {
-          familyId: stored.familyId,
-          type: 'REFRESH',
-        },
-        data: { usedAt: new Date() },
-      });
-
-      throw new UnauthorizedException(
-        'Refresh token reuse detected. Please log in again.',
-      );
-    }
-
     // Token expired
     if (this.token.isTokenExpired(stored.expiresAt)) {
       throw new UnauthorizedException(
@@ -100,7 +62,27 @@ export class RefreshTokenService {
       );
     }
 
-    // Mark current token as used
+    const lockKey = `refresh_lock:${hashedToken}`;
+    const acquired = await this.redis.set(lockKey, 'locked', 'EX', 10, 'NX');
+
+    if (!acquired) {
+
+      if (stored.familyId) {
+        await this.prisma.token.updateMany({
+          where: {
+            familyId: stored.familyId,
+            type: 'REFRESH',
+          },
+          data: { usedAt: new Date() },
+        });
+      }
+
+      throw new UnauthorizedException(
+        'Refresh token reuse detected. Token family revoked. Please log in again.',
+      );
+    }
+
+
     await this.prisma.token.update({
       where: { id: stored.id },
       data: { usedAt: new Date() },
@@ -134,6 +116,7 @@ export class RefreshTokenService {
       data: { usedAt: new Date() },
     });
   }
+
   async revokeTokenFamily(rawToken: string): Promise<void> {
     const hashedToken = this.token.hashToken(rawToken);
 

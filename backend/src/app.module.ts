@@ -16,8 +16,11 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
+import { CvParsingModule } from './cv-parsing/cv-parsing.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { BullModule } from '@nestjs/bullmq';
-
+import { RedisModule } from './common/redis/redis.module';
+import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -62,6 +65,10 @@ import { BullModule } from '@nestjs/bullmq';
     AdminModule,
     LocationModule,
     PlacementsModule,
+    RedisModule,
+    HealthModule,
+    CvParsingModule,
+    AnalyticsModule
   ],
   controllers: [AppController],
   providers: [AppService],

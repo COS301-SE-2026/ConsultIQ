@@ -10,12 +10,10 @@ const mockPrismaService = {
   user: {
     findUnique: jest.fn(),
   },
-  consultant: {
-    findUnique: jest.fn(),
-  },
   cvFile: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    delete: jest.fn(),
   },
 };
 
@@ -23,7 +21,9 @@ const mockS3Service = {
   generateS3Key: jest.fn(),
   uploadFile: jest.fn(),
   generatePresignedUrl: jest.fn(),
+  deleteFile: jest.fn() 
 };
+
 
 const mockCvQueue = {
   add: jest.fn(),
@@ -47,6 +47,7 @@ describe('CVUploadService', () => {
   let service: CVUploadService;
 
   beforeEach(async () => {
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CVUploadService,
@@ -79,7 +80,7 @@ describe('CVUploadService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException if consultant does not exist', async () => {
+    it('should throw BadRequestException if user does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       const file = mockFile();
 
@@ -88,8 +89,21 @@ describe('CVUploadService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException if user is not CONSULTANT', async () =>{
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: userId,
+        role: 'PROJECT_MANAGER',
+        status: 'ACTIVE',
+      });
+      const file = mockFile();
+
+      await expect(
+        service.uploadCV(userId, file),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should upload file and create CvFile record for valid PDF', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.pdf');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({
@@ -109,7 +123,7 @@ describe('CVUploadService', () => {
     });
 
     it('should upload file for valid DOCX', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.docx');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({
@@ -128,8 +142,8 @@ describe('CVUploadService', () => {
       expect(result.cvFileId).toBe('cvfile-uuid-2');
     });
 
-    it('should create CvFile record with correct upload and extraction status', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId,  role: 'CONSULTANT' });
+    it('should create CvFile record with correct userId, consultantId, upload and extraction status', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({ id: userId, role: 'CONSULTANT', status: 'ACTIVE', });
       mockS3Service.generateS3Key.mockReturnValue('cvs/consultant-uuid-1/uuid-cv.pdf');
       mockS3Service.uploadFile.mockResolvedValue(undefined);
       mockPrismaService.cvFile.create.mockResolvedValue({
@@ -171,6 +185,92 @@ describe('CVUploadService', () => {
         'cvs/consultant-uuid-1/uuid-cv.pdf',
       );
       expect(result.url).toBe('https://s3.example.com/signed-url');
+    });
+  });
+
+  describe('getCvFile', () => {
+    it('should return the CV file mapped with cvFileId in place of id', async () => {
+      const updatedAt = new Date().toISOString();
+      mockPrismaService.cvFile.findUnique.mockResolvedValue({
+        id: 'cvfile-uuid-1',
+        fileName: 'cv.pdf',
+        fileSize: '1024',
+        mimeType: 'application/pdf',
+        uploadStatus: 'UPLOADED',
+        extractionStatus: 'REVIEW_REQUIRED',
+        parsedData: {data: {}},
+        updatedAt,
+      });
+    const result = await service.getCvFile('cvfile-uuid-1');
+    
+    expect(mockPrismaService.cvFile.findUnique).toHaveBeenCalledWith({
+      where: { id: 'cvfile-uuid-1' },
+      select: {
+        id: true,
+        fileName: true,
+        fileSize: true ,
+        mimeType: true,
+        uploadStatus: true,
+        extractionStatus: true,
+        parsedData: true,
+        updatedAt: true,
+      },
+    });
+    expect(result).toEqual({
+        cvFileId: 'cvfile-uuid-1',
+        fileName: 'cv.pdf',
+        fileSize: '1024',
+        mimeType: 'application/pdf',
+        uploadStatus: 'UPLOADED',
+        extractionStatus: 'REVIEW_REQUIRED',
+        parsedData: {data: {}},
+        updatedAt,
+    });
+  });
+
+  it('should throw BadRequestException if the CV file record does not exist', async () => {
+    mockPrismaService.cvFile.findUnique.mockResolvedValue(null);
+    await expect(service.getCvFile('nonexistent-id')).rejects.toThrow(BadRequestException);
+    await expect(service.getCvFile('nonexistent-id')).rejects.toThrow('CV file with id nonexistent-id not found.');
+    });
+  });
+
+  describe('discardCvFile', () => {
+    it('should delete the s3 file and DB record, and return a success message', async () => {
+      mockPrismaService.cvFile.findUnique.mockResolvedValue({
+        id: 'cvfile-uuid-1',
+        s3Key: 'cvs//uuid-cv.pdf',
+        consultantId: null,
+      });
+     
+      const result = await service.discardCvFile('cvfile-uuid-1');
+
+      expect(mockS3Service.deleteFile).toHaveBeenCalledWith('cvs//uuid-cv.pdf');
+
+      expect(mockPrismaService.cvFile.delete).toHaveBeenCalledWith({where : { id: 'cvfile-uuid-1'},});
+      expect(result).toEqual({message : "CV discarded successfully."});
+    });
+
+    it('should throw BadRequestException if the CV file record does not exist', async () =>{
+      mockPrismaService.cvFile.findUnique.mockResolvedValue(null);
+
+      await expect(service.discardCvFile('nonexistent-id')).rejects.toThrow(BadRequestException);
+      expect(mockS3Service.deleteFile).not.toHaveBeenCalled();
+      expect(mockPrismaService.cvFile.delete).not.toHaveBeenCalled();
+    });
+
+     it('should throw BadRequestException if the CV file is already linked to a consultant', async () =>{
+      mockPrismaService.cvFile.findUnique.mockResolvedValue({
+        id: 'cvfile-uuid-1',
+        s3Key: 'cvs//uuid-cv.pdf',
+        consultantId: 'consultant-uuid-1',
+      });
+
+      await expect(service.discardCvFile('consultant-uuid-1')).rejects.toThrow(BadRequestException);
+      await expect(service.discardCvFile('consultant-uuid-1')).rejects.toThrow('Cannot discard a CV that has already been linked to a consultant profile.');
+      
+      expect(mockS3Service.deleteFile).not.toHaveBeenCalled();
+      expect(mockPrismaService.cvFile.delete).not.toHaveBeenCalled();
     });
   });
 });

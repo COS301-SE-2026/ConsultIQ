@@ -8,20 +8,20 @@ describe('AnalyticsController', () => {
     let analyticsService: jest.Mocked<AnalyticsService>;
 
     const mockAnalyticsService = {
+        getSkillDistribution: jest.fn(),
+        getPlacementYTD: jest.fn(),
         getOverallUtilisation: jest.fn(),
         getUtilisationBySkillCategory: jest.fn(),
         getOverallBenchCount: jest.fn(),
         getBenchBySkillCategory: jest.fn(),
         getPlacementsBySkillCategory: jest.fn(),
         getCvParsingStats: jest.fn(),
-        getSkillDistribution: jest.fn(),
-        getPlacementYTD: jest.fn(),
     };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
-        controllers: [AnalyticsController],
-        providers: [{ provide: AnalyticsService, useValue: mockAnalyticsService }],
+            controllers: [AnalyticsController],
+            providers: [{ provide: AnalyticsService, useValue: mockAnalyticsService }],
         }).compile();
 
         controller = module.get<AnalyticsController>(AnalyticsController);
@@ -79,19 +79,19 @@ describe('AnalyticsController', () => {
 
     describe('getOverallUtilisation', () => {
         it('should call analyticsService.getOverallUtilisation and return the result', async () => {
-        const expected = { totalConsultants: 10, utilisedConsultants: 3, utilisationPercent: 30.0 };
-        analyticsService.getOverallUtilisation.mockResolvedValue(expected);
+            const expected = { totalConsultants: 10, utilisedConsultants: 3, utilisationPercent: 30.0 };
+            analyticsService.getOverallUtilisation.mockResolvedValue(expected);
 
-        const result = await controller.getOverallUtilisation();
+            const result = await controller.getOverallUtilisation();
 
-        expect(analyticsService.getOverallUtilisation).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getOverallUtilisation).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getOverallUtilisation', async () => {
-        analyticsService.getOverallUtilisation.mockRejectedValue(new Error('Database error'));
+            analyticsService.getOverallUtilisation.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getOverallUtilisation()).rejects.toThrow('Database error');
+            await expect(controller.getOverallUtilisation()).rejects.toThrow('Database error');
         });
     });
 
@@ -99,21 +99,21 @@ describe('AnalyticsController', () => {
 
     describe('getUtilisationBySkillCategory', () => {
         it('should call analyticsService.getUtilisationBySkillCategory and return the result', async () => {
-        const expected = [
-            { category: 'Cloud & DevOps', totalConsultants: 5, utilisedConsultants: 2, utilisationPercent: 40.0 },
-        ];
-        analyticsService.getUtilisationBySkillCategory.mockResolvedValue(expected);
+            const expected = [
+                { category: 'Cloud & DevOps', totalConsultants: 5, utilisedConsultants: 2, utilisationPercent: 40.0 },
+            ];
+            analyticsService.getUtilisationBySkillCategory.mockResolvedValue(expected);
 
-        const result = await controller.getUtilisationBySkillCategory();
+            const result = await controller.getUtilisationBySkillCategory();
 
-        expect(analyticsService.getUtilisationBySkillCategory).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getUtilisationBySkillCategory).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getUtilisationBySkillCategory', async () => {
-        analyticsService.getUtilisationBySkillCategory.mockRejectedValue(new Error('Database error'));
+            analyticsService.getUtilisationBySkillCategory.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getUtilisationBySkillCategory()).rejects.toThrow('Database error');
+            await expect(controller.getUtilisationBySkillCategory()).rejects.toThrow('Database error');
         });
     });
 
@@ -121,19 +121,19 @@ describe('AnalyticsController', () => {
 
     describe('getOverallBenchCount', () => {
         it('should call analyticsService.getOverallBenchCount and return the result', async () => {
-        const expected = { count: 7 };
-        analyticsService.getOverallBenchCount.mockResolvedValue(expected);
+            const expected = { count: 7 };
+            analyticsService.getOverallBenchCount.mockResolvedValue(expected);
 
-        const result = await controller.getOverallBenchCount();
+            const result = await controller.getOverallBenchCount();
 
-        expect(analyticsService.getOverallBenchCount).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getOverallBenchCount).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getOverallBenchCount', async () => {
-        analyticsService.getOverallBenchCount.mockRejectedValue(new Error('Database error'));
+            analyticsService.getOverallBenchCount.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getOverallBenchCount()).rejects.toThrow('Database error');
+            await expect(controller.getOverallBenchCount()).rejects.toThrow('Database error');
         });
     });
 
@@ -141,19 +141,19 @@ describe('AnalyticsController', () => {
 
     describe('getBenchBySkillCategory', () => {
         it('should call analyticsService.getBenchBySkillCategory and return the result', async () => {
-        const expected = [{ category: 'Databases', benchCount: 1 }];
-        analyticsService.getBenchBySkillCategory.mockResolvedValue(expected);
+            const expected = [{ category: 'Databases', benchCount: 1 }];
+            analyticsService.getBenchBySkillCategory.mockResolvedValue(expected);
 
-        const result = await controller.getBenchBySkillCategory();
+            const result = await controller.getBenchBySkillCategory();
 
-        expect(analyticsService.getBenchBySkillCategory).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getBenchBySkillCategory).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getBenchBySkillCategory', async () => {
-        analyticsService.getBenchBySkillCategory.mockRejectedValue(new Error('Database error'));
+            analyticsService.getBenchBySkillCategory.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getBenchBySkillCategory()).rejects.toThrow('Database error');
+            await expect(controller.getBenchBySkillCategory()).rejects.toThrow('Database error');
         });
     });
 
@@ -161,19 +161,19 @@ describe('AnalyticsController', () => {
 
     describe('getPlacementsBySkillCategory', () => {
         it('should call analyticsService.getPlacementsBySkillCategory and return the result', async () => {
-        const expected = [{ category: 'Backend Development', placementCount: 4 }];
-        analyticsService.getPlacementsBySkillCategory.mockResolvedValue(expected);
+            const expected = [{ category: 'Backend Development', placementCount: 4 }];
+            analyticsService.getPlacementsBySkillCategory.mockResolvedValue(expected);
 
-        const result = await controller.getPlacementsBySkillCategory();
+            const result = await controller.getPlacementsBySkillCategory();
 
-        expect(analyticsService.getPlacementsBySkillCategory).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getPlacementsBySkillCategory).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getPlacementsBySkillCategory', async () => {
-        analyticsService.getPlacementsBySkillCategory.mockRejectedValue(new Error('Database error'));
+            analyticsService.getPlacementsBySkillCategory.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getPlacementsBySkillCategory()).rejects.toThrow('Database error');
+            await expect(controller.getPlacementsBySkillCategory()).rejects.toThrow('Database error');
         });
     });
 
@@ -181,26 +181,26 @@ describe('AnalyticsController', () => {
 
     describe('getCvParsingStats', () => {
         it('should call analyticsService.getCvParsingStats and return the result', async () => {
-        const expected = {
-            totalProcessed: 12,
-            ruleBasedCount: 5,
-            aiAssistedCount: 7,
-            successCount: 10,
-            failedCount: 2,
-            averageConfidence: 0.87,
-        };
-        analyticsService.getCvParsingStats.mockResolvedValue(expected);
+            const expected = {
+                totalProcessed: 12,
+                ruleBasedCount: 5,
+                aiAssistedCount: 7,
+                successCount: 10,
+                failedCount: 2,
+                averageConfidence: 0.87,
+            };
+            analyticsService.getCvParsingStats.mockResolvedValue(expected);
 
-        const result = await controller.getCvParsingStats();
+            const result = await controller.getCvParsingStats();
 
-        expect(analyticsService.getCvParsingStats).toHaveBeenCalledTimes(1);
-        expect(result).toEqual(expected);
+            expect(analyticsService.getCvParsingStats).toHaveBeenCalledTimes(1);
+            expect(result).toEqual(expected);
         });
 
         it('should propagate errors from analyticsService.getCvParsingStats', async () => {
-        analyticsService.getCvParsingStats.mockRejectedValue(new Error('Database error'));
+            analyticsService.getCvParsingStats.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getCvParsingStats()).rejects.toThrow('Database error');
+            await expect(controller.getCvParsingStats()).rejects.toThrow('Database error');
         });
     });
 });

@@ -1,6 +1,5 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { adminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
-import { useState } from "react";
 import AnalyticsCard from "../components/analytics-card";
 import DonutChart from "../components/donut-chart";
 import BarChart from "../components/bar-graph";
@@ -9,7 +8,7 @@ import { type SkillDistributionDto, mockSkillDistribution, CvchartData, mergedSk
 
 
 export default function AnalyticsPage() {
-    const [totalConsultants, setTotalConsultants] = useState(0);
+    
 
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -23,7 +22,8 @@ export default function AnalyticsPage() {
                     <h1 className="font-bold text-3xl" style={{ color: "var(--color-primary)" }}>
                         Analytics Dashboard
                     </h1>
-                    <p className="text-[13px] text-[#6b7280] ">Internal consultant pool — {totalConsultants} consultants total </p>
+                    {/* create a state vairable that will represent total consultants */}
+                    <p className="text-[13px] text-[#6b7280] ">Internal consultant pool — 0 consultants total </p>
                 </header>
 
 

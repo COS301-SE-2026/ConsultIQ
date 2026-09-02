@@ -38,7 +38,8 @@ export class PlacementsYTDDto {
 export class CvParsingStatsDto {
   totalProcessed!: number;
   ruleBasedCount!: number;
-  asAssistedCount!: number;
+  aiAssistedCount!: number;
   failedCount!: number;
+  successCount!: number;
   averageConfidence!: number;
 }

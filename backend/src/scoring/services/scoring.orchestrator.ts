@@ -99,7 +99,7 @@ export class ScoringOrchestrator {
     }
 
     if (activeFactors.has(ScoringFactor.LOCATION)) {
-      const geographicFitResult = this.geographicFitScorer.score(
+      const geographicFitResult = await this.geographicFitScorer.score(
         consultant,
         project,
       );

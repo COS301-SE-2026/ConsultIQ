@@ -19,6 +19,8 @@ import {
   UpdateProjectScoringOverrideDto,
   DeleteProjectScoringOverrideDto,
 } from '../../scoring/dto/update-project-scoring-override.dto';
+import { Role } from '../../auth/enums/role.enum';
+import { Roles } from '../../common/guards/roles.guard';
 
 @Controller('config/scoring')
 @UseGuards(JwtAuthGuard)
@@ -26,12 +28,14 @@ export class ScoringController {
   constructor(private readonly scoringService: ScoringService) {}
 
   @Get()
+  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
   @HttpCode(HttpStatus.OK)
   async getScoringConfig() {
     return this.scoringService.getScoringConfig();
   }
 
   @Put()
+  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
   @HttpCode(HttpStatus.OK)
   @UsePipes(
     new ValidationPipe({
@@ -47,6 +51,7 @@ export class ScoringController {
   }
 
   @Put(':projectId/scoring-override')
+  @Roles(Role.PROJECT_MANAGER)
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateProjectScoringOverride(
@@ -63,6 +68,7 @@ export class ScoringController {
   }
 
   @Delete(':projectId/scoring-override')
+  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async deleteProjectScoringOverride(
@@ -79,6 +85,7 @@ export class ScoringController {
   }
 
   @Get(':projectId/scoring-override')
+  @Roles(Role.ADMIN, Role.PROJECT_MANAGER)
   @HttpCode(HttpStatus.OK)
   async getProjectScoringOverride(@Param('projectId') projectId: string) {
     return this.scoringService.getProjectScoringOverride(projectId);

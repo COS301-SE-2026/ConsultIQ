@@ -6,12 +6,15 @@ interface ProjectGridProps {
   readonly projects: readonly Project[];
   readonly onViewDetails: (project: Project) => void;
   readonly onConfigureScore?: (project: Project) =>void;
+  readonly onViewSkillGap?: (project: Project) => void;
+
 }
 
 export default function ProjectGrid({
   projects,
   onViewDetails,
   onConfigureScore,
+  onViewSkillGap,
 }: ProjectGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [prevProjects, setPrevProjects] = useState(projects);
@@ -44,6 +47,7 @@ export default function ProjectGrid({
             project={project}
             onViewDetails={onViewDetails}
             onConfigureScore={onConfigureScore}
+            onViewSkillGap={onViewSkillGap}
           />
         ))}
       </div>

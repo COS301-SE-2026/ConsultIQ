@@ -101,9 +101,25 @@ export class SkillGapService {
             ? skills.reduce((acc, curr) => acc + curr.coveragePercent, 0) / skills.length
             : 100;
 
+        let projectSeverity: GapSeverity = "COVERED";
+        const hasCritical = skills.some(s => s.severity === "CRITICAL");
+        const hasRisk = skills.some(s => s.severity === "AT_RISK");
+
+        if (hasCritical) {
+            projectSeverity = "CRITICAL";
+        } else if (hasRisk) {
+            projectSeverity = "AT_RISK";
+        }
+
+        await prisma.project.update({
+            where: { id: projectId },
+            data: { skillGapSeverity: projectSeverity }
+        });
+
         return {
             projectId: project.id,
             projectName: project.projectName,
+            overallSeverity: projectSeverity,
             summary: {
                 overallCoveragePercent,
                 adequatelyCoveredCount: coveredCount,
@@ -136,15 +152,7 @@ export class SkillGapService {
         for (const project of activeProjects) {
             const projectGap = await this.getProjectSkillGapAnalysis(project.id);
 
-            const hasCritical = projectGap.skills.some(s => s.severity === "CRITICAL");
-            const hasRisk = projectGap.skills.some(s => s.severity === "AT_RISK");
-
-            let worstSeverity: GapSeverity = "COVERED";
-            if (hasCritical) {
-                worstSeverity = "CRITICAL";
-            } else if (hasRisk) {
-                worstSeverity = "AT_RISK";
-            }
+            const worstSeverity = projectGap.overallSeverity;
 
             if (worstSeverity !== "COVERED") {
                 alerts.push({

@@ -6,6 +6,7 @@ jest.mock('@prisma/client', () => {
         project: {
             findUnique: jest.fn(),
             findMany: jest.fn(),
+            update: jest.fn(),
         },
         consultant: {
             count: jest.fn(),
@@ -48,6 +49,12 @@ describe('Skill Gap Analysis', () => {
         it('should return only EXPERT when minimum is EXPERT', () => {
             const result = getValidCompetencies(CompetencyLevel.EXPERT);
             expect(result).toEqual(['EXPERT']);
+        });
+
+        it('should default to rank 1 if an unknown or invalid competency is provided', () => {
+
+            const result = getValidCompetencies('UNKNOWN' as any);
+            expect(result).toEqual(['BEGINNER', 'INTERMEDIATE', 'EXPERT']);
         });
     });
 
@@ -98,6 +105,38 @@ describe('Skill Gap Analysis', () => {
                 expect(result.skills[2].coveragePercent).toBe(0);
                 expect(result.skills[2].severity).toBe('CRITICAL');
             });
+
+            it('should return 100% overall coverage if the project requires no skills', async () => {
+                prismaMock.project.findUnique.mockResolvedValue({
+                    id: 'proj-empty',
+                    projectName: 'Empty Project',
+                    teamSize: 5,
+                    skills: [],
+                });
+
+                const result = await service.getProjectSkillGapAnalysis('proj-empty');
+
+                expect(result.summary.overallCoveragePercent).toBe(100);
+                expect(result.summary.adequatelyCoveredCount).toBe(0);
+                expect(result.skills).toHaveLength(0);
+            });
+
+            it('should handle teamSize of 0 gracefully without dividing by zero', async () => {
+                prismaMock.project.findUnique.mockResolvedValue({
+                    id: 'proj-zero',
+                    projectName: 'Zero Team Project',
+                    teamSize: 0,
+                    skills: [
+                        { skillId: 's-1', competency: 'BEGINNER', skill: { id: 's-1', name: 'Python' } }
+                    ],
+                });
+                prismaMock.consultant.count.mockResolvedValue(0);
+
+                const result = await service.getProjectSkillGapAnalysis('proj-zero');
+
+                expect(result.skills[0].coveragePercent).toBe(100);
+                expect(result.skills[0].severity).toBe('COVERED');
+            });
         });
 
         describe('getPortfolioSkillGapAnalysis', () => {
@@ -117,6 +156,7 @@ describe('Skill Gap Analysis', () => {
                 jest.spyOn(service, 'getProjectSkillGapAnalysis').mockResolvedValue({
                     projectId: 'proj-2',
                     projectName: 'Beta Launch',
+                    overallSeverity: 'AT_RISK',
                     summary: { overallCoveragePercent: 50, adequatelyCoveredCount: 0, atRiskCount: 1, criticalCount: 0 },
                     skills: [
                         {
@@ -143,6 +183,17 @@ describe('Skill Gap Analysis', () => {
                 expect(result.skills[0].requiredCount).toBe(2);
                 expect(result.skills[0].severity).toBe('AT_RISK');
             });
+            it('should return 100% overall coverage if the portfolio has no active projects', async () => {
+
+                prismaMock.project.findMany.mockResolvedValue([]);
+
+                const result = await service.getPortfolioSkillGapAnalysis();
+
+                expect(result.summary.overallCoveragePercent).toBe(100);
+                expect(result.skills).toHaveLength(0);
+                expect(result.alerts).toHaveLength(0);
+            });
         });
     });
+
 });

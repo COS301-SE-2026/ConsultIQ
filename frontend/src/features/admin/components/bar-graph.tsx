@@ -1,26 +1,13 @@
 import { BarChart as RechartsbarChart, Bar, Tooltip, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
 import { Card } from "../../../components/ui/card";
+import {type BaseChartProps,type ChartSeries,DEFAULT_COLOURS } from "../types/chart.types";
 
 
-interface BarSeries<T> {
-    dataKey: keyof T;
-    label?: string;
-    colour?: string;
+
+interface BarGraphProps<T extends Record<string, any>> extends BaseChartProps<T>{
+    bars: ChartSeries<T>[];
 }
 
-interface BarGraphProps<T extends Record<string, any>> {
-    data: T[];
-    title: string;
-    xAxisKey: keyof T;
-    bars: BarSeries<T>[];
-    colours?: string[];
-    yAxisUnit?: string; //whether it's % ,consultants,days etc
-    yAxisDomain?: [number, number]; //range of the y axis. For example so 0-100 for percentage 
-    valueToString?: (value: number) => string;
-    emptyMessage?: string; //Message to be displayed when there is no data to be displayed
-}
-
-const DEFAULT_COLOURS = ["#002d62", "#c9a84c", "#1d6eb5", "#d7a007", "#3b82f6", "#93c5fd"];
 
 
 export default function BarGraph<T extends Record<string, any>>({

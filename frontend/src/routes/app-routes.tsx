@@ -18,16 +18,21 @@ import UnderConstructionPage from "../features/consultants/pages/under-construct
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 import ConsultantProjects from "../features/consultants/pages/consultant-projects";
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
+import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
+import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
 import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
+import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
 import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
+import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -48,8 +53,6 @@ import BrandIconsSection from "../brand style guide/components/brand-icons-secti
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
-import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
-import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -79,13 +82,13 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
-
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
                     <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
+                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
@@ -100,6 +103,9 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

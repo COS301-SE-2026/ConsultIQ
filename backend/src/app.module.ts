@@ -17,9 +17,11 @@ import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
 import { CvParsingModule } from './cv-parsing/cv-parsing.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
-
+import { RedisModule } from './common/redis/redis.module';
+import { HealthModule } from './health/health.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -64,8 +66,11 @@ import { EncryptionModule } from './common/encryption/encryption.module';
     AdminModule,
     LocationModule,
     PlacementsModule,
+    RedisModule,
+    HealthModule,
     CvParsingModule,
-    EncryptionModule,
+    EncryptionModule,,
+    AnalyticsModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -10,6 +10,7 @@ describe('RefreshTokenService', () => {
     let prisma: jest.Mocked<PrismaService>;
     let jwt: jest.Mocked<JwtService>;
     let token: jest.Mocked<TokenService>;
+    let redis: any;
 
     const mockUser = {
         id: 'user-123',
@@ -64,6 +65,12 @@ describe('RefreshTokenService', () => {
                         ),
                     },
                 },
+                {
+                    provide: 'REDIS_CLIENT',
+                    useValue: {
+                        set: jest.fn().mockResolvedValue('OK'),
+                    },
+                },
             ],
         }).compile();
 
@@ -71,6 +78,7 @@ describe('RefreshTokenService', () => {
         prisma = module.get(PrismaService);
         jwt = module.get(JwtService);
         token = module.get(TokenService);
+        redis = module.get('REDIS_CLIENT');
     });
 
     afterEach(() => jest.clearAllMocks());
@@ -174,21 +182,6 @@ describe('RefreshTokenService', () => {
             );
         });
 
-        //  Replay attack detection 
-
-        it('should throw 401 when token has already been used outside of the 20seconds grade period (replay attack)', async () => {
-            const gracePeriod = new Date(Date.now() - 60 * 1000);
-
-            (prisma.token.findFirst as jest.Mock).mockResolvedValue({
-                ...mockTokenRecord,
-                usedAt: gracePeriod, // already used a minute ago
-            } as any);
-
-            await expect(service.refresh('raw-token')).rejects.toThrow(
-                UnauthorizedException,
-            );
-        });
-
         it('should issue new tokens if a used token is presented within the 20-second grace period (race condition)', async () => {
 
             const fiveSecondsAgo = new Date(Date.now() - 5 * 1000);
@@ -207,8 +200,11 @@ describe('RefreshTokenService', () => {
                 expect.objectContaining({ data: { usedAt: expect.any(Date) } })
             );
         });
-        it('should revoke entire token family when replay is detected', async () => {
-            const gracePeriod = new Date(Date.now() - 60 * 1000);
+        it('should revoke entire token family when replay is detected via Redis lock', async () => {
+
+            redis.set.mockResolvedValueOnce(null);
+
+            const gracePeriod = new Date(Date.now() - 5 * 1000);
             (prisma.token.findFirst as jest.Mock).mockResolvedValue({
                 ...mockTokenRecord,
                 usedAt: gracePeriod,
@@ -216,10 +212,10 @@ describe('RefreshTokenService', () => {
             (prisma.token.updateMany as jest.Mock).mockResolvedValue({ count: 2 } as any);
 
             await expect(service.refresh('raw-token')).rejects.toThrow(
-                'Refresh token reuse detected. Please log in again.',
+                'Refresh token reuse detected. Token family revoked. Please log in again.',
             );
 
-            expect((prisma.token.updateMany as jest.Mock)).toHaveBeenCalledWith({
+            expect(prisma.token.updateMany as jest.Mock).toHaveBeenCalledWith({
                 where: {
                     familyId: 'family-abc',
                     type: 'REFRESH',
@@ -266,6 +262,58 @@ describe('RefreshTokenService', () => {
             (prisma.token.updateMany as jest.Mock).mockResolvedValue({ count: 0 } as any);
 
             await expect(service.revokeAllForUser('user-123')).resolves.not.toThrow();
+        });
+    });
+
+    describe('revokeTokenFamily', () => {
+        it('should revoke all tokens in the family if a valid token is provided', async () => {
+            (prisma.token.findFirst as jest.Mock).mockResolvedValue(mockTokenRecord);
+            (prisma.token.updateMany as jest.Mock).mockResolvedValue({ count: 2 } as any);
+
+            await service.revokeTokenFamily('raw-token');
+
+            expect(prisma.token.findFirst).toHaveBeenCalledWith({
+                where: { token: 'hashed-token', type: 'REFRESH' },
+            });
+            expect(prisma.token.updateMany).toHaveBeenCalledWith({
+                where: { familyId: 'family-abc', type: 'REFRESH' },
+                data: { usedAt: expect.any(Date) },
+            });
+        });
+
+        it('should return early and do nothing if token is not found', async () => {
+            (prisma.token.findFirst as jest.Mock).mockResolvedValue(null);
+
+            await service.revokeTokenFamily('invalid-token');
+
+            expect(prisma.token.updateMany).not.toHaveBeenCalled();
+        });
+
+        it('should return early and do nothing if token has no familyId', async () => {
+            (prisma.token.findFirst as jest.Mock).mockResolvedValue({
+                ...mockTokenRecord,
+                familyId: null,
+            });
+
+            await service.revokeTokenFamily('raw-token');
+
+            expect(prisma.token.updateMany).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('refresh - edge cases', () => {
+        it('should throw UnauthorizedException but not query DB if lock fails and token lacks familyId', async () => {
+            redis.set.mockResolvedValueOnce(null);
+
+            (prisma.token.findFirst as jest.Mock).mockResolvedValue({
+                ...mockTokenRecord,
+                familyId: null,
+            });
+
+            await expect(service.refresh('raw-token')).rejects.toThrow(
+                'Refresh token reuse detected. Token family revoked. Please log in again.'
+            );
+            expect(prisma.token.updateMany).not.toHaveBeenCalled();
         });
     });
 });

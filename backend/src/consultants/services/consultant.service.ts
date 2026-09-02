@@ -141,36 +141,9 @@ export class ConsultantService {
           });
         }
 
-        // Create experiences
-        for (const exp of dto.experiences) {
-          await tx.consultantExperience.create({
-            data: {
-              consultantId: consultant.id,
-              jobTitle: exp.jobTitle,
-              companyName: exp.companyName,
-              jobType: exp.jobType as JobType,
-              workModel: exp.workModel as WorkModel,
-              startDate: new Date(exp.startDate),
-              endDate: exp.endDate ? new Date(exp.endDate) : null,
-              description: exp.description,
-            },
-          });
-        }
-
-        // Create certifications
-        if (dto.certifications) {
-          for (const cert of dto.certifications) {
-            await tx.certificate.create({
-              data: {
-                consultantId: consultant.id,
-                title: cert.title,
-                issuingBody: cert.issuingBody,
-                startDate: cert.startDate ? new Date(cert.startDate) : null,
-                endDate: cert.endDate ? new Date(cert.endDate) : null,
-              },
-            });
-          }
-        }
+        await this.createExperienceRecords(tx, consultant.id, dto.experiences);
+        await this.createCertificateRecords(tx, consultant.id, dto.certifications ?? []);
+        await this.createEducationRecords(tx, consultant.id, dto.education ?? []);
 
         return { consultantId: consultant.id };
       })
@@ -191,6 +164,64 @@ export class ConsultantService {
           consultantId: result.consultantId,
         };
       });
+  }
+
+  private async createExperienceRecords( 
+    tx: any,
+    consultantId : string, 
+    experiences : any[],
+  ) : Promise<void>{
+      // Create experiences
+      for (const exp of experiences) {
+        await tx.consultantExperience.create({
+          data: {
+            consultantId,
+            jobTitle: exp.jobTitle,
+            companyName: exp.companyName,
+            jobType: exp.jobType as JobType,
+            workModel: exp.workModel as WorkModel,
+            startDate: new Date(exp.startDate),
+            endDate: exp.endDate ? new Date(exp.endDate) : null,
+            description: exp.description,
+          },
+        });
+      }
+  }
+
+  private async createCertificateRecords(
+    tx: any,
+    consultantId : string, 
+    certifications : any[],    
+  ) : Promise<void>{
+      for (const cert of certifications) {
+        await tx.certificate.create({
+          data: {
+            consultantId,
+            title: cert.title,
+            issuingBody: cert.issuingBody,
+            startDate: cert.startDate ? new Date(cert.startDate) : null,
+            endDate: cert.endDate ? new Date(cert.endDate) : null,
+        },    
+      });
+    }
+  }
+
+    private async createEducationRecords(
+    tx: any,
+    consultantId : string, 
+    education : any[],    
+  ) : Promise<void>{
+      for (const edu of education) {
+        await tx.consultantEducation.create({
+          data: {
+              consultantId,
+              institution: edu.institution,
+              qualification: edu.qualification,
+              startDate: new Date(edu.startDate) ,
+              endDate: edu.endDate ? new Date(edu.endDate) : null,
+            },    
+      });
+    }
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {

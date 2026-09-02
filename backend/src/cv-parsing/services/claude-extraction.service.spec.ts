@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeExtractionService } from './claude-extraction.service';
 import { CV_EXTRACTION_TOOL_NAME } from '../prompts/cv-extraction.schema';
 
+
 jest.mock('@anthropic-ai/sdk', () => {
   const actual = jest.requireActual('@anthropic-ai/sdk');
   const RealAnthropic = actual.default;

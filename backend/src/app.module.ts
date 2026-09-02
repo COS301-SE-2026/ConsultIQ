@@ -16,6 +16,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
+import { CvParsingModule } from './cv-parsing/cv-parsing.module';
 import { BullModule } from '@nestjs/bullmq';
 
 @Module({
@@ -62,6 +63,7 @@ import { BullModule } from '@nestjs/bullmq';
     AdminModule,
     LocationModule,
     PlacementsModule,
+    CvParsingModule
   ],
   controllers: [AppController],
   providers: [AppService],

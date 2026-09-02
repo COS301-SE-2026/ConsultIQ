@@ -64,7 +64,7 @@ function WelcomeModal({ show, onContinue }: WelcomeModalProps) {
             <button
               onClick={onContinue}
               className="mt-4 w-full h-[52px] rounded-xl text-white font-bold text-lg transition hover:brightness-110"
-              style={{ backgroundColor: "var(--color-accent)" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Get Started
             </button>

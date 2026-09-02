@@ -25,6 +25,13 @@ export interface CreateCertificationPayload {
   endDate?: string;   // ISO string
 }
 
+export interface CreateConsultantEducationPayload{
+  institution: string;
+  qualification : string;
+  fieldStudy?: string;
+  endDate?: string;
+}
+
 export interface CreateConsultantProfilePayload {
   consultantUserId: string;
   idNumber: string;
@@ -41,6 +48,7 @@ export interface CreateConsultantProfilePayload {
   skills: CreateConsultantSkillPayload[];
   experiences: CreateConsultantExperiencePayload[];
   certifications?: CreateCertificationPayload[];
+  education?: CreateConsultantEducationPayload[];
 }
 
 export interface ConsultantListItemDto {

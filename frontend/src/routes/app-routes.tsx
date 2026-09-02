@@ -18,6 +18,9 @@ import UnderConstructionPage from "../features/consultants/pages/under-construct
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 import ConsultantProjects from "../features/consultants/pages/consultant-projects";
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
+import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
+import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
@@ -77,6 +80,7 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
+
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
@@ -95,6 +99,10 @@ function AnimatedRoutes() {
                     <Route path="/notifications" element={<PageTransition><NotificationPage /></PageTransition>} />
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
+                    <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
+                    <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

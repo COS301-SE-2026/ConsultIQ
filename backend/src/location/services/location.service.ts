@@ -75,4 +75,5 @@ export class LocationService {
       throw new InternalServerErrorException('Error communicating with Google Maps Distance Matrix API.');
     }
   }
+
 }

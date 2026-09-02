@@ -30,7 +30,7 @@ export class AnalyticsController {
     async getPlacementYTD(): Promise<PlacementsYTDDto> {
         return this.analyticsService.getPlacementYTD();
     }
-}
+  
     @Get('utilisation')
     getOverallUtilisation(): Promise<OverallUtilisationDto> {
         return this.analyticsService.getOverallUtilisation();

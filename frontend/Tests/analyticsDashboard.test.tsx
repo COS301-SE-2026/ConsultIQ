@@ -85,6 +85,16 @@ describe('AnalyticsPage', () => {
     (getCvParsingStats as jest.Mock).mockResolvedValue(mockCvStats);
   };
 
+  const mockOneFailure = () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    (getOverallUtilisation as jest.Mock).mockResolvedValue(mockUtilisation);
+    (getOverallBenchCount as jest.Mock).mockResolvedValue(mockBench);
+    (getUtilisationBySkillCategory as jest.Mock).mockResolvedValue(mockUtilBySkill);
+    (getBenchBySkillCategory as jest.Mock).mockResolvedValue(mockBenchBySkill);
+    (getPlacementsBySkillCategory as jest.Mock).mockRejectedValue(new Error('network error'));
+    (getCvParsingStats as jest.Mock).mockResolvedValue(mockCvStats);
+};
+
   it('should show a loading state before the analytics calls resolve', () => {
     (getOverallUtilisation as jest.Mock).mockReturnValue(new Promise(() => {}));
     (getOverallBenchCount as jest.Mock).mockReturnValue(new Promise(() => {}));
@@ -136,28 +146,14 @@ describe('AnalyticsPage', () => {
   });
 
   it('should show an error banner naming exactly how many sections failed', async () => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    (getOverallUtilisation as jest.Mock).mockResolvedValue(mockUtilisation);
-    (getOverallBenchCount as jest.Mock).mockResolvedValue(mockBench);
-    (getUtilisationBySkillCategory as jest.Mock).mockResolvedValue(mockUtilBySkill);
-    (getBenchBySkillCategory as jest.Mock).mockResolvedValue(mockBenchBySkill);
-    (getPlacementsBySkillCategory as jest.Mock).mockRejectedValue(new Error('network error'));
-    (getCvParsingStats as jest.Mock).mockResolvedValue(mockCvStats);
-
+    mockOneFailure();
     renderComponent();
 
     expect(await screen.findByText(/1 of 6 analytics sections failed to load/i)).toBeInTheDocument();
   });
 
   it('should still render the sections that succeeded when one endpoint fails', async () => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    (getOverallUtilisation as jest.Mock).mockResolvedValue(mockUtilisation);
-    (getOverallBenchCount as jest.Mock).mockResolvedValue(mockBench);
-    (getUtilisationBySkillCategory as jest.Mock).mockResolvedValue(mockUtilBySkill);
-    (getBenchBySkillCategory as jest.Mock).mockResolvedValue(mockBenchBySkill);
-    (getPlacementsBySkillCategory as jest.Mock).mockRejectedValue(new Error('network error'));
-    (getCvParsingStats as jest.Mock).mockResolvedValue(mockCvStats);
-
+    mockOneFailure();
     renderComponent();
 
     expect(await screen.findByText('73.8%')).toBeInTheDocument();

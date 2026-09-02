@@ -116,6 +116,13 @@ enum CvParsingMethod {
   RULE_BASED
 }
 
+enum AuditAction {
+  PLACEMENT_CREATED
+  PLACEMENT_UPDATED
+  PLACEMENT_CANCELLED
+  CV_EXTRACTED
+}
+
 enum GapSeverity {
   COVERED
   AT_RISK
@@ -182,6 +189,7 @@ model User {
   deletedAt             DateTime?            @map("delete_at")
   tokens                Token[]
   auditLogs             authAuditLog[]
+  auditLogEntries       AuditLog[]
   consultant            Consultant?
   managedProjects       ProjectManager[]
   managedConsultants    ConsultantManager[]
@@ -566,4 +574,18 @@ model MatchRunResult {
   @@unique([matchRunId, consultantId])
   @@index([matchRunId, rank])
   @@index([consultantId])
+}
+
+model AuditLog {
+  id           String      @id @default(uuid())
+  action       AuditAction
+  actingUserId String
+  actingUser   User        @relation(fields: [actingUserId], references: [id])
+  entityType   String
+  entityId     String
+  metadata     Json?
+  timestamp    DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }

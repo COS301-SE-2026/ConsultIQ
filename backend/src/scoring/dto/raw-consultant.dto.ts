@@ -4,6 +4,7 @@ import {
   IsString,
   Min,
   ValidateNested,
+  IsOptional,
 } from 'class-validator';
 import { ConsultantSkillDto } from './consultant-skill.dto';
 import { Type } from 'class-transformer';
@@ -26,4 +27,12 @@ export class RawConsultantDto {
 
   @IsString()
   province!: string;
+
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 }

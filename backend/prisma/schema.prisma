@@ -123,6 +123,11 @@ enum AuditAction {
   CV_EXTRACTED
 }
 
+enum GapSeverity {
+  COVERED
+  AT_RISK
+  CRITICAL
+}
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -372,6 +377,7 @@ model Project {
 
   auditLogs ProjectAuditLog[]
   matchRuns MatchRun[]
+  skillGapSeverity GapSeverity @default(COVERED)
 
   @@map("projects")
 }

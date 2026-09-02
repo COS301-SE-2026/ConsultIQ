@@ -1,16 +1,16 @@
-import { LineChart as RechartsLineChart, Line, Tooltip, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
+import { LineChart as RechartsLineChart, Line, Legend, ResponsiveContainer } from "recharts";
 import { Card } from "../../../components/ui/card";
 import {type BaseChartProps,type ChartSeries,DEFAULT_COLOURS } from "../types/chart.types";
+import { ChartAxes } from "./chart-axes";
 
 
-
-interface LineGraphProps<T extends Record<string, any>>extends BaseChartProps<T> {
+interface LineGraphProps<T extends Record<string, unknown>>extends BaseChartProps<T> {
     lines: ChartSeries<T>[];
 }
 
 
 
-export default function LineGraph<T extends Record<string, any>>({
+export default function LineGraph<T extends Record<string, unknown>>({
     data,
     title,
     xAxisKey,
@@ -52,25 +52,13 @@ export default function LineGraph<T extends Record<string, any>>({
                         margin={{top:8,right:12,left:-8,bottom:8}}
                         barGap={4}
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0"/>
-                        <XAxis
-                            dataKey={xAxisKey as string}
-                            tick={{fontSize: 10, fill: "#6b7280"}}
-                            axisLine={false}
-                            tickLine={false}
-                            interval={0}
-                            angle={-25}
-                            textAnchor="end"
-                            height={50}
+                        
+                        <ChartAxes
+                            xAxiskey={xAxisKey as string}
+                            yAxisUnit={yAxisUnit}
+                            yAxisDomain={yAxisDomain}
+                            valueToString={(value) => valueToString(Number(value))}
                         />
-                        <YAxis
-                            unit={yAxisUnit}
-                            domain={yAxisDomain}
-                            tick={{fontSize: 10, fill: "#6b7280"}}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <Tooltip formatter={(value) => valueToString(Number(value))} />
                         {lines.length > 1 && <Legend/>}
                         {lines.map((line,index) => (
                             <Line

@@ -4,7 +4,7 @@ export interface ChartSeries<T> {
     colour?: string;
 }
 
-export interface BaseChartProps<T extends Record<string, any>> {
+export interface BaseChartProps<T extends Record<string, unknown>> {
     data: T[];
     title: string;
     xAxisKey: keyof T;

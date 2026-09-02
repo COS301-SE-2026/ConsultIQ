@@ -1,22 +1,27 @@
 import { Pie, PieChart, Tooltip, Sector, type PieSectorShapeProps, ResponsiveContainer } from "recharts";
 import { Card } from "../../../components/ui/card";
 
-export type GenericDataItem = Record<string, any>;
+export type GenericDataItem = Record<string, unknown>;
 
-interface DonutChartProps<T extends Record<string, any>> {
-    data: T[];
-    title: string;
-    dataKey: keyof T;
-    nameKey: keyof T;
-    colours?: string[];
-    valueToString?: (value: number) => string;
-    emptyMessage?: string;
+interface DonutChartProps<T extends Record<string, unknown>> {
+   readonly data: T[];
+   readonly title: string;
+   readonly dataKey: keyof T;
+   readonly nameKey: keyof T;
+   readonly colours?: string[];
+   readonly valueToString?: (value: number) => string;
+   readonly emptyMessage?: string;
 
 }
 
+interface WithOptionalColour{
+    colour?: string;
+}
+
+
 const DEFAULT_COLOURS = ["#002d62", "#c9a84c", "#1d6eb5", "#d7a007", "#3b82f6", "#93c5fd"];
 
-export default function DonutChart<T extends Record<string, any>>({ data,
+export default function DonutChart<T extends Record<string, unknown>>({ data,
     title,
     dataKey = "value",
     nameKey = "name",
@@ -36,7 +41,7 @@ export default function DonutChart<T extends Record<string, any>>({ data,
     }
 
     const colourFor = (index: number, entry: T) =>
-        (entry as any).colour ?? colours[index % colours.length];
+        (entry as T & WithOptionalColour).colour ?? colours[index % colours.length];
 
     const ColouredSlice = (props: PieSectorShapeProps) => {
         const index = props.index ?? 0;

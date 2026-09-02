@@ -1,16 +1,16 @@
-import { BarChart as RechartsbarChart, Bar, Tooltip, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts";
+import { BarChart as RechartsbarChart, Bar, Legend, ResponsiveContainer } from "recharts";
 import { Card } from "../../../components/ui/card";
 import {type BaseChartProps,type ChartSeries,DEFAULT_COLOURS } from "../types/chart.types";
+import { ChartAxes } from "./chart-axes";
 
 
-
-interface BarGraphProps<T extends Record<string, any>> extends BaseChartProps<T>{
+interface BarGraphProps<T extends Record<string, unknown>> extends BaseChartProps<T>{
     bars: ChartSeries<T>[];
 }
 
 
 
-export default function BarGraph<T extends Record<string, any>>({
+export default function BarGraph<T extends Record<string, unknown>>({
     data,
     title,
     xAxisKey,
@@ -51,25 +51,12 @@ export default function BarGraph<T extends Record<string, any>>({
                         margin={{top:4,right:8,left:-16,bottom:0}}
                         barGap={4}
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0"/>
-                        <XAxis
-                            dataKey={xAxisKey as string}
-                            tick={{fontSize: 10, fill: "#6b7280"}}
-                            axisLine={false}
-                            tickLine={false}
-                            interval={0}
-                            angle={-25}
-                            textAnchor="end"
-                            height={50}
+                        <ChartAxes
+                            xAxiskey={xAxisKey as string}
+                            yAxisUnit={yAxisUnit}
+                            yAxisDomain={yAxisDomain}
+                            valueToString={(value) => valueToString(Number(value))}
                         />
-                        <YAxis
-                            unit={yAxisUnit}
-                            domain={yAxisDomain}
-                            tick={{fontSize: 10, fill: "#6b7280"}}
-                            axisLine={false}
-                            tickLine={false}
-                        />
-                        <Tooltip formatter={(value) => valueToString(Number(value))} />
                         {bars.length > 1 && <Legend/>}
                         {bars.map((bar,index) => (
                             <Bar

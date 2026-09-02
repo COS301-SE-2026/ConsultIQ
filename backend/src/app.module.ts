@@ -69,7 +69,7 @@ import { HealthModule } from './health/health.module';
     RedisModule,
     HealthModule,
     CvParsingModule,
-    EncryptionModule,,
+    EncryptionModule,
     AnalyticsModule
   ],
   controllers: [AppController],

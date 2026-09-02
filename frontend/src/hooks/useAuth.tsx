@@ -2,7 +2,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect, useLayoutEffect } from 'react';
 import { authService } from '../features/authentication/services/auth.service';
 import type { LoginPayload } from '../features/authentication/types/auth.types';
-import { injectAuth } from '../lib/api-client';
+import { injectAuth, setLoggingOut } from '../lib/api-client';
 
 // Remove session tokens from profile
 export type UserProfile = {
@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const logout = useCallback(async () => {
+    setLoggingOut(true);
     try {
       await authService.logout();
     } catch {
@@ -65,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await authService.login(payload);
+    setLoggingOut(false);
 
     if (response && response.result) {
       const userProfile = Object.fromEntries(

@@ -11,6 +11,7 @@ export class ProjectListItemDto {
   clientBillingBudget!: number;
   status!: string;
   skillCount!: number;
+  gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
 
 export class PaginatedProjectsResponseDto {

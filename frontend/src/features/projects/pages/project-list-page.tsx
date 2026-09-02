@@ -63,6 +63,7 @@ export default function ProjectListPage() {
             province: p.province,
             postalCode: "",
           skills:[],
+          gapSeverity: p.gapSeverity,
         }));
 
         setProjects(mappedProjects);

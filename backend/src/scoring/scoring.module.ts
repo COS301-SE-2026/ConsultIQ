@@ -13,12 +13,17 @@ import { WeightedAggregator } from './services/weight-aggregator/weighted-aggreg
 import { MatchRunController } from '../controllers/scoring-engine/match-run.controller';
 import { ScoringService } from './services/scoring-config.service';
 import { ScoringController } from '../controllers/scoring/scoring.controller';
-//import { PrismaService } from '../prisma/prisma.service';
 import { MatchRunService } from './services/match-run.service';
 import { BullModule } from '@nestjs/bullmq';
 import { MatchRunProcessor } from './queues/match-run.processor';
+import { LocationModule } from '../location/location.module';
+
+
+
 @Module({
-  imports: [BullModule.registerQueue({ name: 'match-run' })],
+  imports: [LocationModule, BullModule.registerQueue({
+    name: 'match-run',
+  })],
   controllers: [MatchRunController, ScoringController],
   providers: [
     ScoringService,

@@ -177,6 +177,8 @@ export class MatchRunService {
         costToCompany: true,
         city: true,
         province: true,
+        latitude: true,
+        longitude: true,
         skills: {
           select: {
             competencyLevel: true,
@@ -358,6 +360,8 @@ export class MatchRunService {
       billingBudgetPerHour: project.budget,
       city: project.city,
       province: project.province,
+      latitude: project.latitude,
+      longitude: project.longitude,
       startDate: project.startDate.toISOString(),
       endDate: project.endDate?.toISOString(),
       requiredAllocationPercentage: project.allocation,
@@ -375,6 +379,8 @@ export class MatchRunService {
       costToCompany: consultant.costToCompany,
       city: consultant.city,
       province: consultant.province,
+      latitude: consultant.latitude,
+      longitude: consultant.longitude
     };
   }
 

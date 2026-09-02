@@ -2,7 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AnalyticsService } from '../../analytics/services/analytics.service';
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
-import { SkillDistributionDto, PlacementsBySkillDto, PlacementsYTDDto } from 'src/analytics/dto/analytics-response.dto';
+import { SkillDistributionDto, PlacementsYTDDto } from 'src/analytics/dto/analytics-response.dto';
 
 @Controller('analytics')
 @Roles(Role.ADMIN)

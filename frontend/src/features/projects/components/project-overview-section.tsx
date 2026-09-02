@@ -1,7 +1,7 @@
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
 import { Edit, X, Check } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { convertDate } from "./shared-convert-date";
 
 interface ProjectOverviewSectionProps {
@@ -48,6 +48,27 @@ export default function ProjectOverviewSection({
   const [endDate, setEndDate]= useState(project.endDate);
   const [status, setStatus]= useState(project.status);
   const [description, setDescription] = useState(project.description);
+
+  useEffect(() => {
+    setProjectName(project.name);
+    setClientName(project.clientName);
+    setTeamSize(project.teamSize);
+    setBudget(project.budget);
+    setStartDate(project.startDate);
+    setEndDate(project.endDate);
+    setStatus(project.status);
+    setDescription(project.description);
+  }, [
+    project.id,
+    project.name,
+    project.clientName,
+    project.teamSize,
+    project.budget,
+    project.startDate,
+    project.endDate,
+    project.status,
+    project.description,
+  ]);
 
   const isNonConsultant= !isConsultant;
 

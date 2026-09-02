@@ -27,10 +27,12 @@ import ProjectSpecificationPage from "../features/projects/pages/project-specifi
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
 import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
+import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
 import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
+import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -80,13 +82,13 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
-
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
                     <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
+                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
@@ -101,6 +103,7 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
                     <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
 
                 </Route>

@@ -106,6 +106,40 @@ function PopiaConsentForm() {
 
           <div className="w-full max-w-[760px]">
             <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
+              CV upload and processing
+            </h2>
+            <p className="text-lg leading-8 mb-4" style={{ color: "var(--color-text-secondary)" }}>
+              When your CV is uploaded, we may extract your skills, experience, and
+              certifications automatically. Your consultant manager decides which approach is used
+              for each upload.
+            </p>
+
+    
+              <p className="text-lg leading-8 mb-4" style={{ color: "var(--color-text-secondary)" }}>
+                <strong>Default Method:</strong> Your CV is entirely processed within our system, hosted in South Africa,
+                using a standard template. No CV data leaves our infrastructure.
+              </p>
+              <p className="text-lg leading-8 mb-4" style={{ color: "var(--color-text-secondary)" }}>
+                <strong>Optional Method:</strong> Your CV's text may be sent to Anthropic's Claude AI service to read a wider range
+                of CV formats more accurately. It is only used if actively selected for your
+                CV, and involves sending your CV's text to Anthropic for processing.
+                Anthropic's policy states that it does not use this data to train its AI models.
+                You can read Anthropic's data handling commitments in full at 
+                <a href="https://trust.anthropic.com/faq" style={{color: "var(--color-text-primary)"}}> trust.anthropic.com/faq  </a>
+                and 
+                 <a href="https://privacy.claude.com/en/" style={{color: "var(--color-text-primary)"}}> privacy.claude.com.</a>
+              </p>
+        
+
+            <p className="text-lg leading-8" style={{ color: "var(--color-text-secondary)" }}>
+              Regardless of which method is used, nothing is added to
+              your profile automatically. Your consultant manager  reviews the
+              extracted information first, and confirms changes before they appear on your profile.
+            </p>
+          </div>
+
+          <div className="w-full max-w-[760px]">
+            <h2 className="text-2xl font-bold mb-4" style={{ color: "var(--color-primary)" }}>
               Consent Agreement
             </h2>
             <p className="text-lg leading-8" style={{ color: "var(--color-text-secondary)" }}>

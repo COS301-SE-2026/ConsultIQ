@@ -4,13 +4,13 @@ import {type BaseChartProps,type ChartSeries,DEFAULT_COLOURS } from "../types/ch
 import { ChartAxes } from "./chart-axes";
 
 
-interface LineGraphProps<T extends Record<string, unknown>>extends BaseChartProps<T> {
+interface LineGraphProps<T extends object>extends BaseChartProps<T> {
     lines: ChartSeries<T>[];
 }
 
 
 
-export default function LineGraph<T extends Record<string, unknown>>({
+export default function LineGraph<T extends object>({
     data,
     title,
     xAxisKey,

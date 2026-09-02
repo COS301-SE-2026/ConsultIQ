@@ -4,13 +4,13 @@ import {type BaseChartProps,type ChartSeries,DEFAULT_COLOURS } from "../types/ch
 import { ChartAxes } from "./chart-axes";
 
 
-interface BarGraphProps<T extends Record<string, unknown>> extends BaseChartProps<T>{
+interface BarGraphProps<T extends object> extends BaseChartProps<T>{
     bars: ChartSeries<T>[];
 }
 
 
 
-export default function BarGraph<T extends Record<string, unknown>>({
+export default function BarGraph<T extends object>({
     data,
     title,
     xAxisKey,

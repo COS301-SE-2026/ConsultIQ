@@ -3,11 +3,11 @@ import { Card } from "../../../components/ui/card";
 
 export type GenericDataItem = Record<string, unknown>;
 
-interface DonutChartProps<T extends Record<string, unknown>> {
+interface DonutChartProps<T extends object> {
    readonly data: T[];
    readonly title: string;
-   readonly dataKey: keyof T;
-   readonly nameKey: keyof T;
+   readonly dataKey: keyof T ;
+   readonly nameKey: keyof T ;
    readonly colours?: string[];
    readonly valueToString?: (value: number) => string;
    readonly emptyMessage?: string;
@@ -21,10 +21,10 @@ interface WithOptionalColour{
 
 const DEFAULT_COLOURS = ["#002d62", "#c9a84c", "#1d6eb5", "#d7a007", "#3b82f6", "#93c5fd"];
 
-export default function DonutChart<T extends Record<string, unknown>>({ data,
+export default function DonutChart<T extends object>({ data,
     title,
-    dataKey = "value",
-    nameKey = "name",
+    dataKey,
+    nameKey,
     colours = DEFAULT_COLOURS,
     valueToString = (v) => `${v}`,
     emptyMessage = "No data availale yet",

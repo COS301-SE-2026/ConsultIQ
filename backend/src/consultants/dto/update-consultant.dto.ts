@@ -8,7 +8,7 @@ import {
   Min,
   Max,
   IsDateString,
-  Matches
+  Matches,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
@@ -102,7 +102,6 @@ export class UpdateConsultantEducationDto {
 }
 
 export class UpdateConsultantDto {
-
   @IsOptional()
   @IsString()
   fullname?: string;
@@ -124,7 +123,9 @@ export class UpdateConsultantDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[a-zA-Z\s'-]+$/, { message: 'Nationality must contain letters only' })
+  @Matches(/^[a-zA-Z\s'-]+$/, {
+    message: 'Nationality must contain letters only',
+  })
   nationality?: string;
 
   @IsOptional()
@@ -174,7 +175,8 @@ export class UpdateConsultantDto {
 
   @IsOptional()
   @IsEnum(['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'], {
-    message: 'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
+    message:
+      'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
   })
   availability?: string;
 

@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 
 @Injectable()
 export class LocationService {
@@ -71,5 +75,4 @@ export class LocationService {
       throw new InternalServerErrorException('Error communicating with Google Maps Distance Matrix API.');
     }
   }
-
 }

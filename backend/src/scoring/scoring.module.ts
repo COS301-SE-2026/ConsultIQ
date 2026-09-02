@@ -52,4 +52,4 @@ import { LocationModule } from '../location/location.module';
   ],
   exports: [ScoringPipelineService],
 })
-export class ScoringModule { }
+export class ScoringModule {}

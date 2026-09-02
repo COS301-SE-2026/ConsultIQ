@@ -14,7 +14,7 @@ import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
 @Controller('projects/:id/match-run')
 export class MatchRunController {
-  constructor(private readonly matchRunService: MatchRunService) { }
+  constructor(private readonly matchRunService: MatchRunService) {}
 
   @UseGuards(JwtAuthGuard)
   @Roles(Role.ADMIN, Role.PROJECT_MANAGER)

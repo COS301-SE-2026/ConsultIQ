@@ -3,7 +3,6 @@ import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 
-
 @Injectable()
 export class SkillAligmentScorer {
   private readonly logger = new Logger(SkillAligmentScorer.name);
@@ -22,8 +21,7 @@ export class SkillAligmentScorer {
       return {
         score: 0,
         triggerHardExclusion: true,
-        details: 'Invalid data: Project has no required skills defined'
-
+        details: 'Invalid data: Project has no required skills defined',
       };
     }
 
@@ -52,9 +50,8 @@ export class SkillAligmentScorer {
 
     const rawScore = possessedCount / requiredSkills.length;
     const score = Math.min(1, Math.max(0, rawScore));
-    const missingText = missingSkills.length > 0
-      ? ` (Missing: ${missingSkills.join(', ')})`
-      : '';
+    const missingText =
+      missingSkills.length > 0 ? ` (Missing: ${missingSkills.join(', ')})` : '';
 
     return {
       score,
@@ -62,7 +59,7 @@ export class SkillAligmentScorer {
       missingMandatorySkills:
         missingMandatorySkills.length > 0 ? missingMandatorySkills : undefined,
 
-      details: `Matched ${possessedCount} of ${requiredSkills.length} skills${missingText}`
+      details: `Matched ${possessedCount} of ${requiredSkills.length} skills${missingText}`,
     };
   }
 }

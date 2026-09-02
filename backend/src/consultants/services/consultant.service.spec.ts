@@ -11,6 +11,8 @@ import { NotificationService } from '../../notification/service/notification.ser
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
 import { userInfo } from 'node:os';
+import { create } from 'node:domain';
+import { title } from 'node:process';
 
 const mockPrismaService = {
   user: {
@@ -23,6 +25,9 @@ const mockPrismaService = {
     count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+  },
+  cvFile: {
+    updateMany: jest.fn(),
   },
   consultantManager: {
     create: jest.fn(),
@@ -147,6 +152,7 @@ describe('ConsultantService', () => {
       mockPrismaService.$transaction.mockImplementation(async (callback) => {
         const tx = {
           consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+          cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
           consultantManager: { create: jest.fn().mockResolvedValue({}) },
           skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
           consultantSkill: { create: jest.fn().mockResolvedValue({}) },
@@ -232,6 +238,120 @@ describe('ConsultantService', () => {
         }),
       );
     });
+
+    it('backfills consultantId onto any CV files uploaded before this profile existed', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      const txMock = {
+        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        consultantManager: { create: jest.fn().mockResolvedValue({}) },
+        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
+        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
+      };
+      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.cvFile.updateMany).toHaveBeenCalledWith({
+        where: { userId: dto.consultantUserId, consultantId: null },
+        data: { consultantId: 'new-consultant-uuid' },
+      });
+    });
+
+    it('does not throw when the consultant has no CV files uploaded beforehand', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      const txMock = {
+        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) }, // matches zero rows
+        consultantManager: { create: jest.fn().mockResolvedValue({}) },
+        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
+        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
+      };
+      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
+
+      const result = await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(result.message).toBe('Consultant profile created successfully.');
+    });
+
+    it.each([
+      {
+        label: 'education',
+        txKey: 'consultantEducation',
+        dtoKey: 'education',
+        payload: {
+          institution: 'University of Cape Town',
+          qualification: 'BSc Computer Science',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '2023-12-31T00:00:00.000Z'
+        },
+        expected: {
+          consultantId: 'new-consultant-uuid',
+          institution: 'University of Cape Town',
+          qualification: 'BSc Computer Science',
+          startDate: new Date('2020-01-01T00:00:00.000Z'),
+          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+        },
+      },{
+        label: 'certificate',
+        txKey: 'certificate',
+        dtoKey: 'certifications',
+        payload: {
+          title: 'AWS Certified Developer',
+          issuingBody: 'Amazon',
+          startDate: '2020-01-01T00:00:00.000Z',
+          endDate: '2023-12-31T00:00:00.000Z',
+        },
+        expected: {
+          consultantId: 'new-consultant-uuid',
+          title: 'AWS Certified Developer',
+          issuingBody: 'Amazon',
+          startDate: new Date('2020-01-01T00:00:00.000Z'),
+          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+        },
+      },
+    ])('should create $label record when $label data is provided', async ({txKey, dtoKey, payload, expected}) =>{
+      mockPrismaService.user.findUnique.mockResolvedValue({ 
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      const txMock = {
+        consultant : { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid'})},
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0})},
+        consultantManager: { create: jest.fn().mockResolvedValue({})},
+        skill: {upsert: jest.fn().mockResolvedValue({ id: 'skill-1'})},
+        consultantSkill: {create: jest.fn().mockResolvedValue({})},
+        consultantExperience: {create: jest.fn().mockResolvedValue({})},
+        certificate: {create: jest.fn().mockResolvedValue({})},
+        consultantEducation: { create: jest.fn().mockResolvedValue({})},
+      };
+      mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
+      
+      const dtoIncludingRelatedData = {
+        ...dto,
+        [dtoKey] : [payload],
+      } as any;
+
+      const result = await service.createConsultantProfile(cmUserId, dtoIncludingRelatedData);
+
+      expect(txMock[txKey as 'certificate' | 'consultantEducation'].create).toHaveBeenCalledWith({
+        data: expected,
+      });
+
+      expect(result.message).toBe('Consultant profile created successfully.');
+      expect(result.consultantId).toBe('new-consultant-uuid');
+    })
+
   });
 
   // ─── getPendingProfiles ─────────────────────────────────────────────────────
@@ -362,6 +482,7 @@ describe('ConsultantService', () => {
         id: '123',
       });
       mockPrismaService.consultant.update.mockResolvedValue({ id: '123' });
+      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(mockPrismaService));
 
       await service.updateConsultantProfile('123', {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1');;
 

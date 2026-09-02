@@ -388,26 +388,28 @@ export class AuthService {
     return { message: 'Terms accepted successfully.' };
   }
 
-  async forgotPassword(email: string): Promise<{message: string}>{
-    const user= await this.prisma.user.findUnique({where: {email}});
-    if(!user){
-      return {message: "If that account exists, a reset link has been sent."};
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { message: 'If that account exists, a reset link has been sent.' };
     }
     //throttle: check if at most 3 reset tokens have been sent in the last hour
-    const anHourAgo= new Date(Date.now() - 60*60*1000);
-    const  recentTokenCount= await this.prisma.token.count({
-      where:{
+    const anHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentTokenCount = await this.prisma.token.count({
+      where: {
         userId: user.id,
-        type: "PASSWORD_RESET",
-        createdAt: {gte: anHourAgo},
+        type: 'PASSWORD_RESET',
+        createdAt: { gte: anHourAgo },
       },
     });
-    if(recentTokenCount >=3){
-      throw new  TooManyRequestsException('You have requested too many password reset emails. Please wait an hour and try again.');
+    if (recentTokenCount >= 3) {
+      throw new TooManyRequestsException(
+        'You have requested too many password reset emails. Please wait an hour and try again.',
+      );
     }
 
-    const {rawToken, hashedToken}= this.token.generateActivationToken();
-    const expiry= this.token.getTokenExpiry();
+    const { rawToken, hashedToken } = this.token.generateActivationToken();
+    const expiry = this.token.getTokenExpiry();
 
     await this.prisma.token.create({
       data: {
@@ -418,20 +420,28 @@ export class AuthService {
       },
     });
 
-    const frontendUrl= this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
-    const resetLink= `${frontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
-    this.email.sendPasswordResetEmail(user.email, user.fullName ?? user.email, resetLink)
-    .catch((err) =>console.error('Failed to send reset email: ', err));
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    this.email
+      .sendPasswordResetEmail(
+        user.email,
+        user.fullName ?? user.email,
+        resetLink,
+      )
+      .catch((err) => console.error('Failed to send reset email: ', err));
 
-    return {message: 'If that account exists, a reset link has been sent.'}
+    return { message: 'If that account exists, a reset link has been sent.' };
   }
 
-  async resetPassword(dto: ActivateAccountDto):Promise<{message: string}>{
-    const user= await this.prisma.user.findUnique({where: {email: dto.email}})
-    if(!user) throw new NotFoundException('Account not found.');
+  async resetPassword(dto: ActivateAccountDto): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!user) throw new NotFoundException('Account not found.');
 
-    const hashedIncomingToken= this.token.hashToken(dto.token);
-    const tokenRecord= await this.prisma.token.findFirst({
+    const hashedIncomingToken = this.token.hashToken(dto.token);
+    const tokenRecord = await this.prisma.token.findFirst({
       where: {
         userId: user.id,
         token: hashedIncomingToken,
@@ -439,27 +449,29 @@ export class AuthService {
         usedAt: null,
       },
     });
-    
-    if (!tokenRecord){
+
+    if (!tokenRecord) {
       throw new BadRequestException('Invalid reset token.');
     }
-    if (this.token.isTokenExpired(tokenRecord.expiresAt)){
-      throw new BadRequestException('This reset link has expired. Request a new one.');
+    if (this.token.isTokenExpired(tokenRecord.expiresAt)) {
+      throw new BadRequestException(
+        'This reset link has expired. Request a new one.',
+      );
     }
 
-    const passwordHash= await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(dto.password, 12);
 
     //update password
     await this.prisma.$transaction([
       this.prisma.token.update({
-        where: {id : tokenRecord.id},
-        data: {usedAt: new Date()},
+        where: { id: tokenRecord.id },
+        data: { usedAt: new Date() },
       }),
       this.prisma.user.update({
-        where: {id: user.id},
-        data: {passwordHash},
+        where: { id: user.id },
+        data: { passwordHash },
       }),
     ]);
-    return {message: 'Password successfully updated. You can now login.'};
+    return { message: 'Password successfully updated. You can now login.' };
   }
 }

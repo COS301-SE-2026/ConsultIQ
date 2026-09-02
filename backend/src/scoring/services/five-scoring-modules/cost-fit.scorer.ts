@@ -43,7 +43,7 @@ export class CostFitScorer {
     return {
       score: finalScore,
       triggerHardExclusion: false,
-      details: `Over budget by ${overBudgetFormat}% (Rate: ${cost} | Budget: ${budget}). Score reduced by penalty.`
+      details: `Over budget by ${overBudgetFormat}% (Rate: ${cost} | Budget: ${budget}). Score reduced by penalty.`,
     };
   }
 }

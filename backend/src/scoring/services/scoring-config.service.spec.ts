@@ -202,6 +202,12 @@ describe('ScoringService', () => {
       );
 
       expect(result).toEqual(validOverrideFactors);
+      expect(mockPrisma.projectScoringOverride.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: expect.objectContaining({ hardExclusionEnabled: false }),
+          create: expect.objectContaining({ hardExclusionEnabled: false }),
+        }),
+      );
     });
   });
 

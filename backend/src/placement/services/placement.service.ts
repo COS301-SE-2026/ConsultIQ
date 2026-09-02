@@ -7,11 +7,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePlacementDto } from '../dto/create-placement.dto';
-import { PlacementStatus } from '@prisma/client';
-
+import { PlacementStatus, AuditAction } from '@prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 @Injectable()
 export class PlacementService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLog: AuditLogService,
+  ) {}
 
   async createPlacement(
     projectId: string,
@@ -106,6 +109,18 @@ export class PlacementService {
       return placement;
     });
 
+    await this.auditLog.log({
+      action: AuditAction.PLACEMENT_CREATED,
+      actingUserId: userId,
+      entityType: 'Placement',
+      entityId: placement.id,
+      metadata: {
+        projectId,
+        consultantId: dto.consultantId,
+        allocation: dto.allocation,
+      },
+    });
+
     return {
       message: 'Placement created successfully.',
       placementId: placement.id,
@@ -142,4 +157,6 @@ export class PlacementService {
     });
     return record !== null;
   }
+
+
 }

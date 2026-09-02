@@ -14,27 +14,27 @@ export class NotificationController {
 
   @Get()
   async getNotifications(@Req() req: any) {
-    const userId = req.userId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('User ID is missing');
     return await this.notificationService.getNotifications(userId);
   }
 
   @Get('archived')
   async getArchivedNotifications(@Req() req: any) {
-    const userId = req.userId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('User ID is missing');
     return await this.notificationService.getArchivedNotifications(userId);
   }
   @Patch(':id/read')
   async markAsRead(@Param('id') id: string, @Req() req: any) {
-    const userId = req.userId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('User ID is missing');
     return await this.notificationService.markAsRead(id, userId);
   }
 
   @Patch('read-all')
   async markAllAsRead(@Req() req: any) {
-    const userId = req.userId;
+    const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException('User ID is missing');
     return await this.notificationService.markAllAsRead(userId);
   }

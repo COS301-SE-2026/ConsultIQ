@@ -45,6 +45,32 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
     },
   };
 
+  const getTooltipBgColor = (sev : typeof severity) : string =>{
+    switch(sev){
+      case "NOT_COVERED":
+        return "bg-red-600";
+      case "PARTIALLY_COVERED":
+        return "bg-yellow-600";
+      case "ADEQUATELY_COVERED":
+        return "bg-green-600";
+      default:
+        return "bg-gray-600";
+    }
+  };
+
+  const getTooltipArrowColor = (sev: typeof severity): string => {
+    switch(sev){
+      case "NOT_COVERED":
+        return "border-t-red-600";
+      case "PARTIALLY_COVERED":
+        return "border-t-yellow-600";
+      case "ADEQUATELY_COVERED":
+        return "border-t-green-600";
+      default: 
+      return "border-t-gray-600";
+    }
+  };
+
   const style = config[severity];
   const Icon = style.icon;
 
@@ -59,12 +85,10 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
       </button>
 
       <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block">
-        <div className={`px-3 py-2 rounded-lg text-xs font-medium text-white whitespace-nowrap shadow-lg
-         ${severity === "NOT_COVERED" ? "bg-red-600" : severity === "PARTIALLY_COVERED" ? "bg-yellow-600" : "bg-green-600"}`}
+        <div className={`px-3 py-2 rounded-lg text-xs font-medium text-white whitespace-nowrap shadow-lg ${getTooltipBgColor(severity)}`}
         > 
           {style.tooltip}
-          <div className={`absolute top-full right-2 border-4 border-transparent 
-          ${severity === "NOT_COVERED" ? "border-t-red-600" : severity === "PARTIALLY_COVERED" ? "border-t-yellow-600" : "border-t-green-600"}`}
+          <div className={`absolute top-full right-2 border-4 border-transparent ${getTooltipArrowColor(severity)}`}
           />
         </div>
       </div>

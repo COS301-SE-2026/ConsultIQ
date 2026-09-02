@@ -39,8 +39,8 @@ export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height
                 <Legend />
                 <Bar dataKey= "Required" fill="#6b7280" radius={[0, 8, 8, 0]} />
                 <Bar dataKey= "Available" radius={[0, 8, 8, 0]} >
-                    {chartData.map((entry, idx) =>(
-                        <Cell key={`cell-${idx}`} fill={getSeverityColor(entry.severity)} />
+                    {chartData.map((entry) =>(
+                        <Cell key={`cell-${entry.name}`} fill={getSeverityColor(entry.severity)} />
                     ))}
                 </Bar>
             </BarChart>

@@ -66,8 +66,8 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
             <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Gapped Skills: </p>
                 <div className="space-y-1">
-                    {alert.gappedSkills.map((skill, i) => (
-                        <div key={i} className="text-sm text-gray-600 ml-4">
+                    {alert.gappedSkills.map((skill) => (
+                        <div key={skill.skillName} className="text-sm text-gray-600 ml-4">
                             <span className="font-medium">{skill.skillName}</span>
                             <span>({skill.availableCount} / {skill.requiredCount} available)</span>
                         </div>

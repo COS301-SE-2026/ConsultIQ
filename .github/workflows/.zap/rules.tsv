@@ -1,0 +1,12 @@
+# Rule ID	Name	Enabled	Reason
+10010	XSS (Reflected)	TRUE	A03 - Critical
+10011	XSS (Stored)	TRUE	A03 - Critical
+10012	XSS (DOM)	TRUE	A03 - Critical
+40019	CSP Header Missing	TRUE	A05 - Security Headers
+40020	X-Frame-Options Missing	TRUE	A05 - Security Headers
+40021	X-Content-Type-Options Missing	TRUE	A05 - Security Headers
+40016	XSS Protection Header	TRUE	A05 - Security Headers
+40017	Content-Type Missing	TRUE	A05 - Security Headers
+20012	Anti CSRF	TRUE	A01 - Access Control
+40014	Insecure HTTP Method	TRUE	A05 - Misconfiguration
+90003	Sub Domain Enumeration	FALSE	Information gathering only

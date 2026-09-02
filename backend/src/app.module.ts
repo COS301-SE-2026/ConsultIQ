@@ -49,7 +49,8 @@ import { BullModule } from '@nestjs/bullmq';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+          url:
+            configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
         },
       }),
     }),
@@ -65,7 +66,7 @@ import { BullModule } from '@nestjs/bullmq';
     LocationModule,
     PlacementsModule,
     CvParsingModule,
-    AnalyticsModule
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,9 +1,16 @@
-import { Controller, Get, Req, Param, Patch, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  Param,
+  Patch,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { NotificationService } from '../../notification/service/notification.service';
 
 @Controller('notifications')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) { }
+  constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
   async getNotifications(@Req() req: any) {

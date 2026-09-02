@@ -11,7 +11,7 @@ export class RefreshTokenService {
     private readonly jwt: JwtService,
     private readonly token: TokenService,
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
-  ) { }
+  ) {}
 
   /**
    * Called at login — creates the first refresh token in a new family.
@@ -66,7 +66,6 @@ export class RefreshTokenService {
     const acquired = await this.redis.set(lockKey, 'locked', 'EX', 10, 'NX');
 
     if (!acquired) {
-
       if (stored.familyId) {
         await this.prisma.token.updateMany({
           where: {
@@ -81,7 +80,6 @@ export class RefreshTokenService {
         'Refresh token reuse detected. Token family revoked. Please log in again.',
       );
     }
-
 
     await this.prisma.token.update({
       where: { id: stored.id },

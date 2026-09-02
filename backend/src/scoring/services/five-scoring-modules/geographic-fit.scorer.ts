@@ -20,7 +20,6 @@ interface CacheEntry {
 export class GeographicFitScorer {
   private readonly logger = new Logger(GeographicFitScorer.name);
 
-
   private static readonly DECAY_CONSTANT_MINUTES = 45;
   private static readonly DECAY_CONSTANT_KM = 40;
   private static readonly MIN_SCORE = 0.1;
@@ -30,13 +29,16 @@ export class GeographicFitScorer {
   private static readonly FALLBACK_DIFFERENT_PROVINCE_SCORE = 0.1;
 
   private readonly distanceCache = new Map<string, CacheEntry>();
-  private readonly pendingRequests = new Map<string, Promise<TravelMetrics | null>>();
+  private readonly pendingRequests = new Map<
+    string,
+    Promise<TravelMetrics | null>
+  >();
 
   private static readonly MAX_CACHE_SIZE = 5000;
   private static readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000;
   private static readonly ERROR_TTL_MS = 5 * 60 * 1000;
 
-  constructor(private readonly locationService: LocationService) { }
+  constructor(private readonly locationService: LocationService) {}
 
   async score(
     consultant: RawConsultantDto,
@@ -77,7 +79,6 @@ export class GeographicFitScorer {
     const cached = this.distanceCache.get(cacheKey);
     if (cached) {
       if (cached.expiresAt > now) {
-
         this.distanceCache.delete(cacheKey);
         this.distanceCache.set(cacheKey, cached);
         return cached.metrics;
@@ -93,7 +94,10 @@ export class GeographicFitScorer {
         .calculateTravelMetrics(origin, destination)
         .then((res: TravelMetrics | null) => {
           if (!this.isValidMetrics(res)) {
-            this.logger.warn(`Malformed metrics for ${cacheKey}. Treating as failure.`, res);
+            this.logger.warn(
+              `Malformed metrics for ${cacheKey}. Treating as failure.`,
+              res,
+            );
             this.setCache(cacheKey, null, GeographicFitScorer.ERROR_TTL_MS);
             return null;
           }
@@ -101,7 +105,10 @@ export class GeographicFitScorer {
           return res;
         })
         .catch((error) => {
-          this.logger.warn(`API failed for ${cacheKey}. Triggering negative cache.`, error);
+          this.logger.warn(
+            `API failed for ${cacheKey}. Triggering negative cache.`,
+            error,
+          );
           this.setCache(cacheKey, null, GeographicFitScorer.ERROR_TTL_MS);
           return null;
         })
@@ -115,8 +122,10 @@ export class GeographicFitScorer {
     return this.pendingRequests.get(cacheKey)!;
   }
 
-  private buildCacheKey(consultant: RawConsultantDto, project: RawProjectDto): string {
-
+  private buildCacheKey(
+    consultant: RawConsultantDto,
+    project: RawProjectDto,
+  ): string {
     const cLat = Number(consultant.latitude).toFixed(2);
     const cLng = Number(consultant.longitude).toFixed(2);
     const pLat = Number(project.latitude).toFixed(2);
@@ -139,7 +148,9 @@ export class GeographicFitScorer {
     const durationMinutes = metrics.durationSeconds / 60;
 
     if (metrics.durationSeconds > 0) {
-      const rawScore = Math.exp(-durationMinutes / GeographicFitScorer.DECAY_CONSTANT_MINUTES);
+      const rawScore = Math.exp(
+        -durationMinutes / GeographicFitScorer.DECAY_CONSTANT_MINUTES,
+      );
       return {
         score: Math.max(GeographicFitScorer.MIN_SCORE, rawScore),
         triggerHardExclusion: false,
@@ -148,7 +159,9 @@ export class GeographicFitScorer {
       };
     }
 
-    const rawScore = Math.exp(-distanceKm / GeographicFitScorer.DECAY_CONSTANT_KM);
+    const rawScore = Math.exp(
+      -distanceKm / GeographicFitScorer.DECAY_CONSTANT_KM,
+    );
     return {
       score: Math.max(GeographicFitScorer.MIN_SCORE, rawScore),
       triggerHardExclusion: false,
@@ -192,7 +205,11 @@ export class GeographicFitScorer {
     };
   }
 
-  private setCache(key: string, metrics: TravelMetrics | null, ttlMs: number): void {
+  private setCache(
+    key: string,
+    metrics: TravelMetrics | null,
+    ttlMs: number,
+  ): void {
     if (this.distanceCache.size >= GeographicFitScorer.MAX_CACHE_SIZE) {
       const oldestKey = this.distanceCache.keys().next().value;
       if (oldestKey !== undefined) {

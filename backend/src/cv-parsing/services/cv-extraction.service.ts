@@ -10,7 +10,8 @@ import { ClaudeExtractionService } from './claude-extraction.service';
 import { CvParsingService } from './cv-parsing.service';
 import { CvFieldValidatorService } from './cv-field-validator.service';
 import { CvParsingResult } from '../types/parsed-cv.types';
-import { Prisma } from '@prisma/client';
+import { Prisma, AuditAction } from '@prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 
 @Injectable()
 export class CvExtractionService {
@@ -23,6 +24,7 @@ export class CvExtractionService {
     private readonly claudeExtraction: ClaudeExtractionService,
     private readonly ruleBasedParsing: CvParsingService,
     private readonly validator: CvFieldValidatorService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async processExtraction(cvFileId: string): Promise<void> {
@@ -104,7 +106,23 @@ export class CvExtractionService {
       },
     });
 
-    if (!result.success) {
+    if (result.success) {
+      const cvFile = await this.prisma.cvFile.findUnique({
+        where: { id: cvFileId },
+        select: { userId: true, consultantId: true },
+      });
+
+      await this.auditLog.log({
+        action: AuditAction.CV_EXTRACTED,
+        actingUserId: cvFile?.userId ?? 'unknown',
+        entityType: 'CvFile',
+        entityId: cvFileId,
+        metadata: {
+          consultantId: cvFile?.consultantId,
+          extractedData: result.data,
+        } as unknown as Prisma.InputJsonValue 
+      });
+    } else {
       this.logger.error(
         `Extraction failed for CvFile ${cvFileId}: ${result.error}`,
       );

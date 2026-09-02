@@ -10,11 +10,11 @@ interface SkillGapBarChartProps {
 export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height=400}) =>{
     const getSeverityColor = (severity: string) =>{
         switch (severity){
-            case "ADEQUATELY_COVERED":
+            case "COVERED":
                 return "#10b981";
-            case "PARTIALLY_COVERED":
+            case "AT_RISK":
                 return "#f59e0b";
-            case "NOT_COVERED":
+            case "CRITICAL":
                 return "#ef4444";
             default:
                 return "#6b7280";
@@ -25,7 +25,7 @@ export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height
         name: item.skillName,
         Required: item.requiredCount,
         Available: item.availableCount,
-        Coverage: item.coveragePercentage,
+        Coverage: item.coveragePercent,
         severity: item.severity,
     }));
 

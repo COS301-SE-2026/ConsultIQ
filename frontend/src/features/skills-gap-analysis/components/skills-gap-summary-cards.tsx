@@ -9,7 +9,7 @@ export const SkillGapSummaryCards: React.FC<SkillGapSummaryCardsProps> =({ summa
     const metrics = [
         {
             label: "Overall Coverage",
-            value: `${summary.overallCoveragePercentage.toFixed(1)}%`,
+            value: `${summary.overallCoveragePercent.toFixed(1)}%`,
             color: "bg-blue-50",
             textColor: "text-blue-700",
             borderColor: "border-blue-200",
@@ -23,14 +23,14 @@ export const SkillGapSummaryCards: React.FC<SkillGapSummaryCardsProps> =({ summa
         },
         {
             label: "At Risk",
-            value: `${summary.partiallyCoveredCount}`,
+            value: `${summary.atRiskCount}`,
             color: "bg-yellow-50",
             textColor: "text-yellow-700",
             borderColor: "border-yellow-200",
         },
         {
             label: "Critical Gaps",
-            value: `${summary.notCoveredCount}`,
+            value: `${summary.criticalCount}`,
             color: "bg-red-50",
             textColor: "text-red-700",
             borderColor: "border-red-200",

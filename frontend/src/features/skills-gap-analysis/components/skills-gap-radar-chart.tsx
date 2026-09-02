@@ -11,7 +11,7 @@ export const SkillGapRadarChart : React.FC<SkillGapRadarChartProps> =({data, hei
     //only top 10 skills, to avoid cluttering
     const radarData = data.slice(0, 10).map((item) => ({
         name: item.skillName,
-        coverage: Math.min(item.coveragePercentage, 100),
+        coverage: Math.min(item.coveragePercent, 100),
     }));
 
     return (

@@ -10,7 +10,7 @@ interface SkillGapAlertCardProps {
 export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDismiss}) =>{
     const getSeverityStyles =(severity : string) =>{
         switch(severity){
-            case "ADEQUATELY_COVERED":
+            case "COVERED":
                 return { 
                     bg: "bg-green-50",
                     border: "border-green-200",
@@ -18,7 +18,7 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
                     icon: CheckCircle2,
                     iconColor: "text-green-600",
                 };
-            case "PARTIALLY_COVERED":
+            case "AT_RISK":
                 return { 
                     bg: "bg-yellow-50",
                     border: "border-yellow-200",
@@ -26,7 +26,7 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
                     icon: AlertCircle,
                     iconColor: "text-yellow-600",
                 };        
-            case "NOT_COVERED":
+            case "CRITICAL":
                 return { 
                     bg: "bg-red-50",
                     border: "border-red-200",

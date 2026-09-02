@@ -50,7 +50,8 @@ import { HealthModule } from './health/health.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+          url:
+            configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
         },
       }),
     }),
@@ -68,7 +69,7 @@ import { HealthModule } from './health/health.module';
     RedisModule,
     HealthModule,
     CvParsingModule,
-    AnalyticsModule
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

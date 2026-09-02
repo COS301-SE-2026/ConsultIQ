@@ -8,7 +8,7 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationGateway: NotificationGateway,
-  ) { }
+  ) {}
 
   async createAndSendNotification(
     userId: string,

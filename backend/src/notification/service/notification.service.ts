@@ -8,7 +8,7 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationGateway: NotificationGateway,
-  ) {}
+  ) { }
 
   async createAndSendNotification(
     userId: string,
@@ -53,10 +53,11 @@ export class NotificationService {
     });
   }
 
-  async archiveNotification(notificationId: string) {
+  async archiveNotification(notificationId: string, userId: string) {
     return await this.prisma.notification.update({
       where: {
         id: notificationId,
+        userId: userId,
       },
       data: { isArchived: true, archivedAt: new Date() },
     });

@@ -203,11 +203,14 @@ describe('NotificationService', () => {
 
             mockPrismaService.notification.update.mockResolvedValue(mockNotifications);
 
-            const result = await notificationService.archiveNotification(mockNotifications.id);
+            const result = await notificationService.archiveNotification(mockNotifications.id, mockNotifications.userId);
 
             expect(result).toEqual(mockNotifications);
             expect(mockPrismaService.notification.update).toHaveBeenCalledWith({
-                where: { id: '1' },
+                where: {
+                    id: '1',
+                    userId: 'user-123'
+                },
                 data: {
                     isArchived: true, archivedAt: expect.any(Date),
                 }

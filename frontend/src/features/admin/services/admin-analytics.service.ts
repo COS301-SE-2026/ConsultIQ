@@ -38,7 +38,7 @@ export const getSkillDistribution = async () => {
     return await apiClient.get<SkillDistributionDto[]>("/admin/analytics/skill-distribution");
 }
 
-export const getPlacementYTD = async () => {
+export const getPlacementsYTD = async () => {
     return await apiClient.get<{ count: number }>("/admin/analytics/placement-ytd");
 }
 

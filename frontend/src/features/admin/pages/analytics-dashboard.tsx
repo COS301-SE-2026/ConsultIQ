@@ -13,7 +13,7 @@ import {
     type BenchBySkillDto,
     type CvParsingStatsDto,
     type PlacementsBySkillDto, 
-    mockSkillDistribution,
+    type PlacementsYTDDto,
 } from "../types/admin.types";
 import {
     getOverallUtilisation,
@@ -22,6 +22,8 @@ import {
     getBenchBySkillCategory,
     getPlacementsBySkillCategory,
     getCvParsingStats,
+    getSkillDistribution,
+    getPlacementsYTD,
 } from "../services/admin-analytics.service";
 import { formatPercent, formatFractionAsPercent, formatRate } from "../utils/percent";
 
@@ -33,6 +35,8 @@ export default function AnalyticsPage() {
     const [benchBySkill, setBenchBySkill] = useState<BenchBySkillDto[]>([]);
     const [placementsBySkill, setPlacementsBySkill] = useState<PlacementsBySkillDto[]>([]);
     const [cvParsingStats, setCvParsingStats] = useState<CvParsingStatsDto | null>(null);
+    const [skillDistribution, setSkillDistribution] = useState<SkillDistributionDto[]>([]);
+    const [placementsYTD, setPlacementsYTD] = useState<PlacementsYTDDto | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -49,9 +53,11 @@ export default function AnalyticsPage() {
                 getBenchBySkillCategory(),
                 getPlacementsBySkillCategory(),
                 getCvParsingStats(),
+                getSkillDistribution(),
+                getPlacementsYTD(),
             ]);
 
-            const [utilRes, benchRes, utilBySkillRes, benchBySkillRes, placementsRes, cvParsingRes] = results;
+            const [utilRes, benchRes, utilBySkillRes, benchBySkillRes, placementsRes, cvParsingRes, skillDistributionRes, placementsYTDRes] = results;
 
             if (utilRes.status === "fulfilled") setOverallUtilisation(utilRes.value);
             if (benchRes.status === "fulfilled") setBenchCount(benchRes.value);
@@ -59,6 +65,8 @@ export default function AnalyticsPage() {
             if(benchBySkillRes.status === "fulfilled") setBenchBySkill(benchBySkillRes.value);
             if(placementsRes.status === "fulfilled") setPlacementsBySkill(placementsRes.value);
             if(cvParsingRes.status === "fulfilled") setCvParsingStats(cvParsingRes.value);
+            if(skillDistributionRes.status === "fulfilled") setSkillDistribution(skillDistributionRes.value);
+            if(placementsYTDRes.status === "fulfilled") setPlacementsYTD(placementsYTDRes.value);
 
             const failed = results.filter(r => r.status === "rejected");
             failed.forEach(f => console.error("Failed to load analytics data:", (f as PromiseRejectedResult).reason));
@@ -130,10 +138,9 @@ export default function AnalyticsPage() {
                                         value={benchCount?.count ?? 0} 
                                         valueKey="consultants"
                                     />
-                                    {/*Siya's part*/}
                                     <AnalyticsCard 
-                                        label="Placements YTD" 
-                                        value={195} 
+                                        label="Placements This year" 
+                                        value={placementsYTD?.count ?? 0} 
                                     />
                                 </div>
                             </section>
@@ -165,7 +172,7 @@ export default function AnalyticsPage() {
                                 <div className="grid w-full grid-cols-1 md:grid-cols-2  xl:grid-cols-3 gap-6">
                                     <DonutChart<SkillDistributionDto>
                                         title="Skill Distribution"
-                                        data={mockSkillDistribution} //Siya's part
+                                        data={skillDistribution}
                                         dataKey="consultantCount"
                                         nameKey="category"
                                         valueToString={(v) => `${v} consultants`}

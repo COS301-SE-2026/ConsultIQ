@@ -1,5 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck,House,Cog,Bell,HelpCircle } from "lucide-react";
+import { Users, Briefcase, UserCheck,House,Cog,Bell,HelpCircle, ChartPie } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",
@@ -10,6 +10,11 @@ export const adminSidebarItems: SidebarItem[] = [
         label: "Configurations",
         path:"/admin-scoring-config",
         icon:Cog
+    },
+    {
+        label: "Analytics",
+        path:"/analytics-dashboard",
+        icon:ChartPie
     },
     {
         label: "Help",

@@ -182,7 +182,7 @@ export default function ProjectListPage() {
                   {error}
                 </div>
               ) : filteredProjects.length > 0 ? (
-                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} onConfigureScore={handleConfigureScore}/>
+                <ProjectGrid projects={filteredProjects} onViewDetails={setSelectedProject} onConfigureScore={handleConfigureScore} onViewSkillGap={(project) => navigate(`/skill-gap/${project.id}`)}/>
               ) : (
                 <EmptyProjectState />
               )}

@@ -43,7 +43,7 @@ export class CVUploadService {
       where: { id: userId },
     });
 
-    if (!user || user.role !== 'CONSULTANT') {
+    if (user?.role !== 'CONSULTANT') {
       throw new BadRequestException(`Consultant with id ${userId} not found.`);
     }
 

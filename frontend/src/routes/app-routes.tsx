@@ -31,6 +31,7 @@ import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
 import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
+import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -87,6 +88,7 @@ function AnimatedRoutes() {
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
                     <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
+                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />

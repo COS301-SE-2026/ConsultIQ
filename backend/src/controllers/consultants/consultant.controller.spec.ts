@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ConsultantController } from './consultant.controller';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { NotificationService } from '../../notification/service/notification.service';
-
+import { Role } from '../../auth/enums/role.enum';
 const mockConsultantService = {
   createConsultantProfile: jest.fn(),
   getPendingProfiles: jest.fn(),
@@ -15,6 +15,7 @@ const mockConsultantService = {
   uploadProfilePicture: jest.fn(),
   getConsultantsByProject: jest.fn(),
   unassignConsultant: jest.fn(),
+  getConsultantByUserId: jest.fn(),
 };
 
 const mockNotificationService = {
@@ -130,6 +131,42 @@ describe('ConsultantController', () => {
         new NotFoundException('Consultant with id uuid-999 not found.'),
       );
       await expect(controller.getConsultantById('uuid-999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // - getConsultantByUserId ---------------
+
+  describe('getConsultantByUserId', () => {
+    it('should throw ForbiddenException if a consultant requests another user profile', () => {
+      const req = { user: { role: Role.CONSULTANT, userId: 'user-123' } };
+
+      expect(() => {
+        controller.getConsultantByUserId('user-999', req as any);
+      }).toThrow(ForbiddenException);
+
+      expect(mockConsultantService.getConsultantByUserId).not.toHaveBeenCalled();
+    });
+
+    it('should allow a consultant to view their own profile', async () => {
+      const req = { user: { role: Role.CONSULTANT, userId: 'user-123' } };
+      const mockProfile = { id: 'consultant-1', userId: 'user-123' };
+      mockConsultantService.getConsultantByUserId.mockResolvedValue(mockProfile);
+
+      const result = await controller.getConsultantByUserId('user-123', req as any);
+
+      expect(result).toEqual(mockProfile);
+      expect(mockConsultantService.getConsultantByUserId).toHaveBeenCalledWith('user-123');
+    });
+
+    it('should allow other roles (e.g. CONSULTANT_MANAGERS) to view any user profile', async () => {
+      const req = { user: { role: Role.CONSULTANT_MANAGER, userId: 'manager-1' } };
+      const mockProfile = { id: 'consultant-2', userId: 'user-999' };
+      mockConsultantService.getConsultantByUserId.mockResolvedValue(mockProfile);
+
+      const result = await controller.getConsultantByUserId('user-999', req as any);
+
+      expect(result).toEqual(mockProfile);
+      expect(mockConsultantService.getConsultantByUserId).toHaveBeenCalledWith('user-999');
     });
   });
 

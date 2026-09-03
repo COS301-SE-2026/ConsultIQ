@@ -109,7 +109,7 @@ function AnimatedRoutes() {
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}
-                <Route path="*" element={<Navigate to="/landing-page" replace />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </AnimatePresence>
     );

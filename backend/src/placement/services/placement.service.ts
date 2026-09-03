@@ -54,6 +54,7 @@ export class PlacementService {
       where: {
         projectId,
         consultantId: dto.consultantId,
+        status: PlacementStatus.ACTIVE,
       },
     });
     if (existingPlacement) {

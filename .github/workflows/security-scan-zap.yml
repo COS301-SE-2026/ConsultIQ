@@ -5,6 +5,7 @@ on :
     branches:
       - main
       - dev
+      - feature/backend/security-testing
   workflow_dispatch:
     inputs:
       target_url: 

@@ -40,12 +40,13 @@ export class DataIngestionService {
       const factor = row.factorName as ScoringFactor;
       if (row.active) {
         rawWeights[factor] =
-          'overrideWeight' in row ? row.overrideWeight : row.weight;
+          'overrideWeight' in row
+            ? row.overrideWeight
+            : (row as { weight: number }).weight;
         activeFactors.add(factor);
       }
 
-      const isExcluded =
-        'hardExlusionEnabled' in row ? row.hardExclusionEnabled : false;
+      const isExcluded = row.hardExclusionEnabled === true;
       if (isExcluded) {
         excludedFactors.add(factor);
       }

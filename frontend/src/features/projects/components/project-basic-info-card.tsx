@@ -206,6 +206,29 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               />
               {errors.budget && <span className="text-sm text-red-500">{errors.budget}</span>}
             </div>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="allocation" className="text-base font-semibold">
+                Consultant Allocation (%)
+              </label>
+              <input type="number"
+              id="allocation"
+              min={1}
+              max={100}
+              value={data.allocation}
+              onChange={(e) =>{
+                const value= Number(e.target.value);
+                onChange("allocation", Math.min(Math.max(value, 1), 100));
+              }}
+              className={getInputClass("allocation")}/>
+
+              <span className="text-sm text-slate-500">
+                Percentage of a consultant's capacity required for this project.
+              </span>
+
+              {errors.allocation &&(
+                <span className="test-sm text-red-500">{errors.allocation}</span>
+              )}
+            </div>
           </div>
         </div>
 

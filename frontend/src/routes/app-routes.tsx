@@ -9,23 +9,30 @@ import LoginForm from "../features/authentication/pages/login-page";
 import SetPasswordPage from "../features/authentication/pages/set-password-page";
 import PopiaConsentPage from "../features/authentication/pages/popia-consent-page";
 import PopiaDeclinePage from "../features/authentication/pages/popia-decline-page";
-
+import ForgotPasswordPage from "../features/authentication/pages/forgot-password.tsx"
+import ResetPasswordPage from "../features/authentication/pages/reset-pasword.tsx";
+import CheckEmail from "../features/authentication/pages/check-email.tsx";
 // Consultants
 import ConsultantsPage from "../features/consultants/pages/consultant-list-page";
 import UnderConstructionPage from "../features/consultants/pages/under-construction-page";
 import ConsultantProfileViewPage from "../features/consultants/pages/consultant-profile-view";
 import CreateProfilePage from "../features/consultants/pages/create-profile-page";
 import ConsultantProjects from "../features/consultants/pages/consultant-projects";
+import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
+import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
+import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 
 // Project pages (Added missing imports)
 import ProjectSpecificationPage from "../features/projects/pages/project-specification-page";
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
 import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
+import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
 //Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
 import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
+import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -58,6 +65,9 @@ function AnimatedRoutes() {
                 {/* ------------------------------------------- */}
                 <Route path="/login" element={<PageTransition><LoginForm /></PageTransition>} />
                 <Route path="/set-password" element={<PageTransition><SetPasswordPage /></PageTransition>} />
+                <Route path="/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
+                <Route path="/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
+                <Route path="/check-email" element={<PageTransition><CheckEmail /></PageTransition>} />
                 <Route path="/activate" element={<PageTransition><SetPasswordPage /></PageTransition>} />
                 <Route path="/popia-consent" element={<PageTransition><PopiaConsentPage /></PageTransition>} />
                 <Route path="/popia-decline" element={<PageTransition><PopiaDeclinePage /></PageTransition>} />
@@ -78,6 +88,7 @@ function AnimatedRoutes() {
                 <Route element={<ProtectedRoute />}>
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
                     <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
+                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
@@ -90,6 +101,11 @@ function AnimatedRoutes() {
                     <Route path="/notifications" element={<PageTransition><NotificationPage /></PageTransition>} />
                     <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
+                    <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
+                    <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to login */}

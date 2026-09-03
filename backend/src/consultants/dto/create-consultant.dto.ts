@@ -13,7 +13,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { IsSAIdentityNumber } from '../../common/validators/is-sa-id.validator';
-
+import { BaseLocationDto } from '../../common/dto/base-location.dto';
 export class CreateConsultantSkillDto {
   @IsString()
   skillName!: string;
@@ -79,7 +79,26 @@ export class CreateCertificationDto {
   endDate?: string;
 }
 
-export class CreateConsultantDto {
+export class CreateConsultantEducationDto {
+  @IsString()
+  institution!: string;
+
+  @IsString()
+  qualification!: string;
+
+  @IsOptional()
+  @IsString()
+  fieldOfStudy?: string;
+
+  @IsDateString({}, { message: 'startDate must be a valid ISO date string' })
+  startDate!: string;
+
+  @IsOptional()
+  @IsDateString({}, { message: 'startDate must be a valid ISO date string' })
+  endDate?: string;
+}
+
+export class CreateConsultantDto extends BaseLocationDto {
   @IsUUID('4', { message: 'consultantUserId must be a valid UUID' })
   consultantUserId!: string;
 
@@ -94,27 +113,6 @@ export class CreateConsultantDto {
 
   @IsString()
   nationality!: string;
-
-  @IsString()
-  addressLine1!: string;
-
-  @IsString()
-  @IsOptional()
-  addressLine2?: string;
-
-  @IsString()
-  @IsOptional()
-  suburb?: string;
-
-  @IsString()
-  city!: string;
-
-  @IsString()
-  province!: string;
-
-  @IsString()
-  @IsOptional()
-  postalCode?: string;
 
   @IsNumber()
   @Min(0)
@@ -140,6 +138,12 @@ export class CreateConsultantDto {
   @ValidateNested({ each: true })
   @Type(() => CreateCertificationDto)
   certifications?: CreateCertificationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateConsultantEducationDto)
+  education?: CreateConsultantEducationDto[];
 }
 
 export class ConsultantListItemDto {

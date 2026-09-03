@@ -121,14 +121,11 @@ function ProjectSpecificationPage() {
       <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        <header
-          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center justify-end relative"
-          style={{ borderColor: "var(--color-border)" }}
+      <header
+          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
+          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
         >
-          <h1
-            className="text-4xl font-bold absolute left-1/2 -translate-x-1/2"
-            style={{ color: "var(--color-primary)" }}
-          >
+          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
             New Project
           </h1>
 
@@ -145,7 +142,7 @@ function ProjectSpecificationPage() {
               onClick={handleSave}
               disabled={isSubmitting}
               className="h-12 w-35 text-lg rounded-xl text-white font-semibold transition hover:brightness-110 disabled:opacity-50"
-              style={{ backgroundColor: "var(--color-accent)" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               {isSubmitting ? "Saving..." : "Save"}
             </button>

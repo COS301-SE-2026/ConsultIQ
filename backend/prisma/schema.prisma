@@ -111,6 +111,23 @@ enum MatchRunStatus {
   FAILED
 }
 
+enum CvParsingMethod {
+  AI_ASSISTED
+  RULE_BASED
+}
+
+enum AuditAction {
+  PLACEMENT_CREATED
+  PLACEMENT_UPDATED
+  PLACEMENT_CANCELLED
+  CV_EXTRACTED
+}
+
+enum GapSeverity {
+  COVERED
+  AT_RISK
+  CRITICAL
+}
 // ---------------------------------------- RBAC Models------------------------------------
 
 model Permission {
@@ -154,33 +171,36 @@ model RolePermission {
 // ---------------------------------------- Models -----------------------------
 
 model User {
-  id                  String               @id @default(uuid())
-  fullName            String
-  email               String               @unique
-  passwordHash        String?
-  role                Role
-  roleId              String?              @map("role_id")
-  roleDefinition      RoleDefinition?      @relation(fields: [roleId], references: [id])
-  status              UserStatus           @default(PENDING)
-  failedAttempts      Int                  @default(0)
-  lockedUntil         DateTime?
-  isLocked            Boolean              @default(false)
-  termsAcceptedAt     DateTime?
-  tenantId            String?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  deletedAt           DateTime?            @map("delete_at")
-  tokens              Token[]
-  auditLogs           authAuditLog[]
-  consultant          Consultant?
-  managedProjects     ProjectManager[]
-  managedConsultants  ConsultantManager[]
-  scoringConfigAudits ScoringConfigAudit[]
-  notifications       Notification[]
-  matchRuns           MatchRun[]
-  adminActionsPerformed AdminAuditLog[]    @relation("AdminActions")
-  adminActionsReceived  AdminAuditLog[]    @relation("AdminTargets")
+  id                    String               @id @default(uuid())
+  fullName              String
+  email                 String               @unique
+  passwordHash          String?
+  role                  Role
+  roleId                String?              @map("role_id")
+  roleDefinition        RoleDefinition?      @relation(fields: [roleId], references: [id])
+  status                UserStatus           @default(PENDING)
+  failedAttempts        Int                  @default(0)
+  lockedUntil           DateTime?
+  isLocked              Boolean              @default(false)
+  termsAcceptedAt       DateTime?
+  tenantId              String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  deletedAt             DateTime?            @map("delete_at")
+  tokens                Token[]
+  auditLogs             authAuditLog[]
+  auditLogEntries       AuditLog[]
+  consultant            Consultant?
+  managedProjects       ProjectManager[]
+  managedConsultants    ConsultantManager[]
+  scoringConfigAudits   ScoringConfigAudit[]
+  notifications         Notification[]
+  matchRuns             MatchRun[]
+  cvFiles               CvFile[]
+  adminActionsPerformed AdminAuditLog[]      @relation("AdminActions")
+  adminActionsReceived  AdminAuditLog[]      @relation("AdminTargets")
 
+  @@index([status])
   @@map("users")
 }
 
@@ -199,23 +219,30 @@ model Token {
 }
 
 model Consultant {
-  id            String                 @id @default(uuid())
-  userId        String                 @unique
-  user          User                   @relation(fields: [userId], references: [id])
-  addressLine1 String
-  addressLine2 String?
-  suburb       String?
-  city         String
-  province     String
-  postalCode   String?
-  phone         String?
-  idNumber      String?
-  nationality   String?
-  costToCompany Float
-  availability  ConsultantAvailability @default(AVAILABLE)
-  tenantId      String?
-  createdAt     DateTime               @default(now())
-  updatedAt     DateTime               @updatedAt
+  id               String                 @id @default(uuid())
+  userId           String                 @unique
+  user             User                   @relation(fields: [userId], references: [id])
+  addressLine1     String
+  addressLine2     String?
+  suburb           String?
+  city             String
+  province         String
+  postalCode       String?
+  latitude         Float?
+  longitude        Float?
+  placeId          String?
+  formattedAddress String?
+  phone            String?
+  idNumber         String?
+  nationality      String?
+  costToCompany    Float
+  capacity         Int                    @default(100)
+  availability     ConsultantAvailability @default(AVAILABLE)
+  tenantId         String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  pictureData      Bytes?
+  pictureMimeType  String?
 
   skills                ConsultantSkill[]
   certificates          Certificate[]
@@ -264,6 +291,7 @@ model ConsultantSkill {
   skill           Skill           @relation(fields: [skillId], references: [id])
 
   @@unique([consultantId, skillId])
+  @@index([skillId, consultantId])
   @@map("consultant_skills")
 }
 
@@ -297,7 +325,8 @@ model Certificate {
 
 model CvFile {
   id               String           @id @default(uuid())
-  consultantId     String
+  userId           String
+  consultantId     String?
   fileName         String
   mimeType         String
   fileSize         Int
@@ -305,11 +334,13 @@ model CvFile {
   s3Url            String
   uploadStatus     UploadStatus     @default(UPLOADED)
   extractionStatus ExtractionStatus @default(PENDING)
+  parsingMethod    CvParsingMethod  @default(RULE_BASED)
   rawText          String?
   parsedData       Json?
   uploadedAt       DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  consultant       Consultant       @relation(fields: [consultantId], references: [id])
+  consultant       Consultant?      @relation(fields: [consultantId], references: [id])
+  user             User             @relation(fields: [userId], references: [id])
 
   @@map("cv_files")
 }
@@ -325,6 +356,10 @@ model Project {
   city             String
   province         String
   postalCode       String
+  latitude         Float?
+  longitude        Float?
+  placeId          String?
+  formattedAddress String?
   startDate        DateTime
   endDate          DateTime?
   teamSize         Int
@@ -342,6 +377,7 @@ model Project {
 
   auditLogs ProjectAuditLog[]
   matchRuns MatchRun[]
+  skillGapSeverity GapSeverity @default(COVERED)
 
   @@map("projects")
 }
@@ -384,6 +420,8 @@ model ProjectPlacement {
   project      Project         @relation(fields: [projectId], references: [id])
   consultant   Consultant      @relation(fields: [consultantId], references: [id])
 
+  @@index([consultantId, status, startDate, endDate])
+  @@index([projectId, consultantId, status])
   @@map("project_placements")
 }
 
@@ -445,28 +483,29 @@ model ConsultantExperience {
 
   @@map("consultant_experience")
 }
+
 model ConsultancyScoringConfig {
-  id          String            @id @default(uuid())
-  factorName  ScoringFactorName @unique
-  weight      Float
-  active      Boolean @default(true)
-  hardExclusionEnabled   Boolean           @default(false)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String            @id @default(uuid())
+  factorName           ScoringFactorName @unique
+  weight               Float
+  active               Boolean           @default(true)
+  hardExclusionEnabled Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   @@map("consultancy_scoring_configs")
 }
 
 model ProjectScoringOverride {
-  id             String            @id @default(uuid())
-  projectId      String
-  factorName     ScoringFactorName
-  overrideWeight Float
-  active         Boolean           @default(true)
-  hardExclusionEnabled   Boolean           @default(false)
-  createdAt      DateTime          @default(now())
+  id                   String            @id @default(uuid())
+  projectId            String
+  factorName           ScoringFactorName
+  overrideWeight       Float
+  active               Boolean           @default(true)
+  hardExclusionEnabled Boolean           @default(false)
+  createdAt            DateTime          @default(now())
 
-  project        Project           @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
   @@unique([projectId, factorName])
   @@map("project_scoring_overrides")
@@ -482,7 +521,6 @@ model ScoringConfigAudit {
 
   @@map("scoring_config_audit")
 }
-
 
 model Notification {
   id         String   @id @default(uuid())
@@ -500,20 +538,25 @@ model Notification {
 }
 
 model MatchRun {
-  id                     String           @id @default(uuid())
-  projectId              String
-  project                Project          @relation(fields: [projectId], references: [id])
-  executedByUserId       String         
-  executedByUser         User             @relation(fields: [executedByUserId], references: [id])
-  status                 MatchRunStatus  
-  totalConsultantsScored Int              @default(0)
+  id                       String           @id @default(uuid())
+  projectId                String
+  project                  Project          @relation(fields: [projectId], references: [id])
+  executedByUserId         String
+  executedByUser           User             @relation(fields: [executedByUserId], references: [id])
+  status                   MatchRunStatus
+  totalConsultantsScored   Int              @default(0)
   totalConsultantsExcluded Int              @default(0)
-  totalConsultantsPlaced Int      @default(0)
-  results                MatchRunResult[]
-  configurationSnapshot  Json
+  totalConsultantsPlaced   Int              @default(0)
+  progress                 Int              @default(0)
+  errorMessage             String?
+  results                  MatchRunResult[]
+  configurationSnapshot    Json
 
-  createdAt              DateTime         @default(now())
-  updatedAt              DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId, createdAt])
+  @@index([projectId, status])
 }
 
 model MatchRunResult {
@@ -524,7 +567,25 @@ model MatchRunResult {
   totalScore   Float
   rank         Int
   factorScores Json
-  isPlaced Boolean @default(false)
+  isPlaced     Boolean    @default(false)
   consultant   Consultant @relation(fields: [consultantId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now())
+
+  @@unique([matchRunId, consultantId])
+  @@index([matchRunId, rank])
+  @@index([consultantId])
+}
+
+model AuditLog {
+  id           String      @id @default(uuid())
+  action       AuditAction
+  actingUserId String
+  actingUser   User        @relation(fields: [actingUserId], references: [id])
+  entityType   String
+  entityId     String
+  metadata     Json?
+  timestamp    DateTime    @default(now())
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }

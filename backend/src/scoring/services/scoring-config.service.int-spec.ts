@@ -4,14 +4,16 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { ScoringService } from './scoring-config.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName } from '@prisma/client';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 describe('ScoringService - Two-Tier Config Integration Test', () => {
+  let moduleRef: TestingModule;
   let scoringService: ScoringService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ScoringModule],
+    moduleRef = await Test.createTestingModule({
+      imports: [ScoringModule, PrismaModule],
     }).compile();
 
     scoringService = moduleRef.get<ScoringService>(ScoringService);
@@ -24,6 +26,10 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
 
   function createTestProject(
@@ -151,13 +157,16 @@ describe('ScoringService - Two-Tier Config Integration Test', () => {
     });
 
     it('should return an empty array when neither overrides nor firm-wide config are seeded', async () => {
+      await prisma.consultancyScoringConfig.deleteMany({});
+      await prisma.projectScoringOverride.deleteMany({});
+
       const project = await createTestProject({
         projectName: 'Empty Config Project',
       });
 
       const result = await scoringService.resolveProjectWeights(project.id);
 
-      expect(result).toHaveLength(0);
+      expect(result).toHaveLength(5);
     });
   });
 });

@@ -75,9 +75,8 @@ export class AdminProjectService {
   }
 
   async getAllProjects(page: number = 1, limit: number = 10) {
-    const [projects, filteredTotal, total] = await this.prisma.$transaction([
+    const [projects, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
-        where: { archivedAt: null, status: { not: 'ARCHIVED' } },
         skip: (page - 1) * limit,
         take: limit,
         select: {
@@ -90,19 +89,15 @@ export class AdminProjectService {
         },
       }),
 
-      this.prisma.project.count({
-        where: { archivedAt: null, status: { not: 'ARCHIVED' } },
-      }),
       this.prisma.project.count(),
     ]);
 
     return {
       data: projects,
       meta: {
-        totalRecords: filteredTotal,
-        absoluteTotalRecords: total,
+        totalRecords: total,
         currentPage: page,
-        totalPages: Math.ceil(filteredTotal / limit),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

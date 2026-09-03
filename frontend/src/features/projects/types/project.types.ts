@@ -38,4 +38,53 @@ export interface Project {
   readonly postalCode: string;
 
   readonly skills: readonly ProjectSkillData[];
+  readonly gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
+}
+
+
+export interface AssignedConsultants{
+  id: string,
+  fullName: string;
+  email: string;
+  phoneNum:string | null;
+  skills: string[];
+  placementStatus: "ACTIVE" | "COMPLETED" | "CANCELLED" | "TERMINATED";
+}
+
+export function mapToAssignedConsultant(data: ProjectConsultantDto): AssignedConsultants{
+  return{
+    id: data.consultantId,
+    fullName: data.fullName,
+    email: data.email,
+    phoneNum: data.phone,
+    skills: data.primarySkills ?? [],
+    placementStatus: data.placementStatus,
+
+  };
+}
+
+export interface ProjectConsultantDto {
+    consultantId: string;
+    placementId: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    city: string;
+    primarySkills: string[];
+    placementStatus: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'TERMINATED';
+    allocation: number;
+    startDate: Date;
+    endDate: Date | null;
+    costToCompany?: number;
+}
+
+export interface ProjectConsultantsResponseDto {
+    projectId: string;
+    totalPlacements: number;
+    consultants: ProjectConsultantDto[];
+}
+
+export interface UnassignResponse{
+  message: string;
+  placementId: string;
 }

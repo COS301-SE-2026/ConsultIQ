@@ -1,5 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck,House,Cog,Bell,HelpCircle } from "lucide-react";
+import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",
@@ -8,13 +8,18 @@ export const adminSidebarItems: SidebarItem[] = [
     },
     {
         label: "Configurations",
-        path:"/admin-scoring-config",
-        icon:Cog
+        path: "/admin-scoring-config",
+        icon: Cog
+    },
+    {
+        label: "Analytics",
+        path: "/analytics-dashboard",
+        icon: ChartPie
     },
     {
         label: "Help",
-        path:"/help-page",
-        icon:HelpCircle
+        path: "/help-page",
+        icon: HelpCircle
     }
 ]
 
@@ -26,8 +31,8 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
     },
     {
         label: "Help",
-        path:"/help-page",
-        icon:HelpCircle
+        path: "/help-page",
+        icon: HelpCircle
     }
 
 ]
@@ -40,22 +45,22 @@ export const projectManagerSidebarItems: SidebarItem[] = [
     },
     {
         label: "Configurations",
-        path:"/project-scoring-config",
-        icon:Cog
+        path: "/project-scoring-config",
+        icon: Cog
     },
     {
         label: "Placements",
-        path:"/placement-dashboard",
-        icon:Users
+        path: "/placement-dashboard",
+        icon: Users
     },
     {
         label: "Help",
-        path:"/help-page",
-        icon:HelpCircle
+        path: "/help-page",
+        icon: HelpCircle
     }
 
 
-] 
+]
 
 export const consultantSidebarItems: SidebarItem[] = [
     {
@@ -65,17 +70,17 @@ export const consultantSidebarItems: SidebarItem[] = [
     },
     {
         label: "Notifications",
-        path:"/notifications",
-        icon:Bell
+        path: "/notifications",
+        icon: Bell
     },
-    // {
-    //     label: " My Projects",
-    //     path: "/consultant-projects",
-    //     icon: Briefcase
-    // },
-     {
+    {
+        label: " My Projects",
+        path: "/consultant-projects",
+        icon: Briefcase
+    },
+    {
         label: "Help",
-        path:"/help-page",
-        icon:HelpCircle
+        path: "/help-page",
+        icon: HelpCircle
     }
 ];

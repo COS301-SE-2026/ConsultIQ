@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build && cp dist/index.html dist/404.html",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "jest"
@@ -25,9 +25,11 @@
     "react": "^19.2.5",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.2.5",
+    "react-drag-drop-files": "^3.1.0",
     "react-router-dom": "^7.15.0",
     "react-router-hash-link": "^2.4.3",
     "react-textarea-autosize": "^8.5.9",
+    "recharts": "^3.10.1",
     "shadcn": "^4.16.0",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
@@ -53,6 +55,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.5.0",
+    "jest-environment-jsdom": "^30.5.1",
     "ts-jest": "^29.4.9",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.58.2",

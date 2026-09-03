@@ -4,6 +4,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -18,15 +20,34 @@ import {
   CompetencyLevel,
   ConsultantAvailability,
   JobType,
+  Role,
   WorkModel,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import {
+  ProjectConsultantDto,
+  ProjectConsultantsResponseDto,
+} from '../dto/consultant-placement.dto';
+
 @Injectable()
 export class ConsultantService {
+  private readonly CACHE_KEY = 'cache:consultants_list';
+  private readonly logger = new Logger(ConsultantService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly redisUtilityService: RedisUtilityService,
   ) {}
+  async invalidateConsultantCache() {
+    await this.redisUtilityService.invalidateCacheByPattern(
+      'cache:consultants:*',
+    );
+  }
 
   async createConsultantProfile(
     cmUserId: string,
@@ -61,7 +82,6 @@ export class ConsultantService {
         'A profile already exists for this consultant.',
       );
     }
-
     return await this.prisma
       .$transaction(async (tx) => {
         // Create consultant profile
@@ -79,7 +99,18 @@ export class ConsultantService {
             nationality: dto.nationality,
             costToCompany: dto.costToCompany,
             availability: dto.availability as ConsultantAvailability,
+
+            latitude: dto.latitude ?? null,
+            longitude: dto.longitude ?? null,
+            placeId: dto.placeId ?? null,
+            formattedAddress: dto.formattedAddress ?? null,
           },
+        });
+
+        // Link any CV uploaded for this user
+        await tx.cvFile.updateMany({
+          where: { userId: dto.consultantUserId, consultantId: null },
+          data: { consultantId: consultant.id },
         });
 
         // Link the CM to this consultant
@@ -109,40 +140,24 @@ export class ConsultantService {
           });
         }
 
-        // Create experiences
-        for (const exp of dto.experiences) {
-          await tx.consultantExperience.create({
-            data: {
-              consultantId: consultant.id,
-              jobTitle: exp.jobTitle,
-              companyName: exp.companyName,
-              jobType: exp.jobType as JobType,
-              workModel: exp.workModel as WorkModel,
-              startDate: new Date(exp.startDate),
-              endDate: exp.endDate ? new Date(exp.endDate) : null,
-              description: exp.description,
-            },
-          });
-        }
-
-        // Create certifications
-        if (dto.certifications) {
-          for (const cert of dto.certifications) {
-            await tx.certificate.create({
-              data: {
-                consultantId: consultant.id,
-                title: cert.title,
-                issuingBody: cert.issuingBody,
-                startDate: cert.startDate ? new Date(cert.startDate) : null,
-                endDate: cert.endDate ? new Date(cert.endDate) : null,
-              },
-            });
-          }
-        }
+        await this.createExperienceRecords(tx, consultant.id, dto.experiences);
+        await this.createCertificateRecords(
+          tx,
+          consultant.id,
+          dto.certifications ?? [],
+        );
+        await this.createEducationRecords(
+          tx,
+          consultant.id,
+          dto.education ?? [],
+        );
 
         return { consultantId: consultant.id };
       })
       .then(async (result) => {
+        // Invalidate all paginated consultant list caches
+        await this.invalidateConsultantCache();
+
         //send notification to consultant
         await this.notificationService.createAndSendNotification(
           dto.consultantUserId,
@@ -156,6 +171,64 @@ export class ConsultantService {
           consultantId: result.consultantId,
         };
       });
+  }
+
+  private async createExperienceRecords(
+    tx: any,
+    consultantId: string,
+    experiences: any[],
+  ): Promise<void> {
+    // Create experiences
+    for (const exp of experiences) {
+      await tx.consultantExperience.create({
+        data: {
+          consultantId,
+          jobTitle: exp.jobTitle,
+          companyName: exp.companyName,
+          jobType: exp.jobType as JobType,
+          workModel: exp.workModel as WorkModel,
+          startDate: new Date(exp.startDate),
+          endDate: exp.endDate ? new Date(exp.endDate) : null,
+          description: exp.description,
+        },
+      });
+    }
+  }
+
+  private async createCertificateRecords(
+    tx: any,
+    consultantId: string,
+    certifications: any[],
+  ): Promise<void> {
+    for (const cert of certifications) {
+      await tx.certificate.create({
+        data: {
+          consultantId,
+          title: cert.title,
+          issuingBody: cert.issuingBody,
+          startDate: cert.startDate ? new Date(cert.startDate) : null,
+          endDate: cert.endDate ? new Date(cert.endDate) : null,
+        },
+      });
+    }
+  }
+
+  private async createEducationRecords(
+    tx: any,
+    consultantId: string,
+    education: any[],
+  ): Promise<void> {
+    for (const edu of education) {
+      await tx.consultantEducation.create({
+        data: {
+          consultantId,
+          institution: edu.institution,
+          qualification: edu.qualification,
+          startDate: new Date(edu.startDate),
+          endDate: edu.endDate ? new Date(edu.endDate) : null,
+        },
+      });
+    }
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -188,6 +261,15 @@ export class ConsultantService {
     limit: number,
     userRole: string,
   ): Promise<PaginatedConsultantsResponseDto> {
+    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
+    const cachedData =
+      await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
+    if (cachedData) {
+      this.logger.log(`CACHE HIT for key: ${cacheKey}`);
+      return cachedData;
+    }
+    this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
+
     const skip = (page - 1) * limit;
     const [consultants, total] = await Promise.all([
       this.prisma.consultant.findMany({
@@ -226,7 +308,7 @@ export class ConsultantService {
         addressLine1: c.addressLine1,
         addressLine2: c.addressLine2,
         suburb: c.suburb,
-        city: c.province,
+        city: c.city,
         province: c.province,
         postalCode: c.postalCode,
         availabilityStatus: c.availability,
@@ -243,8 +325,11 @@ export class ConsultantService {
 
       return dto;
     });
+    const response = { page, limit, total, consultants: mappedConsultants };
+    // TTL: 5 min
+    await this.cacheManager.set(cacheKey, response, 300000);
 
-    return { page, total, consultants: mappedConsultants };
+    return response;
   }
 
   async getConsultantById(id: string): Promise<ConsultantProfileDto> {
@@ -274,14 +359,113 @@ export class ConsultantService {
 
     return this.mapToProfileDto(consultant);
   }
+  async getConsultantsByProject(
+    projectId: string,
+    userRole: string,
+  ): Promise<ProjectConsultantsResponseDto> {
+    const now = new Date();
 
+    const placements = await this.prisma.projectPlacement.findMany({
+      where: {
+        projectId: projectId,
+        status: 'ACTIVE',
+
+        startDate: {
+          lte: now,
+        },
+
+        OR: [{ endDate: null }, { endDate: { gte: now } }],
+
+        consultant: {
+          user: {
+            status: 'ACTIVE',
+          },
+        },
+      },
+      include: {
+        consultant: {
+          include: {
+            user: { select: { fullName: true, email: true } },
+            skills: { include: { skill: { select: { name: true } } } },
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    const mappedConsultants: ProjectConsultantDto[] = placements.map(
+      (placement) => {
+        const c = placement.consultant;
+
+        const dto: ProjectConsultantDto = {
+          consultantId: c.id,
+          placementId: placement.id,
+          fullName: c.user.fullName,
+          email: c.user.email,
+          phone: c.phone,
+          city: c.city,
+          primarySkills: c.skills.map((cs) => cs.skill.name),
+
+          placementStatus: placement.status,
+          allocation: placement.allocation,
+          startDate: placement.startDate,
+          endDate: placement.endDate,
+        };
+
+        if (userRole !== 'PROJECT_MANAGER') {
+          dto.costToCompany = c.costToCompany;
+        }
+
+        return dto;
+      },
+    );
+
+    const response: ProjectConsultantsResponseDto = {
+      projectId,
+      totalPlacements: mappedConsultants.length,
+      consultants: mappedConsultants,
+    };
+
+    return response;
+  }
+
+  private async resolveEditableConsultantId(
+    consultantId: string,
+    userRole: string,
+    requestingUserId: string,
+  ): Promise<string> {
+    if (userRole == Role.CONSULTANT) {
+      const consultantProfile = await this.prisma.consultant.findUnique({
+        where: { userId: requestingUserId },
+        select: { id: true },
+      });
+      if (!consultantProfile) {
+        throw new NotFoundException(
+          `No consultant profile for the current user.`,
+        );
+      }
+
+      return consultantProfile.id;
+    }
+
+    return consultantId;
+  }
   async updateConsultantProfile(
     consultantId: string,
     dto: UpdateConsultantDto,
+    userRole: string,
+    requestingUserId: string,
   ): Promise<{ message: string }> {
+    const resolvedConsultantId = await this.resolveEditableConsultantId(
+      consultantId,
+      userRole,
+      requestingUserId,
+    );
     //Verify consultant exists
     const existing = await this.prisma.consultant.findUnique({
-      where: { id: consultantId },
+      where: { id: resolvedConsultantId },
     });
 
     if (!existing) {
@@ -291,11 +475,29 @@ export class ConsultantService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      const consultant = await tx.consultant.findUnique({
+        where: { id: resolvedConsultantId },
+      });
+
+      if (!consultant) {
+        throw new NotFoundException(
+          `Consultant with id ${resolvedConsultantId} not found.`,
+        );
+      }
+
+      if (dto.fullname !== undefined) {
+        await tx.user.update({
+          where: { id: consultant.userId },
+          data: {
+            fullName: dto.fullname,
+            email: dto.email,
+          },
+        });
+      }
+
       await tx.consultant.update({
-        where: { id: consultantId },
+        where: { id: resolvedConsultantId },
         data: {
-          ...(dto.fullname !== undefined && {fullname: dto.phone}),
-          ...(dto.email !== undefined && {email: dto.email}),
           ...(dto.phone !== undefined && { phone: dto.phone }),
           ...(dto.idNumber !== undefined && { idNumber: dto.idNumber }),
           ...(dto.nationality !== undefined && {
@@ -317,12 +519,21 @@ export class ConsultantService {
           ...(dto.availability !== undefined && {
             availability: dto.availability as ConsultantAvailability,
           }),
+          ...((dto.latitude !== undefined ||
+            dto.longitude !== undefined ||
+            dto.placeId !== undefined ||
+            dto.formattedAddress !== undefined) && {
+            latitude: dto.latitude ?? null,
+            longitude: dto.longitude ?? null,
+            placeId: dto.placeId ?? null,
+            formattedAddress: dto.formattedAddress ?? null,
+          }),
         },
       });
 
       if (dto.skills !== undefined) {
         await tx.consultantSkill.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const skill of dto.skills) {
@@ -341,7 +552,7 @@ export class ConsultantService {
 
           await tx.consultantSkill.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               skillId: skillRecord.id,
               competencyLevel,
               yearsExperience: skill.yearsExperience,
@@ -353,17 +564,21 @@ export class ConsultantService {
 
       if (dto.experiences !== undefined) {
         await tx.consultantExperience.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const exp of dto.experiences) {
           await tx.consultantExperience.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               jobTitle: exp.jobTitle,
               companyName: exp.companyName,
-              jobType: exp.jobType as JobType,
-              workModel: exp.workModel as WorkModel,
+              jobType: exp.jobType
+                .toUpperCase()
+                .replace(/[\s-]/g, '_') as JobType,
+              workModel: exp.workModel
+                .toUpperCase()
+                .replaceAll('-', '') as WorkModel,
               startDate: new Date(exp.startDate),
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,
@@ -374,13 +589,13 @@ export class ConsultantService {
 
       if (dto.certifications !== undefined) {
         await tx.certificate.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const cert of dto.certifications) {
           await tx.certificate.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               title: cert.title,
               issuingBody: cert.issuingBody,
               startDate: cert.startDate ? new Date(cert.startDate) : null,
@@ -391,13 +606,13 @@ export class ConsultantService {
 
       if (dto.education !== undefined) {
         await tx.consultantEducation.deleteMany({
-          where: { consultantId },
+          where: { consultantId: resolvedConsultantId },
         });
 
         for (const edu of dto.education) {
           await tx.consultantEducation.create({
             data: {
-              consultantId,
+              consultantId: resolvedConsultantId,
               institution: edu.institution,
               qualification: edu.qualification,
               startDate: new Date(edu.startDate),
@@ -409,7 +624,69 @@ export class ConsultantService {
       }
     });
 
+    await this.invalidateConsultantCache();
+
     return { message: 'Consultant profile updated successfully.' };
+  }
+
+  async unassignConsultant(
+    projectId: string,
+    consultantId: string,
+  ): Promise<{ message: string; placementId: string }> {
+    const placement = await this.prisma.projectPlacement.findFirst({
+      where: {
+        projectId,
+        consultantId,
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!placement) {
+      throw new NotFoundException(
+        'Active placement not found for this consultant on the specified project.',
+      );
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.projectPlacement.update({
+        where: { id: placement.id },
+        data: {
+          status: 'TERMINATED',
+          endDate: new Date(),
+        },
+      });
+
+      const updatedConsultant = await tx.consultant.update({
+        where: { id: consultantId },
+        data: {
+          capacity: {
+            increment: placement.allocation,
+          },
+        },
+      });
+
+      if (updatedConsultant.capacity > 100) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { capacity: 100 },
+        });
+      }
+
+      const newAvailabilityStatus =
+        updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
+
+      if (updatedConsultant.availability !== newAvailabilityStatus) {
+        await tx.consultant.update({
+          where: { id: consultantId },
+          data: { availability: newAvailabilityStatus as any },
+        });
+      }
+    });
+
+    return {
+      message: 'Consultant successfully unassigned and capacity restored.',
+      placementId: placement.id,
+    };
   }
 
   // --- PRIVATE HELPER METHODS FOR DRY CODE ---
@@ -472,10 +749,17 @@ export class ConsultantService {
       addressLine2: consultant.addressLine2,
       suburb: consultant.suburb,
       city: consultant.city,
+      latitude: consultant.latitude ?? null,
+      longitude: consultant.longitude ?? null,
+      placeId: consultant.placeId ?? null,
+      formattedAddress: consultant.formattedAddress ?? null,
       province: consultant.province,
       postalCode: consultant.postalCode,
       costToCompany: consultant.costToCompany,
       availability: consultant.availability,
+      pictureUrl: consultant.pictureData
+        ? `data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
+        : null,
       skills: consultant.skills.map((cs: any) => ({
         id: cs.id,
         skillName: cs.skill.name,
@@ -652,5 +936,66 @@ export class ConsultantService {
           })),
       },
     };
+  }
+
+  //-----------------Consultant Profile Picture-------------------
+  private readonly ALLOW_IMAGE_MIME_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+  ];
+  private readonly MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+  async uploadProfilePicture(
+    consultantId: string,
+    userId: string,
+    userRole: string,
+    file: Express.Multer.File,
+  ): Promise<{ pictureUrl: string; message: string }> {
+    if (!this.ALLOW_IMAGE_MIME_TYPES.includes(file.mimetype)) {
+      throw new BadRequestException('Only JPEG, PNG, and WEBP are allowed.');
+    }
+
+    if (file.size > this.MAX_IMAGE_SIZE_BYTES) {
+      throw new BadRequestException('Image size must not exceed 5MB.');
+    }
+
+    const consultant = await this.prisma.consultant.findUnique({
+      where: { id: consultantId },
+    });
+
+    if (!consultant) {
+      throw new NotFoundException(
+        `Consultant with id ${consultantId} not found.`,
+      );
+    }
+
+    const isSelf = consultant.userId === userId;
+    let isManagingCM = false;
+
+    if (!isSelf && userRole === 'CONSULTANT_MANAGER') {
+      const managerLink = await this.prisma.consultantManager.findUnique({
+        where: { userId_consultantId: { userId, consultantId } },
+      });
+      isManagingCM = !!managerLink;
+    }
+
+    if (!isSelf && !isManagingCM) {
+      throw new ForbiddenException(
+        'You can only update your own profile picture, or a profile picture for a consultant you manage.',
+      );
+    }
+
+    await this.prisma.consultant.update({
+      where: { id: consultantId },
+      data: {
+        pictureData: Uint8Array.from(file.buffer),
+        pictureMimeType: file.mimetype,
+      },
+    });
+
+    const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+
+    return { pictureUrl, message: 'Profile picture uploaded successfully.' };
   }
 }

@@ -1,0 +1,228 @@
+name: Performance Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_mode:
+        description: 'Target mode'
+        required: true
+        default: 'emulated_ephemeral'
+        type: choice
+        options:
+          - emulated_ephemeral
+      backend_image_tag:
+        description: 'Backend image tag (defaults to commit SHA if empty)'
+        required: false
+        type: string
+      test_profile:
+        description: 'k6 test profile to run'
+        required: false
+        default: match_run_isolated
+        type: choice
+        options:
+          - match_run_isolated
+          - match_run_burst
+          - pool_stress
+          - full
+          - cache_warmcold
+          - all
+
+env:
+  REGISTRY: ghcr.io                     
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend 
+
+jobs:
+  performance-test-emulated:
+    name: Run k6 
+    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read     
+      packages: read     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
+          PGUSER: ${{ secrets.TESTING_DB_USER }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
+
+      - name: Set up Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b 
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx --no-install prisma generate
+
+      - name: Determine image tag
+        id: image_tag
+        run: |
+          TAG="${{ github.event.inputs.backend_image_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.sha }}"
+            echo "No backend_image_tag given - defaulting to this commit's SHA ($TAG)."
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull backend image 
+        id: pull_image
+        run: |
+          IMAGE="${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
+          echo "Attempting to pull $IMAGE ..."
+          
+          # If docker pull fails, we set a flag to run natively instead
+          if docker pull "$IMAGE"; then
+            echo "Successfully pulled Docker image."
+            echo "USE_DOCKER=true" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Image not found for this commit. Falling back to native build from source (Integration Test style)."
+            echo "USE_DOCKER=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build backend from source 
+        if: env.USE_DOCKER == 'false'
+        working-directory: backend
+        run: npm run build
+
+      - name: Start backend from source
+        if: env.USE_DOCKER == 'false'
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+          REDIS_URL: redis://localhost:6379
+          PORT: 3000
+          AWS_REGION: ${{ secrets.AWS_REGION || 'af-south-1' }}
+          AWS_S3_BUCKET: ${{ secrets.TEST_AWS_S3_BUCKET || 'consultiq-test-bucket' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}
+          ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
+          RESEND_API_KEY: ${{ secrets.TEST_RESEND_API_KEY || 're_test_dummy_key' }}
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret' }}
+        run: |
+          node dist/main.js &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Run backend container (Docker)
+        if: env.USE_DOCKER == 'true'
+        env:
+          TEST_DB_URL: ${{ secrets.TESTING_DB_URL }}
+        run: |
+          docker run -d --name backend --network host \
+            -e DATABASE_URL="$TEST_DB_URL" \
+            -e REDIS_URL="redis://localhost:6379" \
+            -e PORT=3000 \
+            -e AWS_REGION="${{ secrets.AWS_REGION || 'af-south-1' }}" \
+            -e AWS_S3_BUCKET="${{ secrets.TEST_AWS_S3_BUCKET || 'consultiq-test-bucket' }}" \
+            -e AWS_ACCESS_KEY_ID="${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}" \
+            -e ANTHROPIC_API_KEY="${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}" \
+            "${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
+
+      - name: Push Prisma schema to ephemeral DB
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+        run: npx --no-install prisma db push --accept-data-loss
+
+      - name: Install wait-on explicitly
+        run: npm install -g wait-on@7.2.0 --ignore-scripts
+
+      - name: Wait for backend to become healthy
+        run: wait-on http://localhost:3000/health -t 30000
+
+      - name: Seed ephemeral DB 
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+        run: npx --no-install ts-node prisma/seed-test.ts 
+
+      - name: Verify seeded test-users.json exists
+        run: |
+          if [ ! -f tests/load/test-users.json ]; then
+            echo "::error::tests/load/test-users.json was not produced by seed-test.ts. Check the seed script's output path."
+            exit 1
+          fi
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065 
+
+      - name: Run selected profile(s)
+        working-directory: tests/load
+        env:
+          TARGET_URL: 'http://localhost:3000'
+          TEST_PROFILE: ${{ github.event.inputs.test_profile || 'match_run_isolated' }}
+        run: |
+          set -e
+          mkdir -p ../../perf-results
+
+          run_profile() {
+            local profile="$1"
+            echo "::group::Phase: $profile"
+            if [ "$profile" = "cache_warmcold" ]; then
+              redis-cli -h localhost -p 6379 FLUSHALL || echo "::warning::redis-cli not available on runner - skipping FLUSHALL, cold read may not be genuinely cold."
+              k6 run k6-cache-warmcold.js | tee "../../perf-results/$profile.log"
+            else
+              TEST_PROFILE="$profile" k6 run k6-test.js | tee "../../perf-results/$profile.log"
+            fi
+            echo "::endgroup::"
+          }
+
+          if [ "$TEST_PROFILE" = "all" ]; then
+            for profile in match_run_isolated match_run_burst pool_stress full cache_warmcold; do
+              run_profile "$profile"
+            done
+          else
+            run_profile "$TEST_PROFILE"
+          fi
+
+      - name: Upload k6 results
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 
+        with:
+          name: k6-performance-results-emulated-${{ github.run_id }}
+          path: perf-results/
+          retention-days: 30
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ "${{ env.USE_DOCKER }}" = "true" ]; then
+            docker stop backend && docker rm backend || true
+          elif [ -n "${{ env.BACKEND_PID }}" ]; then
+            kill ${{ env.BACKEND_PID }} || true
+          fi

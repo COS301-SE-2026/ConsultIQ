@@ -89,3 +89,16 @@ export async function uploadConsultantCv(
 
   return response.json();
 }
+
+export async function uploadConsultantPicture(
+  consultantId: string,
+  file: File,
+): Promise<{ pictureUrl: string; message: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiClient.post<{ pictureUrl: string; message: string }>(
+    `/consultants/${consultantId}/picture`,
+    formData,
+  );
+}

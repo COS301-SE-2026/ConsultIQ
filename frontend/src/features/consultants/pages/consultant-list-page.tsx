@@ -151,7 +151,6 @@ function ConsultantsPage() {
                 <span className={activeSection === "pending" ? "opacity-90" : "opacity-60"}>({pendingProfiles.length})</span>
               </button>
             </div>
-            <div className="h-6" />
 
 
             {/* Availability summary — active section only */}
@@ -167,7 +166,6 @@ function ConsultantsPage() {
                 </span>
               </div>
             )}
-            <div className="h-6" />
             
 
             {/* Search bar */}
@@ -235,10 +233,10 @@ function ConsultantsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate(`/create-profile/${user.userId}`)}
+                      onClick={() => navigate(`/create-profile-entry/${user.userId}`)}
                       className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
                       style={{
-                        backgroundColor: "var(--color-accent)",
+                        backgroundColor: "var(--color-primary)",
                         color: "white",
                         fontSize: "15px",
                         padding: "10px 20px",

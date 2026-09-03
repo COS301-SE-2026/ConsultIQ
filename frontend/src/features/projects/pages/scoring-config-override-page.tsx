@@ -5,6 +5,8 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { scoringApiService } from "../../scoring/services/scoring.service";
 import { placementService } from "../../scoring/services/placement.service";
+import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
+
 
 export default function ProjectScoringOverridePage() {
     const { projectId } = useParams<{ projectId: string }>();
@@ -16,6 +18,8 @@ export default function ProjectScoringOverridePage() {
     const [errMessage, setErrMessage] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isMatching, setIsMatching] = useState(false);
+    const [project, setProject] = useState<ProjectPlacementContext | null>(null);
+
 
     useEffect(() => {
         const loadConfigurations = async () => {
@@ -46,6 +50,21 @@ export default function ProjectScoringOverridePage() {
         };
         void loadConfigurations();
     }, [projectId]);
+
+        useEffect(() =>{
+            const loadProject = async() =>{
+                if(!projectId) return;
+    
+                try{
+                    const projectData= await getProjectById(projectId);
+                    setProject(projectData);
+                }catch(error){
+                    console.error("Failed to load project details", error);
+                }
+            };
+    
+            void loadProject();
+        }, [projectId]);
 
 
     const handleOverrideSave = async (updatedFactors: ScoringFactor[]) => {
@@ -91,10 +110,9 @@ export default function ProjectScoringOverridePage() {
             const response = await placementService.executeMatchRun(projectId);
 
             const runId = response.runId;
-            const rawMatchData = response.results;
 
             navigate(`/placement-dashboard/${projectId}/${runId}`, {
-                state: { rawMatchData }
+                state: { matchRunStatus: response.status }
             });
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : String(err);
@@ -117,11 +135,10 @@ export default function ProjectScoringOverridePage() {
                     <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                         Project Override Scoring
                     </h1>
-                    {/* <p className="text-lg font-medium text-slate-500 mt-1">Project Name</p></span> */}
+                         <span><p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p></span>
 
 
                 </header>
-                <div className="h-6" />
                 <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
                     {errMessage && (
                         <div className="w-full items-center max-w-5xl mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-semibold">

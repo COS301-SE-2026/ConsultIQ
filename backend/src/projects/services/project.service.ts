@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateProjectDto } from '../dto/create-project.dto';
@@ -15,10 +17,24 @@ import {
   ProjectListItemDto,
 } from '../dto/project-list.dto';
 import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
 @Injectable()
 export class ProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly CACHE_KEY = 'cache:projects_list';
+  private readonly logger = new Logger(ProjectService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    private readonly redisUtilityService: RedisUtilityService,
+  ) {}
+
+  async invalidateProjectsCache() {
+    await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
+  }
 
   async createProject(dto: CreateProjectDto, userId: string, userRole: string) {
     if (userRole !== 'PROJECT_MANAGER' && userRole !== 'ADMIN') {
@@ -36,6 +52,8 @@ export class ProjectService {
     }
 
     const result = await this.persistProject(dto, userId);
+    // Invalidate all paginated project list caches
+    await this.invalidateProjectsCache();
 
     return {
       message: 'Project created successfully',
@@ -51,6 +69,17 @@ export class ProjectService {
   ): Promise<PaginatedProjectsResponseDto> {
     let projects: any[];
     let total: number;
+
+    const cacheKey = `cache:projects:role:${userRole}:user:${userId || 'all'}:page:${page}:limit:${limit}`;
+    const cachedData =
+      await this.cacheManager.get<PaginatedProjectsResponseDto>(cacheKey);
+
+    if (cachedData) {
+      this.logger.log(`CACHE HIT for key: ${cacheKey}`);
+      return cachedData;
+    }
+
+    this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     switch (userRole) {
       case 'ADMIN':
@@ -100,9 +129,13 @@ export class ProjectService {
       clientBillingBudget: Number(p.clientBillingBudget),
       status: p.status,
       skillCount: p.skillCount,
+      gapSeverity: p.gapSeverity,
     }));
+    const responseData = { page, limit, total, projects: mappedProjects };
 
-    return { page, limit, total, projects: mappedProjects };
+    await this.cacheManager.set(cacheKey, responseData, 300000);
+
+    return responseData;
   }
 
   async getProjectById(projectId: string) {
@@ -140,6 +173,7 @@ export class ProjectService {
         throw new BadRequestException('End date must be after start date.');
       }
     }
+    await this.invalidateProjectsCache();
     return this.persistProjectUpdate(projectId, dto);
   }
 
@@ -167,6 +201,10 @@ export class ProjectService {
           addressLine1: dto.addressLine1,
           addressLine2: dto.addressLine2,
           suburb: dto.suburb,
+          latitude: dto.latitude ?? null,
+          longitude: dto.longitude ?? null,
+          placeId: dto.placeId ?? null,
+          formattedAddress: dto.formattedAddress ?? null,
           description: dto.description,
           postalCode: dto.postalCode ?? '',
           city: dto.city,
@@ -306,6 +344,7 @@ export class ProjectService {
             p.allocation AS "requiredAllocationPercentage",
             p.budget AS "clientBillingBudget",
             p.status,
+            p."skillGapSeverity" AS "gapSeverity",
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
           ${joins}
@@ -363,64 +402,27 @@ export class ProjectService {
   private buildProjectUpdateData(
     coreFields: Omit<UpdateProjectDto, 'skills' | 'removeSkillIds'>,
   ): Prisma.ProjectUpdateInput {
-    const updateData: Prisma.ProjectUpdateInput = {};
-    if (coreFields.projectName !== undefined) {
-      updateData.projectName = coreFields.projectName;
+    const updateData = Object.entries(coreFields).reduce(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {} as Prisma.ProjectUpdateInput & {
+        latitude?: number | null;
+        longitude?: number | null;
+        placeId?: string | null;
+        formattedAddress?: string | null;
+      },
+    );
+
+    if (updateData.startDate !== undefined) {
+      updateData.startDate = new Date(updateData.startDate as string | Date);
     }
 
-    if (coreFields.clientName !== undefined) {
-      updateData.clientName = coreFields.clientName;
-    }
-
-    if (coreFields.description !== undefined) {
-      updateData.description = coreFields.description;
-    }
-
-    if (coreFields.addressLine1 !== undefined) {
-      updateData.addressLine1 = coreFields.addressLine1;
-    }
-
-    if (coreFields.addressLine2 !== undefined) {
-      updateData.addressLine2 = coreFields.addressLine2;
-    }
-
-    if (coreFields.suburb !== undefined) {
-      updateData.suburb = coreFields.suburb;
-    }
-
-    if (coreFields.city !== undefined) {
-      updateData.city = coreFields.city;
-    }
-
-    if (coreFields.province !== undefined) {
-      updateData.province = coreFields.province;
-    }
-    if (coreFields.postalCode !== undefined) {
-      updateData.postalCode = coreFields.postalCode;
-    }
-
-    if (coreFields.startDate !== undefined) {
-      updateData.startDate = new Date(coreFields.startDate);
-    }
-
-    if (coreFields.endDate !== undefined) {
-      updateData.endDate = new Date(coreFields.endDate);
-    }
-
-    if (coreFields.teamSize !== undefined) {
-      updateData.teamSize = coreFields.teamSize;
-    }
-
-    if (coreFields.allocation !== undefined) {
-      updateData.allocation = coreFields.allocation;
-    }
-
-    if (coreFields.budget !== undefined) {
-      updateData.budget = coreFields.budget;
-    }
-
-    if (coreFields.status !== undefined) {
-      updateData.status = coreFields.status;
+    if (updateData.endDate !== undefined) {
+      updateData.endDate = new Date(updateData.endDate as string | Date);
     }
 
     return updateData;
@@ -455,9 +457,8 @@ export class ProjectService {
         where: {
           projectId: projectId,
           skillId: skillRecord.id,
-        }
+        },
       });
-
 
       if (existingProjectSkill) {
         await tx.projectSkill.update({

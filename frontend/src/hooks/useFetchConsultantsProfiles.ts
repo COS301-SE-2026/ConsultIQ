@@ -52,6 +52,7 @@ export interface ConsultantProfileDto {
   city: string;
   province: string;
   postalCode?: string;
+  pictureUrl?: string | null;
   experience?: ExperienceDto[];
   education?: EducationDto[];
   skills?: SkillDto[];
@@ -71,14 +72,13 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     idNumber: data.idNumber || "",
     nationality: data.nationality || "",
 
-    
-   
     addressLine1: data.addressLine1,
     addressLine2: data.addressLine2 || "",
     suburb: data.suburb || "",
     city:  data.city,
     province: data.province,
     postalCode: data.postalCode || "",
+    pictureUrl: data.pictureUrl ?? null,
 
     experience: (data.experience || []).map((exp, index: number) => ({
       id: exp.id || `exp-${index}`,
@@ -106,16 +106,16 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       confidenceLevel: s.confidenceLevel || 1,
     })),
 
-    education: (data.certificates || []).map((cert, index: number) => ({
-      id: cert.id || `edu-${index}`,
-      institution: cert.issuingBody,
-      qualification: cert.title,
-      startDate: cert.startDate 
-        ? new Date(cert.startDate).toISOString().split("T")[0]
-        : new Date(cert.uploadedAt).toISOString().split("T")[0],
-      endDate: cert.endDate 
-        ? new Date(cert.endDate).toISOString().split("T")[0]
-        : new Date(cert.uploadedAt).toISOString().split("T")[0],
+    education: (data.education || []).map((edu, index: number) => ({
+      id: edu.id || `edu-${index}`,
+      institution: edu.institution || "",
+      qualification: edu.qualification || "",
+      startDate: edu.startDate 
+        ? new Date(edu.startDate).toISOString().split("T")[0]
+        : '',
+      endDate: edu.endDate 
+        ? new Date(edu.endDate).toISOString().split("T")[0]
+        : '',
     })),
   };
 };

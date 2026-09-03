@@ -1,14 +1,14 @@
 import {
-    IsString,
-    IsNumber,
-    IsArray,
-    IsNotEmpty,
-    IsOptional,
-    IsEnum,
-    Min,
-    Max,
-    IsDateString,
-    Matches
+  IsString,
+  IsNumber,
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  Min,
+  Max,
+  IsDateString,
+  Matches,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
@@ -102,83 +102,101 @@ export class UpdateConsultantEducationDto {
 }
 
 export class UpdateConsultantDto {
+  @IsOptional()
+  @IsString()
+  fullname?: string;
 
-    @IsOptional()
-    @IsString()
-    fullname?: string;
+  @IsOptional()
+  @IsString()
+  email?: string;
 
-    @IsOptional()
-    @IsString()
-    email?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
+  phone?: string;
 
-    @IsOptional()
-    @IsString()
-    @Matches(/^\d{10}$/, { message: 'Phone number must be exactly 10 digits' })
-    phone?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{13}$/, { message: 'ID number must be exactly 13 digits' })
+  @IsSAIdentityNumber()
+  idNumber?: string;
 
-    @IsOptional()
-    @IsString()
-    @Matches(/^\d{13}$/, { message: 'ID number must be exactly 13 digits' })
-    @IsSAIdentityNumber()
-    idNumber?: string;
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-zA-Z\s'-]+$/, {
+    message: 'Nationality must contain letters only',
+  })
+  nationality?: string;
 
-    @IsOptional()
-    @IsString()
-    @Matches(/^[a-zA-Z\s'-]+$/, { message: 'Nationality must contain letters only' })
-    nationality?: string;
+  @IsOptional()
+  @IsString()
+  addressLine1?: string;
 
-    @IsOptional()
-    @IsString()
-    addressLine1?: string;
+  @IsOptional()
+  @IsString()
+  addressLine2?: string;
 
-    @IsOptional()
-    @IsString()
-    addressLine2?: string;
+  @IsOptional()
+  @IsString()
+  suburb?: string;
 
-    @IsOptional()
-    @IsString()
-    suburb?: string;
+  @IsOptional()
+  @IsString()
+  city?: string;
 
-    @IsOptional()
-    @IsString()
-    city?: string;
+  @IsOptional()
+  @IsString()
+  province?: string;
 
-    @IsOptional()
-    @IsString()
-    province?: string;
+  @IsOptional()
+  @IsString()
+  postalCode?: string;
 
-    @IsOptional()
-    @IsString()
-    postalCode?: string;
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
 
-    @IsOptional()
-    @IsNumber()
-    @Min(0)
-    costToCompany?: number;
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
-    @IsOptional()
-    @IsEnum(['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'], {
-        message: 'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
-    })
-    availability?: string;
+  @IsOptional()
+  @IsString()
+  placeId?: string;
 
-    @IsOptional()
-    @IsArray()
-    @Type(() => UpdateConsultantSkillDto)
-    skills?: UpdateConsultantSkillDto[];
+  @IsOptional()
+  @IsString()
+  formattedAddress?: string;
 
-    @IsOptional()
-    @IsArray()
-    @Type(() => UpdateConsultantExperienceDto)
-    experiences?: UpdateConsultantExperienceDto[];
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  costToCompany?: number;
 
-    @IsOptional()
-    @IsArray()
-    @Type(() => UpdateConsultantCertificationDto)
-    certifications?: UpdateConsultantCertificationDto[];
+  @IsOptional()
+  @IsEnum(['AVAILABLE', 'UNAVAILABLE', 'ON_LEAVE'], {
+    message:
+      'Availability status must be one of: AVAILABLE, UNAVAILABLE, ON_LEAVE.',
+  })
+  availability?: string;
 
-    @IsOptional()
-    @IsArray()
-    @Type(() => UpdateConsultantEducationDto)
-    education?: UpdateConsultantEducationDto[];
+  @IsOptional()
+  @IsArray()
+  @Type(() => UpdateConsultantSkillDto)
+  skills?: UpdateConsultantSkillDto[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => UpdateConsultantExperienceDto)
+  experiences?: UpdateConsultantExperienceDto[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => UpdateConsultantCertificationDto)
+  certifications?: UpdateConsultantCertificationDto[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => UpdateConsultantEducationDto)
+  education?: UpdateConsultantEducationDto[];
 }

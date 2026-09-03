@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { MatchRunService } from './match-run.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { ScoringFactorName, CompetencyLevel } from '@prisma/client';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 async function createAdmin(prisma: PrismaService) {
   return prisma.user.create({
@@ -113,12 +114,13 @@ async function createProject(
   return project;
 }
 describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
+  let moduleRef: TestingModule;
   let matchRunService: MatchRunService;
   let prisma: PrismaService;
 
   beforeAll(async () => {
-    const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ScoringModule],
+    moduleRef = await Test.createTestingModule({
+      imports: [ScoringModule, PrismaModule],
     }).compile();
 
     matchRunService = moduleRef.get<MatchRunService>(MatchRunService);
@@ -131,6 +133,9 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
 
   afterAll(async () => {
     await prisma.$disconnect();
+    if (moduleRef) {
+      await moduleRef.close();
+    }
   });
 
   describe('executeMatchRun function validation', () => {

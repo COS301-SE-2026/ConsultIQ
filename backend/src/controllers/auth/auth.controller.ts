@@ -21,6 +21,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { UserAgent } from '../../common/decorators/user-agent.decorator';
 import { LoginDto } from '../../auth/dto/login.dto';
+import { ForgotPasswordDto } from '../../auth/dto/forgot-password.dto';
 // import { UseGuards } from '@nestjs/common';
 // import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { Role } from '../../auth/enums/role.enum';
@@ -34,7 +35,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -47,7 +48,7 @@ export class AuthController {
     // Consultant managers can only register CONSULTANTs
     if (
       (requestingUser?.role as string) ===
-        (Role.CONSULTANT_MANAGER as string) &&
+      (Role.CONSULTANT_MANAGER as string) &&
       (dto.role as string) !== 'CONSULTANT'
     ) {
       throw new ForbiddenException(
@@ -119,6 +120,24 @@ export class AuthController {
       message: 'Login successful.',
       result: userProfile,
     };
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    return await this.authService.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() dto: ActivateAccountDto,
+  ): Promise<{ message: string }> {
+    return await this.authService.resetPassword(dto);
   }
 
   // TASK-17: Validate refresh token and issue new JWT + refresh token
@@ -195,8 +214,8 @@ export class AuthController {
     const ROLE_DASHBOARD_MAP: Record<string, string> = {
       ADMIN: '/admin',
       PROJECT_MANAGER: '/projects',
-      CONSULTANT_MANAGER: '/consultant-profiles',
-      CONSULTANT: '/profile',
+      CONSULTANT_MANAGER: '/consultants-manager',
+      CONSULTANT: '/profile-view',
     };
 
     return {

@@ -1,7 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect, useLayoutEffect } from 'react';
 import { authService } from '../features/authentication/services/auth.service';
 import type { LoginPayload } from '../features/authentication/types/auth.types';
+import { injectAuth, setLoggingOut } from '../lib/api-client';
 
 // Remove session tokens from profile
 export type UserProfile = {
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const logout = useCallback(async () => {
+    setLoggingOut(true);
     try {
       await authService.logout();
     } catch {
@@ -32,6 +34,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
   }, []);
+
+
+  useLayoutEffect(() => {
+    injectAuth({
+      refreshToken: async () => {
+        return await authService.refresh();
+      },
+      logout: () => {
+        logout();
+      }
+    });
+  }, [logout]);
 
   // On mount and check if the user is already logged in by calling /auth/me
   // The HTTP-only cookie is sent automatically by the browser
@@ -52,15 +66,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await authService.login(payload);
+    setLoggingOut(false);
 
     if (response && response.result) {
-        const userProfile = Object.fromEntries(
-            Object.entries(response.result as Record<string, unknown>).filter(
-            ([key]) => key !== 'accessToken' && key !== 'refreshToken'
-            )
-        ) as UserProfile;
-        setUser(userProfile);
-        return (userProfile as Record<string, unknown>).dashboardRoute as string | undefined;
+      const userProfile = Object.fromEntries(
+        Object.entries(response.result as Record<string, unknown>).filter(
+          ([key]) => key !== 'accessToken' && key !== 'refreshToken'
+        )
+      ) as UserProfile;
+      setUser(userProfile);
+      return (userProfile as Record<string, unknown>).dashboardRoute as string | undefined;
 
     } else {
       throw new Error('Malformed response structure from authentication server.');

@@ -74,6 +74,7 @@ jobs:
 
     env:
       DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
       JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -113,6 +114,7 @@ jobs:
         working-directory: backend
         run: |
           echo "DATABASE_URL=$DATABASE_URL" > .env.test
+          echo "DIRECT_URL=$DIRECT_URL" >> .env.test
           echo "REDIS_URL=$REDIS_URL" >> .env.test
           echo "JWT_SECRET=$JWT_SECRET" >> .env.test
           echo "AWS_REGION=$AWS_REGION" >> .env.test

@@ -91,6 +91,7 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
           AWS_REGION: ${{ secrets.AWS_REGION || 'af-south-1' }}
           AWS_S3_BUCKET: ${{ secrets.TEST_AWS_S3_BUCKET || 'consultiq-test-bucket' }}
           AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
@@ -99,6 +100,7 @@ jobs:
        
         run: |
           echo "DATABASE_URL=$DATABASE_URL" > .env
+          echo "DIRECT_URL=$DIRECT_URL" >> .env
           echo "AWS_REGION=$AWS_REGION" >> .env
           echo "AWS_S3_BUCKET=$AWS_S3_BUCKET" >> .env
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env

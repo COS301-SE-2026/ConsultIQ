@@ -24,16 +24,15 @@ interface SkillGapProps {
 export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project", onViewModeChange }) => {
     const { projectId } = useParams();
 
-    const [projectData, setProjectData] = useState<ProjectSkillGapResponse | undefined>(propProjectData);
-    const [portfolioData, setPortfolioData] = useState<PortfolioSkillGapResponse | undefined>(propPortfolioData);
+    const [fetchedProjectData, setFetchedProjectData] = useState<ProjectSkillGapResponse>();
+    const [fetchedPortfolioData, setFetchedPortfolioData] = useState<PortfolioSkillGapResponse>();
     const [isLoading, setIsLoading] = useState(!propProjectData && !propPortfolioData);
     const [viewMode, setViewMode] = useState<ViewMode>(mode);
+    const projectData = propProjectData ?? fetchedProjectData;
+    const portfolioData = propPortfolioData ?? fetchedPortfolioData;
 
     useEffect(() => {
         if(propProjectData || propPortfolioData){
-            setProjectData(propProjectData);
-            setPortfolioData(propPortfolioData);
-            setIsLoading(false);
             return;
         }
 
@@ -44,16 +43,16 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                 if(projectId){
                     const data = await getProjectSkillGap(projectId);
                     console.log("Project skill gap data: ", data);
-                    setProjectData(data);
-                    setPortfolioData(undefined);
+                    setFetchedProjectData(data);
+                    setFetchedPortfolioData(undefined);
                 } else {
                     const data = await getPortfolioSkillGap();
-                    console.log("Portfolio skill gap data: ", data);
-                    setPortfolioData(data);
-                    setProjectData(undefined);
+                    setFetchedPortfolioData(data);
+                    setFetchedProjectData(undefined);
                 }
-              } catch (error){
-                    console.error("Failed to load skill gap data: ", error);
+              } catch{
+                    toast.error("Failed to load skill gap data");
+                    setIsLoading(false)
                 } finally {
                     setIsLoading(false);
                 }
@@ -66,8 +65,8 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
             try {
                 setIsLoading(true);
                 const data = await getPortfolioSkillGap();
-                setPortfolioData(data);
-            }catch (error){
+                setFetchedPortfolioData(data);
+            }catch{
                 toast.error("Failed to load portfolio skill gap data.");
             }finally {
                 setIsLoading(false);

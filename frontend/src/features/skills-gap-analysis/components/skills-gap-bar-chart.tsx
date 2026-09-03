@@ -100,7 +100,7 @@ export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height
                       aria-modal="true" 
                       aria-label="Expanded skill gap chart" 
                 >
-                    <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-xl" onClick={(event) => event.stopPropagation()} >
+                    <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
                         <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
                             <h2 className="text-lg font-semibold text-gray-900">
                                 SKill Gap Analysis

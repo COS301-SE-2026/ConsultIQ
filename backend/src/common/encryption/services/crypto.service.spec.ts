@@ -23,8 +23,8 @@ describe("crypto service", () => {
 
         it("produces a 12 byte IV and 16 byte auth tag",()=>{
             const {IV, tag} = encrypt("hello world", validKey);
-            expect(IV.length).toBe(12);
-            expect(tag.length).toBe(16);
+            expect(IV).toHaveLength(12);
+            expect(tag).toHaveLength(16);
         });
 
         it("produces different ciphertext fot the same plaintext with different IV values",()=>{

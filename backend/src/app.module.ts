@@ -18,6 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
 import { CvParsingModule } from './cv-parsing/cv-parsing.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SkillGapModule } from './skill-gap-analysis/skill-gap.module';
 import { BullModule } from '@nestjs/bullmq';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
@@ -70,6 +71,7 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     CvParsingModule,
     AnalyticsModule,
+    SkillGapModule
   ],
   controllers: [AppController],
   providers: [AppService],

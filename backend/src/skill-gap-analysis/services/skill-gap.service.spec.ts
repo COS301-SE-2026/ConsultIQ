@@ -29,7 +29,7 @@ describe('Skill Gap Analysis', () => {
     let prismaMock: any;
 
     beforeEach(() => {
-        service = new SkillGapService();
+        service = new SkillGapService({invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined)} as any);
         prismaMock = new PrismaClient();
         jest.clearAllMocks();
     });

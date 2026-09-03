@@ -48,79 +48,98 @@ export class SkillGapService {
     constructor(private readonly redisUtilityService: RedisUtilityService) {}
     async getProjectSkillGapAnalysis(projectId: string) {
         const project = await prisma.project.findUnique({
-            where: { id: projectId },
-            include: {
-                skills: {
-                    include: { skill: true }
-                }
-            }
+        where: { id: projectId },
+        include: {
+            skills: {
+            include: { skill: true },
+            },
+        },
         });
 
-        const coveragePercent =
-          requiredCount > 0 ? (availableCount / requiredCount) * 100 : 100;
+        if (!project) throw new Error('Project not found');
 
-        let severity: GapSeverity = 'CRITICAL';
-        if (coveragePercent >= 100) {
-          severity = 'COVERED';
-          coveredCount++;
-        } else if (coveragePercent >= 50) {
-          severity = 'AT_RISK';
-          atRiskCount++;
-        } else {
-          criticalCount++;
+        const requiredCount = project.teamSize;
+        let coveredCount = 0;
+        let atRiskCount = 0;
+        let criticalCount = 0;
+
+        const skills = await Promise.all(
+        project.skills.map(async (projectSkill): Promise<SkillGapItem> => {
+            const validCompetencies = getValidCompetencies(projectSkill.competency);
+
+            const availableCount = await prisma.consultant.count({
+            where: {
+                availability: ConsultantAvailability.AVAILABLE,
+                skills: {
+                some: {
+                    skillId: projectSkill.skillId,
+                    competencyLevel: { in: validCompetencies },
+                },
+                },
+            },
+            });
+
+            const coveragePercent =
+            requiredCount > 0 ? (availableCount / requiredCount) * 100 : 100;
+
+            let severity: GapSeverity = 'CRITICAL';
+            if (coveragePercent >= 100) {
+            severity = 'COVERED';
+            coveredCount++;
+            } else if (coveragePercent >= 50) {
+            severity = 'AT_RISK';
+            atRiskCount++;
+            } else {
+            criticalCount++;
+            }
+
+            return {
+            skillId: projectSkill.skill.id,
+            skillName: projectSkill.skill.name,
+            requiredCount,
+            availableCount,
+            coveragePercent: Math.min(coveragePercent, 100),
+            severity,
+            };
+        }),
+        );
+
+        const overallCoveragePercent =
+        skills.length > 0
+            ? skills.reduce((acc, curr) => acc + curr.coveragePercent, 0) /
+            skills.length
+            : 100;
+
+        let projectSeverity: GapSeverity = 'COVERED';
+        const hasCritical = skills.some((s) => s.severity === 'CRITICAL');
+        const hasRisk = skills.some((s) => s.severity === 'AT_RISK');
+
+        if (hasCritical) {
+        projectSeverity = 'CRITICAL';
+        } else if (hasRisk) {
+        projectSeverity = 'AT_RISK';
         }
 
         await prisma.project.update({
-            where: { id: projectId },
-            data: { skillGapSeverity: projectSeverity }
+        where: { id: projectId },
+        data: { skillGapSeverity: projectSeverity },
         });
+
         await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
 
         return {
-          skillId: projectSkill.skill.id,
-          skillName: projectSkill.skill.name,
-          requiredCount,
-          availableCount,
-          coveragePercent: Math.min(coveragePercent, 100),
-          severity,
+        projectId: project.id,
+        projectName: project.projectName,
+        overallSeverity: projectSeverity,
+        summary: {
+            overallCoveragePercent,
+            adequatelyCoveredCount: coveredCount,
+            atRiskCount,
+            criticalCount,
+        },
+        skills,
         };
-      }),
-    );
-
-    const overallCoveragePercent =
-      skills.length > 0
-        ? skills.reduce((acc, curr) => acc + curr.coveragePercent, 0) /
-          skills.length
-        : 100;
-
-    let projectSeverity: GapSeverity = 'COVERED';
-    const hasCritical = skills.some((s) => s.severity === 'CRITICAL');
-    const hasRisk = skills.some((s) => s.severity === 'AT_RISK');
-
-    if (hasCritical) {
-      projectSeverity = 'CRITICAL';
-    } else if (hasRisk) {
-      projectSeverity = 'AT_RISK';
     }
-
-    await prisma.project.update({
-      where: { id: projectId },
-      data: { skillGapSeverity: projectSeverity },
-    });
-
-    return {
-      projectId: project.id,
-      projectName: project.projectName,
-      overallSeverity: projectSeverity,
-      summary: {
-        overallCoveragePercent,
-        adequatelyCoveredCount: coveredCount,
-        atRiskCount,
-        criticalCount,
-      },
-      skills,
-    };
-  }
 
   async getPortfolioSkillGapAnalysis() {
     const activeProjects = await prisma.project.findMany({

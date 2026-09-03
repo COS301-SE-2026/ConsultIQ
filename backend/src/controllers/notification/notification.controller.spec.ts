@@ -36,7 +36,7 @@ describe('NotificationCotroller', () => {
             const notification = { data: { userId: 'user-123', title: 'Prject complete', body: 'Successfully completed a project' } }
             const req = {
                 id: 'user-123',
-                userId: 'user-123'
+                user: { userId: 'user-123' }
             };
             mockNotificationService.getNotifications.mockResolvedValue(notification);
 
@@ -57,7 +57,7 @@ describe('NotificationCotroller', () => {
             const notification = { data: { userId: 'user-123', title: 'Prject complete', body: 'Successfully completed a project', isArchived: true } }
             const req = {
                 id: 'user-123',
-                userId: 'user-123'
+                user: { userId: 'user-123' }
             };
             mockNotificationService.getArchivedNotifications.mockResolvedValue(notification);
 
@@ -78,7 +78,7 @@ describe('NotificationCotroller', () => {
 
             const notification = { id: '1', userId: 'user-123', title: 'Project complete', body: 'Successfully completed a project', isRead: true };
             const req = {
-                userId: 'user-123'
+                user: { userId: 'user-123' }
             };
             mockNotificationService.markAsRead.mockResolvedValue(notification);
 
@@ -122,7 +122,7 @@ describe('NotificationCotroller', () => {
 
             const resultCount = { count: 5 };
             const req = {
-                userId: 'user-123'
+                user: { userId: 'user-123' }
             };
             mockNotificationService.markAllAsRead.mockResolvedValue(resultCount);
 

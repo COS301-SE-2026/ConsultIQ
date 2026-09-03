@@ -26,7 +26,7 @@ import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 @Controller('consultants')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) { }
+  constructor(private readonly consultantService: ConsultantService) {}
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)

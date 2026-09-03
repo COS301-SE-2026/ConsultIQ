@@ -51,7 +51,7 @@ function mapToGlobalBackend(frontendFactors: ScoringFactor[]): BackendFactor[] {
     }));
 }
 
-function mapToProjectOverrideBackend(frontendFactors: ScoringFactor[]): Array<{ factorName: string; overrideWeight: number; active: boolean }> {
+function mapToProjectOverrideBackend(frontendFactors: ScoringFactor[]): Array<{ factorName: string; overrideWeight: number; active: boolean; hardExclusionEnabled: boolean }> {
     return frontendFactors.map((f) => ({
         factorName: f.factorKey ?? f.factorName,
         overrideWeight: f.weight,

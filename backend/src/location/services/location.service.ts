@@ -8,12 +8,10 @@ import {
 export class LocationService {
   private readonly logger = new Logger(LocationService.name);
 
-
   async searchAddress(address: string) {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       throw new InternalServerErrorException('Missing GOOGLE_MAPS_API_KEY.');
-
     }
 
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
@@ -30,15 +28,18 @@ export class LocationService {
           addressComponents: result.address_components,
         };
       } else {
-        this.logger.warn(`Geocoding failed for address: ${address} | status: ${data.status}`);
+        this.logger.warn(
+          `Geocoding failed for address: ${address} | status: ${data.status}`,
+        );
         return null;
       }
     } catch (error) {
       this.logger.error(`Failed to search address: ${address}`, error);
-      throw new InternalServerErrorException('Error communicating with Google Maps API.');
+      throw new InternalServerErrorException(
+        'Error communicating with Google Maps API.',
+      );
     }
   }
-
 
   async calculateTravelMetrics(origin: string, destination: string) {
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -63,7 +64,9 @@ export class LocationService {
             durationText: element.duration.text,
           };
         } else {
-          this.logger.warn(`No route found between ${origin} and ${destination} | Element status: ${element?.status}`);
+          this.logger.warn(
+            `No route found between ${origin} and ${destination} | Element status: ${element?.status}`,
+          );
           return null;
         }
       } else {
@@ -71,9 +74,13 @@ export class LocationService {
         return null;
       }
     } catch (error) {
-      this.logger.error(`Failed to calculate distance for origin: ${origin}, dest: ${destination}`, error);
-      throw new InternalServerErrorException('Error communicating with Google Maps Distance Matrix API.');
+      this.logger.error(
+        `Failed to calculate distance for origin: ${origin}, dest: ${destination}`,
+        error,
+      );
+      throw new InternalServerErrorException(
+        'Error communicating with Google Maps Distance Matrix API.',
+      );
     }
   }
-
 }

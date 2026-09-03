@@ -22,11 +22,14 @@ export class MatchRunProcessor extends WorkerHost {
         job.data.runId,
         async (progress) => {
           await job.updateProgress(progress);
-          await this.matchRunService.updateMatchRunProgress(job.data.runId, progress);
+          await this.matchRunService.updateMatchRunProgress(
+            job.data.runId,
+            progress,
+          );
         },
       );
     } catch (error) {
-      if ((job.attemptsMade + 1) >= (job.opts.attempts ?? 1)) {
+      if (job.attemptsMade + 1 >= (job.opts.attempts ?? 1)) {
         await this.matchRunService.markMatchRunFailed(job.data.runId, error);
       }
       throw error;

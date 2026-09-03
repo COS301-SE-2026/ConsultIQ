@@ -16,7 +16,7 @@ export class DataIngestionService {
   constructor(
     private readonly normalizationService: NormalizationService,
     private readonly scoringService: ScoringService,
-  ) { }
+  ) {}
 
   async ingestData(dto: EntryScoringDataDto): Promise<ResolvedScoringContext> {
     const projectContext = await this.getProjectScoringContext(dto.projectId);

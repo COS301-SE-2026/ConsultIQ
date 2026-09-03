@@ -5,7 +5,7 @@ import type { AssignedConsultants } from "../types/project.types";
 import { unassignConsultant } from "../services/project.service";
 import { toast } from "sonner";
 import { useState } from "react";
-
+import { useAuth } from "../../../hooks/useAuth";
 
 interface ProjectConsultantsProps {
     readonly consultants: AssignedConsultants[];
@@ -25,8 +25,10 @@ const getIntials = (name: string) => {
 
 
 export default function ProjectConsultants({ consultants, projectId, isLoading }: ProjectConsultantsProps) {
-    const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
+    const { user } = useAuth();
+    const isConsultant = user?.role === "CONSULTANT";
 
+    const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
 
     const handleReassign = async (consultantId: string) => {
         try {
@@ -64,7 +66,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading }
                             <th className="px-8 py-4 font-bold text-[16px]">Name</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Contact</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Skills</th>
-                            <th className="px-8 py-4 font-bold text-[16px]">Actions</th>
+                            {!isConsultant && ( <th className="px-8 py-4 font-bold text-[16px]">Actions</th> )}
                         </tr>
                     </thead>
 
@@ -125,19 +127,20 @@ export default function ProjectConsultants({ consultants, projectId, isLoading }
 
                                 </td>
                                 <td className="px-8 py-4 ">
-                                    <Button
-                                        onClick={() => handleReassign(user.id)}
-                                        disabled={isUnassigned}
-                                        className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
-                                        style={{
-                                            color: "white",
-                                            fontSize: "16px",
-                                            padding: "4px 8px",
-                                        }}
-                                    >
-                                        {isUnassigned ? "Unassigned" : "Unassign"}
-                                    </Button>
-
+                                    {!isConsultant && (
+                                        <Button
+                                            onClick={() => handleReassign(user.id)}
+                                            disabled={isUnassigned}
+                                            className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
+                                            style={{
+                                                color: "white",
+                                                fontSize: "16px",
+                                                padding: "4px 8px",
+                                            }}
+                                        >
+                                            {isUnassigned ? "Unassigned" : "Unassign"}
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>   
                             );

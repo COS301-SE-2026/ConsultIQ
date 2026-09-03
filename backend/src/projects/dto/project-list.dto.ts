@@ -2,6 +2,7 @@ export class ProjectListItemDto {
   id!: string;
   projectName!: string;
   clientName!: string;
+  description!: string;
   city!: string;
   province!: string;
   startDate!: Date;
@@ -11,7 +12,6 @@ export class ProjectListItemDto {
   clientBillingBudget!: number;
   status!: string;
   skillCount!: number;
-  description!: string;
   gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
 

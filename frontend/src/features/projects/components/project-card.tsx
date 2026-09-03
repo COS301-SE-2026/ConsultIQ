@@ -11,7 +11,7 @@ interface ProjectCardProps {
 }
 
 interface GapBadgeProps {
-  readonly severity?: "ADEQUATELY_COVERED" | "PARTIALLY_COVERED" | "NOT_COVERED";
+  readonly severity?: "COVERED" | "AT_RISK" | "CRITICAL";
   readonly onClick: () => void;
 }
 
@@ -19,7 +19,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
   if(!severity) return null;
 
   const config = {
-    ADEQUATELY_COVERED: {
+    COVERED: {
       bg: "bg-green-50",
       border: "border-green-200",
       text: "text-green-800",
@@ -27,7 +27,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
       label: "Covered",
       tooltip: "All required  skills are adequately covered."
     },
-    PARTIALLY_COVERED: {
+    AT_RISK: {
       bg: "bg-yellow-50",
       border: "border-yellow-200",
       text: "text-yellow-800",
@@ -35,7 +35,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
       label: "At Risk",
       tooltip: "Some skills have insufficient coverage"
     },
-    NOT_COVERED: {
+    CRITICAL: {
       bg: "bg-red-50",
       border: "border-red-200",
       text: "text-red-800",
@@ -47,11 +47,11 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
 
   const getTooltipBgColor = (sev : typeof severity) : string =>{
     switch(sev){
-      case "NOT_COVERED":
+      case "CRITICAL":
         return "bg-red-600";
-      case "PARTIALLY_COVERED":
+      case "AT_RISK":
         return "bg-yellow-600";
-      case "ADEQUATELY_COVERED":
+      case "COVERED":
         return "bg-green-600";
       default:
         return "bg-gray-600";
@@ -60,11 +60,11 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
 
   const getTooltipArrowColor = (sev: typeof severity): string => {
     switch(sev){
-      case "NOT_COVERED":
+      case "CRITICAL":
         return "border-t-red-600";
-      case "PARTIALLY_COVERED":
+      case "AT_RISK":
         return "border-t-yellow-600";
-      case "ADEQUATELY_COVERED":
+      case "COVERED":
         return "border-t-green-600";
       default: 
       return "border-t-gray-600";
@@ -77,18 +77,17 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
   return (
     <div className="group relative">
       <button type="button" onClick={onClick}
-        title={style.tooltip}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
         <Icon size={16} />
         <span>{style.label}</span>
       </button>
 
-      <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block">
-        <div className={`px-3 py-2 rounded-lg text-xs font-medium text-white whitespace-nowrap shadow-lg ${getTooltipBgColor(severity)}`}
-        > 
+      <div className="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block">
+        <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
+        >
           {style.tooltip}
-          <div className={`absolute top-full right-2 border-4 border-transparent ${getTooltipArrowColor(severity)}`}
+          <div className={`absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent ${getTooltipArrowColor(severity)}`}
           />
         </div>
       </div>
@@ -122,13 +121,18 @@ export default function ProjectCard({
               }}>
               {project.projectName}
             </h2>
-            <p className="text-base font-medium mb-3"
-          style={{
-            color:
-              "var(--color-accent)",
-          }}>
-          {project.clientName}
-        </p>
+            <div className="mb-3 flex items-center gap-2 flex-wrap">
+              <p className="text-lg text-base font-medium"
+              style={{
+                color:
+                  "var(--color-accent)",
+              }}>
+              {project.clientName}
+              </p>
+              {project.gapSeverity && (
+                  <GapBadge severity={project.gapSeverity} onClick={() => onViewSkillGap?.(project)} />
+              )}
+            </div>
           </div>
         </div>
 
@@ -150,10 +154,6 @@ export default function ProjectCard({
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2 ml-auto">
-            {project.gapSeverity && (
-              <GapBadge severity={project.gapSeverity} onClick={() => onViewSkillGap?.(project)} />
-            )}
-
             {onConfigureScore && (
               <button type="button" onClick={() =>onConfigureScore(project)}
                 className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"

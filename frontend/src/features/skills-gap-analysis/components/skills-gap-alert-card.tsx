@@ -10,7 +10,7 @@ interface SkillGapAlertCardProps {
 export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDismiss}) =>{
     const getSeverityStyles =(severity : string) =>{
         switch(severity){
-            case "ADEQUATELY_COVERED":
+            case "COVERED":
                 return { 
                     bg: "bg-green-50",
                     border: "border-green-200",
@@ -18,7 +18,7 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
                     icon: CheckCircle2,
                     iconColor: "text-green-600",
                 };
-            case "PARTIALLY_COVERED":
+            case "AT_RISK":
                 return { 
                     bg: "bg-yellow-50",
                     border: "border-yellow-200",
@@ -26,7 +26,7 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
                     icon: AlertCircle,
                     iconColor: "text-yellow-600",
                 };        
-            case "NOT_COVERED":
+            case "CRITICAL":
                 return { 
                     bg: "bg-red-50",
                     border: "border-red-200",
@@ -54,8 +54,8 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
                 <div className="flex items-center gap-2">
                     <IconComponent  className={`w-6 h-6 ${styles.iconColor}`} />
                     <div>
-                        <h4 className="font-semibold text-gray-900">{alert.projectName}</h4>
-                        <p className="text-sm text-gray-500">ID: {alert.projectId}</p>
+                        <h4 className="text-primary font-semibold text-lg">{alert.projectName}</h4>
+                        {/* <p className="text-sm text-gray-500">ID: {alert.projectId}</p> */}
                     </div>
                 </div>
                 <span className={`px-2 py-1 rounded text-xs font-medium ${styles.badge}`}>
@@ -64,12 +64,12 @@ export const SkillGapAlertCard: React.FC<SkillGapAlertCardProps> =({alert, onDis
             </div>
 
             <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">Gapped Skills: </p>
+                <p className="text-primary text-lg font-medium text-gray-700">Gapped Skills: </p>
                 <div className="space-y-1">
                     {alert.gappedSkills.map((skill) => (
-                        <div key={skill.skillName} className="text-sm text-gray-600 ml-4">
+                        <div key={skill.skillName} className="text-primary text-sm  ml-4">
                             <span className="font-medium">{skill.skillName}</span>
-                            <span>({skill.availableCount} / {skill.requiredCount} available)</span>
+                            <span> ( {skill.availableCount} / {skill.requiredCount} available ) </span>
                         </div>
                     ))}
                 </div>

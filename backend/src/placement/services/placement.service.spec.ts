@@ -136,6 +136,41 @@ describe('PlacementService', () => {
       expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
     });
 
+    it('should ignore terminated placement history when checking for duplicates', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: 'project-1',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-2',
+      });
+
+      await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockPrismaService.projectPlacement.findFirst).toHaveBeenCalledWith({
+        where: {
+          projectId: 'project-1',
+          consultantId: 'consultant-1',
+          status: PlacementStatus.ACTIVE,
+        },
+      });
+      expect(mockPrismaService.projectPlacement.create).toHaveBeenCalled();
+    });
+
     it('should throw BadRequestException if the end date is before the start date', async () => {
       const invalidDto = {
         ...dto,

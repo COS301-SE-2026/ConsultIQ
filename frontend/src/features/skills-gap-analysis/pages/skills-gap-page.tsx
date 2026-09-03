@@ -1,5 +1,6 @@
-import React, { useState} from "react";
-import { ChevronLeft, Filter, Home} from "lucide-react";
+import React, { useEffect, useState} from "react";
+import { useParams } from "react-router-dom";
+import { Filter, Home} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import type { ProjectSkillGapResponse, PortfolioSkillGapResponse} from "../types/skill-gap.types";
@@ -7,6 +8,8 @@ import { SkillGapSummaryCards } from "../components/skills-gap-summary-cards";
 import { SkillGapBarChart } from "../components/skills-gap-bar-chart";
 import { SkillGapRadarChart } from "../components/skills-gap-radar-chart";
 import { SkillGapAlertsList } from "../components/skills-gap-alert-list";
+import { getProjectSkillGap, getPortfolioSkillGap } from "../services/skill-gap.service";
+import {toast} from "sonner";
 
 type ViewMode = "project" | "portfolio";
 
@@ -18,17 +21,68 @@ interface SkillGapProps {
     readonly onBack?: () => void;
 }
 
-export const SkillGapPage : React.FC<SkillGapProps> =({ projectData, portfolioData, mode= "project", onViewModeChange, onBack }) => {
-    
-    const [viewMode, setViewMode] = useState<ViewMode>(mode);
+export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project", onViewModeChange }) => {
+    const { projectId } = useParams();
 
-    const handleModeChange = (newMode: ViewMode) =>{
+    const [fetchedProjectData, setFetchedProjectData] = useState<ProjectSkillGapResponse>();
+    const [fetchedPortfolioData, setFetchedPortfolioData] = useState<PortfolioSkillGapResponse>();
+    const [isLoading, setIsLoading] = useState(!propProjectData && !propPortfolioData);
+    const [viewMode, setViewMode] = useState<ViewMode>(mode);
+    const projectData = propProjectData ?? fetchedProjectData;
+    const portfolioData = propPortfolioData ?? fetchedPortfolioData;
+
+    useEffect(() => {
+        if(propProjectData || propPortfolioData){
+            return;
+        }
+
+        const loadData = async () =>{
+            try {
+                setIsLoading(true);
+
+                if(projectId){
+                    const data = await getProjectSkillGap(projectId);
+                    console.log("Project skill gap data: ", data);
+                    setFetchedProjectData(data);
+                    setFetchedPortfolioData(undefined);
+                } else {
+                    const data = await getPortfolioSkillGap();
+                    setFetchedPortfolioData(data);
+                    setFetchedProjectData(undefined);
+                }
+              } catch{
+                    toast.error("Failed to load skill gap data");
+                    setIsLoading(false)
+                } finally {
+                    setIsLoading(false);
+                }
+        };
+        loadData();
+    },[projectId, propProjectData, propPortfolioData]);
+
+    const handleModeChange = async (newMode: ViewMode) =>{
+        if(newMode === "portfolio" && !portfolioData){
+            try {
+                setIsLoading(true);
+                const data = await getPortfolioSkillGap();
+                setFetchedPortfolioData(data);
+            }catch{
+                toast.error("Failed to load portfolio skill gap data.");
+            }finally {
+                setIsLoading(false);
+            }
+        }
+        
         setViewMode(newMode);
         onViewModeChange?.(newMode);
     };
 
     const isProjectView = viewMode === "project" && projectData;
     const isPortfolioView = viewMode === "portfolio" && portfolioData;
+
+    if(isLoading){
+        return <div className="p-8 text-center text-gray-500">Loading skill gap analysis..</div>
+    }
 
     if(!isPortfolioView && !isProjectView){
         return <div className="p-8 text-center text-gray-500">No data available.</div>
@@ -47,9 +101,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData, portfolioDa
             style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
             >
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="text-gray-600 hover:text-gray-900">
-                        <ChevronLeft size={24}/>
-                    </button>
+                    
                     <div>
                         <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                             {isProjectView ? "Skill Gap Analysis" : "Portfolio Gap Overview"}
@@ -70,7 +122,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData, portfolioDa
                             This Project
                         </button>
                     )}
-                    {portfolioData &&(
+                
                         <button onClick={() => handleModeChange("portfolio")}
                             className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
                             viewMode === "portfolio" ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} 
@@ -78,7 +130,6 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData, portfolioDa
                             <Filter size={16} className="inline mr-2"/>
                             Portfolio
                         </button>
-                    )}
                 </div>
             </header>
 
@@ -128,11 +179,11 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData, portfolioDa
                     {isProjectView && (
                         <section>
                             <h2 className="text-xl font-semibold text-gray-900 mb-4"> Recommended Actions</h2>
-                            <div>
-                                {skills.filter(s => s.severity !== "ADEQUATELY_COVERED").map((skill) =>(
+                            <div className="space-y-4">
+                                {skills.filter(s => s.severity !== "COVERED").map((skill) =>(
                                     <div key={skill.skillName} className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                                        <p className="font-medium text-blue-900">{skill.skillName}</p>
-                                        <p className="text-sm text-blue-700 mt-1">
+                                        <p className="text-lg font-semibold text-primary">{skill.skillName}</p>
+                                        <p className="text-lg text-primary/70 mt-1">
                                             Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''}
                                         </p>
                                     </div>

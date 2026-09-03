@@ -4,6 +4,8 @@ import { PrismaModule } from '../../prisma/prisma.module';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
 import { SkillGapService } from './skill-gap.service';
 import { SkillGapModule } from '../skill-gap.module';
+import { ConfigModule } from '@nestjs/config';  
+import { RedisUtilityService } from 'src/common/services/redis-utility.service';
 import {
   CompetencyLevel,
   ConsultantAvailability,
@@ -18,8 +20,14 @@ describe('SkillGapService - Integration Test', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [SkillGapModule, PrismaModule],
-    }).compile();
+      imports: [
+        ConfigModule.forRoot({isGlobal: true}) ,
+        SkillGapModule, 
+        PrismaModule],
+    })
+    .overrideProvider(RedisUtilityService)
+    .useValue({ invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined) })
+    .compile();
 
     skillGapService = moduleRef.get<SkillGapService>(SkillGapService);
     prisma = moduleRef.get<PrismaService>(PrismaService);
@@ -30,7 +38,9 @@ describe('SkillGapService - Integration Test', () => {
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    if(prisma){
+      await prisma.$disconnect();
+    }
     if (moduleRef) {
       await moduleRef.close();
     }

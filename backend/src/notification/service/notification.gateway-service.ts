@@ -11,13 +11,16 @@ import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
 @WebSocketGateway({ namespace: '/notifications', cors: true })
 export class NotificationGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server!: Server;
 
   handleConnection(client: Socket) {
     try {
-      let token = client.handshake.auth?.token || client.handshake.headers['authorization']?.split(' ')[1];
+      let token =
+        client.handshake.auth?.token ||
+        client.handshake.headers['authorization']?.split(' ')[1];
 
       const cookieHeader = client.handshake.headers.cookie;
       if (!token && cookieHeader) {
@@ -41,10 +44,13 @@ export class NotificationGateway
       }
 
       client.data.user = payload;
-      console.log(`Client connected & authenticated: ${client.id}, User: ${payload.userId}`);
-
+      console.log(
+        `Client connected & authenticated: ${client.id}, User: ${payload.userId}`,
+      );
     } catch (error: any) {
-      console.error(`Unauthorized WS connection attempt (${client.id}): ${error.message}`);
+      console.error(
+        `Unauthorized WS connection attempt (${client.id}): ${error.message}`,
+      );
       client.disconnect(true);
     }
   }
@@ -55,7 +61,6 @@ export class NotificationGateway
 
   @SubscribeMessage('subscribeToNOtifcations')
   async handleSubscribe(client: Socket) {
-
     const userId = client.data.user?.userId;
 
     if (!userId) {

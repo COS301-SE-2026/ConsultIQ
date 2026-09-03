@@ -18,12 +18,13 @@ import { BullModule } from '@nestjs/bullmq';
 import { MatchRunProcessor } from './queues/match-run.processor';
 import { LocationModule } from '../location/location.module';
 
-
-
 @Module({
-  imports: [LocationModule, BullModule.registerQueue({
-    name: 'match-run',
-  })],
+  imports: [
+    LocationModule,
+    BullModule.registerQueue({
+      name: 'match-run',
+    }),
+  ],
   controllers: [MatchRunController, ScoringController],
   providers: [
     ScoringService,

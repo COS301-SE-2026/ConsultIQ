@@ -11,7 +11,7 @@ export const SkillGapRadarChart : React.FC<SkillGapRadarChartProps> =({data, hei
     //only top 10 skills, to avoid cluttering
     const radarData = data.slice(0, 10).map((item) => ({
         name: item.skillName,
-        coverage: Math.min(item.coveragePercentage, 100),
+        coverage: Math.min(item.coveragePercent, 100),
     }));
 
     return (
@@ -23,8 +23,8 @@ export const SkillGapRadarChart : React.FC<SkillGapRadarChartProps> =({data, hei
                 <Radar 
                     name="Coverage %"
                     dataKey="coverage"
-                    stroke="#3b82f6" 
-                    fill="#3b82f6"
+                    stroke="#002D62" 
+                    fill="#002D62"
                     fillOpacity={0.6}
                 />
                 <Tooltip formatter={(value) => value!==undefined ? `${Number(value).toFixed(1)}%` : "N/A"}/>

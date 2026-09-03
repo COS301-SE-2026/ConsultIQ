@@ -18,6 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PlacementsModule } from './placement/placement.module';
 import { CvParsingModule } from './cv-parsing/cv-parsing.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { SkillGapModule } from './skill-gap-analysis/skill-gap.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { RedisModule } from './common/redis/redis.module';
@@ -51,7 +52,8 @@ import { HealthModule } from './health/health.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         connection: {
-          url: configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
+          url:
+            configService.get<string>('REDIS_URL') || 'redis://localhost:6379',
         },
       }),
     }),
@@ -70,7 +72,8 @@ import { HealthModule } from './health/health.module';
     HealthModule,
     CvParsingModule,
     EncryptionModule,
-    AnalyticsModule
+    AnalyticsModule,
+    SkillGapModule
   ],
   controllers: [AppController],
   providers: [AppService],

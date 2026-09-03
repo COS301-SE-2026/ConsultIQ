@@ -29,9 +29,9 @@
   "include": [
     "src/**/*",
     "src/types/**/*",
-    "test/**/*"
+    "test/**/*",
+    "../tests/load"
   ],
-
   "exclude": [
     "node_modules",
     "dist",

@@ -1,18 +1,19 @@
-type GapSeverity = "ADEQUATELY_COVERED" | "PARTIALLY_COVERED" | "NOT_COVERED";
+type GapSeverity = "COVERED" | "AT_RISK" | "CRITICAL";
 
 export interface SkillGapItem {
+    skillId?: string;
     skillName: string;
     requiredCount: number;
     availableCount: number;
-    coveragePercentage: number;
+    coveragePercent: number;
     severity: GapSeverity;
 }
 
 export interface SkillGapSummary {
-    overallCoveragePercentage: number;
+    overallCoveragePercent: number;
     adequatelyCoveredCount: number;
-    partiallyCoveredCount: number;
-    notCoveredCount : number;
+    atRiskCount: number;
+    criticalCount : number;
 }
 
 export interface ProjectSkillGapResponse {

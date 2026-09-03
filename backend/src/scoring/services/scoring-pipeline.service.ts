@@ -17,14 +17,15 @@ export class ScoringPipelineService {
   constructor(
     private readonly dataIngestionService: DataIngestionService,
     private readonly scoringOrchestrator: ScoringOrchestrator,
-  ) { }
+  ) {}
 
   async scoreConsultant(
     dto: EntryScoringDataDto,
     resolvedContext?: SharedScoringContext,
     availabilityAllocations?: ReadonlyMap<string, number>,
   ): Promise<ScoringResults> {
-    const result = resolvedContext ?? await this.dataIngestionService.ingestData(dto);
+    const result =
+      resolvedContext ?? (await this.dataIngestionService.ingestData(dto));
 
     if (availabilityAllocations === undefined) {
       return this.scoringOrchestrator.scoreConsultant(

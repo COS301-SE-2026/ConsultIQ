@@ -18,6 +18,16 @@ let logoutFn: () => void = () => {
         window.location.href = '/login';
     }
 };
+let isLoggingOut = false;
+
+export const setLoggingOut = (loggingOut: boolean) => {
+    isLoggingOut = loggingOut;
+    if (loggingOut) {
+        failedQueue = [];
+    }
+};
+
+const waitForLogout = <T>(): Promise<T> => new Promise(() => undefined);
 
 export const injectAuth = ({
     refreshToken,
@@ -62,10 +72,17 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
     // (Token Expiration)
     if (response.status === 401) {
+        if (isLoggingOut) {
+            return waitForLogout<T>();
+        }
+
         if (isRefreshing) {
             return new Promise((resolve, reject) => {
                 failedQueue.push({ resolve, reject });
             }).then(() => {
+                if (isLoggingOut) {
+                    return waitForLogout<T>();
+                }
                 return fetchWithAuth<T>(endpoint, options);
             });
         }
@@ -73,8 +90,15 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         isRefreshing = true;
 
         try {
+            if (isLoggingOut) {
+                return waitForLogout<T>();
+            }
+
             if (typeof navigator !== 'undefined' && 'locks' in navigator) {
                 await navigator.locks.request('ciq-refresh-token', async () => {
+                    if (isLoggingOut) {
+                        return;
+                    }
                     const lastRefresh = parseInt(localStorage.getItem('lastRefreshTime') || '0', 10);
                     if (Date.now() - lastRefresh < 5000) return;
 
@@ -85,6 +109,10 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
                 await refreshTokenFn();
             }
 
+            if (isLoggingOut) {
+                return waitForLogout<T>();
+            }
+
             processQueue(null);
 
             return fetchWithAuth<T>(endpoint, options);
@@ -92,8 +120,12 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         } catch (err) {
             processQueue(err);
 
+            if (isLoggingOut) {
+                return waitForLogout<T>();
+            }
+
             const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
-            if (!isAlreadyOnLoginPage) {
+            if (!isLoggingOut && !isAlreadyOnLoginPage) {
                 logoutFn();
             }
             throw new ApiError('Session expired', 401);
@@ -124,7 +156,7 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
 export const apiClient = {
     get: <T>(endpoint: string, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'GET' }),
-    post: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, {...options, method: 'POST', body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined }),
+    post: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'POST', body: data instanceof FormData ? data : data ? JSON.stringify(data) : undefined }),
     put: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
     patch: <T>(endpoint: string, data?: unknown, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'PATCH', body: data ? JSON.stringify(data) : undefined }),
     delete: <T>(endpoint: string, options?: RequestInit) => fetchWithAuth<T>(endpoint, { ...options, method: 'DELETE' }),

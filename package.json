@@ -4,6 +4,8 @@
   "description": "**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.**",
   "main": "index.js",
   "dependencies": {
+    "@neon/config": "^1.2.0",
+    "@neon/env": "^1.2.0",
     "consola": "^3.4.2",
     "debug": "^4.4.3",
     "fast-safe-stringify": "^2.1.1",

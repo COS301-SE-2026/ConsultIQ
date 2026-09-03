@@ -31,13 +31,13 @@ export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height
 
     return (
         <ResponsiveContainer width="100%" height={height}>
-            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 150, bottom: 5}} >
+            <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5}} >
                 <CartesianGrid strokeDasharray ="3 3"/>
                 <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={140} />
+                <YAxis dataKey="name" type="category" width={100} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey= "Required" fill="#6b7280" radius={[0, 8, 8, 0]} />
+                <Bar dataKey= "Required" fill="#002D62" radius={[0, 8, 8, 0]} />
                 <Bar dataKey= "Available" radius={[0, 8, 8, 0]} >
                     {chartData.map((entry) =>(
                         <Cell key={`cell-${entry.name}`} fill={getSeverityColor(entry.severity)} />

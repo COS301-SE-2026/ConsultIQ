@@ -1,4 +1,6 @@
+import { Injectable } from '@nestjs/common';
 import { PrismaClient, ProjectStatus, ConsultantAvailability, CompetencyLevel } from '@prisma/client';
+import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
 const prisma = new PrismaClient();
 
@@ -35,8 +37,10 @@ export function getValidCompetencies(minCompetency: CompetencyLevel): Competency
         .map(([level]) => level as CompetencyLevel);
 }
 
+@Injectable()
 export class SkillGapService {
 
+    constructor(private readonly redisUtilityService: RedisUtilityService) {}
     async getProjectSkillGapAnalysis(projectId: string) {
         const project = await prisma.project.findUnique({
             where: { id: projectId },
@@ -115,6 +119,7 @@ export class SkillGapService {
             where: { id: projectId },
             data: { skillGapSeverity: projectSeverity }
         });
+        await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
 
         return {
             projectId: project.id,

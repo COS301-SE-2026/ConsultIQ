@@ -1,6 +1,6 @@
 import React, { useEffect, useState} from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Filter, Home} from "lucide-react";
+import { useParams } from "react-router-dom";
+import { Filter, Home} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import type { ProjectSkillGapResponse, PortfolioSkillGapResponse} from "../types/skill-gap.types";
@@ -9,6 +9,7 @@ import { SkillGapBarChart } from "../components/skills-gap-bar-chart";
 import { SkillGapRadarChart } from "../components/skills-gap-radar-chart";
 import { SkillGapAlertsList } from "../components/skills-gap-alert-list";
 import { getProjectSkillGap, getPortfolioSkillGap } from "../services/skill-gap.service";
+import {toast} from "sonner";
 
 type ViewMode = "project" | "portfolio";
 
@@ -20,9 +21,8 @@ interface SkillGapProps {
     readonly onBack?: () => void;
 }
 
-export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project", onViewModeChange, onBack }) => {
+export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project", onViewModeChange }) => {
     const { projectId } = useParams();
-    const navigate= useNavigate();
 
     const [projectData, setProjectData] = useState<ProjectSkillGapResponse | undefined>(propProjectData);
     const [portfolioData, setPortfolioData] = useState<PortfolioSkillGapResponse | undefined>(propPortfolioData);
@@ -61,7 +61,19 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
         loadData();
     },[projectId, propProjectData, propPortfolioData]);
 
-    const handleModeChange = (newMode: ViewMode) =>{
+    const handleModeChange = async (newMode: ViewMode) =>{
+        if(newMode === "portfolio" && !portfolioData){
+            try {
+                setIsLoading(true);
+                const data = await getPortfolioSkillGap();
+                setPortfolioData(data);
+            }catch (error){
+                toast.error("Failed to load portfolio skill gap data.");
+            }finally {
+                setIsLoading(false);
+            }
+        }
+        
         setViewMode(newMode);
         onViewModeChange?.(newMode);
     };
@@ -90,9 +102,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
             style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
             >
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack ?? (() => navigate("/projects"))} className="text-gray-600 hover:text-gray-900">
-                        <ChevronLeft size={24}/>
-                    </button>
+                    
                     <div>
                         <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
                             {isProjectView ? "Skill Gap Analysis" : "Portfolio Gap Overview"}
@@ -113,7 +123,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                             This Project
                         </button>
                     )}
-                    {portfolioData &&(
+                
                         <button onClick={() => handleModeChange("portfolio")}
                             className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
                             viewMode === "portfolio" ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} 
@@ -121,7 +131,6 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                             <Filter size={16} className="inline mr-2"/>
                             Portfolio
                         </button>
-                    )}
                 </div>
             </header>
 
@@ -171,11 +180,11 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                     {isProjectView && (
                         <section>
                             <h2 className="text-xl font-semibold text-gray-900 mb-4"> Recommended Actions</h2>
-                            <div>
+                            <div className="space-y-4">
                                 {skills.filter(s => s.severity !== "COVERED").map((skill) =>(
                                     <div key={skill.skillName} className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                                        <p className="font-medium text-blue-900">{skill.skillName}</p>
-                                        <p className="text-sm text-blue-700 mt-1">
+                                        <p className="text-lg font-semibold text-primary">{skill.skillName}</p>
+                                        <p className="text-lg text-primary/70 mt-1">
                                             Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''}
                                         </p>
                                     </div>

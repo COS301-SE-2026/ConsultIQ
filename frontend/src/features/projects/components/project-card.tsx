@@ -77,18 +77,17 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
   return (
     <div className="group relative">
       <button type="button" onClick={onClick}
-        title={style.tooltip}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
         <Icon size={16} />
         <span>{style.label}</span>
       </button>
 
-      <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block">
-        <div className={`px-3 py-2 rounded-lg text-xs font-medium text-white whitespace-nowrap shadow-lg ${getTooltipBgColor(severity)}`}
-        > 
+      <div className="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block">
+        <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
+        >
           {style.tooltip}
-          <div className={`absolute top-full right-2 border-4 border-transparent ${getTooltipArrowColor(severity)}`}
+          <div className={`absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent ${getTooltipArrowColor(severity)}`}
           />
         </div>
       </div>

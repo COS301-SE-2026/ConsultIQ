@@ -144,17 +144,22 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">Skill Analysis</h2>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div className = "bg-white p-6 rounded-lg border" style={{ borderColor: "var(--color-border)" }} >
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                                <h3 className="text-lg font-semibold mb-1">
                                     Required vs Actual Skills
                                 </h3>
-                                <SkillGapBarChart  data={skills} height={300} />
+                                <p className="text-sm text-gray-500 mb-4">
+                                 Compares the number of consultants required for each skill with the number currently available. Available bars are coloured by coverage status.
+                                </p>
+                                <SkillGapBarChart  data={skills} height={400} />
                             </div>
 
                             <div className = "bg-white p-6 rounded-lg border" style={{ borderColor: "var(--color-border)" }} >
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                                    Skill Gap Report (Top 10)
+                                <h3 className="text-lg font-semibold mb-1">
+                                    Skill Gap Report
                                 </h3>
-                                <SkillGapRadarChart  data={skills} height={300} />
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Shows coverage percentages for the top 10 skills, helping identify skills with the largest gaps across the project or portfolio.                                </p>
+                                <SkillGapRadarChart  data={skills} height={400} />
                             </div>
                         </div>
                     </section>

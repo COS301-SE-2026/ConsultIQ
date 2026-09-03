@@ -6,6 +6,26 @@ import { EncryptionPrismaClient } from "./services/client-extension.service";
 import { EncryptionModule } from './encryption.module';
 import { Role, ConsultantAvailability } from '@prisma/client';
 
+function ConsultantData(userId: string) {
+        return {
+            userId,
+            addressLine1: "123 South road",
+            addressLine2: "Unit 4",
+            suburb: "Hillbrow",
+            city: "Johannesburg",
+            province: "Gauteng",
+            postalCode: "2001",
+            phone: "0821234567",
+            idNumber: "9901015555081",
+            nationality: "South African",
+            costToCompany: 50000,
+            availability: ConsultantAvailability.AVAILABLE,
+            latitude: null,
+            longitude: null,
+            placeId: null,
+            formattedAddress: "123 South road, Hillbrow, Johannesburg",
+        };
+    }
 
 
 
@@ -42,27 +62,6 @@ describe('EncryptionPrismaClient - Integration Test', () => {
                 role: Role.CONSULTANT,
             },
         });
-    }
-
-    function ConsultantData(userId: string) {
-        return {
-            userId,
-            addressLine1: "123 South road",
-            addressLine2: "Unit 4",
-            suburb: "Hillbrow",
-            city: "Johannesburg",
-            province: "Gauteng",
-            postalCode: "2001",
-            phone: "0821234567",
-            idNumber: "9901015555081",
-            nationality: "South African",
-            costToCompany: 50000,
-            availability: ConsultantAvailability.AVAILABLE,
-            latitude: null,
-            longitude: null,
-            placeId: null,
-            formattedAddress: "123 South road, Hillbrow, Johannesburg",
-        };
     }
 
     const ciphertext_shape = /^[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/;

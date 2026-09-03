@@ -7,7 +7,7 @@ describe("crypto service", () => {
     describe("generateKey", () =>{
         it("returns a base64 string that is the same length as paramertised length",()=> {
             const  key= generateKey(32);
-            expect(Buffer.from(key,"base64").length).toBe(32);
+            expect(Buffer.from(key,"base64")).toHaveLength(32);
         });
 
         it("returns different keys on each call", () => {

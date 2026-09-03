@@ -35,12 +35,10 @@ export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit
     }
 
     private buildExtendedClient() {
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const self= this;
         return this.$extends({
             query: {
                 $allModels: {
-                    async $allOperations({ model, operation, args, query }) {
+                     $allOperations: async ({ model, operation, args, query }) => {
 
                         if(!hasEncryptedFields(model ?? "")){
                             return query(args);
@@ -51,14 +49,14 @@ export class EncryptionPrismaClient extends PrismaClient implements OnModuleInit
                         if (["create", "update", "upsert", "createMany", "updateMany"].includes(operation)) {
                             const writableArgs= args as {data?: unknown};
                             if (writableArgs.data) {
-                                self.encryptWriteData(writableArgs.data,fieldsToEncrypt);
+                                this.encryptWriteData(writableArgs.data,fieldsToEncrypt);
                             }
                         }
 
                         const result = await query(args);
 
                         if (result) {
-                            self.decryptReadData(result,fieldsToEncrypt);
+                            this.decryptReadData(result,fieldsToEncrypt);
                         }
 
                         return result;

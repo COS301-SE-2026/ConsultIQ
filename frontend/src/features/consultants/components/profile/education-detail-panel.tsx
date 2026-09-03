@@ -6,8 +6,8 @@ import { Input } from "../../../../components/ui/input";
 import {Button} from "../../../../components/ui/button";
 import "react-datepicker/dist/react-datepicker.css";
 import { isBefore, isAfter, startOfDay } from 'date-fns';
-import { Upload,Trash2 } from "lucide-react";
-import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
+// import { Upload,Trash2 } from "lucide-react";
+// import { AttachmentDisplay } from "../../../../components/shared/attachment-display";
  
 
 
@@ -46,13 +46,6 @@ export default function EducationDetailPanel({ education, onClose,onSave,editMod
  const [endDateError,setEndDateError]= useState("");
   const [institutionError,setInstitutionError] = useState("");
   const [qualificationError,setQualificationError]= useState("");
-
- 
-
-   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) =>{
-        const file = (e.target as HTMLInputElement).files?.[0];
-        setUploadedFile(file);
-    };
 
 
   const validateInstitution = () =>{

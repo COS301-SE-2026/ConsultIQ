@@ -14,6 +14,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ConsultantService } from '../../consultants/services/consultant.service';
 import { CreateConsultantDto } from '../../consultants/dto/create-consultant.dto';
@@ -118,8 +119,11 @@ export class ConsultantController {
   }
 
   @Get('user/:userId')
-  @Roles(Role.CONSULTANT_MANAGER, Role.PROJECT_MANAGER, Role.ADMIN)
-  getConsultantByUserId(@Param('userId') userId: string) {
+  @Roles(Role.CONSULTANT_MANAGER, Role.PROJECT_MANAGER, Role.ADMIN, Role.CONSULTANT)
+  getConsultantByUserId(@Param('userId') userId: string, @Req() req: any) {
+    if (req.user?.role === Role.CONSULTANT && req.user.userId !== userId) {
+      throw new ForbiddenException('Consultants can only view their own profile.');
+    }
     return this.consultantService.getConsultantByUserId(userId);
   }
 

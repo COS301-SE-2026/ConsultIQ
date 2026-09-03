@@ -7,6 +7,7 @@ import type {
     BenchBySkillDto,
     PlacementsBySkillDto,
     CvParsingStatsDto,
+    SkillDistributionDto
 } from "../types/admin.types";
 
 export const getOverallUtilisation = async () => {
@@ -32,3 +33,12 @@ export const getPlacementsBySkillCategory = async () => {
 export const getCvParsingStats = async () => {
     return await apiClient.get<CvParsingStatsDto>("/admin/analytics/cv-parsing-stats");
 };
+
+export const getSkillDistribution = async () => {
+    return await apiClient.get<SkillDistributionDto[]>("/admin/analytics/skill-distribution");
+}
+
+export const getPlacementsYTD = async () => {
+    return await apiClient.get<{ count: number }>("/admin/analytics/placement-ytd");
+}
+

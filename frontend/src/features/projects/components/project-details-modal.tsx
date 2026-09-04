@@ -340,27 +340,12 @@ export default function ProjectDetailsModal({
             isConsultant={isConsultant}
           />
 
-            <ProjectSkillsSection
-              key = {fullProject ? fullProject.id : "loading"}
-              skills = {[...(displayData.skills ?? [])]}
-              isEditing = {activeEditSection === "project-skills"}
-              isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
-              onEdit = {() => setActiveEditSection("project-skills") }
-              onCancel = { () => setActiveEditSection(null) }
-              onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
-              isConsultant={isConsultant}
-            />
-
-        
             <ProjectConsultants
               consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
               onUnassign={handleUnassignConsultant}
             />
-
-         
-            
 
         </div>
 

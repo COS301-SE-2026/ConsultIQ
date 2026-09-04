@@ -60,8 +60,7 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 | [System Requirements Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/SRS_V3.pdf) |
 | [System Architecture Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/SAS_V2.pdf) |
 | [User Manual](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/User%20manual_V2.pdf) |
-| [Brand Style Guide](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/documetation/Documents/Demo%202/Brand%20Style%20Guide%20V2.pdf) |
-| [Figma UI Panels](https://www.figma.com/design/S4Ydfuk6L0YkWhdjdRGxf9/High_fidelity_wireframes?node-id=0-1&p=f&t=m8cf3g1IC16ToRs4-0) |
+
 
 </details>
 <details open>

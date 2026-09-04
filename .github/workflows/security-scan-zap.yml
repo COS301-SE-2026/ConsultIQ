@@ -42,14 +42,14 @@ jobs:
             -T 10
             -c .zap/zap-config.conf
           allow_issue_writing: false
-          artifact_name: zap_baseline_scan
+          artifact_name: zap-baseline-scan
       
       - name: Run OWASP ZAP Full Scan
         uses: zaproxy/action-full-scan@b09f66e028674e87ce23acc493c675684e4f5a44 # v0.12.0
         with:
           target: ${{ steps.set_url.outputs.target_url }}
           rules_file_name: '.zap/rules.tsv'
-          artifact_name: zap_full_scan
+          artifact_name: zap-full-scan
           cmd_options: >
             -a
             -d

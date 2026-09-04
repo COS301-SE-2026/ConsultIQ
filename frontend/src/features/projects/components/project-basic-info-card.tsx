@@ -8,6 +8,13 @@ interface ProjectBasicInfoCardProps {
   readonly onChange: (field: keyof ProjectFormData, value: ProjectFormData[keyof ProjectFormData]) => void;
 }
 
+const MAX_TEAM_SIZE = 50;
+const MAX_BUDGET = 999999999;
+const MIN_ALLOCATION = 10;
+const MAX_ALLOCATION = 100;
+const MAX_DESCRIPTION_LENGTH = 250;
+
+
 export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: ProjectBasicInfoCardProps) {
 
   // Get today's date in 'YYYY-MM-DD' format
@@ -41,9 +48,26 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
     onChange("endDate", newEnd);
   };
 
+  const teamSizeError =
+    data.teamSize !== undefined && data.teamSize > MAX_TEAM_SIZE
+      ? `Team size cannot exceed ${MAX_TEAM_SIZE} consultants.`
+      : errors.teamSize;
 
-  const getInputClass = (fieldName: keyof ProjectFormData) =>
-    `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${errors[fieldName] ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
+  const budgetError =
+    typeof data.budget === "number" && data.budget > MAX_BUDGET
+      ? `Budget cannot exceed R${MAX_BUDGET.toLocaleString()}.`
+      : errors.budget;
+
+  const allocationError =
+    typeof data.allocation === "number" && (data.allocation > MAX_ALLOCATION || data.allocation < MIN_ALLOCATION)
+      ? `Allocation must be between ${MIN_ALLOCATION}% and ${MAX_ALLOCATION}%.`
+      : errors.allocation;
+
+  const descriptionLength = data.description?.length ?? 0;
+
+
+  const getInputClass = (fieldName: keyof ProjectFormData,  hasError?: boolean) =>
+  `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${(hasError ?? !!errors[fieldName]) ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
     }`;
 
   return (
@@ -125,7 +149,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={2}
+                maxLength={4}
                 id="teamSize"
                 placeholder="Enter team size"
                 value={data.teamSize === undefined ? "" : data.teamSize}
@@ -136,15 +160,12 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                     onChange("teamSize", ""); // or 0
                     return;
                   }
-
-                  let val = parseInt(numericString, 10);
-                  if (val > 50) val = 50;
-
+                  const val = parseInt(numericString, 10);
                   onChange("teamSize", val);
                 }}
-                className={getInputClass("teamSize")}
+                className={getInputClass("teamSize", !!teamSizeError)}
               />
-              {errors.teamSize && <span className="text-sm text-red-500">{errors.teamSize}</span>}
+              {teamSizeError && <span className="text-sm text-red-500">{teamSizeError}</span>}
             </div>
           </div>
 
@@ -200,11 +221,11 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 onChange={(e) => {
                   const sanitizedVal= e.target.value.replace(/[^0-9.]/g,'').replace(/(\..*)./g,'$1');
                   const val= Number.parseFloat(sanitizedVal) || 0;
-                  onChange("budget", Math.min(val,999999999));
+                  onChange("budget", val);
                 }}
-                className={getInputClass("budget")}
+                className={getInputClass("budget", !!budgetError)}
               />
-              {errors.budget && <span className="text-sm text-red-500">{errors.budget}</span>}
+              {budgetError && <span className="text-sm text-red-500">{budgetError}</span>}
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="allocation" className="text-base font-semibold">
@@ -217,7 +238,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               value={data.allocation}
               onChange={(e) =>{
                 const value= Number(e.target.value);
-                onChange("allocation", Math.min(Math.max(value, 1), 100));
+                onChange("allocation", value);
               }}
               className={getInputClass("allocation")}/>
 
@@ -225,7 +246,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 Percentage of a consultant's capacity required for this project.
               </span>
 
-              {errors.allocation &&(
+              {allocationError  &&(
                 <span className="test-sm text-red-500">{errors.allocation}</span>
               )}
             </div>
@@ -241,12 +262,20 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
             id="description"
             placeholder="Enter project description"
             value={data.description}
-            maxLength={500}
+            maxLength={MAX_DESCRIPTION_LENGTH}
             onChange={(e) => onChange("description", e.target.value)}
             className={`min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none transition-colors ${errors.description ? "border-red-500" : "focus:border-[var(--color-primary)]"
               }`}
           />
+          <div className="flex justify-between items-center">
           {errors.description && <span className="text-sm text-red-500">{errors.description}</span>}
+          <span
+            className={`text-sm ml-auto ${descriptionLength >= MAX_DESCRIPTION_LENGTH ? "text-red-500" : "text-slate-500"
+                }`}
+            >
+            {descriptionLength}/{MAX_DESCRIPTION_LENGTH}
+          </span>
+          </div>
         </div>
 
         <div className="h-1" />

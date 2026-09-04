@@ -11,31 +11,41 @@ interface ProjectConsultantsProps {
     readonly consultants: AssignedConsultants[];
     readonly projectId: string;
     readonly isLoading: boolean;
-
+    readonly onUnassign: (consultantId: string) => void;
 }
 
 const getIntials = (name: string) => {
-    if (!name) return;
-    const splitName = name.trim().split(" ");
+    if (!name) return "";
+    const splitName = name.trim().split(" ").filter(Boolean);
     const first = splitName[0];
-    const last = splitName[1];
+    const last = splitName[splitName.length - 1];
+
+    if (!first) return "";
+    if (splitName.length === 1) return first[0].toUpperCase();
 
     return `${first[0]}${last[0]}`.toUpperCase();
 }
 
 
-export default function ProjectConsultants({ consultants, projectId, isLoading }: ProjectConsultantsProps) {
+export default function ProjectConsultants({ consultants, projectId, isLoading, onUnassign }: ProjectConsultantsProps) {
     const { user } = useAuth();
     const isConsultant = user?.role === "CONSULTANT";
 
     const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
 
     const handleReassign = async (consultantId: string) => {
+        setUnassigned((prev) => new Set(prev).add(consultantId));
         try {
             unassignConsultant(projectId, consultantId);
-            setUnassigned((prev) => new Set(prev).add(consultantId));
+            onUnassign(consultantId);
         } catch (error) {
             toast.error("Failed to unassign consultant" + error);
+        }finally{
+            setUnassigned((prev) => {
+                const next = new Set(prev);
+                next.delete(consultantId);
+                return next;
+            });
         }
 
     }
@@ -73,7 +83,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading }
 
                     <tbody>
                         {!isLoading && paginatedConsultants.map((user) => {
-                            const isUnassigned= user.placementStatus === "TERMINATED" || unassigned.has(user.id);
+                            const isUnassigned= unassigned.has(user.id);
                             return(
                                <tr key={user.id} className=" hover:bg-slate-50  align-top  ">
                                 <td className="flex items-center justify-center gap-4 px-8  text-sm py-4">

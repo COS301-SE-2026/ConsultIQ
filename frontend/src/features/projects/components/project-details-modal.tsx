@@ -277,6 +277,10 @@ export default function ProjectDetailsModal({
     return null;
   }
 
+  const handleUnassignConsultant = (consultantId: string) =>{
+    setAssignedConsultants((prev) => prev?.filter((c) => c.id !== consultantId) ?? prev);
+    };
+
   const displayData = fullProject || project;
 
   return (
@@ -333,7 +337,7 @@ export default function ProjectDetailsModal({
               consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
-
+              onUnassign={handleUnassignConsultant}
             />
 
          

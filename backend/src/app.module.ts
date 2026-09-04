@@ -20,6 +20,7 @@ import { CvParsingModule } from './cv-parsing/cv-parsing.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SkillGapModule } from './skill-gap-analysis/skill-gap.module';
 import { BullModule } from '@nestjs/bullmq';
+import { EncryptionModule } from './common/encryption/encryption.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
 @Module({
@@ -70,6 +71,7 @@ import { HealthModule } from './health/health.module';
     RedisModule,
     HealthModule,
     CvParsingModule,
+    EncryptionModule,
     AnalyticsModule,
     SkillGapModule
   ],

@@ -96,6 +96,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}
           ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
+          ENCRYPTION_KEY: ${{secrets.ENCRYPTION_KEY}}
        
         run: |
           echo "DATABASE_URL=$DATABASE_URL" > .env
@@ -104,6 +105,7 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
           echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
           echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env
+          echo "ENCRYPTION_KEY=$ENCRYPTION_KEY" >> .env
 
       - name: Initialize Test Database
         working-directory: backend

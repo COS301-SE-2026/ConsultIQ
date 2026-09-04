@@ -29,7 +29,7 @@ jobs:
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             echo "target_url=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
           else
-            echo "target_url=${{ secrets.STAGING_URL || 'http://staging.consultiq.local' }}" >> $GITHUB_OUTPUT
+            echo "target_url=${{ secrets.STAGING_URL || 'https://consultiq-backend-production-086b.up.railway.app' }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Run OWASP ZAP Baseline Scan

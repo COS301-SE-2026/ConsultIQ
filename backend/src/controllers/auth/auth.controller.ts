@@ -35,7 +35,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -48,7 +48,7 @@ export class AuthController {
     // Consultant managers can only register CONSULTANTs
     if (
       (requestingUser?.role as string) ===
-        (Role.CONSULTANT_MANAGER as string) &&
+      (Role.CONSULTANT_MANAGER as string) &&
       (dto.role as string) !== 'CONSULTANT'
     ) {
       throw new ForbiddenException(
@@ -214,8 +214,8 @@ export class AuthController {
     const ROLE_DASHBOARD_MAP: Record<string, string> = {
       ADMIN: '/admin',
       PROJECT_MANAGER: '/projects',
-      CONSULTANT_MANAGER: '/consultant-profiles',
-      CONSULTANT: '/profile',
+      CONSULTANT_MANAGER: '/consultants-manager',
+      CONSULTANT: '/profile-view',
     };
 
     return {

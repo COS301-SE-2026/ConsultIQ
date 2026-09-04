@@ -145,6 +145,7 @@ export default function ProjectDetailsModal({
 
   useEffect(() => {
     if (!open || !project?.id) return;
+    setFullProject(null);
 
     const fetchProjectDetails = async () => {
       setIsLoading(true);
@@ -299,7 +300,9 @@ export default function ProjectDetailsModal({
 
 
         <div className="flex flex-col gap-8">
-          <ProjectOverviewSection project={displayData} 
+          <ProjectOverviewSection 
+          key={project.id}
+          project={displayData} 
           isEditing = {activeEditSection === "project-overview"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
           onEdit = {() => setActiveEditSection("project-overview") }
@@ -308,7 +311,9 @@ export default function ProjectDetailsModal({
           isConsultant={isConsultant}
           />
 
-          <ProjectLocationSection project={displayData} 
+          <ProjectLocationSection 
+          key={project.id}
+          project={displayData} 
           isEditing = {activeEditSection === "project-location"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
           onEdit = {() => setActiveEditSection("project-location") }
@@ -328,19 +333,13 @@ export default function ProjectDetailsModal({
               isConsultant={isConsultant}
             />
 
-        
             <ProjectConsultants
               consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
 
             />
-
-         
-            
-
         </div>
-
       </div>
     </div>
   );

@@ -183,13 +183,13 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                     )}
                     {isProjectView && (
                         <section>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4"> Recommended Actions</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4"> Identified Skill Gaps</h2>
                             <div className="space-y-4">
                                 {skills.filter(s => s.severity !== "COVERED").map((skill) =>(
                                     <div key={skill.skillName} className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                                         <p className="text-lg font-semibold text-primary">{skill.skillName}</p>
                                         <p className="text-lg text-primary/70 mt-1">
-                                            Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''}
+                                            Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''} with this skill to meet project requirements.
                                         </p>
                                     </div>
                                 ))}

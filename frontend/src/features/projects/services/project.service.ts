@@ -5,6 +5,7 @@ export interface ApiProject {
   id: string;
   projectName: string;
   clientName: string;
+  description: string;
   teamSize: number;
   requiredAllocationPercentage: number;
   clientBillingBudget: number;

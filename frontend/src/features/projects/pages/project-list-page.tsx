@@ -35,13 +35,12 @@ export default function ProjectListPage() {
         setIsLoading(true);
         const response= await getProjects(1,50);
        
-
         const mappedProjects: Project[] = response.projects.map((p: ApiProject) => ({
           id: p.id,
           name: p.projectName,
           projectName: p.projectName,
           clientName: p.clientName,
-          description: "View details for full description.",
+          description: p.description || "View details for full description.",
           teamSize: p.teamSize,
           allocation: p.requiredAllocationPercentage,
           budget: p.clientBillingBudget,

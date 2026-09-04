@@ -19,9 +19,11 @@ export class S3Service {
   private readonly s3Client: S3Client;
   private readonly bucket: string;
   private readonly presignedUrlExpiry: number;
+  private readonly endpoint?: string;
 
   constructor(private readonly config: ConfigService) {
     this.bucket = this.config.get<string>('AWS_S3_BUCKET') ?? '';
+    this.endpoint = this.config.get<string>('AWS_ENDPOINT_URL_S3');
     this.presignedUrlExpiry = parseInt(
       this.config.get<string>('AWS_S3_PRESIGNED_URL_EXPIRY') ?? '900',
       10,
@@ -33,11 +35,18 @@ export class S3Service {
 
     this.s3Client = new S3Client({
       region: this.config.get<string>('AWS_REGION') ?? 'af-south-1',
+      endpoint: this.endpoint,
+      forcePathStyle: true,
       credentials: {
         accessKeyId: this.config.get<string>('AWS_ACCESS_KEY_ID') ?? '',
         secretAccessKey: this.config.get<string>('AWS_SECRET_ACCESS_KEY') ?? '',
       },
     });
+  }
+
+  getObjectUrl(key: string): string {
+    const baseUrl = this.endpoint ?? `https://${this.bucket}.s3.${this.config.get<string>('AWS_REGION') ?? 'af-south-1'}.amazonaws.com`;
+    return `${baseUrl.replace(/\/$/, '')}/${this.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
   }
 
   /**

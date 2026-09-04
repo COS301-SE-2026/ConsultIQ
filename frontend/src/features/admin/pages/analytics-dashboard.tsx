@@ -127,7 +127,7 @@ export default function AnalyticsPage() {
                             ) : (
                             <>
                             <section className="space-y-3">
-                                <h3 className="text-[14px] text-[#6b7280] uppercase tracking-wider">Genral Overview</h3>
+                                <h3 className="text-[14px] text-[#6b7280] uppercase tracking-wider">General Overview</h3>
                                 <div className="grid w-full grid-cols-1 gap-4 gap-x-8 transition-all sm:grid-cols-2 xl:grid-cols-4 ">
                                     <AnalyticsCard 
                                         label="Overall Utilisation" 

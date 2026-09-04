@@ -5,35 +5,47 @@ import type { AssignedConsultants } from "../types/project.types";
 import { unassignConsultant } from "../services/project.service";
 import { toast } from "sonner";
 import { useState } from "react";
-
+import { useAuth } from "../../../hooks/useAuth";
 
 interface ProjectConsultantsProps {
     readonly consultants: AssignedConsultants[];
     readonly projectId: string;
     readonly isLoading: boolean;
-
+    readonly onUnassign: (consultantId: string) => void;
 }
 
 const getIntials = (name: string) => {
-    if (!name) return;
-    const splitName = name.trim().split(" ");
+    if (!name) return "";
+    const splitName = name.trim().split(" ").filter(Boolean);
     const first = splitName[0];
-    const last = splitName[1];
+    const last = splitName[splitName.length - 1];
+
+    if (!first) return "";
+    if (splitName.length === 1) return first[0].toUpperCase();
 
     return `${first[0]}${last[0]}`.toUpperCase();
 }
 
 
-export default function ProjectConsultants({ consultants, projectId, isLoading }: ProjectConsultantsProps) {
+export default function ProjectConsultants({ consultants, projectId, isLoading, onUnassign }: ProjectConsultantsProps) {
+    const { user } = useAuth();
+    const isConsultant = user?.role === "CONSULTANT";
+
     const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
 
-
     const handleReassign = async (consultantId: string) => {
+        setUnassigned((prev) => new Set(prev).add(consultantId));
         try {
             unassignConsultant(projectId, consultantId);
-            setUnassigned((prev) => new Set(prev).add(consultantId));
+            onUnassign(consultantId);
         } catch (error) {
             toast.error("Failed to unassign consultant" + error);
+        }finally{
+            setUnassigned((prev) => {
+                const next = new Set(prev);
+                next.delete(consultantId);
+                return next;
+            });
         }
 
     }
@@ -64,14 +76,14 @@ export default function ProjectConsultants({ consultants, projectId, isLoading }
                             <th className="px-8 py-4 font-bold text-[16px]">Name</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Contact</th>
                             <th className="px-8 py-4 font-bold text-[16px]">Skills</th>
-                            <th className="px-8 py-4 font-bold text-[16px]">Actions</th>
+                            {!isConsultant && ( <th className="px-8 py-4 font-bold text-[16px]">Actions</th> )}
                         </tr>
                     </thead>
 
 
                     <tbody>
                         {!isLoading && paginatedConsultants.map((user) => {
-                            const isUnassigned= user.placementStatus === "TERMINATED" || unassigned.has(user.id);
+                            const isUnassigned= unassigned.has(user.id);
                             return(
                                <tr key={user.id} className=" hover:bg-slate-50  align-top  ">
                                 <td className="flex items-center justify-center gap-4 px-8  text-sm py-4">
@@ -125,19 +137,20 @@ export default function ProjectConsultants({ consultants, projectId, isLoading }
 
                                 </td>
                                 <td className="px-8 py-4 ">
-                                    <Button
-                                        onClick={() => handleReassign(user.id)}
-                                        disabled={isUnassigned}
-                                        className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
-                                        style={{
-                                            color: "white",
-                                            fontSize: "16px",
-                                            padding: "4px 8px",
-                                        }}
-                                    >
-                                        {isUnassigned ? "Unassigned" : "Unassign"}
-                                    </Button>
-
+                                    {!isConsultant && (
+                                        <Button
+                                            onClick={() => handleReassign(user.id)}
+                                            disabled={isUnassigned}
+                                            className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
+                                            style={{
+                                                color: "white",
+                                                fontSize: "16px",
+                                                padding: "4px 8px",
+                                            }}
+                                        >
+                                            {isUnassigned ? "Unassigned" : "Unassign"}
+                                        </Button>
+                                    )}
                                 </td>
                             </tr>   
                             );

@@ -15,6 +15,9 @@ interface ProjectSkillsCardProps {
   readonly isEditing?: boolean;
 }
 
+const MAX_YEARS = 50;
+const MAX_SKILL_NAME_LENGTH = 100;
+
 export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill,
   onCancelEdit, editingIndex, onSkillSave, onEditSkill, isEditing, }: ProjectSkillsCardProps) {
 
@@ -32,8 +35,18 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
     setIsMandatory(Boolean(editingSkill?.mandatory ?? false));
   }
 
+  const numericYears = years === "" ? null : Number(years);
+  const yearsError =
+    numericYears !== null && numericYears <= 0
+      ? "Years of experience must be greater than 0."
+      : numericYears !== null && numericYears > MAX_YEARS
+        ? `That seems unusually high — please check (max ${MAX_YEARS} years).`
+        : undefined;
+
+  const isYearsValid = numericYears !== null && numericYears > 0 && numericYears <= MAX_YEARS;
+
   const handleAddUpdate = () => {
-    if (!skillName.trim() || !years) return;
+    if (!skillName.trim() || !isYearsValid) return;
 
     const newSkill: ProjectSkillData = {
       id: editingSkill?.id,
@@ -76,9 +89,16 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
               type="text"
               id="skillName"
               value={skillName}
+              maxLength={MAX_SKILL_NAME_LENGTH}
               onChange={(e) => setSkillName(e.target.value)}
               className="h-14 rounded border px-4 outline-none"
             />
+            <span
+              className={`text-sm ml-auto ${skillName.length >= MAX_SKILL_NAME_LENGTH ? "text-red-500" : "text-slate-500"
+                }`}
+            >
+              {skillName.length}/{MAX_SKILL_NAME_LENGTH}
+            </span>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -104,11 +124,17 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
             <input
               id="years"
               type="number"
+              min={1}
+              max={MAX_YEARS}
               placeholder="Years of experience"
               value={years}
               onChange={(e) => setYears(e.target.value)}
-              className="h-14 rounded border px-4 outline-none"
+              className={`h-14 rounded border px-4 outline-none ${yearsError ? "border-red-500 focus:border-red-600" : ""
+                }`}
             />
+            {yearsError && (
+              <p className="text-sm text-red-500">{yearsError}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -129,7 +155,7 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
           <button
             type="button"
             onClick={handleAddUpdate}
-            disabled={!skillName.trim() || !years}
+            disabled={!skillName.trim() || !isYearsValid}
             className="h-14 rounded text-white font-semibold text-lg mt-2 transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: "var(--color-primary)" }}
           >

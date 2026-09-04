@@ -283,6 +283,10 @@ export default function ProjectDetailsModal({
     return null;
   }
 
+  const handleUnassignConsultant = (consultantId: string) =>{
+    setAssignedConsultants((prev) => prev?.filter((c) => c.id !== consultantId) ?? prev);
+    };
+
   const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
@@ -327,23 +331,24 @@ export default function ProjectDetailsModal({
           isConsultant={isConsultant}
           />
 
-            <ProjectSkillsSection
-              key = {fullProject ? fullProject.id : "loading"}
-              skills = {[...(displayData.skills ?? [])]}
-              isEditing = {activeEditSection === "project-skills"}
-              isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
-              onEdit = {() => setActiveEditSection("project-skills") }
-              onCancel = { () => setActiveEditSection(null) }
-              onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
-              isConsultant={isConsultant}
-            />
+          <ProjectSkillsSection
+            key={fullProject ? fullProject.id : "loading"}
+            skills={[...(displayData.skills ?? [])]}
+            isEditing={activeEditSection === "project-skills"}
+            isDisabled={activeEditSection !== null && activeEditSection !== "project-skills"}
+            onEdit={() => setActiveEditSection("project-skills")}
+            onCancel={() => setActiveEditSection(null)}
+            onSave={(skills) => handleSaveSection("project-skills", { skills })}
+            isConsultant={isConsultant}
+          />
 
             <ProjectConsultants
               consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
-
+              onUnassign={handleUnassignConsultant}
             />
+
         </div>
       </div>
     </div>

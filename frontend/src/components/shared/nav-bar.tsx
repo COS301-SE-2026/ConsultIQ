@@ -81,6 +81,14 @@ export default function Navbar(){
                             >
                                 Scoring engine
                             </NavHashLink>  
+
+                            <NavHashLink
+                                smooth
+                                to="/brand-style-home"
+                                className="text-lg font-semibold text-brand-muted! hover:text-brand-blue! transition-colors"
+                            >
+                                Brand Style Guide
+                            </NavHashLink>  
                             
                     </nav>
                    

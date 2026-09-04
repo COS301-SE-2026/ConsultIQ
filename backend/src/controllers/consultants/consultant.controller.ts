@@ -82,7 +82,7 @@ export class ConsultantController {
   }
 
   @Get('project/:projectId')
-  @Roles(Role.PROJECT_MANAGER, Role.ADMIN)
+  @Roles(Role.PROJECT_MANAGER, Role.ADMIN, Role.CONSULTANT)
   @HttpCode(HttpStatus.OK)
   async getConsultantsByProject(
     @Param('projectId') projectId: string,

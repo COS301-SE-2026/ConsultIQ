@@ -28,8 +28,6 @@ function ConsultantProjects(){
 
     const hasNoProfile = Boolean(error || !profile);
   
-
-  
     return(
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
           <Sidebar items={consultantSidebarItems} />
@@ -45,7 +43,6 @@ function ConsultantProjects(){
               
             </header>
              
-
             <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overscroll-none">
               {hasNoProfile ? (
                 <div className="flex-1 flex items-center justify-center">
@@ -60,8 +57,6 @@ function ConsultantProjects(){
                     status={profile?.status ?? "Unavailable"} 
                   />
                   
-                
-              
                 <div className="flex items-center gap-3 p-2 justify-start ">
                     <h2>Assigned Projects</h2>
                     <span className="bg-brand-blue text-white font-bold rounded-full flex items-center justify-center w-6 h-6">{projects.length}</span>

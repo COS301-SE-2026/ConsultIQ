@@ -70,13 +70,34 @@ export const SkillGapBarChart: React.FC<SkillGapBarChartProps> = ({ data, height
     );
 
     const renderLegend = () => (
-        <div className="severity-legend">
-            <span><i style={{ backgroundColor: "#002D62" }} /> Required</span>
-            <span className="legend-group-label">Available: </span>
-            <span><i style={{ backgroundColor: "#10b981" }} /> Covered</span>
-            <span><i style={{ backgroundColor: "#f59e0b" }} /> At risk</span>
-            <span><i style={{ backgroundColor: "#ef4444" }} /> Critical</span>
-        </div>
+        <table className="mx-auto mt-3 border-collapse text-sm text-gray-700">
+            <thead>
+                <tr>
+                    <th className="border border-gray-200 bg-gray-50 px-4 py-2">
+                        Required
+                    </th>
+                    <th colSpan={3} className="border border-gray-200 bg-gray-50 px-4 py-2 font-semibold">
+                        Available
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td className="border border-gray-200 px-4 py-2 text-center">
+                        <i className="mr-2 inline-block h-3 w-3 rounded-full bg-[#002D62]" style={{ backgroundColor: "#002D62" }} /> Required
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-center">
+                        <i className="mr-2 inline-block h-3 w-3 rounded-full bg-emerald-500" style={{ backgroundColor: "#10b981" }} /> Covered
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-center">
+                        <i className="mr-2 inline-block h-3 w-3 rounded-full bg-amber-500" style={{ backgroundColor: "#f59e0b" }} /> At risk
+                    </td>
+                    <td className="border border-gray-200 px-4 py-2 text-center">
+                        <i className="mr-2 inline-block h-3 w-3 rounded-full bg-red-500" style={{ backgroundColor: "#ef4444" }} /> Critical
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     );
 
     return (

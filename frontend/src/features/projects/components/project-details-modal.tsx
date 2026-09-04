@@ -283,7 +283,11 @@ export default function ProjectDetailsModal({
     return null;
   }
 
-  const displayData = fullProject || project;
+  const handleUnassignConsultant = (consultantId: string) =>{
+    setAssignedConsultants((prev) => prev?.filter((c) => c.id !== consultantId) ?? prev);
+    };
+
+  const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">
@@ -305,24 +309,26 @@ export default function ProjectDetailsModal({
 
 
         <div className="flex flex-col gap-8">
-          <ProjectOverviewSection
-            key={fullProject ? `loaded-${fullProject.id}` : `summary-${project.id}`}
-            project={displayData}
-            isEditing={activeEditSection === "project-overview"}
-            isDisabled={activeEditSection !== null && activeEditSection !== "project-overview"}
-            onEdit={() => setActiveEditSection("project-overview")}
-            onCancel={() => setActiveEditSection(null)}
-            onSave={(fields: Partial<Project>) => handleSaveSection("project-overview", fields)}
-            isConsultant={isConsultant}
+          <ProjectOverviewSection 
+          key={project.id}
+          project={displayData} 
+          isEditing = {activeEditSection === "project-overview"}
+          isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
+          onEdit = {() => setActiveEditSection("project-overview") }
+          onCancel = { () => setActiveEditSection(null) }
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-overview", fields)}
+          isConsultant={isConsultant}
           />
 
-          <ProjectLocationSection project={displayData}
-            isEditing={activeEditSection === "project-location"}
-            isDisabled={activeEditSection !== null && activeEditSection !== "project-location"}
-            onEdit={() => setActiveEditSection("project-location")}
-            onCancel={() => setActiveEditSection(null)}
-            onSave={(fields: Partial<Project>) => handleSaveSection("project-location", fields)}
-            isConsultant={isConsultant}
+          <ProjectLocationSection 
+          key={project.id}
+          project={displayData} 
+          isEditing = {activeEditSection === "project-location"}
+          isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
+          onEdit = {() => setActiveEditSection("project-location") }
+          onCancel = { () => setActiveEditSection(null) }
+          onSave = { (fields: Partial <Project>) => handleSaveSection("project-location", fields)}
+          isConsultant={isConsultant}
           />
 
           <ProjectSkillsSection
@@ -336,19 +342,14 @@ export default function ProjectDetailsModal({
             isConsultant={isConsultant}
           />
 
-
-          <ProjectConsultants
-            consultants={assignedConsultants || []}
-            projectId={fullProject?.id || ""}
-            isLoading={consultantsLoading}
-
-          />
-
-
-
+            <ProjectConsultants
+              consultants = {assignedConsultants || []}
+              projectId={fullProject?.id || ""}
+              isLoading={consultantsLoading}
+              onUnassign={handleUnassignConsultant}
+            />
 
         </div>
-
       </div>
     </div>
   );

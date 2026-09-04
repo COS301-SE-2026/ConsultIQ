@@ -2,6 +2,7 @@ export class ProjectListItemDto {
   id!: string;
   projectName!: string;
   clientName!: string;
+  description!: string;
   city!: string;
   province!: string;
   startDate!: Date;

@@ -1,4 +1,4 @@
-import { SkillGapService, getValidCompetencies } from './skill-gap.service';
+import { SkillGapService, getValidCompetencies, classifySeverity } from './skill-gap.service';
 import { PrismaClient, CompetencyLevel } from '@prisma/client';
 
 jest.mock('@prisma/client', () => {
@@ -27,9 +27,11 @@ jest.mock('@prisma/client', () => {
 describe('Skill Gap Analysis', () => {
     let service: SkillGapService;
     let prismaMock: any;
+    let redisMock: any;
 
     beforeEach(() => {
-        service = new SkillGapService({invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined)} as any);
+        redisMock = { invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined) };
+        service = new SkillGapService(redisMock as any);
         prismaMock = new PrismaClient();
         jest.clearAllMocks();
     });
@@ -104,6 +106,12 @@ describe('Skill Gap Analysis', () => {
 
                 expect(result.skills[2].coveragePercent).toBe(0);
                 expect(result.skills[2].severity).toBe('CRITICAL');
+
+                expect(prismaMock.project.update).toHaveBeenCalledWith({
+                    where: { id: 'proj-1' },
+                    data: { skillGapSeverity: 'CRITICAL' },
+                });
+                expect(redisMock.invalidateCacheByPattern).toHaveBeenCalledWith('cache:projects:*');
             });
 
             it('should return 100% overall coverage if the project requires no skills', async () => {
@@ -193,7 +201,58 @@ describe('Skill Gap Analysis', () => {
                 expect(result.skills).toHaveLength(0);
                 expect(result.alerts).toHaveLength(0);
             });
+
+            it('should aggregate portfolio skills, lower competency floors appropriately, and trigger batch updates', async () => {
+                prismaMock.project.findMany.mockResolvedValue([
+                    {
+                        id: 'proj-1',
+                        projectName: 'Project Alpha',
+                        teamSize: 2,
+                        skills: [{ skillId: 's-1', competency: 'EXPERT', skill: { name: 'Python' } }],
+                    },
+                    {
+                        id: 'proj-2',
+                        projectName: 'Project Beta',
+                        teamSize: 3,
+                        skills: [{ skillId: 's-1', competency: 'BEGINNER', skill: { name: 'Python' } }],
+                    }
+                ]);
+
+                prismaMock.consultant.count
+                    .mockResolvedValueOnce(0)
+                    .mockResolvedValueOnce(2);
+
+                const result = await service.getPortfolioSkillGapAnalysis();
+
+                expect(result.skills).toHaveLength(1);
+                expect(result.skills[0].requiredCount).toBe(5);
+                expect(result.skills[0].availableCount).toBe(2);
+                expect(result.skills[0].coveragePercent).toBe(40);
+                expect(result.skills[0].severity).toBe('CRITICAL');
+
+                expect(prismaMock.project.update).toHaveBeenCalledTimes(2);
+                expect(redisMock.invalidateCacheByPattern).toHaveBeenCalledWith('cache:projects:*');
+            });
         });
+
+        describe('classifySeverity', () => {
+            it('should return COVERED for 100% or greater', () => {
+                expect(classifySeverity(100)).toBe('COVERED');
+                expect(classifySeverity(150)).toBe('COVERED');
+            });
+
+            it('should return AT_RISK for 50% to 99%', () => {
+                expect(classifySeverity(50)).toBe('AT_RISK');
+                expect(classifySeverity(99.9)).toBe('AT_RISK');
+            });
+
+            it('should return CRITICAL for below 50%', () => {
+                expect(classifySeverity(49.9)).toBe('CRITICAL');
+                expect(classifySeverity(0)).toBe('CRITICAL');
+            });
+        });
+
+
     });
 
 });

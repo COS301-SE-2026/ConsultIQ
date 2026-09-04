@@ -151,7 +151,6 @@ export default function ProjectDetailsModal({
 
   useEffect(() => {
     if (!open || !project?.id) return;
-    setFullProject(null);
 
     const fetchProjectDetails = async () => {
       setIsLoading(true);
@@ -284,7 +283,7 @@ export default function ProjectDetailsModal({
     return null;
   }
 
-  const displayData = fullProject || project;
+  const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">

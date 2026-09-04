@@ -67,7 +67,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
 
 
   const getInputClass = (fieldName: keyof ProjectFormData,  hasError?: boolean) =>
-    `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${errors[fieldName] ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
+  `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${(hasError ?? !!errors[fieldName]) ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
     }`;
 
   return (

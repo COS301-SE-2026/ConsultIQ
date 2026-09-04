@@ -7,6 +7,8 @@ import { ClaudeExtractionService } from './claude-extraction.service';
 import { CvParsingService } from './cv-parsing.service';
 import { CvFieldValidatorService } from './cv-field-validator.service';
 import { ParsedCvData } from '../types/parsed-cv.types';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { AuditAction } from  '@prisma/client';
 
 const sampleParsedData: ParsedCvData = {
   contact: { fullName: 'Jane Doe', email: 'jane@example.com' },
@@ -19,20 +21,22 @@ const sampleParsedData: ParsedCvData = {
 
 describe('CvExtractionService', () => {
   let service: CvExtractionService;
-  let prisma: { cvFile: { findUniqueOrThrow: jest.Mock; update: jest.Mock } };
+  let prisma: { cvFile: { findUniqueOrThrow: jest.Mock; update: jest.Mock;  findUnique: jest.Mock } };
   let s3: { downloadFile: jest.Mock };
   let ocr: { extractText: jest.Mock };
   let claudeExtraction: { extractCvData: jest.Mock };
   let ruleBasedParsing: { parse: jest.Mock };
   let validator: { validate: jest.Mock };
+  let auditLog: { log: jest.Mock }
 
   beforeEach(async () => {
-    prisma = { cvFile: { findUniqueOrThrow: jest.fn(), update: jest.fn() } };
+    prisma = { cvFile: { findUniqueOrThrow: jest.fn(),  findUnique: jest.fn(), update: jest.fn() } };
     s3 = { downloadFile: jest.fn() };
     ocr = { extractText: jest.fn() };
     claudeExtraction = { extractCvData: jest.fn() };
     ruleBasedParsing = { parse: jest.fn() };
     validator = { validate: jest.fn().mockReturnValue([]) };
+    auditLog = { log: jest.fn() }
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,6 +47,7 @@ describe('CvExtractionService', () => {
         { provide: ClaudeExtractionService, useValue: claudeExtraction },
         { provide: CvParsingService, useValue: ruleBasedParsing },
         { provide: CvFieldValidatorService, useValue: validator },
+        { provide: AuditLogService, useValue: auditLog },
       ],
     }).compile();
 
@@ -185,6 +190,73 @@ describe('CvExtractionService', () => {
       expect(validator.validate).toHaveBeenCalledWith(sampleParsedData);
       const finalUpdate = prisma.cvFile.update.mock.calls[1][0];
       expect(finalUpdate.data.parsedData.fieldWarnings).toEqual(warnings);
+    });
+  });
+
+  describe('audit logging', () => {
+    it('writes a CV_EXTRACTED audit log entry on successful extraction', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      prisma.cvFile.findUnique.mockResolvedValue({
+        userId: 'user-1', consultantId: 'consultant-1',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true, data: sampleParsedData, processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(auditLog.log).toHaveBeenCalledWith({
+        action: AuditAction.CV_EXTRACTED,
+        actingUserId: 'user-1',
+        entityType: 'CvFile',
+        entityId: 'cv-1',
+        metadata: {
+          consultantId: 'consultant-1',
+          extractedData: sampleParsedData,
+        },
+      });
+    });
+
+    it('falls back to "unknown" as actingUserId when the CvFile lookup returns nothing', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      prisma.cvFile.findUnique.mockResolvedValue(null);
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true, data: sampleParsedData, processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({ actingUserId: 'unknown' }),
+      );
+    });
+
+    it('does not write an audit log entry when extraction fails', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: false, error: 'bad template', processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(auditLog.log).not.toHaveBeenCalled();
+    });
+
+    it('does not write an audit log entry when the CvFile cannot be found at all', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockRejectedValue(new Error('No CvFile found'));
+
+      await service.processExtraction('missing-id');
+
+      expect(auditLog.log).not.toHaveBeenCalled();
     });
   });
 

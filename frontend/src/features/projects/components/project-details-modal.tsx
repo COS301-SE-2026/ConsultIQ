@@ -29,7 +29,7 @@ interface ApiProjectSkill {
   mandatory: boolean;
 }
 
-interface FullApiResponse{
+interface FullApiResponse {
   id: string;
   projectName: string;
   clientName: string;
@@ -63,85 +63,91 @@ export default function ProjectDetailsModal({
   const [assignedConsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
   const [consultantsLoading, setConsultantsLoading] = useState(false);
   //const isNonConsultant= !isConsultant;
-  
-  const mapPayload: Record<string, (fields: Partial<Project>)=> Record<string, unknown>> ={
-      "project-overview": (fields) =>({
-      ...(fields.projectName !==undefined && {projectName: fields.projectName}),
-      ...(fields.clientName !==undefined && {clientName: fields.clientName}),
-      ...(fields.description !==undefined && {description: fields.description}),
-      ...(fields.teamSize !==undefined && {teamSize: fields.teamSize}),
-      ...(fields.budget !==undefined && {budget: fields.budget}),
-      ...(fields.startDate !==undefined && {startDate: fields.startDate}),
-      ...(fields.endDate !==undefined && {endDate: fields.endDate}),
-      ...(fields.status !==undefined && {status: fields.status}),
-  }),
-  "project-location": (fields) => ({
-      ...(fields.location?.addressLine1 !==undefined && {addressLine1: fields.location.addressLine1}),
-      ...(fields.location?.addressLine2 !==undefined && {addressLine2: fields.location.addressLine2}),
-      ...(fields.location?.suburb !==undefined && {suburb: fields.location.suburb}),
-      ...(fields.location?.city !==undefined && {city: fields.location.city}),
-      ...(fields.location?.province !==undefined && {province: fields.location.province}),
-      ...(fields.location?.postalCode !==undefined && {postalCode: fields.location.postalCode}),
+
+  const mapPayload: Record<string, (fields: Partial<Project>) => Record<string, unknown>> = {
+    "project-overview": (fields) => ({
+      ...(fields.projectName !== undefined && { projectName: fields.projectName }),
+      ...(fields.clientName !== undefined && { clientName: fields.clientName }),
+      ...(fields.description !== undefined && { description: fields.description }),
+      ...(fields.teamSize !== undefined && { teamSize: fields.teamSize }),
+      ...(fields.budget !== undefined && { budget: fields.budget }),
+      ...(fields.startDate !== undefined && { startDate: fields.startDate }),
+      ...(fields.endDate !== undefined && { endDate: fields.endDate }),
+      ...(fields.status !== undefined && { status: fields.status }),
     }),
-  "project-skills": (fields) =>({
-      skills: (fields.skills ?? []).map((skill)=> ({
+    "project-location": (fields) => ({
+      ...(fields.location?.addressLine1 !== undefined && { addressLine1: fields.location.addressLine1 }),
+      ...(fields.location?.addressLine2 !== undefined && { addressLine2: fields.location.addressLine2 }),
+      ...(fields.location?.suburb !== undefined && { suburb: fields.location.suburb }),
+      ...(fields.location?.city !== undefined && { city: fields.location.city }),
+      ...(fields.location?.province !== undefined && { province: fields.location.province }),
+      ...(fields.location?.postalCode !== undefined && { postalCode: fields.location.postalCode }),
+    }),
+    "project-skills": (fields) => ({
+      skills: (fields.skills ?? []).map((skill) => ({
         id: skill.id,
         name: skill.name,
-        competency: skill.competency, 
-        years: skill.years, 
-        mandatory: skill.mandatory,})),
-      }),
-    };  
-  const mapStates: Record<string, (currProject :Project ,fields: Partial<Project>)=> Project> ={
-      "project-overview": (currProject, fields) =>({...currProject,
+        competency: skill.competency,
+        years: skill.years,
+        mandatory: skill.mandatory,
+      })),
+    }),
+  };
+  const mapStates: Record<string, (currProject: Project, fields: Partial<Project>) => Project> = {
+    "project-overview": (currProject, fields) => ({
+      ...currProject,
       name: fields.name ?? currProject.name,
-      projectName: fields.projectName ?? currProject.projectName,     
+      projectName: fields.projectName ?? currProject.projectName,
       clientName: fields.clientName ?? currProject.clientName,
       description: fields.description ?? currProject.description,
       teamSize: fields.teamSize ?? currProject.teamSize,
       budget: fields.budget ?? currProject.budget,
       startDate: fields.startDate ?? currProject.startDate,
-      endDate: fields.endDate ??  currProject.endDate,
-      status : fields.status ?? currProject.status,
-  }),
-  "project-location": (currProject,fields) => ({...currProject,
+      endDate: fields.endDate ?? currProject.endDate,
+      status: fields.status ?? currProject.status,
+    }),
+    "project-location": (currProject, fields) => ({
+      ...currProject,
       addressLine1: fields.location?.addressLine1 ?? currProject.addressLine1,
-      addressLine2 : fields.location?.addressLine2 ?? currProject.addressLine2,
-      suburb: fields.location?.suburb?? currProject.suburb,
+      addressLine2: fields.location?.addressLine2 ?? currProject.addressLine2,
+      suburb: fields.location?.suburb ?? currProject.suburb,
       city: fields.location?.city ?? currProject.city,
       province: fields.location?.province ?? currProject.province,
       postalCode: fields.location?.postalCode ?? currProject.postalCode,
-      location: {...currProject.location, ...fields.location},
+      location: { ...currProject.location, ...fields.location },
     }),
-  "project-skills": (currProject, fields) =>({...currProject,
+    "project-skills": (currProject, fields) => ({
+      ...currProject,
       skills: fields.skills ?? currProject.skills,
-      }),
-    }; 
+    }),
+  };
 
-  const handleSaveSection = async (section: string, updatedFields:Partial<Project>) =>{
-  if (!fullProject) return;
+  const handleSaveSection = async (section: string, updatedFields: Partial<Project>) => {
+    if (!fullProject) return;
 
-  const pMapper= mapPayload[section];
-  const payload= pMapper ? pMapper(updatedFields) : {};
+    const pMapper = mapPayload[section];
+    const payload = pMapper ? pMapper(updatedFields) : {};
 
-  
-  if(Object.keys(payload).length===0){ 
-    setActiveEditSection(null);
-    return;}
-    const formatState= mapStates[section];
-    const updatedProject= formatState ? formatState(fullProject, updatedFields) : fullProject;
 
-  try {
-    
-    await apiClient.patch(`/projects/${fullProject.id}`,payload);
-    setFullProject(updatedProject);
-    onUpdate(updatedProject);
-  }catch(error){
-    toast.error("Failed to update project" + error);
-  }finally{
-    setActiveEditSection(null);};
+    if (Object.keys(payload).length === 0) {
+      setActiveEditSection(null);
+      return;
+    }
+    const formatState = mapStates[section];
+    const updatedProject = formatState ? formatState(fullProject, updatedFields) : fullProject;
+
+    try {
+
+      await apiClient.patch(`/projects/${fullProject.id}`, payload);
+      setFullProject(updatedProject);
+      onUpdate(updatedProject);
+    } catch (error) {
+      toast.error("Failed to update project" + error);
+    } finally {
+      setActiveEditSection(null);
+    };
   }
-   
+
 
   useEffect(() => {
     if (!open || !project?.id) return;
@@ -154,7 +160,7 @@ export default function ProjectDetailsModal({
           // consultant path ---
           const data = await getAssignedProjectDetails(project.id);
           const p = data.project;
- 
+
           const mappedProject: Project = {
             id: p.id,
             name: p.projectName,
@@ -167,14 +173,14 @@ export default function ProjectDetailsModal({
             startDate: p.startDate,
             endDate: p.endDate || "",
             status: p.status,
- 
+
             addressLine1: p.addressLine1,
             addressLine2: p.addressLine2 || undefined,
             suburb: p.suburb || undefined,
             city: p.city,
             province: p.province,
             postalCode: p.postalCode,
- 
+
             location: {
               addressLine1: p.addressLine1,
               addressLine2: p.addressLine2 || undefined,
@@ -183,7 +189,7 @@ export default function ProjectDetailsModal({
               province: p.province,
               postalCode: p.postalCode,
             },
- 
+
             skills: p.skills.map((s) => ({
               name: s.skillName,
               competency: s.competency,
@@ -191,54 +197,54 @@ export default function ProjectDetailsModal({
               mandatory: s.mandatory,
             })),
           };
- 
+
           setFullProject(mappedProject);
           return;
         }
-          const data= await apiClient.get<FullApiResponse>(`/projects/${project.id}`);
-          const mappedProject: Project = {
-            id: data.id,
-            name: data.projectName,
-            projectName: data.projectName,
-            clientName: data.clientName,
-            description: data.description || "No description provided.",
-            teamSize: data.teamSize,
-            allocation: data.allocation,
-            budget: data.budget,
-            startDate: data.startDate,
-            endDate: data.endDate,
-            status: data.status,
+        const data = await apiClient.get<FullApiResponse>(`/projects/${project.id}`);
+        const mappedProject: Project = {
+          id: data.id,
+          name: data.projectName,
+          projectName: data.projectName,
+          clientName: data.clientName,
+          description: data.description || "No description provided.",
+          teamSize: data.teamSize,
+          allocation: data.allocation,
+          budget: data.budget,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          status: data.status,
 
-            // Add these missing root-level fields to satisfy TypeScript
+          // Add these missing root-level fields to satisfy TypeScript
+          addressLine1: data.addressLine1,
+          addressLine2: data.addressLine2 || "",
+          suburb: data.suburb || "",
+          city: data.city,
+          province: data.province,
+          postalCode: data.postalCode || "",
+
+          // Keep the nested location object if your UI components still use it
+          location: {
             addressLine1: data.addressLine1,
             addressLine2: data.addressLine2 || "",
             suburb: data.suburb || "",
             city: data.city,
             province: data.province,
             postalCode: data.postalCode || "",
-
-            // Keep the nested location object if your UI components still use it
-            location: {
-              addressLine1: data.addressLine1,
-              addressLine2: data.addressLine2 || "",
-              suburb: data.suburb || "",
-              city: data.city,
-              province: data.province,
-              postalCode: data.postalCode || "",
-            },
+          },
 
 
-            skills: data.skills.map((ps: ApiProjectSkill) => ({
-              id: ps.id,
-              name: ps.skill.name,
-              competency: ps.competency,
-              years: ps.years,
-              mandatory: ps.mandatory,
-            })),
-          };
+          skills: data.skills.map((ps: ApiProjectSkill) => ({
+            id: ps.id,
+            name: ps.skill.name,
+            competency: ps.competency,
+            years: ps.years,
+            mandatory: ps.mandatory,
+          })),
+        };
         setFullProject(mappedProject);
-        
-        }catch (error) {
+
+      } catch (error) {
         console.error("Failed to fetch project details:", error);
       } finally {
         setIsLoading(false);
@@ -252,32 +258,36 @@ export default function ProjectDetailsModal({
     const fetchAssignedConsultants = async () => {
       setConsultantsLoading(true);
 
-      if(!fullProject){
+      if (!fullProject) {
         setConsultantsLoading(false);
         setAssignedConsultants(null);
         return;
       }
 
       try {
-         const data = await getConsultantsByProject(fullProject.id);
-         setAssignedConsultants(data);
+        const data = await getConsultantsByProject(fullProject.id);
+        setAssignedConsultants(data);
       } catch (error) {
         toast.error("Failed to fetch assigned consultants" + error);
-      }finally{
+      } finally {
         setConsultantsLoading(false);
       }
     }
 
     fetchAssignedConsultants();
 
-  },[fullProject]);
+  }, [fullProject]);
 
 
   if (!open || !project) {
     return null;
   }
 
-  const displayData = fullProject || project;
+  const handleUnassignConsultant = (consultantId: string) =>{
+    setAssignedConsultants((prev) => prev?.filter((c) => c.id !== consultantId) ?? prev);
+    };
+
+  const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">
@@ -299,7 +309,9 @@ export default function ProjectDetailsModal({
 
 
         <div className="flex flex-col gap-8">
-          <ProjectOverviewSection project={displayData} 
+          <ProjectOverviewSection 
+          key={project.id}
+          project={displayData} 
           isEditing = {activeEditSection === "project-overview"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
           onEdit = {() => setActiveEditSection("project-overview") }
@@ -308,7 +320,9 @@ export default function ProjectDetailsModal({
           isConsultant={isConsultant}
           />
 
-          <ProjectLocationSection project={displayData} 
+          <ProjectLocationSection 
+          key={project.id}
+          project={displayData} 
           isEditing = {activeEditSection === "project-location"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
           onEdit = {() => setActiveEditSection("project-location") }
@@ -317,30 +331,25 @@ export default function ProjectDetailsModal({
           isConsultant={isConsultant}
           />
 
-            <ProjectSkillsSection
-              key = {fullProject ? fullProject.id : "loading"}
-              skills = {[...(displayData.skills ?? [])]}
-              isEditing = {activeEditSection === "project-skills"}
-              isDisabled = { activeEditSection !== null && activeEditSection !== "project-skills"}
-              onEdit = {() => setActiveEditSection("project-skills") }
-              onCancel = { () => setActiveEditSection(null) }
-              onSave = { (skills) => handleSaveSection("project-skills", {skills}) }
-              isConsultant={isConsultant}
-            />
+          <ProjectSkillsSection
+            key={fullProject ? fullProject.id : "loading"}
+            skills={[...(displayData.skills ?? [])]}
+            isEditing={activeEditSection === "project-skills"}
+            isDisabled={activeEditSection !== null && activeEditSection !== "project-skills"}
+            onEdit={() => setActiveEditSection("project-skills")}
+            onCancel={() => setActiveEditSection(null)}
+            onSave={(skills) => handleSaveSection("project-skills", { skills })}
+            isConsultant={isConsultant}
+          />
 
-        
             <ProjectConsultants
               consultants = {assignedConsultants || []}
               projectId={fullProject?.id || ""}
               isLoading={consultantsLoading}
-
+              onUnassign={handleUnassignConsultant}
             />
 
-         
-            
-
         </div>
-
       </div>
     </div>
   );

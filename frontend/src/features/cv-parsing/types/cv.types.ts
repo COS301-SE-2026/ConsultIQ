@@ -1,34 +1,24 @@
-export type ExtractionStatus = | "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED" | "REVIEW_REQUIRED";
-export interface CvFileStatus{
-    id: string;
-    fileName: string;
-    fileSize: string;
-    mimeType: string;
-    uploadStatus: string;
-    extractionStatus: ExtractionStatus;
-    parsedData : ParsedCvData | null;
-    updatedAt: string;
-}
+export type ExtractionStatus = | "PENDING" | "PROCESSING" | "FAILED" | "REVIEW_REQUIRED";
 
-export interface CvUploadResponse{
-    cvFileId: string;
+export interface FieldWarning{
+    path: string;
     message: string;
 }
 
 export interface ParsedSkill{
     skillName: string;
-    yearsExperience: string;
-    extractionConfidence: string;
+    yearsExperience: number;
+    extractionConfidence: number;
 }
 
-export interface ParsedExperience{
-    jobTitle: string;
-    companyName: string;
-    jobType: string;
-    workModel: string;
-    startDate: string;
-    endDate?: string;
-    description: string;
+export interface ParsedExperience {
+  jobTitle: string;
+  companyName: string;
+  jobType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE';
+  workModel: 'ONSITE' | 'REMOTE' | 'HYBRID';
+  startDate: string;
+  endDate?: string;
+  description: string;
 }
 
 export interface ParsedCertification{
@@ -53,7 +43,7 @@ export interface ParsedContactInfo{
     nationality?: string;
     addressLine1?: string;
     addressLine2?: string;
-    suburd?: string;
+    suburb?: string;
     city?: string;
     province?: string;
     postalCode?: string;
@@ -75,4 +65,27 @@ experiences: ParsedExperience[];
 certifications: ParsedCertification[];
 education: ParsedEducation[];
 confidenceScores: ConfidenceScores;
+}
+
+export interface CvParsedDataEnvelope {
+    data?: ParsedCvData;
+    comptencySignals?: unknown[];
+    fieldWarnings?: FieldWarning[];
+    error?: string;
+}
+
+export interface CvFileStatus{
+    id: string;
+    fileName: string;
+    fileSize: string;
+    mimeType: string;
+    uploadStatus: string;
+    extractionStatus: ExtractionStatus;
+    parsedData : CvParsedDataEnvelope | null;
+    updatedAt: string;
+}
+
+export interface CvUploadResponse{
+    cvFileId: string;
+    message: string;
 }

@@ -120,6 +120,7 @@ export class ProjectService {
       id: p.id,
       projectName: p.projectName,
       clientName: p.clientName,
+      description: p.description,
       city: p.city,
       province: p.province,
       startDate: p.startDate,
@@ -129,6 +130,7 @@ export class ProjectService {
       clientBillingBudget: Number(p.clientBillingBudget),
       status: p.status,
       skillCount: p.skillCount,
+      gapSeverity: p.gapSeverity,
     }));
     const responseData = { page, limit, total, projects: mappedProjects };
 
@@ -335,6 +337,7 @@ export class ProjectService {
             p.id,
             p."projectName",
             p."clientName",
+            p.description,
             p.city,
             p.province,
             p."startDate",
@@ -343,6 +346,7 @@ export class ProjectService {
             p.allocation AS "requiredAllocationPercentage",
             p.budget AS "clientBillingBudget",
             p.status,
+            p."skillGapSeverity" AS "gapSeverity",
             COUNT(ps.id)::int AS "skillCount"
           FROM projects p
           ${joins}

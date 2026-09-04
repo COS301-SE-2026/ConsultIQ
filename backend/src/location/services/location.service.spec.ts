@@ -118,4 +118,116 @@ describe('LocationService', () => {
             );
         });
     });
+
+    describe('calculateTravelMetrics', () => {
+        const mockOrigin = 'Pretoria, Gauteng';
+        const mockDestination = 'Johannesburg, Gauteng';
+
+        it('should throw InternalServerErrorException if GOOGLE_MAPS_API_KEY is missing', async () => {
+            delete process.env.GOOGLE_MAPS_API_KEY;
+            await expect(service.calculateTravelMetrics(mockOrigin, mockDestination)).rejects.toThrow(InternalServerErrorException);
+            await expect(service.calculateTravelMetrics(mockOrigin, mockDestination)).rejects.toThrow('Missing GOOGLE_MAPS_API_KEY.');
+        });
+
+        it('should return travel metrics when API responds successfully with a valid route', async () => {
+            process.env.GOOGLE_MAPS_API_KEY = 'mock-api-key';
+
+            const mockResponse = {
+                status: 'OK',
+                rows: [
+                    {
+                        elements: [
+                            {
+                                status: 'OK',
+                                distance: { value: 55000, text: '55 km' },
+                                duration: { value: 3600, text: '1 hour mins' }
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            (global.fetch as jest.Mock).mockResolvedValue({
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const result = await service.calculateTravelMetrics(mockOrigin, mockDestination);
+
+            expect(result).toEqual({
+                distanceMeters: 55000,
+                distanceText: '55 km',
+                durationSeconds: 3600,
+                durationText: '1 hour mins',
+            });
+        });
+
+        it('should return null and log a warning if no route is found between locations', async () => {
+            process.env.GOOGLE_MAPS_API_KEY = 'mock-api-key';
+            const loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn');
+
+            const mockResponse = {
+                status: 'OK',
+                rows: [
+                    {
+                        elements: [
+                            {
+                                status: 'ZERO_RESULTS'
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            (global.fetch as jest.Mock).mockResolvedValue({
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const result = await service.calculateTravelMetrics(mockOrigin, mockDestination);
+
+            expect(result).toBeNull();
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                `No route found between ${mockOrigin} and ${mockDestination} | Element status: ZERO_RESULTS`
+            );
+        });
+
+        it('should throw InternalServerErrorException and log an error if fetch fails', async () => {
+            process.env.GOOGLE_MAPS_API_KEY = 'mock-api-key';
+            const loggerErrorSpy = jest.spyOn(Logger.prototype, 'error');
+            const mockError = new Error('Network timeout');
+
+            (global.fetch as jest.Mock).mockRejectedValue(mockError);
+
+            await expect(service.calculateTravelMetrics(mockOrigin, mockDestination)).rejects.toThrow(
+                InternalServerErrorException,
+            );
+            await expect(service.calculateTravelMetrics(mockOrigin, mockDestination)).rejects.toThrow(
+                'Error communicating with Google Maps Distance Matrix API.',
+            );
+            expect(loggerErrorSpy).toHaveBeenCalledWith(
+                `Failed to calculate distance for origin: ${mockOrigin}, dest: ${mockDestination}`,
+                mockError,
+            );
+        });
+
+        it('should return null and log a warning if the API top-level status is not OK (e.g., OVER_QUERY_LIMIT)', async () => {
+            process.env.GOOGLE_MAPS_API_KEY = 'mock-api-key';
+            const loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn');
+
+            const mockResponse = {
+                status: 'REQUEST_DENIED',
+                error_message: 'The provided API key is invalid.'
+            };
+
+            (global.fetch as jest.Mock).mockResolvedValue({
+                json: jest.fn().mockResolvedValue(mockResponse),
+            });
+
+            const result = await service.calculateTravelMetrics(mockOrigin, mockDestination);
+
+            expect(result).toBeNull();
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                `Distance Matrix API failed | status: REQUEST_DENIED`
+            );
+        });
+    });
 });

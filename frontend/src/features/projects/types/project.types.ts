@@ -38,6 +38,7 @@ export interface Project {
   readonly postalCode: string;
 
   readonly skills: readonly ProjectSkillData[];
+  readonly gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
 
 

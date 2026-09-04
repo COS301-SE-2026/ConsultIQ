@@ -18,9 +18,9 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 @Injectable()
 export class CVUploadService {
-    private readonly logger = new Logger(CVUploadService.name);
+  private readonly logger = new Logger(CVUploadService.name);
 
-    constructor(
+  constructor(
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
     @InjectQueue(CV_PROCESSING_QUEUE) private readonly cvQueue: Queue,
@@ -43,17 +43,15 @@ export class CVUploadService {
       where: { id: userId },
     });
 
-    if (!user || user.role !== "CONSULTANT") {
-      throw new BadRequestException(
-        `Consultant with id ${userId} not found.`,
-      );
+    if (user?.role !== 'CONSULTANT') {
+      throw new BadRequestException(`Consultant with id ${userId} not found.`);
     }
 
     // Generate the s3 key and upload
     const s3Key = this.s3Service.generateS3Key(userId, file.originalname);
     await this.s3Service.uploadFile(s3Key, file.buffer, file.mimetype);
 
-    const s3Url = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+    const s3Url = this.s3Service.getObjectUrl(s3Key);
 
     // Then create record
     const cvFile = await this.prisma.cvFile.create({
@@ -92,5 +90,49 @@ export class CVUploadService {
     const url = await this.s3Service.generatePresignedUrl(cvFile.s3Key);
 
     return { url };
+  }
+
+  async getCvFile(cvFileId: string) {
+    const cvFile = await this.prisma.cvFile.findUnique({
+      where: { id: cvFileId },
+      select: {
+        id: true,
+        fileName: true,
+        fileSize: true,
+        mimeType: true,
+        uploadStatus: true,
+        extractionStatus: true,
+        parsedData: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!cvFile) {
+      throw new BadRequestException(`CV file with id ${cvFileId} not found.`);
+    }
+
+    const { id, ...rest } = cvFile;
+    return { cvFileId: id, ...rest };
+  }
+
+  async discardCvFile(cvFileId: string): Promise<{ message: string }> {
+    const cvFile = await this.prisma.cvFile.findUnique({
+      where: { id: cvFileId },
+    });
+
+    if (!cvFile) {
+      throw new BadRequestException(`CV file with if ${cvFileId} not found.`);
+    }
+
+    if (cvFile.consultantId) {
+      throw new BadRequestException(
+        'Cannot discard a CV that has already been linked to a consultant profile.',
+      );
+    }
+
+    await this.s3Service.deleteFile(cvFile.s3Key);
+    await this.prisma.cvFile.delete({ where: { id: cvFileId } });
+
+    return { message: 'CV discarded successfully.' };
   }
 }

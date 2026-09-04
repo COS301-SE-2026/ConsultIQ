@@ -5,6 +5,7 @@ export interface ApiProject {
   id: string;
   projectName: string;
   clientName: string;
+  description: string;
   teamSize: number;
   requiredAllocationPercentage: number;
   clientBillingBudget: number;
@@ -13,6 +14,7 @@ export interface ApiProject {
   status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "COMPLETED";
   city: string;
   province: string;
+  gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
  
 export interface ProjectPlacementContext{

@@ -7,7 +7,6 @@ import {
   Inject,
   Logger,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
 import {
   ConsultantListItemDto,
   CreateConsultantDto,
@@ -31,6 +30,7 @@ import {
   ProjectConsultantDto,
   ProjectConsultantsResponseDto,
 } from '../dto/consultant-placement.dto';
+import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
 
 @Injectable()
 export class ConsultantService {
@@ -38,11 +38,12 @@ export class ConsultantService {
   private readonly logger = new Logger(ConsultantService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    //private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly redisUtilityService: RedisUtilityService,
-  ) {}
+    private readonly encryptionPrisma: EncryptionPrismaClient,
+  ) { }
   async invalidateConsultantCache() {
     await this.redisUtilityService.invalidateCacheByPattern(
       'cache:consultants:*',
@@ -54,7 +55,7 @@ export class ConsultantService {
     dto: CreateConsultantDto,
   ): Promise<{ message: string; consultantId: string }> {
     // Verify the target user exists and is a CONSULTANT
-    const user = await this.prisma.user.findUnique({
+    const user = await this.encryptionPrisma.user.findUnique({
       where: { id: dto.consultantUserId },
     });
 
@@ -73,7 +74,7 @@ export class ConsultantService {
     }
 
     // Check if profile already exists
-    const existing = await this.prisma.consultant.findUnique({
+    const existing = await this.encryptionPrisma.consultant.findUnique({
       where: { userId: dto.consultantUserId },
     });
 
@@ -82,7 +83,7 @@ export class ConsultantService {
         'A profile already exists for this consultant.',
       );
     }
-    return await this.prisma
+    return await this.encryptionPrisma
       .$transaction(async (tx) => {
         // Create consultant profile
         const consultant = await tx.consultant.create({
@@ -109,9 +110,9 @@ export class ConsultantService {
 
         // Link any CV uploaded for this user
         await tx.cvFile.updateMany({
-          where: { userId: dto.consultantUserId, consultantId: null},
-          data: { consultantId: consultant.id}
-        })
+          where: { userId: dto.consultantUserId, consultantId: null },
+          data: { consultantId: consultant.id },
+        });
 
         // Link the CM to this consultant
         await tx.consultantManager.create({
@@ -140,36 +141,17 @@ export class ConsultantService {
           });
         }
 
-        // Create experiences
-        for (const exp of dto.experiences) {
-          await tx.consultantExperience.create({
-            data: {
-              consultantId: consultant.id,
-              jobTitle: exp.jobTitle,
-              companyName: exp.companyName,
-              jobType: exp.jobType as JobType,
-              workModel: exp.workModel as WorkModel,
-              startDate: new Date(exp.startDate),
-              endDate: exp.endDate ? new Date(exp.endDate) : null,
-              description: exp.description,
-            },
-          });
-        }
-
-        // Create certifications
-        if (dto.certifications) {
-          for (const cert of dto.certifications) {
-            await tx.certificate.create({
-              data: {
-                consultantId: consultant.id,
-                title: cert.title,
-                issuingBody: cert.issuingBody,
-                startDate: cert.startDate ? new Date(cert.startDate) : null,
-                endDate: cert.endDate ? new Date(cert.endDate) : null,
-              },
-            });
-          }
-        }
+        await this.createExperienceRecords(tx, consultant.id, dto.experiences);
+        await this.createCertificateRecords(
+          tx,
+          consultant.id,
+          dto.certifications ?? [],
+        );
+        await this.createEducationRecords(
+          tx,
+          consultant.id,
+          dto.education ?? [],
+        );
 
         return { consultantId: consultant.id };
       })
@@ -192,9 +174,67 @@ export class ConsultantService {
       });
   }
 
+  private async createExperienceRecords(
+    tx: any,
+    consultantId: string,
+    experiences: any[],
+  ): Promise<void> {
+    // Create experiences
+    for (const exp of experiences) {
+      await tx.consultantExperience.create({
+        data: {
+          consultantId,
+          jobTitle: exp.jobTitle,
+          companyName: exp.companyName,
+          jobType: exp.jobType as JobType,
+          workModel: exp.workModel as WorkModel,
+          startDate: new Date(exp.startDate),
+          endDate: exp.endDate ? new Date(exp.endDate) : null,
+          description: exp.description,
+        },
+      });
+    }
+  }
+
+  private async createCertificateRecords(
+    tx: any,
+    consultantId: string,
+    certifications: any[],
+  ): Promise<void> {
+    for (const cert of certifications) {
+      await tx.certificate.create({
+        data: {
+          consultantId,
+          title: cert.title,
+          issuingBody: cert.issuingBody,
+          startDate: cert.startDate ? new Date(cert.startDate) : null,
+          endDate: cert.endDate ? new Date(cert.endDate) : null,
+        },
+      });
+    }
+  }
+
+  private async createEducationRecords(
+    tx: any,
+    consultantId: string,
+    education: any[],
+  ): Promise<void> {
+    for (const edu of education) {
+      await tx.consultantEducation.create({
+        data: {
+          consultantId,
+          institution: edu.institution,
+          qualification: edu.qualification,
+          startDate: new Date(edu.startDate),
+          endDate: edu.endDate ? new Date(edu.endDate) : null,
+        },
+      });
+    }
+  }
+
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
     // Find all CONSULTANT users who are ACTIVE but have no Consultant record
-    const users = await this.prisma.user.findMany({
+    const users = await this.encryptionPrisma.user.findMany({
       where: {
         role: 'CONSULTANT',
         status: 'ACTIVE',
@@ -233,7 +273,7 @@ export class ConsultantService {
 
     const skip = (page - 1) * limit;
     const [consultants, total] = await Promise.all([
-      this.prisma.consultant.findMany({
+      this.encryptionPrisma.consultant.findMany({
         skip,
         take: limit,
         where: {
@@ -249,7 +289,7 @@ export class ConsultantService {
           consultantExperiences: { select: { startDate: true, endDate: true } },
         },
       }),
-      this.prisma.consultant.count(),
+      this.encryptionPrisma.consultant.count(),
     ]);
 
     const mappedConsultants: ConsultantListItemDto[] = consultants.map((c) => {
@@ -294,7 +334,7 @@ export class ConsultantService {
   }
 
   async getConsultantById(id: string): Promise<ConsultantProfileDto> {
-    const consultant = await this.prisma.consultant.findUnique({
+    const consultant = await this.encryptionPrisma.consultant.findUnique({
       where: { id },
       include: this.getProfileIncludes(),
     });
@@ -307,7 +347,7 @@ export class ConsultantService {
   }
 
   async getConsultantByUserId(userId: string): Promise<ConsultantProfileDto> {
-    const consultant = await this.prisma.consultant.findUnique({
+    const consultant = await this.encryptionPrisma.consultant.findUnique({
       where: { userId },
       include: this.getProfileIncludes(),
     });
@@ -326,7 +366,7 @@ export class ConsultantService {
   ): Promise<ProjectConsultantsResponseDto> {
     const now = new Date();
 
-    const placements = await this.prisma.projectPlacement.findMany({
+    const placements = await this.encryptionPrisma.projectPlacement.findMany({
       where: {
         projectId: projectId,
         status: 'ACTIVE',
@@ -398,7 +438,7 @@ export class ConsultantService {
     requestingUserId: string,
   ): Promise<string> {
     if (userRole == Role.CONSULTANT) {
-      const consultantProfile = await this.prisma.consultant.findUnique({
+      const consultantProfile = await this.encryptionPrisma.consultant.findUnique({
         where: { userId: requestingUserId },
         select: { id: true },
       });
@@ -425,7 +465,7 @@ export class ConsultantService {
       requestingUserId,
     );
     //Verify consultant exists
-    const existing = await this.prisma.consultant.findUnique({
+    const existing = await this.encryptionPrisma.consultant.findUnique({
       where: { id: resolvedConsultantId },
     });
 
@@ -435,7 +475,8 @@ export class ConsultantService {
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.encryptionPrisma.$transaction(async (tx) => {
+
       const consultant = await tx.consultant.findUnique({
         where: { id: resolvedConsultantId },
       });
@@ -594,7 +635,8 @@ export class ConsultantService {
     projectId: string,
     consultantId: string,
   ): Promise<{ message: string; placementId: string }> {
-    const placement = await this.prisma.projectPlacement.findFirst({
+
+    const placement = await this.encryptionPrisma.projectPlacement.findFirst({
       where: {
         projectId,
         consultantId,
@@ -608,7 +650,8 @@ export class ConsultantService {
       );
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.encryptionPrisma.$transaction(async (tx) => {
+
       await tx.projectPlacement.update({
         where: { id: placement.id },
         data: {
@@ -773,7 +816,7 @@ export class ConsultantService {
 
   //-----------------Consultant get assigned projects-------------------
   async getAssignedProjects(userId: string) {
-    const consultant = await this.prisma.consultant.findUnique({
+    const consultant = await this.encryptionPrisma.consultant.findUnique({
       where: { userId },
     });
 
@@ -781,7 +824,7 @@ export class ConsultantService {
       throw new NotFoundException(`No consultant profile for this user.`);
     }
 
-    const placement = await this.prisma.projectPlacement.findMany({
+    const placement = await this.encryptionPrisma.projectPlacement.findMany({
       where: { consultantId: consultant.id },
       include: {
         project: {
@@ -817,7 +860,7 @@ export class ConsultantService {
 
   //-----------------Consultant get assigned projects DETAIL-------------------
   async getAssignedProjectDetails(userId: string, projectId: string) {
-    const consultant = await this.prisma.consultant.findUnique({
+    const consultant = await this.encryptionPrisma.consultant.findUnique({
       where: { userId },
     });
 
@@ -825,7 +868,7 @@ export class ConsultantService {
       throw new NotFoundException(`No consultant profile for this user`);
     }
 
-    const placement = await this.prisma.projectPlacement.findFirst({
+    const placement = await this.encryptionPrisma.projectPlacement.findFirst({
       where: { consultantId: consultant.id, projectId },
       include: {
         project: {
@@ -921,7 +964,7 @@ export class ConsultantService {
       throw new BadRequestException('Image size must not exceed 5MB.');
     }
 
-    const consultant = await this.prisma.consultant.findUnique({
+    const consultant = await this.encryptionPrisma.consultant.findUnique({
       where: { id: consultantId },
     });
 
@@ -935,7 +978,7 @@ export class ConsultantService {
     let isManagingCM = false;
 
     if (!isSelf && userRole === 'CONSULTANT_MANAGER') {
-      const managerLink = await this.prisma.consultantManager.findUnique({
+      const managerLink = await this.encryptionPrisma.consultantManager.findUnique({
         where: { userId_consultantId: { userId, consultantId } },
       });
       isManagingCM = !!managerLink;
@@ -947,7 +990,7 @@ export class ConsultantService {
       );
     }
 
-    await this.prisma.consultant.update({
+    await this.encryptionPrisma.consultant.update({
       where: { id: consultantId },
       data: {
         pictureData: Uint8Array.from(file.buffer),

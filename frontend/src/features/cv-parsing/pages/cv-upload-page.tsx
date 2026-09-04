@@ -20,7 +20,8 @@ export default function CVUpload (){
         fileSize: number;
     } | null>(null);
     const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(() => sessionStorage.getItem("cv_parsing_disclaimer_ack") !== "true");
+    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(true);
+    const [selectedParsingMethod, setSelectedParsingMethod] = useState<"RULE_BASED" | "AI_ASSISTED">("RULE_BASED");
 
     const validateFile = (file: File) : boolean =>{
       const allowedMimeTypes = [
@@ -62,7 +63,7 @@ export default function CVUpload (){
 
     try{
       setIsUploading(true);
-      const response = await cvParsingService.upload(userId, stagedFile);
+      const response = await cvParsingService.upload(userId, stagedFile, selectedParsingMethod);
 
       setUploadedCv({
         cvFileId: response.cvFileId,
@@ -96,13 +97,98 @@ export default function CVUpload (){
 
   const handleContinueToExtraction = () =>{
     if(!userId  || !uploadedCv) return;
-    toast.success("Navigating to the extraction page.");
-   // navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
+    navigate(`/cv-extraction-review/${userId}/${uploadedCv.cvFileId}`);
+
   }
 
   const handleAcknowledgeDisclaimer = () =>{
-    sessionStorage.setItem("cv_parsing_disclaimer_ack", "true");
     setIsDisclaimerOpen(false);
+  };
+
+  const renderUploadState = () =>{
+    if(uploadedCv){
+      return (
+        <div className="w-full border border-gray-100 rounded-xl flex flex-col items-center justify-center ">
+          <CheckCircle2 className="h-14 w-14 text-green-600"/>
+          <h3 className="text-2xl font-bold mb-2">File successfully uploaded</h3>
+          <p className="text-base ">{uploadedCv.fileName}</p>
+        </div>
+      )
+  }
+if(stagedFile){
+  return(
+<div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 py-10">
+  <p className="text-lg text-primary"><strong>{stagedFile.name}</strong> : {(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+    <div className="flex items-center  gap-4 mt-2">
+      <div className="flex gap-3">
+          <label className="flex items-center gap-2 rounded-full border border-gray-300 px-3 py-2">
+              <input type="radio" name="parsingMethod" value="RULE_BASED"
+                checked = {selectedParsingMethod === "RULE_BASED"}
+                onChange={() => setSelectedParsingMethod("RULE_BASED")} />
+              <span>Rule-based Parsing</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-full border border-gray-300 px-3 py-2">
+              <input type="radio" name="parsingMethod" value="AI_ASSISTED"
+                checked = {selectedParsingMethod === "AI_ASSISTED"}
+                  onChange={() => setSelectedParsingMethod("AI_ASSISTED")} />
+                  <span>AI-assisted Parsing</span>
+          </label>
+      </div>
+    </div>
+    <div className="flex gap-4 mt-2">
+        <button type="button"
+          className="h-12 px-8 rounded-lg border font-semibold text-lg"
+          style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
+          onClick={handleChangeFile} disabled={isUploading}
+          >
+            Change File
+        </button>
+
+        <button type="button"
+          className="h-12 px-8 rounded-lg font-semibold text-white text-lg"
+          style={{ backgroundColor: "var(--color-primary)" }}
+          onClick={handleConfirmUpload} disabled={isUploading}
+          >
+            {isUploading ? "Uploading..." : "Confirm & Upload"}
+        </button>
+    </div>  
+  </div>
+  );
+}
+return(
+      <div className= "w-full border rounded-xl flex flex-col items-center justify-center"
+          style={{border: "3px dashed var(--color-primary)", color: "var(--color-primary)", backgroundColor: isDragging ? "#e8f0ff" : "transparent"}}
+                   
+           onDragOver= {(event) =>{
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "copy";
+                    setDragging(true);
+                    }}
+
+          onDragLeave={() => { setDragging(false) } }
+
+          onDrop={(event) =>{ event.preventDefault();
+                        setDragging(false);
+
+          const droppedFile = event.dataTransfer.files.item(0);
+            if(droppedFile){
+                handleSelectedFile(droppedFile);}
+              }} >
+          <div className="h-6"/>
+              <UploadCloud className="h-14 w-14 mb-4"/>
+                <p className="text-lg">Drag and drop CV here</p>
+                <span className="text-lg "style={{ color: "var(--color-text-secondary)" }}>or</span>
+                <input type="file" id="cv-upload" className="hidden" accept=".pdf,.docx" onChange={handleFileChange}></input>
+                  <label htmlFor="cv-upload" role="button" 
+                  className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] text-white rounded-lg font-semi-bold text-lg shadow-md" 
+                  style={{ backgroundColor: "var(--color-primary)", color: "white" }}>
+                    Choose file
+                  </label>
+            <div className="h-2"/>
+                <span className ="text-sm"style={{ color: "var(--color-text-secondary)" }}>PDF or DOCX up to 10MB </span>
+                <div className="h-6"/>
+        </div>
+      )
   };
 
     return (
@@ -135,79 +221,9 @@ export default function CVUpload (){
                         Upload a CV file and we will extract the information to help you create the profile faster. </p>
                 </div>
                 {isUploading  &&(
-                  <p className="text-sm">Uploading CV...</p>
+                  <p className="text-sm" style={{ color: "var(--color-text-secondary)"}}>Uploading CV...</p>
                 )}
-                { uploadedCv? (
-                    <div className="w-full border border-gray-100 rounded-xl flex flex-col items-center justify-center ">
-                      <CheckCircle2 className="h-14 w-14 text-green-600"/>
-                      <h3 className="text-2xl font-bold mb-2">File successfully uploaded</h3>
-                      <p className="text-base ">{uploadedCv.fileName}</p>
-                    </div>
-                ): stagedFile ?(
-                  <div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 py-10">
-                    <p className="text-lg font-semibold">{stagedFile.name}</p>
-                    <p className="text-sm text-secondary">{(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-
-                    <div className="flex gap-4 mt-2">
-                      <button type="button"
-                      className="h-12 px-6 rounded-lg border font-semibold"
-                      style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
-                      onClick={handleChangeFile}
-                      disabled={isUploading}
-                      >
-                        Change File
-                      </button>
-
-                      <button type="button"
-                      className="h-12 px-6 rounded-lg font-semibold text-white"
-                      style={{ backgroundColor: "var(--color-primary)" }}
-                      onClick={handleConfirmUpload}
-                      disabled={isUploading}
-                      >
-                        {isUploading ? "Uploading..." : "Confirm & Upload"}
-                      </button>
-                    </div>  
-                  </div>
-                  ):(
-                <div className= "w-full border rounded-xl flex flex-col items-center justify-center"
-                  style={{border: "3px dashed var(--color-primary)", color: "var(--color-primary)", backgroundColor: isDragging ? "#e8f0ff" : "transparent"}}
-                   
-                      onDragOver= {(event) =>{
-                          event.preventDefault();
-                          event.dataTransfer.dropEffect = "copy";
-                          setDragging(true);
-                          }}
-
-                      onDragLeave={() => {
-                        setDragging(false)
-                      }}
-
-                      onDrop={(event) =>{
-                        event.preventDefault();
-                        setDragging(false);
-
-                        const droppedFile = event.dataTransfer.files.item(0);
-                        if(droppedFile){
-                          handleSelectedFile(droppedFile);
-                        }
-                      }}
-                      >
-
-                  <div className="h-6"/>
-                  <UploadCloud className="h-14 w-14 mb-4"/>
-                  <p className="text-lg">Drag and drop CV here</p>
-                  <span className="text-lg "style={{ color: "var(--color-text-secondary)" }}>or</span>
-                  <input type="file" id="cv-upload" className="hidden" accept=".pdf,.docx" onChange={handleFileChange}></input>
-                    <label htmlFor="cv-upload" role="button" 
-                    className="flex items-center justify-center gap-2 min-w-[240px] h-[50px] text-white rounded-lg font-semi-bold text-lg shadow-md" 
-                    style={{ backgroundColor: "var(--color-primary)", color: "white" }}>
-                      Choose file
-                    </label>
-                  <div className="h-2"/>
-                  <span className ="text-sm"style={{ color: "var(--color-text-secondary)" }}>PDF or DOCX up to 10MB </span>
-                  <div className="h-6"/>
-                </div>
-                  )}
+                {renderUploadState()}
               </div>
             </Card>
             {isDisclaimerOpen && (

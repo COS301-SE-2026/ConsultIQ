@@ -203,12 +203,14 @@ export class ScoringService {
           update: {
             overrideWeight: factor.overrideWeight,
             active: factor.active,
+            hardExclusionEnabled: factor.hardExclusionEnabled,
           },
           create: {
             projectId,
             factorName: factor.factorName,
             overrideWeight: factor.overrideWeight,
             active: factor.active,
+            hardExclusionEnabled: factor.hardExclusionEnabled,
           },
         });
       }

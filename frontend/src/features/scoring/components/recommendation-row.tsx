@@ -53,6 +53,7 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
                         Score Breakdown
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
+                    <div className = "w-[150px] flex justify-center">
                     {recommendation.isPlaced ? (
                         <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-emerald-700 bg-emerald-50">Placed</span>
                     ):(
@@ -66,6 +67,7 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
                             {isPlacing ? "Placing..." : "Place Consultant"}
                     </button>
                     )}
+                    </div>
                     </div>
                 </td>
             </tr>

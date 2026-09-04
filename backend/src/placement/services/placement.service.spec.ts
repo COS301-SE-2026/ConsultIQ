@@ -7,8 +7,9 @@ import {
 } from '@nestjs/common';
 import { PlacementService } from './placement.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { PlacementStatus } from '@prisma/client';
+import { PlacementStatus, AuditAction } from '@prisma/client';
 import { mock } from 'node:test';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
 
 const mockPrismaService = {
   projectManager: {
@@ -29,6 +30,10 @@ const mockPrismaService = {
   $transaction: jest.fn(async (callback) => callback(mockPrismaService)),
 };
 
+const mockAuditLogService = {
+  log: jest.fn(),
+};
+
 describe('PlacementService', () => {
   let service: PlacementService;
 
@@ -39,6 +44,10 @@ describe('PlacementService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();
@@ -125,6 +134,41 @@ describe('PlacementService', () => {
       ).rejects.toThrow(ConflictException);
 
       expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
+    });
+
+    it('should ignore terminated placement history when checking for duplicates', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: 'project-1',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-2',
+      });
+
+      await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockPrismaService.projectPlacement.findFirst).toHaveBeenCalledWith({
+        where: {
+          projectId: 'project-1',
+          consultantId: 'consultant-1',
+          status: PlacementStatus.ACTIVE,
+        },
+      });
+      expect(mockPrismaService.projectPlacement.create).toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if the end date is before the start date', async () => {
@@ -321,6 +365,52 @@ describe('PlacementService', () => {
         data: { availability: 'UNAVAILABLE' },
       });
     });
+    
+    it('writes an audit log entry after successfully creating a placement', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1' });
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+      });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-1',
+      });
+
+      await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith({
+        action: AuditAction.PLACEMENT_CREATED,
+        actingUserId: 'user-123',
+        entityType: 'Placement',
+        entityId: 'placement-1',
+        metadata: {
+          projectId: 'project-1',
+          consultantId: 'consultant-1',
+          allocation: 50,
+        },
+      });
+    });
+
+    it('does not write an audit log entry when placement creation fails validation', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
+    });
+
   });
 
   describe('getRemainingCapacity', () => {

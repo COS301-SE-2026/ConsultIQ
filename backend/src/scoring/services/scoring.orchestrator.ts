@@ -60,7 +60,10 @@ export class ScoringOrchestrator {
           };
         }
 
-        skillResult.score = Math.max(0, skillResult.score - this.MANDATORY_SKILL_PENALTY);
+        skillResult.score = Math.max(
+          0,
+          skillResult.score - this.MANDATORY_SKILL_PENALTY,
+        );
 
         const penaltyNotice = `[-15% PENALTY APPLIED] Missing mandatory skills: ${missingSkills.join(', ')}`;
         skillResult.details = skillResult.details
@@ -96,7 +99,7 @@ export class ScoringOrchestrator {
     }
 
     if (activeFactors.has(ScoringFactor.LOCATION)) {
-      const geographicFitResult = this.geographicFitScorer.score(
+      const geographicFitResult = await this.geographicFitScorer.score(
         consultant,
         project,
       );
@@ -112,7 +115,7 @@ export class ScoringOrchestrator {
         consultant,
         project,
         availabilityAllocations
-          ? availabilityAllocations.get(consultant.consultantId) ?? 0
+          ? (availabilityAllocations.get(consultant.consultantId) ?? 0)
           : undefined,
       );
       if (

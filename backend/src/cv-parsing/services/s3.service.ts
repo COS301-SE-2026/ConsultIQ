@@ -36,7 +36,7 @@ export class S3Service {
     this.s3Client = new S3Client({
       region: this.config.get<string>('AWS_REGION') ?? 'af-south-1',
       endpoint: this.endpoint,
-      forcePathStyle: Boolean(this.endpoint),
+      forcePathStyle: true,
       credentials: {
         accessKeyId: this.config.get<string>('AWS_ACCESS_KEY_ID') ?? '',
         secretAccessKey: this.config.get<string>('AWS_SECRET_ACCESS_KEY') ?? '',

@@ -36,7 +36,7 @@ export default function ProjectFilters({
           onChange={(e) =>
             onBudgetChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="w-full min-w-[220px] max-w-[260px] h-16 rounded-2xl border bg-white !pr-12 !text-lg font-semibold appearance-none outline-none truncate"
           style={{
             borderColor:
               "var(--color-border)",
@@ -79,7 +79,7 @@ export default function ProjectFilters({
           onChange={(e) =>
             onTeamSizeChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="w-full min-w-[220px] max-w-[260px] h-16 rounded-2xl border bg-white !pr-12 text-xl font-semibold appearance-none outline-none"
           style={{
             borderColor:
               "var(--color-border)",
@@ -122,7 +122,7 @@ export default function ProjectFilters({
           onChange={(e) =>
             onLocationChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="w-full min-w-[220px] max-w-[260px] h-16 rounded-2xl border bg-white !pr-12 text-xl font-semibold appearance-none outline-none"
           style={{
             borderColor:
               "var(--color-border)",

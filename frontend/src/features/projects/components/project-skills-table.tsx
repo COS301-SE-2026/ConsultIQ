@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Trash2 } from "lucide-react";
 interface TableSkill {
   readonly id?: string;
   readonly name: string;
@@ -12,10 +12,11 @@ interface TableSkill {
 interface ProjectSkillsTableProps {
    readonly skills: TableSkill[];
    readonly onEditSkill: (skill: TableSkill, idx: number)=> void;
+   readonly onDeleteSkill?: (skill: TableSkill, idx: number) => void; 
    readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: ProjectSkillsTableProps) {
+export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onDeleteSkill }: ProjectSkillsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 4;
 
@@ -31,6 +32,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
         <span>Competency</span>
         <span>Years</span>
         <span>Mandatory</span>
+        {isEditing && <span>Actions</span>}
       </div>
 
       <div className="flex flex-col h-[200px] overflow-y-auto">
@@ -45,10 +47,19 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
               <span>{skill.years}</span>
               <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
               {isEditing && (
+                <div className="flex gap-8">
                 <button type="button"
-              onClick={()=> onEditSkill(skill, startIndex+index)}
-              className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
+                  onClick={()=> onEditSkill(skill, startIndex + index)}
+                  className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>
+                  Edit
+                </button>
+
+                <button type="button" onClick={() => onDeleteSkill?.(skill, startIndex + index)}>
+                <Trash2 className="h-5 w-5 text-red-500 hover:opacity-80 " />
+                </button>
+                </div>
               )}
+              
             </div>
           ))
         ) : (

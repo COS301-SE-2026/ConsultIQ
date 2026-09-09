@@ -49,6 +49,7 @@ export class AdminUserService {
       await this.prisma.$transaction([
         this.prisma.user.findMany({
           where: listWhere,
+          orderBy: { createdAt: 'desc' },
           skip: (page - 1) * limit,
           take: limit,
           select: {

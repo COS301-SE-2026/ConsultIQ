@@ -317,7 +317,7 @@ export default function ProjectDetailsModal({
 
         <div className="flex flex-col gap-8">
           <ProjectOverviewSection 
-          key={project.id}
+          key={`overview-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-overview"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
@@ -328,7 +328,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectLocationSection 
-          key={project.id}
+          key={`location-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-location"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
@@ -339,7 +339,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectSkillsSection
-            key={fullProject ? fullProject.id : "loading"}
+            key={`skills-${fullProject ? fullProject.id : "loading"}`}
             skills={[...(displayData.skills ?? [])]}
             isEditing={activeEditSection === "project-skills"}
             isDisabled={activeEditSection !== null && activeEditSection !== "project-skills"}

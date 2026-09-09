@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 interface TableSkill {
   readonly id?: string;
@@ -24,6 +24,12 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentSkills = skills.slice(startIndex, startIndex + rowsPerPage);
 
+  useEffect(() =>{
+    if(currentPage > totalPages){
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [totalPages, currentPage]);
+  
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
 
@@ -39,7 +45,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
         {currentSkills.length > 0 ? (
           currentSkills.map((skill, index) => (
             <div
-              key={index}
+              key={skill.id ?? `${startIndex + index}-${skill.name}`}
               className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
             >
               <span className="truncate pr-2">{skill.name}</span>

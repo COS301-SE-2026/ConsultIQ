@@ -126,7 +126,7 @@ export class PlacementService {
 
     let stringDate = 'starting on ' + startDate.toDateString();
     if (startDate < new Date()) {
-      stringDate = 'started on ' + startDate.toDateString();
+      stringDate = 'which started on ' + startDate.toDateString();
     }
 
     await this.notification.createAndSendNotification(

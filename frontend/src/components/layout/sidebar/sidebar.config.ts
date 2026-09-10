@@ -54,6 +54,11 @@ export const projectManagerSidebarItems: SidebarItem[] = [
         icon: Users
     },
     {
+        label: "Portfolio Gaps",
+        path: "/skill-gap",
+        icon: ChartPie
+    },
+    {
         label: "Help",
         path: "/help-page",
         icon: HelpCircle

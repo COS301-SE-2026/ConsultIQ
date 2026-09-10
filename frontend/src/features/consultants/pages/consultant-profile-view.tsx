@@ -167,6 +167,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               idNumber={profile.idNumber}
               nationality={profile.nationality}
               canEdit={canEdit}
+              isConsultant={!Boolean(fromDashboard)}
               onSave={async (data) => {
                 await save({
                   fullname: data.fullName,

@@ -14,6 +14,7 @@ interface PersonalInfoCardProps {
   readonly nationality?: string;
   readonly canEdit?:boolean;
   readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => Promise<void> | void;
+  readonly isConsultant: boolean;
 }
 
 
@@ -26,6 +27,7 @@ export default function PersonalInfoCard({
   nationality,
   canEdit,
   onSave,
+  isConsultant,
 }: PersonalInfoCardProps) {
 
    const [isEditing, setIsEditing] = useState(false);
@@ -163,11 +165,16 @@ export default function PersonalInfoCard({
               {nameError && <span className="text-red-500 text-xs mt-1 block">{nameError}</span>}
             </div>
 
-             <div>
+            {isConsultant ? (
+                <DetailField label="Email Address" value={emailState} variant="compact" />
+            ):(
+              <div>
               <label className="text-sm font-medium " htmlFor="form-email-address">Email Address</label>
               <Input value={emailState} onChange={(e) => setEmailState(e.target.value) } />
               {emailError && <span className="text-red-500 text-xs mt-1 block">{emailError}</span>}
             </div>
+            )}
+             
 
             <div>
               <label className="text-sm font-medium " htmlFor="form-phone-number">Phone Number</label>

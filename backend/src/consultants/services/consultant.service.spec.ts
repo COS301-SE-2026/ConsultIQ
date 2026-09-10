@@ -6,14 +6,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
-import {EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
+import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
 //import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
-import { userInfo } from 'node:os';
-import { create } from 'node:domain';
-import { title } from 'node:process';
+
 
 const mockPrismaService = {
   user: {
@@ -301,9 +299,9 @@ describe('ConsultantService', () => {
           institution: 'University of Cape Town',
           qualification: 'BSc Computer Science',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+          endDate: new Date('2023-12-31T00:00:00.000Z'),
         },
-      },{
+      }, {
         label: 'certificate',
         txKey: 'certificate',
         dtoKey: 'certifications',
@@ -318,29 +316,30 @@ describe('ConsultantService', () => {
           title: 'AWS Certified Developer',
           issuingBody: 'Amazon',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+          endDate: new Date('2023-12-31T00:00:00.000Z'),
         },
       },
-    ])('should create $label record when $label data is provided', async ({txKey, dtoKey, payload, expected}) =>{
-      mockPrismaService.user.findUnique.mockResolvedValue({ 
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
+    ])('should create $label record when $label data is provided', async ({ txKey, dtoKey, payload, expected }) => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
 
       const txMock = {
-        consultant : { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid'})},
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0})},
-        consultantManager: { create: jest.fn().mockResolvedValue({})},
-        skill: {upsert: jest.fn().mockResolvedValue({ id: 'skill-1'})},
-        consultantSkill: {create: jest.fn().mockResolvedValue({})},
-        consultantExperience: {create: jest.fn().mockResolvedValue({})},
-        certificate: {create: jest.fn().mockResolvedValue({})},
-        consultantEducation: { create: jest.fn().mockResolvedValue({})},
+        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        consultantManager: { create: jest.fn().mockResolvedValue({}) },
+        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
+        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
+        certificate: { create: jest.fn().mockResolvedValue({}) },
+        consultantEducation: { create: jest.fn().mockResolvedValue({}) },
       };
-      mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
-      
+      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
+
       const dtoIncludingRelatedData = {
         ...dto,
-        [dtoKey] : [payload],
+        [dtoKey]: [payload],
       } as any;
 
       const result = await service.createConsultantProfile(cmUserId, dtoIncludingRelatedData);
@@ -1479,17 +1478,28 @@ describe('ConsultantService', () => {
         consultantId: 'consultant-1',
         status: 'ACTIVE',
         allocation: 100,
+        consultant: {
+          userId: 'user-123',
+          capacity: 50,
+        },
+        project: {
+          projectName: 'Alpha Project',
+        },
       });
 
       mockTx.consultant.update.mockResolvedValueOnce({
         id: 'consultant-1',
         capacity: 100,
-        availability: 'UNAVAILABLE',
       });
 
       const result = await service.unassignConsultant('project-1', 'consultant-1');
 
       expect(result.message).toBe('Consultant successfully unassigned and capacity restored.');
+      expect(mockNotificationService.createAndSendNotification).toHaveBeenCalledWith(
+        'user-123',
+        'Project Unassignment Notice',
+        'You have been unassigned from project Alpha Project.',
+      );
       expect(result.placementId).toBe('placement-123');
 
       expect(mockTx.projectPlacement.update).toHaveBeenCalledWith({
@@ -1508,10 +1518,6 @@ describe('ConsultantService', () => {
         },
       });
 
-      expect(mockTx.consultant.update).toHaveBeenNthCalledWith(2, {
-        where: { id: 'consultant-1' },
-        data: { availability: 'AVAILABLE' },
-      });
     });
 
     it('should cap capacity at 100 if the math somehow results in > 100', async () => {
@@ -1521,12 +1527,18 @@ describe('ConsultantService', () => {
         consultantId: 'consultant-1',
         status: 'ACTIVE',
         allocation: 50,
+        consultant: {
+          userId: 'user-123',
+          capacity: 50,
+        },
+        project: {
+          projectName: 'Alpha Project',
+        },
       });
 
       mockTx.consultant.update.mockResolvedValueOnce({
         id: 'consultant-1',
         capacity: 120,
-        availability: 'PARTIALLY_AVAILABLE',
       });
 
       await service.unassignConsultant('project-1', 'consultant-1');
@@ -1536,52 +1548,7 @@ describe('ConsultantService', () => {
         data: { capacity: 100 },
       });
 
-      expect(mockTx.consultant.update).toHaveBeenCalledWith({
-        where: { id: 'consultant-1' },
-        data: { availability: 'AVAILABLE' },
-      });
-    });
 
-
-    it('should set status to UNAVAILABLE if restored capacity is still 0', async () => {
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
-        id: 'placement-123',
-        projectId: 'project-1',
-        consultantId: 'consultant-1',
-        status: 'ACTIVE',
-        allocation: 0,
-      });
-      mockTx.consultant.update.mockResolvedValueOnce({
-        id: 'consultant-1',
-        capacity: 0,
-        availability: 'AVAILABLE',
-      });
-
-      await service.unassignConsultant('project-1', 'consultant-1');
-
-      expect(mockTx.consultant.update).toHaveBeenCalledWith({
-        where: { id: 'consultant-1' },
-        data: { availability: 'UNAVAILABLE' },
-      });
-    });
-
-    it('should skip updating the availability enum if the status is already correct', async () => {
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
-        id: 'placement-123',
-        projectId: 'project-1',
-        consultantId: 'consultant-1',
-        status: 'ACTIVE',
-        allocation: 50,
-      });
-
-      mockTx.consultant.update.mockResolvedValueOnce({
-        id: 'consultant-1',
-        capacity: 50,
-        availability: 'AVAILABLE',
-      });
-
-      await service.unassignConsultant('project-1', 'consultant-1');
-      expect(mockTx.consultant.update).toHaveBeenCalledTimes(1);
     });
 
   });

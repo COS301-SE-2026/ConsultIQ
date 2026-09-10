@@ -24,7 +24,8 @@ export default function ProjectScoringOverridePage() {
     useEffect(() => {
         const loadConfigurations = async () => {
             if (!projectId) {
-                setErrMessage("No project was selected.");
+                setErrMessage("No project was selected. Go back to the projects page and select a project to configure.");
+                navigate("/projects", {replace: true});
                 setIsLoading(false);
                 return;
             }
@@ -126,7 +127,7 @@ export default function ProjectScoringOverridePage() {
     return (
         <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
             <div className="h-screen shrink-0">
-                <Sidebar items={projectManagerSidebarItems} /></div>
+                <Sidebar items={projectManagerSidebarItems(projectId)} /></div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
                     className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"

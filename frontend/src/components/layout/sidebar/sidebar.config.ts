@@ -37,35 +37,47 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
 
 ]
 
-export const projectManagerSidebarItems: SidebarItem[] = [
-    {
+export const projectManagerSidebarItems = (projectId?: string, runId?:string,): SidebarItem[] => {
+    const items: SidebarItem[] = [
+       {
         label: "Projects",
         path: "/projects",
         icon: Briefcase
-    },
-    {
-        label: "Configurations",
-        path: "/project-scoring-config",
-        icon: Cog
-    },
-    {
-        label: "Placements",
-        path: "/placement-dashboard",
-        icon: Users
     },
     {
         label: "Portfolio Gaps",
         path: "/skill-gap",
         icon: ChartPie
     },
-    {
+
+   ];
+
+   if(projectId){
+    items.push(
+        {
+            label: "Configurations",
+            path: `/project-scoring-config/${projectId}`,
+            icon: Cog
+        });
+   }
+
+   if(projectId && runId){
+    items.push(
+        {
+            label: "Placements",
+            path: `/placement-dashboard/${projectId}/${runId}`,
+            icon: Users
+        })
+   }
+
+   items.push({
         label: "Help",
         path: "/help-page",
         icon: HelpCircle
-    }
-
-
-]
+    });
+    
+    return items;
+}
 
 export const consultantSidebarItems: SidebarItem[] = [
     {

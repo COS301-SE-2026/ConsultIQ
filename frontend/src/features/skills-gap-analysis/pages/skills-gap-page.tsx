@@ -95,7 +95,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-        <Sidebar items={projectManagerSidebarItems} />
+        <Sidebar items={projectManagerSidebarItems(projectId)} />
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
             <header className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
             style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}

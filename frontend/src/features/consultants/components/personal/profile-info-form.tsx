@@ -7,6 +7,10 @@ import { Trash2, User } from "lucide-react";
 import { ImageDropzone } from "../image-dropzone";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 
+type CostRateType = "DAILY" | "MONTHLY";
+
+const WORKING_DAYS_PER_YEAR = 260;
+
 export default function ProfileInfoForm() {
   const { updateProfileData } = useConsultantProfile();
 
@@ -15,6 +19,8 @@ export default function ProfileInfoForm() {
   const [nationality, setNationality] = useState("");
   const [isAvailable, setIsAvailable] = useState(true);
   const [costToCompany, setCostToCompany] = useState("");
+  const [costRateType, setCostRateType] = useState<CostRateType>("DAILY");
+  const enteredCost = Number(costToCompany);
 
   const [phoneError, setPhoneError] = useState("");
   const [idError, setIdError] = useState("");
@@ -70,7 +76,7 @@ export default function ProfileInfoForm() {
       setNationalityError("");
     }
 
-    if (costToCompany !== "" && Number(costToCompany) < 0) {
+    if (costToCompany !== "" && (!Number.isFinite(enteredCost) || enteredCost < 0)) {
       setCostError("Cost to company cannot be negative.");
       isValid = false;
     } else {
@@ -83,7 +89,7 @@ export default function ProfileInfoForm() {
       phone: phone.replace(/\D/g, ""),
       idNumber,
       nationality: nationality.trim(),
-      costToCompany: costToCompany ? parseFloat(costToCompany) : 0,
+      costToCompany: hasValidCost ? dailyCostToCompany : 0,
       availability: isAvailable ? "AVAILABLE" : "UNAVAILABLE",
     });
 
@@ -104,6 +110,8 @@ export default function ProfileInfoForm() {
 
   };
 
+const dailyCostToCompany = costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
+const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >=0;
 
   return (
     <Card className="p-6 h-full w-full flex rounded-2xl items-center justify-center">
@@ -206,9 +214,60 @@ export default function ProfileInfoForm() {
             />
             {nationalityError && <span className="text-red-500 text-sm">{nationalityError}</span>}
           </div>
+          
+        {/* Availability Toggle */}
+        <div className="flex flex-col justify gap-3 mt-2">
+          <label className="text-base font-semibold">Availability</label>
+          <div className="flex items-center gap-4 h-10">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isAvailable}
+              onClick={() => setIsAvailable((prev) => !prev)}
+              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
+              style={{ backgroundColor: isAvailable ? "var(--color-primary)" : "#d1d5db" }}
+            >
+              <span
+                className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200"
+                style={{ transform: isAvailable ? "translateX(20px)" : "translateX(0px)" }}
+              />
+            </button>
+            <span
+              className="text-base font-medium"
+              style={{ color: isAvailable ? "var(--color-primary)" : "#6b7280" }}
+            >
+              {isAvailable ? "Available" : "Unavailable"}
+            </span>
+          </div>
+        </div>
 
           <div className="flex flex-col gap-3">
             <label htmlFor="cost-to-company" className="text-base font-semibold">Cost to Company (R)</label>
+            <div className="flex rounded-lg border overflow-hidden">
+              <button type="button"
+                onClick={() => setCostRateType("DAILY")}
+                className={`flex-1 px-3 py-2 text-sm font-medium 
+                  ${costRateType === "DAILY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                >
+                Daily rate
+              </button>
+
+              <button type="button"
+                onClick={() => setCostRateType("MONTHLY")}
+                className={`flex-1 px-3 py-2 text-sm font-medium 
+                  ${costRateType === "MONTHLY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                >
+                Monthly salary
+              </button>
+            </div>
+
+            <span className="text-sm text-slate-500">
+              {costRateType === "DAILY"
+              ? "Enter the cost for on 8-hour working day."
+              : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
+              }
+            </span>
+            
             <div className="relative">
               <span
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-semibold select-none z-10"
@@ -220,8 +279,7 @@ export default function ProfileInfoForm() {
                 id="cost-to-company"
                 type="number"
                 min="0"
-                step="100"
-                placeholder="0.00"
+                placeholder={costRateType === "DAILY" ? "Daily amount" : "Monthly amount"}
                 value={costToCompany}
                 onChange={(e) => { setCostToCompany(e.target.value); if (costError) setCostError(""); }}
                 onKeyDown={(e) => { if (e.key === "-") e.preventDefault(); }}
@@ -229,37 +287,20 @@ export default function ProfileInfoForm() {
                 style={{ paddingLeft: "2.5rem" }}
               />
             </div>
+            
+            {hasValidCost && costRateType === "MONTHLY" && (
+              <p className="text-sm font-medium text-blue-700">
+                Estimated daily rate : R {dailyCostToCompany.toFixed(2)}
+                <br/>
+                Based on an 8-hour working day.
+              </p>
+            )}
+
             {costError && <span className="text-red-500 text-sm">{costError}</span>}
           </div>
         </div>
 
 
-
-        {/* Availability Toggle */}
-        <div className="flex flex-col justify gap-3 mt-6">
-          <label className="text-base font-semibold">Availability</label>
-          <div className="flex items-center gap-4 h-10">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isAvailable}
-              onClick={() => setIsAvailable((prev) => !prev)}
-              className="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none"
-              style={{ backgroundColor: isAvailable ? "var(--color-accent)" : "#d1d5db" }}
-            >
-              <span
-                className="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform duration-200"
-                style={{ transform: isAvailable ? "translateX(20px)" : "translateX(0px)" }}
-              />
-            </button>
-            <span
-              className="text-base font-medium"
-              style={{ color: isAvailable ? "var(--color-accent)" : "#6b7280" }}
-            >
-              {isAvailable ? "Available" : "Unavailable"}
-            </span>
-          </div>
-        </div>
 
         <div className=" flex justify-end w-full">
           <Button

@@ -67,7 +67,7 @@ export class AdminController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('search') search?: string,
-    @Query('budgetSort') budgetSort?: string,
+    @Query('budgetSort') budgetSort?: 'asc' | 'desc',
   ) {
     return await this.adminProjectService.getAllProjects(page, limit, search, budgetSort);
   }

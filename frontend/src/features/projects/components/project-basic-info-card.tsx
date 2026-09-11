@@ -1,4 +1,3 @@
-import { Camera, Upload } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import type { ProjectFormData } from "../pages/project-specification-page";
 
@@ -73,37 +72,10 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
       <div className="w-full max-w-[800px] flex flex-col gap-12">
-        <div className="h-1" />
+       
+       <h1>Project Details</h1>
 
-        {/* Logo Upload */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8">
-          <div className="relative shrink-0 w-[160px] h-[160px] rounded-2xl bg-[var(--color-primary)] flex items-center justify-center">
-            <span className="text-5xl font-bold text-white">UN</span>
-            <button
-              type="button"
-              className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center"
-            >
-              <Camera className="w-6 h-6 text-gray-700" />
-            </button>
-          </div>
-          {/* Upload Area */}
-          <div className="flex-1 w-full">
-            <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
-              Upload project logo
-            </p>
-            <div
-              className="border-2 border-dashed rounded-xl h-[160px] flex flex-col items-center justify-center gap-4 cursor-pointer transition hover:bg-gray-50"
-              style={{ borderColor: "var(--color-border)" }}
-            >
-              <Upload className="w-12 h-12 text-gray-500" />
-              <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
-                Click to upload or drag and drop
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* LEFT SIDE */}
           <div className="flex flex-col gap-6">
             {/* Project Name */}

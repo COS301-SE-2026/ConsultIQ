@@ -13,7 +13,8 @@ const MAX_BUDGET = 999999999;
 const MIN_ALLOCATION = 10;
 const MAX_ALLOCATION = 100;
 const MAX_DESCRIPTION_LENGTH = 250;
-
+const FULL_DAY_HOURS = 8;
+const FULL_WEEK_HOURS = 40;
 
 export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: ProjectBasicInfoCardProps) {
 
@@ -69,6 +70,14 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
   const getInputClass = (fieldName: keyof ProjectFormData,  hasError?: boolean) =>
   `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${(hasError ?? !!errors[fieldName]) ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
     }`;
+
+  const allocationHours = typeof data.allocation === "number" &&
+    data.allocation >= MIN_ALLOCATION && data.allocation <= MAX_ALLOCATION ? {
+      daily: (data.allocation / 100) *FULL_DAY_HOURS,
+      weekly: (data.allocation / 100)* FULL_WEEK_HOURS,
+    } : null;
+
+  const formatHours = (hours: number) => Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
 
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
@@ -232,19 +241,24 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 Consultant Allocation (%)
               </label>
               <input type="number"
+              step={10}
               id="allocation"
-              min={1}
-              max={100}
+              min={MIN_ALLOCATION}
+              max={MAX_ALLOCATION}
               value={data.allocation}
               onChange={(e) =>{
                 const value= Number(e.target.value);
                 onChange("allocation", value);
               }}
-              className={getInputClass("allocation")}/>
+              className={getInputClass("allocation", !!allocationError)}/>
 
-              <span className="text-sm text-slate-500">
-                Percentage of a consultant's capacity required for this project.
-              </span>
+              {allocationHours && (
+                <p className="text-sm font-medium text-blue-600">
+                  {data.allocation}% allocation means approximately{" "}
+                  {formatHours(allocationHours.daily)} hours per day and{" "}
+                  {formatHours(allocationHours.weekly)} hours per week.
+                </p>
+              )}
 
               {allocationError  &&(
                 <span className="test-sm text-red-500">{errors.allocation}</span>

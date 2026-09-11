@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
 interface TableSkill {
   readonly id?: string;
@@ -17,18 +17,13 @@ interface ProjectSkillsTableProps {
 }
 
 export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onDeleteSkill }: ProjectSkillsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
   const rowsPerPage = 4;
 
   const totalPages = Math.ceil(skills.length / rowsPerPage);
+  const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentSkills = skills.slice(startIndex, startIndex + rowsPerPage);
-
-  useEffect(() =>{
-    if(currentPage > totalPages){
-      setCurrentPage(Math.max(1, totalPages));
-    }
-  }, [totalPages, currentPage]);
   
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
@@ -78,7 +73,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
       <div className="flex justify-between items-center mt-2 pt-4 border-t">
         <button
           type="button"
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={currentPage === 1}
           className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
           style={{ color: "var(--color-primary)" }}
@@ -90,7 +85,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
         </span>
         <button
           type="button"
-          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={currentPage === totalPages || totalPages === 0}
           className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
           style={{ color: "var(--color-primary)" }}

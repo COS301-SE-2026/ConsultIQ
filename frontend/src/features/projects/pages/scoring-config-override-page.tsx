@@ -50,7 +50,7 @@ export default function ProjectScoringOverridePage() {
             }
         };
         void loadConfigurations();
-    }, [projectId]);
+    }, [projectId, navigate]);
 
         useEffect(() =>{
             const loadProject = async() =>{

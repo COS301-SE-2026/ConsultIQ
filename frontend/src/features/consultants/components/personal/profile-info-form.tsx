@@ -7,7 +7,7 @@ import { Trash2, User } from "lucide-react";
 import { ImageDropzone } from "../image-dropzone";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 
-type CostRateType = "DAILY" | "MONTHLY";
+export type CostRateType = "DAILY" | "MONTHLY";
 
 const WORKING_DAYS_PER_YEAR = 260;
 

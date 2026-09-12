@@ -59,7 +59,7 @@ function AdminPage() {
         const loadUsers = async () => {
             setIsUserLoading(true);
             try {
-                const res = await getAllUsers(userPage, 10);
+                const res = await getAllUsers(userPage, 10, searchQuery, roleFilter, statusFilter);
                 setUsers(res.data);
                 setUserMeta(res.meta);
 
@@ -76,7 +76,7 @@ function AdminPage() {
 
 
 
-    }, [userPage, userRefreshKey]);
+    }, [userPage, userRefreshKey, searchQuery, roleFilter, statusFilter]);
 
 
 
@@ -88,7 +88,7 @@ function AdminPage() {
             setProjectError(null);
 
             try {
-                const res = await getAllProjects(projectPage, 10);
+                const res = await getAllProjects(projectPage, 10, searchQuery, budgetSort);
                 setProjects(res.data);
                 setProjectMeta(res.meta);
             } catch (err) {
@@ -96,14 +96,12 @@ function AdminPage() {
 
             } finally {
                 setIsProjectLoading(false);
-
             }
-
         };
 
         loadProjects();
 
-    }, [projectPage, projectRefreshKey]);
+    }, [projectPage, projectRefreshKey, searchQuery, budgetSort]);
 
 
 

@@ -29,7 +29,13 @@ export class AdminUserService {
   //   }
   // }
 
-  async getAllUsers(page: number = 1, limit: number = 10) {
+  async getAllUsers(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    status?: string,
+    role?: string,
+  ) {
     const pageNum = Number(page);
     const limitNum = Number(limit);
 
@@ -38,11 +44,28 @@ export class AdminUserService {
       role: { not: 'ADMIN' as const },
     };
 
+    const filterConditions: any = {};
+
+    if (search) {
+      filterConditions.OR = [
+        { fullName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (role) {
+      filterConditions.role = role;
+    }
+
+    if (status) {
+      filterConditions.status = status;
+    } else {
+      filterConditions.status = { not: 'PENDING' as const };
+    }
+
     const listWhere = {
       ...baseWhere,
-      status: {
-        not: 'PENDING' as const,
-      },
+      ...filterConditions,
     };
 
     const [users, totalUsers, activeUsers, suspendedUsers] =
@@ -61,18 +84,18 @@ export class AdminUserService {
           },
         }),
 
-        this.prisma.user.count({ where: baseWhere }),
+        this.prisma.user.count({ where: listWhere }),
 
         this.prisma.user.count({
           where: {
-            ...baseWhere,
+            ...listWhere,
             status: 'ACTIVE',
           },
         }),
 
         this.prisma.user.count({
           where: {
-            ...baseWhere,
+            ...listWhere,
             status: 'SUSPENDED',
           },
         }),

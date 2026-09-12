@@ -74,9 +74,20 @@ export class AdminProjectService {
     }
   }
 
-  async getAllProjects(page: number = 1, limit: number = 10) {
-    const [projects, total] = await this.prisma.$transaction([
+  async getAllProjects(page: number = 1, limit: number = 10, search?: string, budgetSort?: 'asc' | 'desc') {
+    const where: any = {};
+
+    if(search) {
+      where.OR = [
+        { projectName: { contains: search, mode: 'insensitive'} },
+        { clientName: { contains: search, mode: 'insensitive'} },
+      ];
+    }
+
+    const [projects, total, absoluteTotal] = await this.prisma.$transaction([
       this.prisma.project.findMany({
+        where,
+        orderBy: budgetSort ? { budget: budgetSort } : undefined,
         skip: (page - 1) * limit,
         take: limit,
         select: {
@@ -89,6 +100,7 @@ export class AdminProjectService {
         },
       }),
 
+      this.prisma.project.count({ where }),
       this.prisma.project.count(),
     ]);
 
@@ -96,6 +108,7 @@ export class AdminProjectService {
       data: projects,
       meta: {
         totalRecords: total,
+        absoluteTotalRecords: absoluteTotal,
         currentPage: page,
         totalPages: Math.ceil(total / limit),
       },

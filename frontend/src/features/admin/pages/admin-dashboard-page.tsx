@@ -50,9 +50,19 @@ function AdminPage() {
 
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
+        setUserPage(1);
 
     };
 
+    const handleRoleFilterChange = (role: string) => {
+        setRoleFilter(role);
+        setUserPage(1);
+    }
+
+    const handleStatusFilterChange = (status: string) => {
+        setStatusFilter(status);
+        setUserPage(1);
+    }
 
     useEffect(() => {
 
@@ -179,8 +189,8 @@ function AdminPage() {
                                     roleFilter={roleFilter}
                                     statusFilter={statusFilter}
                                     budgetFilter={budgetSort}
-                                    onRoleChange={setRoleFilter}
-                                    onStatusChange={setStatusFilter}
+                                    onRoleChange={handleRoleFilterChange}
+                                    onStatusChange={handleStatusFilterChange}
                                     onBudgetSortChange={setBudgetSort}
                                 />  
                                 </div>

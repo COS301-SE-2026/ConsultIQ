@@ -23,7 +23,7 @@ const getProjectDays = (start: string, end: string): number =>{
   const startDate = new Date(start);
   const endDate = new Date(end);
 
-  if(isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 0;
+  if(Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
 
   const diffTime = endDate.getTime() - startDate.getTime();
 
@@ -31,6 +31,23 @@ const getProjectDays = (start: string, end: string): number =>{
 
   return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
 }
+  
+  const calculateBudgetBreakdown = (data: ProjectFormData) => {
+    const projectDays = getProjectDays(data.startDate, data.endDate);
+    const budget = (typeof data.budget === "number" && data.budget > 0) ? data.budget : 0;
+    const teamSize = (typeof data.teamSize === "number" && data.teamSize > 0 ) ? data.teamSize : 1;
+    
+    if(projectDays <= 0 || budget <= 0) return null;
+
+    return{
+      projectDays,
+      teamSize,
+      dailyProjectBudget: budget / projectDays,
+      dailyPerConsultantBudget: budget / (projectDays * teamSize),
+    };
+  };
+
+  const formatHours = (hours: number) => Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
 
 export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: ProjectBasicInfoCardProps) {
 
@@ -93,13 +110,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
       weekly: (data.allocation / 100)* FULL_WEEK_HOURS,
     } : null;
 
-  const formatHours = (hours: number) => Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
-
-  const projectDays = getProjectDays(data.startDate, data.endDate);
-  const budget = (typeof data.budget === "number" && data.budget > 0) ? data.budget : 0;
-  const teamSize = (typeof data.teamSize === "number" && data.teamSize > 0 ) ? data.teamSize : 1;
-  const dailyProjectBudget = (projectDays > 0 && budget > 0) ? (budget / projectDays) : 0;
-  const dailyPerConsultantBudget = (projectDays > 0 && budget > 0) ? (budget / (projectDays * teamSize)) : 0;
+  const budgetBreakdown = calculateBudgetBreakdown(data);
 
   return (
     <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
@@ -257,12 +268,12 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               />
               {budgetError && <span className="text-sm text-red-500">{budgetError}</span>}
 
-              {projectDays > 0 && budget > 0 && (
+              {budgetBreakdown && (
                  <div className="mt-3 p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 text-sm">
                     <div className="flex items-center justify-between font-semibold mb-2">
                       <span>Daily Rate Breakdown</span>
                       <span className="text-sm px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
-                        {projectDays} {projectDays === 1 ? "Day" : "Days"} Duration
+                        {budgetBreakdown.projectDays} {budgetBreakdown.projectDays === 1 ? "Day" : "Days"} Duration
                       </span>
                     </div>
 
@@ -270,15 +281,15 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                       <div>
                         <span className="text-sm text-blue-700 font-medium">Daily Project Budget: </span>
                         <p className="text-base font-bold text-blue-950 mt-0.5">
-                          R {Math.round(dailyProjectBudget).toLocaleString()}
+                          R {Math.round(budgetBreakdown.dailyProjectBudget).toLocaleString()}
                         </p>
                       </div>
                       <div>
                         <span className="text-sm text-blue-700 font-medium">
-                          Daily Rate per Consultant ({teamSize} {teamSize === 1 ? "consultant" : "consultants"}):
+                          Daily Rate per Consultant ({budgetBreakdown.teamSize} {budgetBreakdown.teamSize === 1 ? "consultant" : "consultants"}):
                         </span>
                         <p className="text-base font-bold text-blue-950 mt-0.5">
-                          R {Math.round(dailyPerConsultantBudget).toLocaleString()} / day
+                          R {Math.round(budgetBreakdown.dailyPerConsultantBudget).toLocaleString()} / day
                         </p>
                       </div>
                     </div>

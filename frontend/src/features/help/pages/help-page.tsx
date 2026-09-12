@@ -62,7 +62,7 @@ export default function HelpPage() {
     const roleSidebar = {
         CONSULTANT_MANAGER: consultantManagerSidebarItems,
         CONSULTANT: consultantSidebarItems,
-        PROJECT_MANAGER: projectManagerSidebarItems,
+        PROJECT_MANAGER: projectManagerSidebarItems(),
         ADMIN: adminSidebarItems,
     };
 

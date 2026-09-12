@@ -47,6 +47,11 @@ function ForgotPasswordPage() {
              style={{backgroundColor: "var(--color-primary)"}}>
                 {loading ? "Sending..." : "Send reset link"}
             </button>
+
+            <button type="button" onClick={() =>navigate('/login')}
+                className="text-sm text-primary underline hover:text-primary/80">
+                Go back to login
+            </button>
         </form>
       </AuthLayout>
   );

@@ -65,7 +65,7 @@ const{count: unreadCount} = useUnreadNotificationCount();
           <Sidebar items={adminSidebarItems} notificationCount={unreadCount}/>
        </div>
       
-      <div className="flex-1 flex flex-col ">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header
           className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
           style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
@@ -75,7 +75,6 @@ const{count: unreadCount} = useUnreadNotificationCount();
           </h1>
 
         </header>
-        <main className="overflow-hidden overflow-y-auto">
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
             {error && (
               <div className="w-full h-8 items-center bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-semibold">
@@ -97,8 +96,6 @@ const{count: unreadCount} = useUnreadNotificationCount();
               <ScoringWeightsTable initialFactors={factors} onSave={handleGlobalSave} />
             )}
           </div>
-        </main>
-       
       </div>
     </div>
   )

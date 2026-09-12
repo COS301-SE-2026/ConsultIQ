@@ -118,7 +118,7 @@ function ProjectSpecificationPage() {
   };
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount} />
+      <Sidebar items={projectManagerSidebarItems()} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
       <header

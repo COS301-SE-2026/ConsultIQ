@@ -64,7 +64,7 @@ export default function ProjectDetailsModal({
   const [consultantsLoading, setConsultantsLoading] = useState(false);
   //const isNonConsultant= !isConsultant;
 
-  const mapPayload: Record<string, (fields: Partial<Project>) => Record<string, unknown>> = {
+  const mapPayload: Record<string, (fields: Partial<Project>, currProject: Project) => Record<string, unknown>> = {
     "project-overview": (fields) => ({
       ...(fields.projectName !== undefined && { projectName: fields.projectName }),
       ...(fields.clientName !== undefined && { clientName: fields.clientName }),
@@ -83,15 +83,22 @@ export default function ProjectDetailsModal({
       ...(fields.location?.province !== undefined && { province: fields.location.province }),
       ...(fields.location?.postalCode !== undefined && { postalCode: fields.location.postalCode }),
     }),
-    "project-skills": (fields) => ({
-      skills: (fields.skills ?? []).map((skill) => ({
+    "project-skills": (fields, currProject) => {
+      const newSkills = fields.skills ?? [];
+      const newIds = new Set(newSkills.filter((s) => s.id).map((s) => s.id));
+      const removeSkillIds = (currProject.skills ?? []).filter((s) => s.id && !newIds.has(s.id)).map((s) =>s.id!);
+     
+      return {
+      skills: newSkills.map((skill) => ({
         id: skill.id,
         name: skill.name,
         competency: skill.competency,
         years: skill.years,
         mandatory: skill.mandatory,
       })),
-    }),
+      ...(removeSkillIds.length > 0 && {removeSkillIds}),
+      };
+    },
   };
   const mapStates: Record<string, (currProject: Project, fields: Partial<Project>) => Project> = {
     "project-overview": (currProject, fields) => ({
@@ -126,7 +133,7 @@ export default function ProjectDetailsModal({
     if (!fullProject) return;
 
     const pMapper = mapPayload[section];
-    const payload = pMapper ? pMapper(updatedFields) : {};
+    const payload = pMapper ? pMapper(updatedFields, fullProject) : {};
 
 
     if (Object.keys(payload).length === 0) {
@@ -310,7 +317,7 @@ export default function ProjectDetailsModal({
 
         <div className="flex flex-col gap-8">
           <ProjectOverviewSection 
-          key={project.id}
+          key={`overview-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-overview"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
@@ -321,7 +328,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectLocationSection 
-          key={project.id}
+          key={`location-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-location"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
@@ -332,7 +339,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectSkillsSection
-            key={fullProject ? fullProject.id : "loading"}
+            key={`skills-${fullProject ? fullProject.id : "loading"}`}
             skills={[...(displayData.skills ?? [])]}
             isEditing={activeEditSection === "project-skills"}
             isDisabled={activeEditSection !== null && activeEditSection !== "project-skills"}

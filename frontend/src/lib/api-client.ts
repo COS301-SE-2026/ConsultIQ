@@ -99,11 +99,8 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
                     if (isLoggingOut) {
                         return;
                     }
-                    const lastRefresh = parseInt(localStorage.getItem('lastRefreshTime') || '0', 10);
-                    if (Date.now() - lastRefresh < 5000) return;
 
                     await refreshTokenFn();
-                    localStorage.setItem('lastRefreshTime', Date.now().toString());
                 });
             } else {
                 await refreshTokenFn();

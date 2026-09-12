@@ -61,7 +61,79 @@ describe('AdminUserService', () => {
                 },
             });
         });
-    })
+
+        it('applies the search filter to both the list query and the count identically', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0]);
+
+            await service.getAllUsers(1, 10, 'jane');
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        OR: [
+                            { fullName: { contains: 'jane', mode: 'insensitive' } },
+                            { email: { contains: 'jane', mode: 'insensitive' } },
+                        ],
+                    }),
+                }),
+            );
+
+            expect(prisma.user.count).toHaveBeenNthCalledWith(1, {
+                where: expect.objectContaining({
+                    OR: [
+                        { fullName: { contains: 'jane', mode: 'insensitive' } },
+                        { email: { contains: 'jane', mode: 'insensitive' } },
+                    ],
+                }),
+            });
+        });
+
+        it('applies the role filter to the query', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0]);
+
+            await service.getAllUsers(1, 10, undefined, undefined,'CONSULTANT');
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ role: 'CONSULTANT' }),
+                }),
+            );
+        });
+
+        it('applies an explicit status filter, overriding the default "not PENDING" behaviour', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0]);
+
+            await service.getAllUsers(1, 10, undefined, 'ACTIVE');
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ status: 'ACTIVE' }),
+                }),
+            );
+        });
+
+        it('excludes PENDING status by default when no explicit status filter is given', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0]);
+
+            await service.getAllUsers(1, 10);
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ status: { not: 'PENDING' } }),
+                }),
+            );
+        });
+
+        it('regression: totalRecords reflects the filtered count, not the unfiltered total', async () => {
+            const filteredUsers = [{ id: '1', name: 'Jane', deletedAt: null, status: 'ACTIVE' }];
+            (prisma.$transaction as jest.Mock).mockResolvedValue([filteredUsers, 1, 1, 0]);
+
+            const result = await service.getAllUsers(1, 10, 'Jane');
+
+            expect(result.meta.totalRecords).toBe(1);
+            expect(result.meta.totalPages).toBe(1);
+        });
+    });
 
     // Deleting a user
 
@@ -115,12 +187,7 @@ describe('AdminUserService', () => {
 
             await expect(service.suspendUser('1')).rejects.toThrow(genericError);
         });
-
-
-
     })
-
-
 
     describe('activateUser', () => {
 

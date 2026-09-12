@@ -642,6 +642,10 @@ export class ConsultantService {
         consultantId,
         status: 'ACTIVE',
       },
+      include: {
+        project: true,
+        consultant: true,
+      }
     });
 
     if (!placement) {
@@ -660,6 +664,7 @@ export class ConsultantService {
         },
       });
 
+
       const updatedConsultant = await tx.consultant.update({
         where: { id: consultantId },
         data: {
@@ -676,16 +681,13 @@ export class ConsultantService {
         });
       }
 
-      const newAvailabilityStatus =
-        updatedConsultant.capacity > 0 ? 'AVAILABLE' : 'UNAVAILABLE';
-
-      if (updatedConsultant.availability !== newAvailabilityStatus) {
-        await tx.consultant.update({
-          where: { id: consultantId },
-          data: { availability: newAvailabilityStatus as any },
-        });
-      }
     });
+
+    await this.notificationService.createAndSendNotification(
+      placement.consultant.userId,
+      'Project Unassignment Notice',
+      `You have been unassigned from project ${placement.project.projectName}.`,
+    );
 
     return {
       message: 'Consultant successfully unassigned and capacity restored.',

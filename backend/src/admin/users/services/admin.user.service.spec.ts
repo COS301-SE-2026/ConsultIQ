@@ -133,6 +133,19 @@ describe('AdminUserService', () => {
             expect(result.meta.totalRecords).toBe(1);
             expect(result.meta.totalPages).toBe(1);
         });
+
+        it('should use default page and limit when none are provided', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0, 0]);
+
+            await service.getAllUsers();
+
+            expect(prisma.user.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    skip: 0,
+                    take: 10,
+                }),
+            );
+        });
     });
 
     // Deleting a user

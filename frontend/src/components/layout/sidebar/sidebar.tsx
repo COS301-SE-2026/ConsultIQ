@@ -1,7 +1,7 @@
 import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
-
+import { useState } from "react";
 import type { SidebarItem } from "./sidebar.types";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -14,37 +14,40 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  return (
-    <aside
-      style={{
-        width: "280px",
-        minHeight: "100vh",
-        backgroundColor: "var(--color-primary)",
 
-        display: "flex",
-        flexDirection: "column",
-      }}
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+    <button type="button"
+      onClick={() => setIsOpen((open) => !open)}
+      aria-label= {isOpen ? "Close navigation menu" : "Open navigation menu"}
+      aria-expanded={isOpen}
+      className="fixed left-4 top-4 z-50 rounded-lg bg-[var(--color-primary)] p-3 text-white shadow-lg md:hidden"
+      >
+      {isOpen ? <X size={22} /> : <Menu size={22} />}
+    </button>
+
+    {isOpen &&(
+      <button type="button"
+        aria-label="Close navigation menu"
+        onClick={() => setIsOpen(false)}
+        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        />
+    )}
+    
+    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[280px] min-h-screen flex-col transition-transform duration-200 md:relative md:translate-x-0
+      ${isOpen ? "translate-x-0" : "-translate-x-full" }`}
+      style={{backgroundColor: "var(--color-primary)",}}
     >
       {/* Logo Section */}
-      <div
-        style={{
-          backgroundColor: "var(--color-surface)",
-          height: "90px",
-
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-
-        }}
+      <div className="flex h-[72px] items-center justify-center md:h-[90px]"
+        style={{ backgroundColor: "var(--color-surface)" }}
       >
         <img
           src={consultIqLogo}
           alt="ConsultIQ Logo"
-          style={{
-            width: "fit-content",
-            height: "100%",
-            objectFit: "fill",
-          }}
+          className="h-full w-auto object-contain"
         />
       </div>
 
@@ -53,6 +56,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
         style={{
           flex: 1,
           padding: "32px 0",
+          overflowY: "auto",
         }}
       >
         {items.map((item) => {
@@ -63,7 +67,10 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path,{state:{from:"sidebar"}})}
+              onClick={() =>{
+                navigate(item.path, { state: { from: "sidebar" } });
+                setIsOpen(false);
+              }}
               style={{
                 padding: "14px 24px",
 
@@ -193,6 +200,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       {/* Logout - FIXED: Changed from div to button for standard accessibility */}
       
     </aside>
+    </>
   );
 }
 

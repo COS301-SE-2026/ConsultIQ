@@ -26,6 +26,7 @@ const mockPrismaService = {
     findFirst: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
+    count: jest.fn(),
   },
   $transaction: jest.fn(async (callback) => callback(mockPrismaService)),
 };
@@ -63,6 +64,7 @@ describe('PlacementService', () => {
     service = module.get<PlacementService>(PlacementService);
 
     jest.clearAllMocks();
+    mockPrismaService.projectPlacement.count.mockResolvedValue(0);
   });
 
   describe('createPlacement', () => {
@@ -106,6 +108,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
@@ -125,6 +128,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -151,6 +155,7 @@ describe('PlacementService', () => {
       });
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
@@ -193,6 +198,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -217,6 +223,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -241,6 +248,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -297,6 +305,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
+        teamSize: 10,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -339,7 +348,10 @@ describe('PlacementService', () => {
         projectId: 'project-1',
       });
 
-      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1', });
+      mockPrismaService.project.findUnique.mockResolvedValue({ 
+        id: 'project-1',
+        teamSize: 10,
+      });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
@@ -379,7 +391,10 @@ describe('PlacementService', () => {
         userId: 'user-123',
         projectId: 'project-1',
       });
-      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1' });
+      mockPrismaService.project.findUnique.mockResolvedValue({ 
+        id: 'project-1',
+        teamSize: 10,
+      });
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 100,
@@ -419,6 +434,123 @@ describe('PlacementService', () => {
       expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
 
+    it('should throw ConflictException when the project has reached its team size limit', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+
+      mockPrismaService.project.findUnique.mockResolvedValue({ 
+        id: 'project-1',
+        teamSize: 3,
+      });
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+      });
+
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.count.mockResolvedValue(3);
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow a placement when the team is under its size limit', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: 'project-1',
+        teamSize: 100,
+      });
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+      });
+
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.count.mockResolvedValue(2);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-1',
+      });
+
+      const result = await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockPrismaService.projectPlacement.create).toHaveBeenCalled();
+      expect(result.message).toBe('Placement created successfully.');
+    });
+
+    it('should allow a placement that fills the very last available team slot', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: 'project-1',
+        teamSize: 3,
+      });
+
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+      });
+
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.count.mockResolvedValue(2);
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-1',
+      });
+
+      const result = await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockPrismaService.projectPlacement.create).toHaveBeenCalled();
+      expect(result.message).toBe('Placement created successfully.');
+    });
+
+    it('checks the team size limit using only ACTIVE placements', async () => {
+      mockPrismaService.projectManager.findUnique.mockResolvedValue({
+        userId: 'user-123',
+        projectId: 'project-1',
+      });
+      mockPrismaService.project.findUnique.mockResolvedValue({
+        id: 'project-1',
+        teamSize: 3,
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 100,
+      });
+      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      mockPrismaService.projectPlacement.count.mockResolvedValue(0);
+
+      await service.createPlacement('project-1', dto, 'user-123');
+
+      expect(mockPrismaService.projectPlacement.count).toHaveBeenCalledWith({
+        where: {
+          projectId: 'project-1',
+          status: PlacementStatus.ACTIVE,
+        },
+      });
+    });
   });
 
   describe('getRemainingCapacity', () => {

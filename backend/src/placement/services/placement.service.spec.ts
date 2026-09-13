@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PlacementStatus, AuditAction } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { NotificationService } from '../../notification/service/notification.service';
+import { availableMemory } from 'process';
 
 const mockPrismaService = {
   projectManager: {
@@ -265,22 +266,8 @@ describe('PlacementService', () => {
     });
 
     it('should create a placement successfully when there is enough capacity', async () => {
-      mockPrismaService.projectManager.findUnique.mockResolvedValue({
-        userId: 'user-123',
-        projectId: 'project-1',
-      });
+      setupPlacementMocks();
 
-      mockPrismaService.project.findUnique.mockResolvedValue({
-        id: 'project-1',
-        teamSize: 10,
-      });
-
-      mockPrismaService.consultant.findUnique.mockResolvedValue({
-        id: 'consultant-1',
-        capacity: 100,
-      });
-
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
       mockPrismaService.consultant.update.mockResolvedValue({
         id: 'consultant-1',
         capacity: 50,
@@ -411,27 +398,13 @@ describe('PlacementService', () => {
     });
 
     it('writes an audit log entry after successfully creating a placement', async () => {
-      mockPrismaService.projectManager.findUnique.mockResolvedValue({
-        userId: 'user-123',
-        projectId: 'project-1',
-      });
-      mockPrismaService.project.findUnique.mockResolvedValue({ 
-        id: 'project-1',
-        teamSize: 10,
-      });
-      mockPrismaService.consultant.findUnique.mockResolvedValue({
-        id: 'consultant-1',
-        capacity: 100,
-      });
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+      setupPlacementMocks();
       mockPrismaService.consultant.update.mockResolvedValue({
-        id: 'consultant-1',
-        capacity: 50,
-        availability: 'AVAILABLE',
+        id: 'consultant-1', capacity: 50, availability: 'AVAILABLE'
       });
-      mockPrismaService.projectPlacement.create.mockResolvedValue({
-        id: 'placement-1',
-      });
+
+      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-1'});
+  
 
       await service.createPlacement('project-1', dto, 'user-123');
 

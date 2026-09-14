@@ -26,7 +26,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
   return (
     <div className="mt-6 border-t pt-6 flex flex-col">
 
-      <div className="grid grid-cols-5 text-sm font-semibold mb-4 px-2">
+      <div className="grid grid-cols-4 gap-x-4 text-sm font-semibold mb-4 px-2 ">
         <span>Skill</span>
         <span>Competency</span>
         <span>Years</span>
@@ -38,10 +38,10 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
           currentSkills.map((skill, index) => (
             <div
               key={index}
-              className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
+              className="grid grid-cols-4 gap-x-4 py-3 border-t text-base px-2 shrink-0"
             >
-              <span className="truncate pr-2">{skill.name}</span>
-              <span className="truncate pr-2">{skill.competency}</span>
+              <span>{skill.name}</span>
+              <span className="truncate pr-2" title={skill.competency}>{skill.competency}</span>
               <span>{skill.years}</span>
               <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
               {isEditing && (

@@ -77,6 +77,7 @@ export class AdminProjectService {
   async getAllProjects(page: number = 1, limit: number = 10) {
     const [projects, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
+        orderBy: { createdAt: 'desc'},
         skip: (page - 1) * limit,
         take: limit,
         select: {
@@ -96,6 +97,7 @@ export class AdminProjectService {
       data: projects,
       meta: {
         totalRecords: total,
+        absoluteTotalRecords: total,
         currentPage: page,
         totalPages: Math.ceil(total / limit),
       },

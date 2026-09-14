@@ -4,6 +4,8 @@ import {Button} from "../../../../components/ui/button";
 import {Pencil,Trash2,Plus} from "lucide-react"
 import { toast } from "sonner";
 import EditControls from "./edit-controls";
+import { normalizeJobType,normalizeWorkModel } from "../../types/consultant.types";
+
 
 export type { Experience };
 
@@ -55,7 +57,7 @@ function ExperienceInfo({exp}:{readonly exp: Experience}){
                               fontSize: "var(--text-h4)",
                             }}
                           >
-                            {exp.jobType}
+                            {normalizeJobType(exp.jobType)}
                           </span>
                           <span
                             style={{
@@ -63,7 +65,7 @@ function ExperienceInfo({exp}:{readonly exp: Experience}){
                               fontSize: "var(--text-h4)",
                             }}
                           >
-                            {exp.workModel}
+                            {normalizeWorkModel(exp.workModel)}
                           </span>
                         </div>
                       </div>
@@ -76,7 +78,7 @@ function ExperienceInfo({exp}:{readonly exp: Experience}){
                           fontSize: "var(--text-h4)",
                         }}
                       >
-                        {formatDateRange(exp.startDate, exp.endDate)}
+                        {formatDateRange(exp.startDate, exp.endDate ? exp.endDate : "present")}
                       </span>
                     </div>
 

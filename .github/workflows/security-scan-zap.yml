@@ -11,7 +11,7 @@ on :
       target_url: 
         description: 'Target URL to scan (default: staging backend)'
         required: false
-        default: 'http://localhost:3001'
+        default: 'https://consultiq-backend-production-086b.up.railway.app'
 
 jobs: 
   owasp-zap-scan:

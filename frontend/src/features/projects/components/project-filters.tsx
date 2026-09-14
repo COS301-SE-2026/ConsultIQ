@@ -79,7 +79,7 @@ export default function ProjectFilters({
           onChange={(e) =>
             onTeamSizeChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="h-14 w-full min-w-0 rounded-xl border bg-white pr-12 text-base font-semibold appearance-none outline-none sm:min-w-[220px] sm:max-w-[240px] sm:text-lg"
           style={{
             borderColor:
               "var(--color-border)",
@@ -122,7 +122,7 @@ export default function ProjectFilters({
           onChange={(e) =>
             onLocationChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="h-14 w-full min-w-0 rounded-xl border bg-white pr-12 text-base font-semibold appearance-none outline-none sm:min-w-[220px] sm:max-w-[240px] sm:text-lg"
           style={{
             borderColor:
               "var(--color-border)",

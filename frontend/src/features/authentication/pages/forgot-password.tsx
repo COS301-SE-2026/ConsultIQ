@@ -28,8 +28,8 @@ function ForgotPasswordPage() {
 
   return (
       <AuthLayout>
-        <form onSubmit={handleSubmit} className="flex flex-col w-[560px] bg-white rounded-lg shadow p-8 gap-4">
-            <h1 className="font-bold"> Forgot Password</h1>
+        <form onSubmit={handleSubmit} className="flex w-full max-w-[560px] flex-col gap-4 rounded-lg bg-white p-5 shadow sm:p-8">
+            <h1 className="text-xl font-bold sm:text-2xl"> Forgot Password</h1>
             <p className="text-sm text-primary" > Enter your email address and we will send a reset link </p>
             <input 
             type="email"

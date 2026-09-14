@@ -5,7 +5,7 @@ function LoginPage() {
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#F4F6FA] p-3 sm:p-4 lg:flex-row lg:justify-start">
 
-    <div className="hidden lg:block relative w-1/2 h-screen">
+    <div className="hidden lg:block relative w-1/2 h-screen overflow">
       {/* Navy Polygon */}
       <div className="absolute origin-bottom-left bg-[#092352] left-0 bottom-0 h-screen w-[calc(100vh*1.38)] -rotate-[50deg]"/>
       {/* Logo */}

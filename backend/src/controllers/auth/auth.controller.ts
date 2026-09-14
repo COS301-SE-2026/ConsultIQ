@@ -12,6 +12,7 @@ import {
   Request,
 } from '@nestjs/common';
 import * as express from 'express';
+import { randomBytes } from 'crypto';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';
@@ -28,7 +29,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { Roles } from '../../common/guards/roles.guard';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
 import { PrismaService } from '../../prisma/prisma.service';
-
+import { SkipCsrf } from '../../common/decorators/skip-csrf.decorator';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -36,6 +37,16 @@ export class AuthController {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly prisma: PrismaService,
   ) { }
+
+  private setCsrfCookie(res: any): void {
+    const csrfToken = randomBytes(32).toString('hex');
+    res.cookie('XSRF-TOKEN', csrfToken, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 5 * 60 * 1000,
+    });
+  }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -59,6 +70,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('activate')
   @HttpCode(HttpStatus.OK)
   async activate(
@@ -68,6 +80,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   async resendVerification(
@@ -77,6 +90,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('accept-terms')
   @HttpCode(HttpStatus.OK)
   async acceptTerms(@Body() dto: AcceptTermsDto): Promise<{ message: string }> {
@@ -84,6 +98,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(
@@ -109,6 +124,8 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    this.setCsrfCookie(res);
+
     // Return user data only
 
     const userProfile = Object.fromEntries(
@@ -123,6 +140,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
@@ -132,6 +150,7 @@ export class AuthController {
   }
 
   @Public()
+  @SkipCsrf()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
@@ -142,6 +161,7 @@ export class AuthController {
 
   // TASK-17: Validate refresh token and issue new JWT + refresh token
   @Public()
+  @SkipCsrf()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   async refresh(
@@ -170,10 +190,13 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    this.setCsrfCookie(res);
+
     return { message: 'Token refreshed successfully.' };
   }
 
   // Revokes all refresh tokens for the requesting user
+  @SkipCsrf()
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(
@@ -190,6 +213,11 @@ export class AuthController {
     });
     res.clearCookie('ciq_refresh_token', {
       httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
+    res.clearCookie('XSRF-TOKEN', {
+      httpOnly: false,
       secure: true,
       sameSite: 'none',
     });

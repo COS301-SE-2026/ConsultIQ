@@ -139,6 +139,26 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               />
               {teamSizeError && <span className="text-sm text-red-500">{teamSizeError}</span>}
             </div>
+
+             {/* Work model */}
+            <div className="flex flex-col gap-2">
+              <label htmlFor="workModel" className="text-base font-semibold">
+                Work Model
+              </label>
+
+              <select
+                id="work-model"
+                className={`flex h-14 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400 ${errors.workModel ? "border-red-500" : "border-slate-200"}`}
+                //value={workModel}
+                //onChange={(e) => { setWorkModel(e.target.value); if (errors.workModel) setErrors((p) => ({ ...p, workModel: "" })); }}
+              >
+                <option value="" disabled>Select work model</option>
+                <option value="ONSITE">On-site</option>
+                <option value="REMOTE">Remote</option>
+                <option value="HYBRID">Hybrid</option>
+              </select>
+
+            </div>
           </div>
 
           {/* RIGHT SIDE */}

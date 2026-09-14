@@ -88,7 +88,7 @@ export class CostFitScorer {
     if (startDate > endDate) return 0;
 
     let count = 0;
-    const currentDate = new Date(startDate.getTime());
+    const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay();

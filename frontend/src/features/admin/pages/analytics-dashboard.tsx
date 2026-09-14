@@ -194,6 +194,7 @@ export default function AnalyticsPage() {
                                             {dataKey:"utilised",label:"Utilised"},
                                             {dataKey:"bench",label:"Benched"},
                                         ]}
+                                        truncateLength={10}
                                     />
 
                                     <BarChart<PlacementsBySkillDto>

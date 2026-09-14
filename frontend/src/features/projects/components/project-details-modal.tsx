@@ -1,5 +1,5 @@
 import { X, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, } from "react";
 import type { Project, AssignedConsultants } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
@@ -15,6 +15,7 @@ interface ProjectDetailsModalProps {
   readonly onClose: () => void;
   readonly isConsultant?: boolean;
   readonly onUpdate: (updatedProject: Project) => void;
+  readonly targetConsultantId?: string;
 }
 
 
@@ -55,6 +56,7 @@ export default function ProjectDetailsModal({
   onClose,
   isConsultant,
   onUpdate,
+  targetConsultantId = ""
 }: ProjectDetailsModalProps) {
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
@@ -62,7 +64,9 @@ export default function ProjectDetailsModal({
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   const [assignedConsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
   const [consultantsLoading, setConsultantsLoading] = useState(false);
-  //const isNonConsultant= !isConsultant;
+ 
+
+  
 
   const mapPayload: Record<string, (fields: Partial<Project>) => Record<string, unknown>> = {
     "project-overview": (fields) => ({
@@ -266,7 +270,14 @@ export default function ProjectDetailsModal({
 
       try {
         const data = await getConsultantsByProject(fullProject.id);
-        setAssignedConsultants(data);
+      
+        if(targetConsultantId){
+           const filteredData= data.filter(consultant => consultant.id !== targetConsultantId);
+           setAssignedConsultants(filteredData);
+        }else{
+          setAssignedConsultants(data);
+        }
+        
       } catch (error) {
         toast.error("Failed to fetch assigned consultants" + error);
       } finally {

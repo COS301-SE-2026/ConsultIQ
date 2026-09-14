@@ -49,39 +49,39 @@ function ConsultantProfileViewPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const{count: unreadCount} = useUnreadNotificationCount();
+  const { count: unreadCount } = useUnreadNotificationCount();
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
-  const consultantIdToFetch= targetConsultantId || undefined;
+  const consultantIdToFetch = targetConsultantId || undefined;
 
   const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
     consultantIdToFetch,
     user?.userId
   );
 
- const [overrides, setOverrides] = useState<Partial<Profile>>({});
- const [lastConsultantId, setLastConsultantId] = useState(consultantIdToFetch);
+  const [overrides, setOverrides] = useState<Partial<Profile>>({});
+  const [lastConsultantId, setLastConsultantId] = useState(consultantIdToFetch);
 
   if (consultantIdToFetch !== lastConsultantId) {
     setLastConsultantId(consultantIdToFetch);
     setOverrides({});
   }
 
-const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
+  const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-  const canEdit =  Boolean(targetConsultantId) || !fromDashboard;
+  const canEdit = Boolean(targetConsultantId) || !fromDashboard;
 
   async function save(partial: UpdatePayload, optimisticPatch?: Partial<Profile>) {
-    const idToUpdate= targetConsultantId || user?.userId;
+    const idToUpdate = targetConsultantId || user?.userId;
     if (!idToUpdate) {
       throw new Error("Missing consultant id");
     }
     await updateConsultantProfile(idToUpdate, partial);
-    setOverrides((prev) => ({...prev,...(optimisticPatch ?? (partial as Partial<Profile>) )}));
+    setOverrides((prev) => ({ ...prev, ...(optimisticPatch ?? (partial as Partial<Profile>)) }));
   }
 
   if (isLoading) {
@@ -111,7 +111,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={sidebarItems} notificationCount={unreadCount}/>
+      <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
       <div className="flex-1 flex flex-col overflow-y-auto">
         <header
@@ -153,7 +153,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
-                if(photo) {
+                if (photo) {
                   await uploadConsultantPicture(profile.id, photo);
                 }
                 await refetch();
@@ -179,7 +179,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               }}
             />
 
-           <LocationCard
+            <LocationCard
               addressLine1={profile.addressLine1}
               addressLine2={profile.addressLine2}
               suburb={profile.suburb}
@@ -205,15 +205,18 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (experiences) => {
                 await save({
-                  experiences: experiences.map((e) => ({
-                    jobTitle: e.jobTitle,
-                    companyName: e.company,
-                    jobType: e.jobType,
-                    workModel: e.workModel,
-                    startDate: e.startDate,
-                    endDate: e.endDate,
-                    description: e.roleDescription,
-                  })),
+                  experiences: experiences.map((e) => {
+                    const isValidDate = e.endDate && !Number.isNaN(Date.parse(e.endDate));
+                    return{
+                      jobTitle: e.jobTitle,
+                      companyName: e.company,
+                      jobType: e.jobType,
+                      workModel: e.workModel,
+                      startDate: e.startDate,
+                      endDate: isValidDate ? e.endDate : undefined,
+                      description: e.roleDescription,
+                    };
+                  }),
                 });
                 await refetch();
               }}
@@ -235,8 +238,8 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     confidenceLevel: s.confidenceLevel,
                   })),
                 },
-                {skills:normalized}
-              );
+                  { skills: normalized }
+                );
                 await refetch();
               }}
             />

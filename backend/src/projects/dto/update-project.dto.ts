@@ -102,7 +102,7 @@ export class UpdateProjectDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(10)
   @Max(100)
   allocation?: number;
 

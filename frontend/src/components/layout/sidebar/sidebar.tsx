@@ -178,7 +178,9 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
           </div>
         </div>
         <button
-        onClick={() => {logout()}}
+        onClick={() => {logout();
+          navigate("/login");
+        }}
         style={{
           border: "none",
           background: "transparent",

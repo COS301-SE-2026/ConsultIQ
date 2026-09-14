@@ -126,7 +126,7 @@ export default function ProjectListPage() {
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount}/>
+      <Sidebar items={projectManagerSidebarItems()} notificationCount={unreadCount}/>
       <div className="min-w-0 flex-1 flex flex-col min-h-screen overflow-hidden">
         <header
           className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"

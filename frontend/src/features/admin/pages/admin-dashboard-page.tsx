@@ -102,7 +102,6 @@ function AdminPage() {
         };
 
         loadProjects();
-
     }, [projectPage, projectRefreshKey]);
 
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Trash2 } from "lucide-react";
 interface TableSkill {
   readonly id?: string;
   readonly name: string;
@@ -12,17 +12,19 @@ interface TableSkill {
 interface ProjectSkillsTableProps {
    readonly skills: TableSkill[];
    readonly onEditSkill: (skill: TableSkill, idx: number)=> void;
+   readonly onDeleteSkill?: (skill: TableSkill, idx: number) => void; 
    readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: ProjectSkillsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onDeleteSkill }: ProjectSkillsTableProps) {
+  const [page, setPage] = useState(1);
   const rowsPerPage = 4;
 
   const totalPages = Math.ceil(skills.length / rowsPerPage);
+  const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentSkills = skills.slice(startIndex, startIndex + rowsPerPage);
-
+  
   return (
     <div className="w-full overflow-x-auto">
       <div className="min-w-[620px]">
@@ -32,37 +34,38 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
             <span>Competency</span>
             <span>Years</span>
             <span>Mandatory</span>
+        {isEditing && <span>Actions</span>}
           </div>
 
-          <div className="flex flex-col h-[200px] overflow-y-auto">
-            {currentSkills.length > 0 ? (
-              currentSkills.map((skill, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
-                >
-                  <span className="min-w-0 break-words pr-2">{skill.name}</span>
-                  <span className="min-w-0 break-words pr-2">{skill.competency}</span>
-                  <span>{skill.years}</span>
-                  <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
-                  {isEditing && (
-                    <button type="button"
-                  onClick={()=> onEditSkill(skill, startIndex+index)}
-                  className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-4 text-center text-gray-500 border-t">
-                No skills added yet.
-              </div>
-            )}
+      <div className="flex flex-col h-[200px] overflow-y-auto">
+        {currentSkills.length > 0 ? (
+          currentSkills.map((skill, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
+            >
+              <span className="truncate pr-2">{skill.name}</span>
+              <span className="truncate pr-2">{skill.competency}</span>
+              <span>{skill.years}</span>
+              <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
+              {isEditing && (
+                <button type="button"
+              onClick={()=> onEditSkill(skill, startIndex+index)}
+              className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="py-4 text-center text-gray-500 border-t">
+            No skills added yet.
           </div>
+        )}
+      </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
             <button
               type="button"
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
               className="px-2 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
               style={{ color: "var(--color-primary)" }}
@@ -74,7 +77,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
             </span>
             <button
               type="button"
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages || totalPages === 0}
               className="px-2 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
               style={{ color: "var(--color-primary)" }}

@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
@@ -24,6 +25,7 @@ type ViewState = "loading" | "processing" | "review" | "failed";
 interface ManualFields {
     idNumber: string;
     costToCompany: string;
+    costRateType: CostRateType;
     availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE"
 }
 
@@ -53,6 +55,7 @@ const normaliseEnum = <T extends string>(raw: string | undefined, options: reado
 
 const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
+const WORKING_DAYS_PER_YEAR = 260;
 
 export default function CVExtractionReview(){
     const navigate = useNavigate();
@@ -71,6 +74,7 @@ export default function CVExtractionReview(){
     const [manualFields, setManualFields] = useState<ManualFields>({
         idNumber: "",
         costToCompany: "",
+        costRateType: "MONTHLY",
         availability: "AVAILABLE",
     });
 
@@ -78,6 +82,10 @@ export default function CVExtractionReview(){
     const [isDiscarding, setIsDiscarding] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
+
+    const enteredCost = Number(manualFields.costToCompany);
+    const hasValidCost = manualFields.costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >=0;
+    const dailyCostToCompany = manualFields.costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
 
     const warningByPath = useMemo(() =>{
         const map = new Map<string, string>();
@@ -182,8 +190,8 @@ export default function CVExtractionReview(){
         if(!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
             return { error : "Please enter a valid South African ID number."};
         }
-        if(manualFields.costToCompany && Number.isNaN(Number(manualFields.costToCompany))) {
-            return { error : "Cost to company must be a valid number."};
+        if(!hasValidCost) {
+            return { error : "Cost to company is required and must be a valid non-negative number."};
         }
         if(!contact.city || !contact.province || !contact.addressLine1){
             return {error : "Adress, city and province are required."};
@@ -223,7 +231,7 @@ export default function CVExtractionReview(){
                 city: contact.city ?? "",
                 province: contact.province ?? "",
                 postalCode: contact.postalCode,
-                costToCompany: Number(manualFields.costToCompany),
+                costToCompany: hasValidCost ? dailyCostToCompany : 0,
                 availability: manualFields.availability,
                 skills: skills.map((s) => ({
                 skillName: s.skillName,
@@ -354,16 +362,56 @@ export default function CVExtractionReview(){
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({...m, idNumber:  v}))} />
 
-                                    <FormField label="Cost to company" value={manualFields.costToCompany} onChange={(v) => setManualFields((m) => ({...m, costToCompany:  v}))} />
-
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-sm font-medium">Availability</span>
-                                        <select className="border rounded-lg h-10 px-2">
+                                        <span className="text-lg font-semibold text-primary">Availability</span>
+                                        <select className="border rounded-lg h-10 px-2"
+                                            value={manualFields.availability}
+                                            onChange={(event) => 
+                                                setManualFields((curr) => ({...curr, availability: event.target.value as ManualFields["availability"]}))}
+                                        >
                                             <option value="AVAILABLE" >Available</option>
                                             <option value="UNAVAILABLE">Unavailable</option>
                                             <option value="ON_LEAVE">On leave</option>
                                         </select>
                                     </label>
+
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-lg font-semibold text-primary">Cost to Company (R)</span>
+                                        <div className="flex rounded-lg border overflow-hidden">
+                                            <button type="button" onClick={() => setManualFields((m) => ({...m, costRateType: "DAILY"}))}
+                                                className={`flex-1 px-3 py-2 text-sm font-medium
+                                                ${manualFields.costRateType === "DAILY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                                                >
+                                                Daily rate
+                                            </button>
+                                            <button type="button" onClick={() => setManualFields((m) => ({...m, costRateType: "MONTHLY"}))}
+                                                className={`flex-1 px-3 py-2 text-sm font-medium
+                                                ${manualFields.costRateType === "MONTHLY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                                                >
+                                               Monthly salary
+                                            </button>
+                                        </div>
+                                        <p className="text-sm text-slate-500">
+                                            {manualFields.costRateType === "DAILY"
+                                            ? "Enter the cost for on 8-hour working day."
+                                            : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
+                                            }
+                                        </p>
+                                        <FormField 
+                                        label={manualFields.costRateType === "DAILY" ? "Daily cost to company" : "Monthly cost to company "}
+                                        value={manualFields.costToCompany}
+                                        onChange={(value) => {setManualFields((m) => ({...m, costToCompany: value}));}}
+                                        />
+
+                                        {hasValidCost && manualFields.costRateType === "MONTHLY" && (
+                                            <p className="text-sm font-medium text-blue-700">
+                                                Estimated daily rate : R {dailyCostToCompany.toFixed(2)}
+                                                <br/>
+                                                Based on an 8-hour working day.
+                                            </p>
+                                            )}
+                                    </div>
+
                                 </div>
                             </Card>
 
@@ -380,7 +428,7 @@ export default function CVExtractionReview(){
                                         onChange={(v) => updateSkill(i, {yearsExperience: Number(v) || 0})} />
                                         
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium">Competency</span>
+                                            <span className="text-lg font-semibold text-primary">Competency</span>
                                             <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel}>
                                                 <option value="BEGINNER">Beginner</option>
                                                 <option value="INTERMEDIATE">Intermediate</option>
@@ -388,7 +436,7 @@ export default function CVExtractionReview(){
                                             </select>
                                         </label>
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium"> Confidence (1-4) </span>
+                                            <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
                                             <input type="number" min={1} max={4} className="border rounded-lg h-10 px-2"
                                                 value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {confidenceLevel: Number(e.target.value)})}
                                              />
@@ -411,7 +459,7 @@ export default function CVExtractionReview(){
                                         <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
                                         <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm">Job type</span>
+                                            <span className="text-lg font-semibold text-primary">Job type</span>
                                             <select value={ exp.jobType ?? ""} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
                                                 <option value="" disabled>Select job type</option>
                                                 <option value="FULL_TIME">Full-time</option>
@@ -422,7 +470,7 @@ export default function CVExtractionReview(){
                                             </select>
                                         </label>
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm">Work model</span>
+                                            <span className="text-lg font-semibold text-primary">Work model</span>
                                             <select value={exp.workModel ?? ""} onChange={(e) => updateExperience(i, { workModel: e.target.value as WorkModel })}>
                                                 <option value="">Select work model</option>
                                                 <option value="ONSITE">Onsite</option>
@@ -488,7 +536,7 @@ function FormField({label, value, warning, onChange}: {
     readonly label: string; readonly value: string; readonly warning?: string; readonly onChange: (value:string) =>void; }){
     return(
         <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{label}</span>
+            <span className="text-lg font-semibold text-primary">{label}</span>
             <input  className="border rounded-lg h-10 px-3"
         style={{ borderColor: warning ? "#f59e0b" : undefined }}
         value={value}

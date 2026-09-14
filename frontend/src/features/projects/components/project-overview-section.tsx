@@ -159,12 +159,11 @@ export default function ProjectOverviewSection({
     <Card style={{ padding: "20px", border: "none" }}
      className= {`${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
       <div className="flex flex-center gap-3">
-        <h3
-          className="text-3xl font-bold mb-4"
+        <h2 className="text-3xl font-bold mb-4"
           style={{ color: "var(--color-primary)" }}
         >
           Overview
-        </h3>
+        </h2>
         <div>
           {isEditing ? (
             <div className="flex gap-4">
@@ -184,7 +183,7 @@ export default function ProjectOverviewSection({
                   onClick={onEdit} 
                   disabled={isDisabled}
                   className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                  <Edit className="h-5 w-5"/> 
+                  <Edit className="h-6 w-6 text-primary"/> 
                   </button>
                 )
               

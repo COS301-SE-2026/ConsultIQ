@@ -125,20 +125,20 @@ export default function ProjectListPage() {
   );}
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems} notificationCount={unreadCount}/>
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="min-w-0 flex-1 flex flex-col min-h-screen overflow-hidden">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+          style={{ borderColor: "var(--color-border)"}}
         >
-          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
             Projects
           </h1>
           <div className="flex gap-6">
-            <button
+            <button type="button"
               onClick={() => navigate("/project-specification")}
-              className="h-12 w-35 text-lg rounded-xl font-semibold flex items-center justify-center gap-2 rounded text-white transition hover:brightness-110"
+              className="flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl px-3 text-sm font-semibold text-white transition hover:brightness-110 sm:h-12 sm:px-5 sm:text-base"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               <Plus className="h-5 w-5" />
@@ -148,8 +148,8 @@ export default function ProjectListPage() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
-            <div className="mt-8">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-10">
+            <div className="mt-4 sm:mt-8">
               <SearchBar
                 value={search}
                 onChange={setSearch}
@@ -172,7 +172,6 @@ export default function ProjectListPage() {
             )}
 
             <div className="mt-10">
-            <div className="h-6" />
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-gray-500" />

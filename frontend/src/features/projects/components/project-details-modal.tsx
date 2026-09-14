@@ -290,8 +290,8 @@ export default function ProjectDetailsModal({
   const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">
-      <div className="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative" style={{ padding: "64px" }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-6 md:p-10">
+      <div className="relative max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-5 sm:p-8 lg:p-12 ">
         <button
           onClick={onClose}
           className="absolute top-8 right-8 text-gray-500 transition hover:text-gray-800"

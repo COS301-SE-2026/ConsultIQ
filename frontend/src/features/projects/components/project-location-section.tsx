@@ -64,12 +64,12 @@ export default function ProjectLocationSection({
   return (
     <Card style={{ padding: "20px", border: "none" }}>
       <div className= "flex flex-center gap-3">
-        <h3
+        <h2
           className="text-3xl font-bold mb-4"
           style={{ color: "var(--color-primary)" }}
         >
           Location
-        </h3>
+        </h2>
         <div>
           {isEditing ? (
             <div className="flex gap-4">
@@ -89,7 +89,7 @@ export default function ProjectLocationSection({
                   onClick={onEdit} 
                   disabled={isDisabled}
                   className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                  <Edit className="h-5 w-5"/> 
+                  <Edit className="h-6 w-6 text-primary"/> 
                   </button>
                 )
                 

@@ -103,10 +103,10 @@ export default function ProjectCard({
   onViewSkillGap,
 }: ProjectCardProps) {
   return (
-    <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white overflow-hidden">
+    <Card className="flex min-h-[250px] w-full min-w-0 flex-col overflow-hidden rounded-xl bg-white">
       <div className="flex flex-col h-full flex-1 p-6 sm:p-8">
         {/* Header */}
-        <div className="flex items-center gap-4 sm:gap-5 mb-5 min-w-0">
+        <div className="mb-5 flex min-w-0 items-start gap-3 sm:items-center sm:gap-5">
 
           <div className="w-12 h-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0"  style={{
                 backgroundColor: "var(--color-primary)",
@@ -115,7 +115,7 @@ export default function ProjectCard({
           </div>
 
           <div className="flex flex-col min-w-0 flex-1">
-            <h2 className="text-[20px] font-semibold leading-snug"
+            <h2 className="break-words text-lg font-semibold leading-snug sm:text-xl"
               style={{
                 color: "var(--color-primary)",
               }}>
@@ -153,10 +153,10 @@ export default function ProjectCard({
               </p>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div className="ml-auto flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {onConfigureScore && (
               <button type="button" onClick={() =>onConfigureScore(project)}
-                className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"
+                className="h-9 min-w-0 flex-1 rounded px-2 text-xs font-medium text-white transition sm:flex-none sm:text-sm"
                 style={{ backgroundColor: "var(--color-primary)"}}>
                   Configure Scoring
             </button>
@@ -164,21 +164,7 @@ export default function ProjectCard({
           <button
             type="button"
             onClick={() => onViewDetails(project)}
-            className="
-            flex
-            items-center
-            justify-center
-            h-8
-            w-25
-            px-6
-            rounded
-            text-sm
-            font-medium
-            transition-colors
-            duration-200
-            hover:bg-[var(--button-secondary-hover)]
-            whitespace-nowrap
-        "
+            className=" flex h-9 min-w-0 flex-1 items-center justify-center rounded px-3 text-xs font-medium transition-colors sm:flex-none sm:px-5 sm:text-sm"
             style={{
               border: "1.5px solid var(--color-primary)",
               color: "var(--color-primary)",

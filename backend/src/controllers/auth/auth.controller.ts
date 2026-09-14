@@ -12,7 +12,7 @@ import {
   Request,
 } from '@nestjs/common';
 import * as express from 'express';
-import { randomBytes } from 'crypto';
+import { randomBytes } from 'node:crypto';
 import { AuthService } from '../../auth/services/auth.service';
 import { CreateUserDto } from '../../auth/dto/create-user.dto';
 import { ActivateAccountDto } from '../../auth/dto/activate-account.dto';

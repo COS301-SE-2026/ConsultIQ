@@ -8,8 +8,8 @@ import {
 import { PlacementService } from './placement.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PlacementStatus, AuditAction } from '@prisma/client';
-import { mock } from 'node:test';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { NotificationService } from '../../notification/service/notification.service';
 
 const mockPrismaService = {
   projectManager: {
@@ -34,6 +34,10 @@ const mockAuditLogService = {
   log: jest.fn(),
 };
 
+const mockNotificationService = {
+  createAndSendNotification: jest.fn(),
+};
+
 describe('PlacementService', () => {
   let service: PlacementService;
 
@@ -48,6 +52,10 @@ describe('PlacementService', () => {
         {
           provide: AuditLogService,
           useValue: mockAuditLogService,
+        },
+        {
+          provide: NotificationService,
+          useValue: mockNotificationService,
         },
       ],
     }).compile();
@@ -258,9 +266,9 @@ describe('PlacementService', () => {
       );
 
       expect(mockPrismaService.consultant.update).toHaveBeenCalledWith({
-        where: {id: 'consultant-1'},
+        where: { id: 'consultant-1' },
         data: {
-          capacity: {decrement: 50},
+          capacity: { decrement: 50 },
         },
       })
 
@@ -318,8 +326,8 @@ describe('PlacementService', () => {
       });
     });
 
-    it('should update availability when the consultant availabitlity changes after placement creation', async() => {
-      const validDto ={
+    it('should update availability when the consultant availabitlity changes after placement creation', async () => {
+      const validDto = {
         consultantId: 'consultant-1',
         startDate: '2026-06-01',
         endDate: '2026-12-31',
@@ -331,7 +339,7 @@ describe('PlacementService', () => {
         projectId: 'project-1',
       });
 
-      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1',});
+      mockPrismaService.project.findUnique.mockResolvedValue({ id: 'project-1', });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
@@ -346,26 +354,26 @@ describe('PlacementService', () => {
         capacity: 0,
         availability: 'AVAILABLE',
       }).mockResolvedValueOnce({
-          id: 'consultant-1',
-          capacity: 0,
-          availability: 'UNAVAILABLE',
+        id: 'consultant-1',
+        capacity: 0,
+        availability: 'UNAVAILABLE',
       });
 
-      mockPrismaService.projectPlacement.create.mockResolvedValue({id: 'placement-3',});
+      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-3', });
 
       await service.createPlacement('project-1', validDto, 'user-123');
 
       expect(mockPrismaService.consultant.update).toHaveBeenNthCalledWith(1, {
-        where: {id: 'consultant-1'},
-        data: { capacity: {decrement: 100} },
+        where: { id: 'consultant-1' },
+        data: { capacity: { decrement: 100 } },
       });
 
       expect(mockPrismaService.consultant.update).toHaveBeenNthCalledWith(2, {
-        where: {id: 'consultant-1'},
+        where: { id: 'consultant-1' },
         data: { availability: 'UNAVAILABLE' },
       });
     });
-    
+
     it('writes an audit log entry after successfully creating a placement', async () => {
       mockPrismaService.projectManager.findUnique.mockResolvedValue({
         userId: 'user-123',
@@ -417,7 +425,7 @@ describe('PlacementService', () => {
     it('should return the consultant remaining capacity from the persisted field', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
-        capacity: 100, 
+        capacity: 100,
       });
 
       const result = await service.getRemainingCapacity(
@@ -434,7 +442,7 @@ describe('PlacementService', () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 45,
-    });
+      });
 
       const result = await service.getRemainingCapacity(
         'consultant-1',);
@@ -446,15 +454,15 @@ describe('PlacementService', () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 0,
-    });
+      });
 
       const result = await service.getRemainingCapacity(
         'consultant-1',);
 
       expect(result).toBe(0);
     });
-        
-    it('should throw NotFoundException when getRemainingCapacity cannot find the consultant', async () =>{
+
+    it('should throw NotFoundException when getRemainingCapacity cannot find the consultant', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
 
       await expect(service.getRemainingCapacity('missing-consultant')).rejects.toThrow(NotFoundException);

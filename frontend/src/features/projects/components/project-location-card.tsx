@@ -36,7 +36,7 @@ export default function ProjectLocationCard({ data, errors = {}, onChange }: Pro
     }`;
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
+    <Card className="flex h-full w-full items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-[440px] flex flex-col h-full">
 
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>

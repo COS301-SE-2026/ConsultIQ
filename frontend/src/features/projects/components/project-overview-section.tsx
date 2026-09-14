@@ -66,7 +66,7 @@ export default function ProjectOverviewSection({
   }
 
   const renderEditingSection=() =>(
-    <div className="text-lg grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="text-lg grid grid-cols-1 gap-4 text-base sm:gap-6 md:grid-cols-2">
       <div className = "flex flex-col gap-1">
         <label htmlFor="project-name" className="text-base font-semibold">Project Name</label>
         <input type="text" id="project-name" value={isEditing ? projectName : project.name}
@@ -95,7 +95,7 @@ export default function ProjectOverviewSection({
         className= "text-base text-white rounded border"
         />
       </div> 
-     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
        <div className = "flex flex-col gap-1">
         <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
         <input type="date" id="start-date" value={convertDate(isEditing ? startDate : project.startDate)}
@@ -123,7 +123,7 @@ export default function ProjectOverviewSection({
           <option value="COMPLETED">Completed</option>
         </select>
         </div>
-      <div className="flex flex-col gap-1 col-span-2">
+      <div className="col-span-1 flex flex-col gap-1 md:col-span-2">
         <label htmlFor="description" className= "text-base font-semibold mb-2">Description</label>
         <textarea value={isEditing ? description : project.description} 
         onChange={e => setDescription(e.target.value)}
@@ -156,30 +156,29 @@ export default function ProjectOverviewSection({
  
 
   return (
-    <Card style={{ padding: "20px", border: "none" }}
-     className= {`${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
-      <div className="flex flex-center gap-3">
-        <h2 className="text-3xl font-bold mb-4"
+    <Card className= {` border-none p-4 sm:p-5 ${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="mb-4 text-2xl font-bold sm:text-3xl"
           style={{ color: "var(--color-primary)" }}
         >
           Overview
         </h2>
         <div>
           {isEditing ? (
-            <div className="flex gap-4">
-              <button 
+            <div className="flex flex-wrap gap-3">
+              <button type="button"
               onClick={handleSave} 
               className="flex items-center text-green-400 font-medium ">
-              <Check className="h-5 w-5"/> Save
+              <Check className="h-6 w-6"/> Save
               </button>
-              <button 
+              <button type="button"
               onClick={onCancel} 
               className="flex items-center text-red-400 font-medium ">
-              <X className="h-5 w-5"/> Cancel
+              <X className="h-6 w-6"/> Cancel
               </button>
               </div>):(
                 isNonConsultant && (
-                  <button 
+                  <button type="button"
                   onClick={onEdit} 
                   disabled={isDisabled}
                   className=" hover:text-blue-900 disabled:opacity-30 rounded transition">

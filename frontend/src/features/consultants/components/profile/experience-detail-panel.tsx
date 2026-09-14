@@ -30,7 +30,7 @@ interface ExperienceDetailPanelProps {
 const parseDateValue = (val: string | null | undefined): Date | null => {
   if (!val) return null;
   const parsed = new Date(val);
-  return isNaN(parsed.getTime()) ? null : parsed;
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
 export default function ExperienceDetailPanel({ experience, onClose,onSave, editMode }: ExperienceDetailPanelProps) {

@@ -206,7 +206,7 @@ function ConsultantProfileViewPage() {
               onSave={async (experiences) => {
                 await save({
                   experiences: experiences.map((e) => {
-                    const isValidDate = e.endDate && !isNaN(Date.parse(e.endDate));
+                    const isValidDate = e.endDate && !Number.isNaN(Date.parse(e.endDate));
                     return{
                       jobTitle: e.jobTitle,
                       companyName: e.company,

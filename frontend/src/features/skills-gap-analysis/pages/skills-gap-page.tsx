@@ -1,6 +1,6 @@
 import React, { useEffect, useState} from "react";
 import { useParams } from "react-router-dom";
-import { Filter, Home} from "lucide-react";
+import { Home} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import type { ProjectSkillGapResponse, PortfolioSkillGapResponse} from "../types/skill-gap.types";
@@ -27,7 +27,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
     const [fetchedProjectData, setFetchedProjectData] = useState<ProjectSkillGapResponse>();
     const [fetchedPortfolioData, setFetchedPortfolioData] = useState<PortfolioSkillGapResponse>();
     const [isLoading, setIsLoading] = useState(!propProjectData && !propPortfolioData);
-    const [viewMode, setViewMode] = useState<ViewMode>(mode);
+    const [viewMode, setViewMode] = useState<ViewMode>( projectId ? mode : "portfolio");
     const projectData = propProjectData ?? fetchedProjectData;
     const portfolioData = propPortfolioData ?? fetchedPortfolioData;
 
@@ -95,7 +95,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-        <Sidebar items={projectManagerSidebarItems} />
+        <Sidebar items={projectManagerSidebarItems(projectId)} />
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
             <header className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
             style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
@@ -122,14 +122,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                             This Project
                         </button>
                     )}
-                
-                        <button onClick={() => handleModeChange("portfolio")}
-                            className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-                            viewMode === "portfolio" ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} 
-                            >
-                            <Filter size={16} className="inline mr-2"/>
-                            Portfolio
-                        </button>
+
                 </div>
             </header>
 

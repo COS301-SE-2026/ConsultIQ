@@ -103,7 +103,8 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
-                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage /></PageTransition>} />
+                    <Route path="/skill-gap" element={<PageTransition><SkillGapPage mode="portfolio"/></PageTransition>} />
+                    <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage mode="project" /></PageTransition>} />
                     <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
 
                 </Route>

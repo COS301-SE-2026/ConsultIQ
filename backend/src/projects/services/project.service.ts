@@ -30,7 +30,7 @@ export class ProjectService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly redisUtilityService: RedisUtilityService,
-  ) {}
+  ) { }
 
   async invalidateProjectsCache() {
     await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
@@ -169,9 +169,14 @@ export class ProjectService {
 
     if (dto.startDate || dto.endDate) {
       const start = new Date(dto.startDate ?? project.startDate);
-      const end = dto.endDate ? new Date(dto.endDate) : project.endDate;
-      if (end && end <= start) {
-        throw new BadRequestException('End date must be after start date.');
+      const endRaw = dto.endDate ?? project.endDate;
+
+      // Only check the end date if it actually exists
+      if (endRaw) {
+        const end = new Date(endRaw);
+        if (end <= start) {
+          throw new BadRequestException('End date must be after start date.');
+        }
       }
     }
     await this.invalidateProjectsCache();

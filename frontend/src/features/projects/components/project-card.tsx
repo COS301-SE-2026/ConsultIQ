@@ -80,10 +80,12 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
   return (
     <div className="group relative">
       <button type="button"
-        onClick={() => setIsTooltipOpen((open) => !open)}
+        onClick={onClick}
         onFocus={() => setIsTooltipOpen(true)}
         onBlur={() => setIsTooltipOpen(false)}
-        aria-label={`${style.label}: ${style.tooltip}`}
+        onMouseEnter={() => setIsTooltipOpen(true)}
+        onMouseLeave={() => setIsTooltipOpen(false)}
+        aria-label={`View skill gap analysis for ${style.label}`}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
         <Icon size={16} />

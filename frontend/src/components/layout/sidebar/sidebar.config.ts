@@ -58,7 +58,12 @@ export const projectManagerSidebarItems = (projectId?: string, runId?:string,): 
             label: "Configurations",
             path: `/project-scoring-config/${projectId}`,
             icon: Cog
-        });
+        },
+        {
+        label: "Project Skill Gaps",
+        path: `/skill-gap/${projectId}`,
+        icon: ChartPie,
+    });
    }
 
    if(projectId && runId){

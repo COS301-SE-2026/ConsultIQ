@@ -16,8 +16,12 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
   const navigate = useNavigate();
 
   const [isOpen, setIsOpen] = useState(false);
+  const activeItemPath = [...items]
+    .filter((item) => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`))
+    .sort((left, right) => right.path.length - left.path.length)[0]?.path;
+  
 
-  return (
+    return (
     <>
     <button type="button"
       onClick={() => setIsOpen((open) => !open)}
@@ -36,7 +40,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
         />
     )}
     
-    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] min-h-0 flex-col overflow-hidden transition-transform duration-200
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col overflow-hidden transition-transform duration-200 md:relative md:translate-x-0
       ${isOpen ? "translate-x-0" : "-translate-x-full" } md:sticky md:top-0 md:translate-x-0`}
       style={{backgroundColor: "var(--color-primary)",}}
     >
@@ -56,6 +60,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
 
         {items.map((item) => {
           const Icon = item.icon;
+          const isActve = item.path === activeItemPath;
           const isNotifications = item.path === "/notifications";
           const showBadge = isNotifications && notificationCount >0;
 
@@ -84,13 +89,11 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
                 width: "100%",
 
                 border: "none",
-                borderLeft:
-                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                borderLeft: isActve
                     ? "4px solid var(--color-accent)"
                     : "4px solid transparent",
 
-                backgroundColor:
-                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                backgroundColor: isActve
                     ? "var(--color-secondary)"
                     : "transparent",
 

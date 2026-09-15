@@ -8,7 +8,7 @@ import type { MatchRunStatus } from "../services/placement.service";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface RawMatchResult {
@@ -26,6 +26,7 @@ interface RawMatchResult {
 }
 
 export default function PlacementDashboard() {
+    const navigate = useNavigate();
 
     const location = useLocation();
 
@@ -55,8 +56,6 @@ export default function PlacementDashboard() {
                 isPlaced: placedConsultantIds.includes(result.consultantId ?? result.id ?? "") || (result.isPlaced ?? false),
             }));
     }, [rawMatchData, placedConsultantIds]);
-
-    console.log("URL Parameters:", { projectId, runId });
 
     useEffect(() => {
         if (!projectId || !runId) return;
@@ -135,6 +134,7 @@ export default function PlacementDashboard() {
     };
     const handlePlaceConsultant = async (consultantId: string) => {
         if (!projectId || !project) {
+            navigate("/projects", {replace: true});
             throw new Error("Project information is missing.");
         }
         try {
@@ -158,14 +158,10 @@ export default function PlacementDashboard() {
         }
     };
 
-    const handleViewAll = () => {
-        console.log("Viewing full list");
-    };
-
     return (
         <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
             <div className="h-screen shrink-0">
-                <Sidebar items={projectManagerSidebarItems} />
+                <Sidebar items={projectManagerSidebarItems(projectId, runId)} />
             </div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
@@ -192,7 +188,6 @@ export default function PlacementDashboard() {
                         recommendations={recommendations}
                         onSelectConsultant={handleSelectConsultant}
                         onPlaceConsultant={handlePlaceConsultant}
-                        onViewAll={handleViewAll}
                     />
                 </div>
 

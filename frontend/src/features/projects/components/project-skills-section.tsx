@@ -43,6 +43,11 @@ export default function ProjectSkillsSection({
     };
   };
 
+  const deleteSkill = (_skill: ProjectSkillData, idx: number) => {
+    setCurrentSkills((prev) => prev.filter((_, i) => i !== idx));
+    if(editingIndex === idx) setEditingIndex(null);
+  };
+
   let skillsSection;
 
   if (isEditing) {
@@ -67,6 +72,7 @@ export default function ProjectSkillsSection({
             mandatory: skill.mandatory,
           }))}
           onEditSkill={startEditing}
+          onDeleteSkill={deleteSkill}
           isEditing={isEditing}
         />
       </>

@@ -35,11 +35,11 @@ interface UserTabProps {
 
 const getIntials = (name: string) => {
   if (!name) return;
-  const splitName = name.trim().split(" ");
+  const splitName = name.trim().split(" ").filter(Boolean);
   const first = splitName[0];
   const last = splitName[1];
 
-  return `${first[0]}${last[0]}`.toUpperCase();
+  return last ? `${first[0]}${last[0]}`.toUpperCase() : first[0].toLocaleUpperCase();
 }
 
 export default function UsersTab({ searchQuery = "", roleFilter = "", statusFilter = "", users, meta, loading, currentPage, onPageChange, refresh, error }: UserTabProps) {

@@ -37,7 +37,6 @@ export default function AdminFilters({ activeTab, roleFilter, statusFilter, budg
                         >
                             <option value="">All roles</option>
                             <option value="CONSULTANT">Consultant</option>
-                            <option value="ADMIN">Admin</option>
                             <option value="CONSULTANT_MANAGER">Consultant manager</option>
                             <option value="PROJECT_MANAGER">Project manager</option>
                         </select>

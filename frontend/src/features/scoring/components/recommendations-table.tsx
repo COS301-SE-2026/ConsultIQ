@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { RecommendationRow } from "./recommendation-row";
 import type{ Recommendation } from "../types/placements.types";
 
@@ -5,11 +6,17 @@ interface RecommendationTableProps{
     readonly recommendations: Recommendation[];
     readonly onSelectConsultant: (id: string)=> void;
     readonly onPlaceConsultant: (consultantId : string) => Promise<void>;
-    readonly onViewAll?: ()=> void;
 }
 
-export function RecommendationsTable({recommendations, onSelectConsultant, onPlaceConsultant, onViewAll}: RecommendationTableProps){
+const ITEMS_PER_PAGE = 10;
+
+export function RecommendationsTable({recommendations, onSelectConsultant, onPlaceConsultant}: RecommendationTableProps){
+    const [ currentPage, setCurrentPage ] = useState(1);
+
     const orderedRecommendations = [...recommendations].sort((left, right) => left.rank - right.rank);
+    const totalPages = Math.ceil(orderedRecommendations.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage -1) * ITEMS_PER_PAGE;
+    const pageRecommendations = orderedRecommendations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     return(
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 ">
@@ -26,7 +33,7 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
                         </tr>
                     </thead>
                     <tbody>
-                        {orderedRecommendations.map((item) =>(
+                        {pageRecommendations.map((item) =>(
                             <RecommendationRow
                             key={item.consultantId}
                             recommendation={item}
@@ -37,12 +44,33 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
                     </tbody>
                 </table>
             </div>
-            <div className="mt-6 pt-4 text-center">
-                <button type="button" onClick={onViewAll}
-                className="text-sm font-semibold text-slate-600 inline-flex items-center gap-1 cursor-pointer">
-                    View all Consultants
-                </button>
-            </div>
+           
+           {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-6 mt-2 pt-4 border-t border-gray-400">
+                    <button type="button" 
+                        onClick={() => setCurrentPage((p) => Math.max(1, p-1))}
+                        disabled= {currentPage === 1}
+                        className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                        style={{ color: "var(--color-primary)" }} 
+                        >
+                        Previous
+                    </button>
+
+                    <span className="text-sm text-primary"> 
+                        Page {currentPage}  of {totalPages}
+                    </span>
+
+                    <button type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p+1))}
+                        disabled={currentPage === totalPages}
+                        className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                        style={{ color: "var(--color-primary)" }}
+                        >
+                        Next
+                    </button>
+                
+                </div>
+           )}
         </div>
     )
 }

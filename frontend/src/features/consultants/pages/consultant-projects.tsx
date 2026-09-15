@@ -20,11 +20,13 @@ function ConsultantProjects(){
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
     const { projects, isLoading: projectsLoading, error: projectsError } = useFetchAssignedProject();
+    
 
     const { profile, error } = useFetchConsultantProfile(
     targetConsultantId,
     user?.userId
     );
+
 
     const hasNoProfile = Boolean(error || !profile);
   
@@ -82,6 +84,7 @@ function ConsultantProjects(){
                 onClose={() => setSelectedProject(null)}
                 isConsultant={true}
                 onUpdate={setSelectedProject}
+                targetConsultantId={profile?.id}
               />
             </main>
              

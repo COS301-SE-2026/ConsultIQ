@@ -65,6 +65,21 @@ export class PlacementService {
       );
     }
 
+    // -------- Team Size Check --------
+
+    const activePlacements = await this.prisma.projectPlacement.count({
+      where: {
+        projectId,
+        status: PlacementStatus.ACTIVE,
+      },
+    });
+
+    if(activePlacements >= project.teamSize) {
+      throw new ConflictException(
+        `Cannot place consultant: project team size limit of ${project.teamSize} has been reached.`,
+      );
+    }
+
     const startDate = new Date(dto.startDate);
     const endDate = dto.endDate ? new Date(dto.endDate) : null;
 

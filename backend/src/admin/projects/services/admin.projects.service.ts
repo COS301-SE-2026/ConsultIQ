@@ -20,9 +20,9 @@ export class AdminProjectService {
     }
 
     if(project.status === 'COMPLETED') {
-      throw new BadRequestException ('Complete project connorbe archived');
+      throw new BadRequestException ('Completed project cannot be archived');
     }
-    
+
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.project.update({

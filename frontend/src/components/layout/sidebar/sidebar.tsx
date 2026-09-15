@@ -36,8 +36,8 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
         />
     )}
     
-    <aside className={`fixed inset-y-0 left-0 z-40 flex w-[280px] min-h-screen flex-col transition-transform duration-200 md:relative md:translate-x-0
-      ${isOpen ? "translate-x-0" : "-translate-x-full" }`}
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] min-h-0 flex-col overflow-hidden transition-transform duration-200
+      ${isOpen ? "translate-x-0" : "-translate-x-full" } md:sticky md:top-0 md:translate-x-0`}
       style={{backgroundColor: "var(--color-primary)",}}
     >
       {/* Logo Section */}
@@ -52,13 +52,8 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav
-        style={{
-          flex: 1,
-          padding: "32px 0",
-          overflowY: "auto",
-        }}
-      >
+      <nav className="min-h-0 flex-1 overflow-y-auto py-8 ">
+
         {items.map((item) => {
           const Icon = item.icon;
           const isNotifications = item.path === "/notifications";
@@ -122,6 +117,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       {user && (
         <div
           style={{
+            flexShrink: 0,
             padding: "20px 24px 12px 24px",
             borderTop: "1px solid rgba(255,255,255,0.1)",
             display: "flex",

@@ -2,6 +2,7 @@ import { Folder, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
 import type React from "react";
+import { useState } from "react";
 
 interface ProjectCardProps {
   readonly project: Project;
@@ -45,6 +46,8 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
     },
   };
 
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+
   const getTooltipBgColor = (sev : typeof severity) : string =>{
     switch(sev){
       case "CRITICAL":
@@ -76,14 +79,19 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
 
   return (
     <div className="group relative">
-      <button type="button" onClick={onClick}
+      <button type="button"
+        onClick={() => setIsTooltipOpen((open) => !open)}
+        onFocus={() => setIsTooltipOpen(true)}
+        onBlur={() => setIsTooltipOpen(false)}
+        aria-label={`${style.label}: ${style.tooltip}`}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
         <Icon size={16} />
         <span>{style.label}</span>
       </button>
 
-      <div className="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block">
+     {isTooltipOpen &&(
+      <div className="absolute bottom-full left-0 z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2">
         <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
         >
           {style.tooltip}
@@ -91,6 +99,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
           />
         </div>
       </div>
+      )}
     </div>
   )
 
@@ -103,7 +112,7 @@ export default function ProjectCard({
   onViewSkillGap,
 }: ProjectCardProps) {
   return (
-    <Card className="flex min-h-[250px] w-full min-w-0 flex-col overflow-hidden rounded-xl bg-white">
+    <Card className="flex min-h-[250px] w-full min-w-0 flex-col overflow-visible rounded-xl bg-white">
       <div className="flex flex-col h-full flex-1 p-6 sm:p-8">
         {/* Header */}
         <div className="mb-5 flex min-w-0 items-start gap-3 sm:items-center sm:gap-5">

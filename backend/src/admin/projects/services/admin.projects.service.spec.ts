@@ -76,7 +76,6 @@ describe('AdminProjectService', () => {
                 meta: {
                     totalRecords: mockProjects.length,
                     absoluteTotalRecords: 25,
-                    absoluteTotalRecords: mockProjects.length,
                     currentPage: 1,
                     totalPages: 1,
                 },

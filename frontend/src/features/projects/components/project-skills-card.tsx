@@ -72,7 +72,7 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
   };
 
   return (
-    <Card className="flex h-full w-full items-start justify-center p-4 sm:p-6 md:p-8">
+    <Card className="flex w-full items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12">
       <div className="flex w-full max-w-[440px] flex-col ">
 
         <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl" style={{ color: "var(--color-primary)" }}>

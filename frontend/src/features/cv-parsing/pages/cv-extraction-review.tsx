@@ -1,13 +1,15 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
 import { cvParsingService } from "../services/cv-parsing.service";
-import { createConsultantProfile } from "../../consultants/services/consultant.service";  
+import { createConsultantProfile } from "../../consultants/services/consultant.service";
 import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
+import { useAddressSearch } from "../../../hooks/useAddressSearch";
+import SearchBar from "../../../components/shared/search-bar";
 
 import type {
     CvFileStatus,
@@ -30,7 +32,7 @@ interface ManualFields {
 }
 
 interface SkillFormRow extends ParsedSkill {
-    competencyLevel:  "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+    competencyLevel: "BEGINNER" | "INTERMEDIATE" | "EXPERT";
     confidenceLevel: number;
 }
 
@@ -48,7 +50,7 @@ interface ExperienceFormRow extends Omit<ParsedExperience, "jobType" | "workMode
 }
 
 const normaliseEnum = <T extends string>(raw: string | undefined, options: readonly T[]): T | "" => {
-    if(!raw) return "";
+    if (!raw) return "";
     const cleaned = raw.trim().toUpperCase().replace(/[\s-]+/g, "_");
     return (options as readonly string[]).includes(cleaned) ? (cleaned as T) : "";
 }
@@ -57,9 +59,9 @@ const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
 const WORKING_DAYS_PER_YEAR = 260;
 
-export default function CVExtractionReview(){
+export default function CVExtractionReview() {
     const navigate = useNavigate();
-    const { userId, cvFileId } = useParams<{userId: string; cvFileId: string }>();
+    const { userId, cvFileId } = useParams<{ userId: string; cvFileId: string }>();
 
     const [viewState, setViewState] = useState<ViewState>("loading");
     const [cvFile, setCvFile] = useState<CvFileStatus | null>(null);
@@ -78,145 +80,198 @@ export default function CVExtractionReview(){
         availability: "AVAILABLE",
     });
 
+
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDiscarding, setIsDiscarding] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
 
     const enteredCost = Number(manualFields.costToCompany);
-    const hasValidCost = manualFields.costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >=0;
+    const hasValidCost = manualFields.costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >= 0;
     const dailyCostToCompany = manualFields.costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
 
-    const warningByPath = useMemo(() =>{
+    const warningByPath = useMemo(() => {
         const map = new Map<string, string>();
         fieldWarnings.forEach((w) => map.set(w.path, w.message));
         return map;
     }, [fieldWarnings]);
 
+    const [addressGeo, setAddressGeo] = useState<{
+        latitude?: number;
+        longitude?: number;
+        placeId?: string;
+        formattedAddress?: string;
+    }>({});
+
+    const {
+        addressSearch,
+        locationResults,
+        isAddressLoading,
+        showDropdown,
+        handleSearchAddress,
+        handleSelectAddress,
+        searchAddressAndApply
+
+    } = useAddressSearch({
+        onSelect: (parsed) => {
+            setContact((c) => ({
+                ...c,
+                addressLine1: parsed.addressLine1 ?? "",
+                addressLine2: parsed.addressLine2 ?? "",
+                suburb: parsed.suburb ?? "",
+                city: parsed.city ?? "",
+                province: parsed.province,
+                postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
+            }));
+            setAddressGeo({
+                latitude: parsed.latitude ?? undefined,
+                longitude: parsed.longitude ?? undefined,
+                placeId: parsed.placeId ?? undefined,
+                formattedAddress: parsed.formattedAddress ?? undefined,
+            });
+        },
+    });
+
+
+
     useEffect(() => {
-    if (!cvFileId) return; 
+        if (!cvFileId) return;
 
-    let cancelled = false;
+        let cancelled = false;
 
-    const fetchOnce = async () => {
-      try {
-        const result = await cvParsingService.getCvFile(cvFileId);
-        if (cancelled) return;
+        const fetchOnce = async () => {
+            try {
+                const result = await cvParsingService.getCvFile(cvFileId);
+                if (cancelled) return;
 
-        setCvFile(result);
+                setCvFile(result);
 
-        if (result.extractionStatus === "PENDING" || result.extractionStatus === "PROCESSING") {
-          setViewState("processing");
-          return;
-        }
+                if (result.extractionStatus === "PENDING" || result.extractionStatus === "PROCESSING") {
+                    setViewState("processing");
+                    return;
+                }
 
-        if (result.extractionStatus ==="FAILED") {
-          setViewState("failed");
-          setFailureReason(result.parsedData?.error ?? "CV extraction failed.");
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          return;
-        }
+                if (result.extractionStatus === "FAILED") {
+                    setViewState("failed");
+                    setFailureReason(result.parsedData?.error ?? "CV extraction failed.");
+                    if (pollTimer.current) clearInterval(pollTimer.current);
+                    return;
+                }
 
-        // REVIEW_REQUIRED status
-        if (pollTimer.current) clearInterval(pollTimer.current);
+                // REVIEW_REQUIRED status
+                if (pollTimer.current) clearInterval(pollTimer.current);
 
-        const data = result.parsedData?.data;
-        setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
+                const data = result.parsedData?.data;
+                setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
 
-        if (data) {
-          setContact(data.contact ?? {});
-          setSkills(
-            (data.skills ?? []).map((s) => ({
-              ...s,
-              competencyLevel: "BEGINNER",
-              confidenceLevel: 1,
-            })),
-          );
-          setExperiences(
-            (data.experiences ?? []).map((e) =>({
-                ...e,
-                jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
-                workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
-          })), );
+                if (data) {
+                    setContact(data.contact ?? {});
 
-          setCertifications(data.certifications ?? []);
-          setEducation(data.education ?? []);
-        }
+                    const extractedAddress = [
+                        data.contact?.addressLine1,
+                        data.contact?.suburb,
+                        data.contact?.city,
+                        data.contact?.province,
+                        data.contact?.postalCode,
+                    ].filter(Boolean).join(", ");
 
-        setViewState("review");
-      } catch (error) {
-        if (cancelled) return;
-        setViewState("failed");
-        setFailureReason(
-          error instanceof Error ? error.message : "Unable to load CV details.",
-        );
-        if (pollTimer.current) clearInterval(pollTimer.current);
-      }
+                    if (data.contact?.addressLine1 && data.contact?.city) {
+                        void searchAddressAndApply(extractedAddress);
+                    }
+
+                    setSkills(
+                        (data.skills ?? []).map((s) => ({
+                            ...s,
+                            competencyLevel: "BEGINNER",
+                            confidenceLevel: 1,
+                        })),
+                    );
+                    setExperiences(
+                        (data.experiences ?? []).map((e) => ({
+                            ...e,
+                            jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
+                            workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
+                        })),);
+
+                    setCertifications(data.certifications ?? []);
+                    setEducation(data.education ?? []);
+                }
+
+                setViewState("review");
+            } catch (error) {
+                if (cancelled) return;
+                setViewState("failed");
+                setFailureReason(
+                    error instanceof Error ? error.message : "Unable to load CV details.",
+                );
+                if (pollTimer.current) clearInterval(pollTimer.current);
+            }
+        };
+
+        void fetchOnce();
+        pollTimer.current = setInterval(fetchOnce, POLL_INTERVAL_MS);
+
+        return () => {
+            cancelled = true;
+            if (pollTimer.current) clearInterval(pollTimer.current);
+        };
+    }, [cvFileId]);
+
+    const updateSkill = (idx: number, patch: Partial<SkillFormRow>) => {
+        setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
     };
 
-    void fetchOnce();
-    pollTimer.current = setInterval(fetchOnce, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      if (pollTimer.current) clearInterval(pollTimer.current);
-    };
-  }, [cvFileId]);
-
-    const updateSkill = (idx: number, patch:Partial<SkillFormRow>) =>{
-        setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch} : s)));
-    };
-
-    const updateExperience = (idx: number, patch: Partial<ExperienceFormRow>) =>{
-        setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
+    const updateExperience = (idx: number, patch: Partial<ExperienceFormRow>) => {
+        setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
     }
 
-    const updateCertification = (idx: number, patch: Partial<ParsedCertification>) =>{
-        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch} : c)));
+    const updateCertification = (idx: number, patch: Partial<ParsedCertification>) => {
+        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
     }
 
-    const updateEducation = (idx: number, patch: Partial<ParsedEducation>) =>{
-        setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
+    const updateEducation = (idx: number, patch: Partial<ParsedEducation>) => {
+        setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
     }
 
-    const validateBeforeSubmit = () : {error: string} | {error  : null; experiences : ParsedExperience[]} =>{
+    const validateBeforeSubmit = (): { error: string } | { error: null; experiences: ParsedExperience[] } => {
         const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
 
-        if(!contact.fullName) return {error : "Full name is required."};
-        
-        if(!/^\d{10}$/.test(normalisedPhone)) {
-            return {error : "Phone number must be exactly 10 digits."};
+        if (!contact.fullName) return { error: "Full name is required." };
+
+        if (!/^\d{10}$/.test(normalisedPhone)) {
+            return { error: "Phone number must be exactly 10 digits." };
         }
-        if(!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
-            return { error : "Please enter a valid South African ID number."};
+        if (!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
+            return { error: "Please enter a valid South African ID number." };
         }
-        if(!hasValidCost) {
-            return { error : "Cost to company is required and must be a valid non-negative number."};
+        if (!hasValidCost) {
+            return { error: "Cost to company is required and must be a valid non-negative number." };
         }
-        if(!contact.city || !contact.province || !contact.addressLine1){
-            return {error : "Adress, city and province are required."};
+        if (!contact.city || !contact.province || !contact.addressLine1) {
+            return { error: "Address, city and province are required." };
         }
 
         const invalidIdx = experiences.findIndex(
             (e) => !e.jobType || !e.workModel,
         );
 
-        if(invalidIdx !== -1){
-            return { error : "Please select a job type and work model for every experience entry." };
+        if (invalidIdx !== -1) {
+            return { error: "Please select a job type and work model for every experience entry." };
         }
-        return { error : null , experiences: experiences as ParsedExperience[]};
+        return { error: null, experiences: experiences as ParsedExperience[] };
     };
 
-    const handleApprove = async  () =>{
-        if(!userId) return;
+    const handleApprove = async () => {
+        if (!userId) return;
 
         const validation = validateBeforeSubmit();
-        if(validation.error){
+        if (validation.error) {
             toast.error(validation.error ?? "Validation failed.");
             return;
         }
 
-        try{
+        try {
             setIsSubmitting(true);
 
             const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
@@ -231,109 +286,113 @@ export default function CVExtractionReview(){
                 city: contact.city ?? "",
                 province: contact.province ?? "",
                 postalCode: contact.postalCode,
+                latitude: addressGeo.latitude ?? undefined,
+                longitude: addressGeo.longitude ?? undefined,
+                placeId: addressGeo.placeId ?? "",
+                formattedAddress: addressGeo.formattedAddress ?? "",
                 costToCompany: hasValidCost ? dailyCostToCompany : 0,
                 availability: manualFields.availability,
                 skills: skills.map((s) => ({
-                skillName: s.skillName,
-                competencyLevel: s.competencyLevel,
-                yearsExperience: s.yearsExperience,
-                confidenceLevel: s.confidenceLevel,
+                    skillName: s.skillName,
+                    competencyLevel: s.competencyLevel,
+                    yearsExperience: s.yearsExperience,
+                    confidenceLevel: s.confidenceLevel,
                 })),
                 experiences: experiences as ParsedExperience[],
                 certifications,
                 education,
             });
-            
+
             toast.success("Consultant profile created successfully");
             navigate("/consultants-manager");
-        }catch(error){ 
+        } catch (error) {
             toast.error(error instanceof Error ? error.message : "Failed to create consultant profile.");
-        }finally{
+        } finally {
             setIsSubmitting(false);
-        } 
+        }
     };
 
-    const handleDiscard = async  () =>{
-        if(!cvFileId) return;
+    const handleDiscard = async () => {
+        if (!cvFileId) return;
 
         const confirmed = window.confirm("This will permanently delete the uploaded CV. Continue?");
 
-        if(!confirmed) return;
+        if (!confirmed) return;
 
-        try{
+        try {
             setIsDiscarding(true);
             await cvParsingService.discard(cvFileId);
             toast.success("CV discarded.");
             navigate(`/create-profile-entry/${userId}`);
-        }catch(error){
+        } catch (error) {
             toast.error(error instanceof Error ? error.message : "Failed to discard cv.");
-        }finally{
+        } finally {
             setIsDiscarding(false);
         }
     };
 
     const isLowConfidence = (section: keyof NonNullable<typeof confidenceScores>) => (confidenceScores?.[section] ?? 1) < LOW_CONFIDENCE_THRESHOLD;
-    
+
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-        <Sidebar items={consultantManagerSidebarItems}/>
+            <Sidebar items={consultantManagerSidebarItems} />
 
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
-            <header
-            className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-            style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
-            >
-            <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
-               Review Extracted CV Details
-            </h1>
-
-            <div className="flex gap-6">
-                <button
-                onClick={() => navigate(-1)}
-                className="flex items-center justify-center h-12 px-6 text-lg rounded-xl font-semibold bg-white"
-                style={{ color: "var(--color-primary)" }}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <header
+                    className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
+                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
                 >
-                <ArrowLeft size={20} className="mr-2" />
-                Back
-                </button>
-            </div>
-            </header>
+                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+                        Review Extracted CV Details
+                    </h1>
 
-            <main className="flex-1 overflow-y-auto p-10">
-                {viewState === "loading" &&(
-                    <div className="flex items-center justify-center h-full gap-2">
-                        <Loader2  className="h-6 w-6 animate-spin"/>
-                        <p>Loading...</p>   
-                    </div>
-                )}
-
-                {viewState === "processing" &&(
-                    <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                        <Loader2  className="h-10 w-10 animate-spin" style={{color: "var(--color-primary"}}/>
-                        <p className="text-lg">Extracting CV details...</p>  
-                        <p className="text-sm text-gray-500">
-                            This can take a moment. Please do not close this page.
-                        </p>
-                    </div>
-                )}
-
-                {viewState === "failed" &&(
-                    <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                        <AlertTriangle  className="h-10 w-10 text-red-600"/>
-                        <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>  
-                        <p className="text-sm ">
-                            {failureReason}
-                        </p>
-                        <button className="h-12 px-6 rounded-lg font-semibold text-white"
-                            style={{ backgroundColor: "var(--color-primary)" }}
-                            onClick={() => navigate(`/create-profile-entry/${userId}`)}>
-                            Back to upload
+                    <div className="flex gap-6">
+                        <button
+                            onClick={() => navigate(-1)}
+                            className="flex items-center justify-center h-12 px-6 text-lg rounded-xl font-semibold bg-white"
+                            style={{ color: "var(--color-primary)" }}
+                        >
+                            <ArrowLeft size={20} className="mr-2" />
+                            Back
                         </button>
                     </div>
-                )}
+                </header>
 
-                { viewState === "review" && cvFile &&(
+                <main className="flex-1 overflow-y-auto p-10">
+                    {viewState === "loading" && (
+                        <div className="flex items-center justify-center h-full gap-2">
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                            <p>Loading...</p>
+                        </div>
+                    )}
+
+                    {viewState === "processing" && (
+                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                            <Loader2 className="h-10 w-10 animate-spin" style={{ color: "var(--color-primary" }} />
+                            <p className="text-lg">Extracting CV details...</p>
+                            <p className="text-sm text-gray-500">
+                                This can take a moment. Please do not close this page.
+                            </p>
+                        </div>
+                    )}
+
+                    {viewState === "failed" && (
+                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                            <AlertTriangle className="h-10 w-10 text-red-600" />
+                            <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>
+                            <p className="text-sm ">
+                                {failureReason}
+                            </p>
+                            <button className="h-12 px-6 rounded-lg font-semibold text-white"
+                                style={{ backgroundColor: "var(--color-primary)" }}
+                                onClick={() => navigate(`/create-profile-entry/${userId}`)}>
+                                Back to upload
+                            </button>
+                        </div>
+                    )}
+
+                    {viewState === "review" && cvFile && (
                         <div className="max-w-4xl mx-auto flex flex-col gap-8">
                             <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
@@ -341,33 +400,80 @@ export default function CVExtractionReview(){
                                     {isLowConfidence("contact") && " (low extraction confidence — please verify) "}
                                 </h2>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <FormField label="Full name" value={contact.fullName?? ""} warning={warningByPath.get("contact.fullName")} onChange={(v) => setContact((c) => ({...c, fullName:  v}))} />
+                                    <FormField label="Full name" value={contact.fullName ?? ""} warning={warningByPath.get("contact.fullName")} onChange={(v) => setContact((c) => ({ ...c, fullName: v }))} />
 
-                                    <FormField label="Email" value={contact.email?? ""} warning={warningByPath.get("contact.email")} onChange={(v) => setContact((c) => ({...c, email:  v}))} />
+                                    <FormField label="Email" value={contact.email ?? ""} warning={warningByPath.get("contact.email")} onChange={(v) => setContact((c) => ({ ...c, email: v }))} />
 
-                                    <FormField label="Phone (10 digits)" value={contact.phone?? ""} warning={warningByPath.get("contact.phone")} onChange={(v) => setContact((c) => ({...c, phone:  v}))} />
+                                    <FormField label="Phone (10 digits)" value={contact.phone ?? ""} warning={warningByPath.get("contact.phone")} onChange={(v) => setContact((c) => ({ ...c, phone: v }))} />
 
-                                    <FormField label="Nationality" value={contact.nationality?? ""} warning={warningByPath.get("contact.nationality")} onChange={(v) => setContact((c) => ({...c, nationality:  v}))} />
+                                    <FormField label="Nationality" value={contact.nationality ?? ""} warning={warningByPath.get("contact.nationality")} onChange={(v) => setContact((c) => ({ ...c, nationality: v }))} />
 
-                                    <FormField label="Address line 1" value={contact.addressLine1?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({...c, addressLine1:  v}))} />
+                                    <div className="relative w-full col-span-2 mb-2 mt-3">
+                                        <SearchBar
+                                            value={addressSearch}
+                                            onChange={handleSearchAddress}
+                                            placeholder="Search for an address..."
+                                        />
 
-                                    <FormField label="Suburb" value={contact.suburb?? ""} warning={warningByPath.get("contact.suburb")} onChange={(v) => setContact((c) => ({...c, suburb:  v}))} />
+                                        {showDropdown && locationResults && (
+                                            <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
+                                                <li>
+                                                    <button
+                                                        type="button"
+                                                        className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl w-full flex justify-start"
+                                                        onClick={handleSelectAddress}
+                                                    >
+                                                        {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        )}
 
-                                    <FormField label="City" value={contact.city?? ""} warning={warningByPath.get("contact.city")} onChange={(v) => setContact((c) => ({...c, city:  v}))} />
+                                    </div>
 
-                                    <FormField label="Postal code" value={contact.postalCode?? ""} warning={warningByPath.get("contact.postalCode")} onChange={(v) => setContact((c) => ({...c, postalCode:  v}))} />
+                                    <FormField label="Address line 1" value={contact.addressLine1 ?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({ ...c, addressLine1: v }))} />
+
+                                    <FormField label="Suburb" value={contact.suburb ?? ""} warning={warningByPath.get("contact.suburb")} onChange={(v) => setContact((c) => ({ ...c, suburb: v }))} />
+
+                                    <FormField label="City" value={contact.city ?? ""} warning={warningByPath.get("contact.city")} onChange={(v) => setContact((c) => ({ ...c, city: v }))} />
+                                    <label className="flex flex-col gap-1">
+                                        <span className=" text-lg font-semibold text-primary" >Province</span>
+                                        <select
+                                            id="form-province"
+                                            className="flex h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#002D72]"
+                                            value={contact.province ?? ""}
+                                            onChange={(e) => setContact((c) => ({...c,province: e.target.value}))}
+                                        >
+                                            <option value="" disabled>Select Province</option>
+                                            <option value="Eastern Cape">Eastern Cape</option>
+                                            <option value="Free State">Free State</option>
+                                            <option value="Gauteng">Gauteng</option>
+                                            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                                            <option value="Limpopo">Limpopo</option>
+                                            <option value="Mpumalanga">Mpumalanga</option>
+                                            <option value="North West">North West</option>
+                                            <option value="Northern Cape">Northern Cape</option>
+                                            <option value="Western Cape">Western Cape</option>
+                                        </select>
+                                        {warningByPath.get("contact.province") && (
+                                            <span className="text-sm text-yellow-500">{warningByPath.get("contact.province")}</span>
+                                        )}
+                                    </label>
+
+                                    {/* <FormField label="Province" value={contact.province ?? ""} warning={warningByPath.get("contact.province")} onChange={(v) => setContact((c) => ({ ...c, province: v }))} /> */}
+                                    <FormField label="Postal code" value={contact.postalCode ?? ""} warning={warningByPath.get("contact.postalCode")} onChange={(v) => setContact((c) => ({ ...c, postalCode: v }))} />
                                 </div>
 
                                 <h3 className="text-base font-semibold mt-6 mb-2">Additional required details (not extracted from CV)</h3>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({...m, idNumber:  v}))} />
+                                    <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({ ...m, idNumber: v }))} />
 
                                     <label className="flex flex-col gap-1">
                                         <span className="text-lg font-semibold text-primary">Availability</span>
                                         <select className="border rounded-lg h-10 px-2"
                                             value={manualFields.availability}
-                                            onChange={(event) => 
-                                                setManualFields((curr) => ({...curr, availability: event.target.value as ManualFields["availability"]}))}
+                                            onChange={(event) =>
+                                                setManualFields((curr) => ({ ...curr, availability: event.target.value as ManualFields["availability"] }))}
                                         >
                                             <option value="AVAILABLE" >Available</option>
                                             <option value="UNAVAILABLE">Unavailable</option>
@@ -378,58 +484,58 @@ export default function CVExtractionReview(){
                                     <div className="flex flex-col gap-2">
                                         <span className="text-lg font-semibold text-primary">Cost to Company (R)</span>
                                         <div className="flex rounded-lg border overflow-hidden">
-                                            <button type="button" onClick={() => setManualFields((m) => ({...m, costRateType: "DAILY"}))}
+                                            <button type="button" onClick={() => setManualFields((m) => ({ ...m, costRateType: "DAILY" }))}
                                                 className={`flex-1 px-3 py-2 text-sm font-medium
-                                                ${manualFields.costRateType === "DAILY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
-                                                >
+                                                ${manualFields.costRateType === "DAILY" ? "bg-[var(--color-primary)] text-white" : "bg-white text-gray-600"}`}
+                                            >
                                                 Daily rate
                                             </button>
-                                            <button type="button" onClick={() => setManualFields((m) => ({...m, costRateType: "MONTHLY"}))}
+                                            <button type="button" onClick={() => setManualFields((m) => ({ ...m, costRateType: "MONTHLY" }))}
                                                 className={`flex-1 px-3 py-2 text-sm font-medium
-                                                ${manualFields.costRateType === "MONTHLY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
-                                                >
-                                               Monthly salary
+                                                ${manualFields.costRateType === "MONTHLY" ? "bg-[var(--color-primary)] text-white" : "bg-white text-gray-600"}`}
+                                            >
+                                                Monthly salary
                                             </button>
                                         </div>
                                         <p className="text-sm text-slate-500">
                                             {manualFields.costRateType === "DAILY"
-                                            ? "Enter the cost for on 8-hour working day."
-                                            : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
+                                                ? "Enter the cost for on 8-hour working day."
+                                                : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
                                             }
                                         </p>
-                                        <FormField 
-                                        label={manualFields.costRateType === "DAILY" ? "Daily cost to company" : "Monthly cost to company "}
-                                        value={manualFields.costToCompany}
-                                        onChange={(value) => {setManualFields((m) => ({...m, costToCompany: value}));}}
+                                        <FormField
+                                            label={manualFields.costRateType === "DAILY" ? "Daily cost to company" : "Monthly cost to company "}
+                                            value={manualFields.costToCompany}
+                                            onChange={(value) => { setManualFields((m) => ({ ...m, costToCompany: value })); }}
                                         />
 
                                         {hasValidCost && manualFields.costRateType === "MONTHLY" && (
                                             <p className="text-sm font-medium text-blue-700">
                                                 Estimated daily rate : R {dailyCostToCompany.toFixed(2)}
-                                                <br/>
+                                                <br />
                                                 Based on an 8-hour working day.
                                             </p>
-                                            )}
+                                        )}
                                     </div>
 
                                 </div>
                             </Card>
 
                             <Card className="p-6 rounded-lg">
-                                <h2 className="text-xl font-bold mb-4"  style={{ color: isLowConfidence("skills") ? "#b45309" : undefined }} >
+                                <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("skills") ? "#b45309" : undefined }} >
                                     Skills
                                     {isLowConfidence("skills") && " (low extraction confidence — please verify) "}
 
                                 </h2>
-                                {skills.map((skill, i) =>(
+                                {skills.map((skill, i) => (
                                     <div key={i} className="grid grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
-                                        <FormField label="Skill" value={skill.skillName} onChange={(v) => updateSkill(i, { skillName: v})}/>
-                                        <FormField label="Years experience" value={String(skill.yearsExperience)} 
-                                        onChange={(v) => updateSkill(i, {yearsExperience: Number(v) || 0})} />
-                                        
+                                        <FormField label="Skill" value={skill.skillName} onChange={(v) => updateSkill(i, { skillName: v })} />
+                                        <FormField label="Years experience" value={String(skill.yearsExperience)}
+                                            onChange={(v) => updateSkill(i, { yearsExperience: Number(v) || 0 })} />
+
                                         <label className="flex flex-col gap-1">
                                             <span className="text-lg font-semibold text-primary">Competency</span>
-                                            <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel}>
+                                            <select className="border rounded-lg h-12 px-2" value={skill.competencyLevel}>
                                                 <option value="BEGINNER">Beginner</option>
                                                 <option value="INTERMEDIATE">Intermediate</option>
                                                 <option value="EXPERT">Expert</option>
@@ -437,9 +543,9 @@ export default function CVExtractionReview(){
                                         </label>
                                         <label className="flex flex-col gap-1">
                                             <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
-                                            <input type="number" min={1} max={4} className="border rounded-lg h-10 px-2"
-                                                value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {confidenceLevel: Number(e.target.value)})}
-                                             />
+                                            <input type="number" min={1} max={4} className="border rounded-lg h-12 px-2"
+                                                value={skill.confidenceLevel} onChange={(e) => updateSkill(i, { confidenceLevel: Number(e.target.value) })}
+                                            />
                                         </label>
                                         {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
                                             <p className="col-span-4 text-xs text-amber-700">
@@ -454,13 +560,13 @@ export default function CVExtractionReview(){
                                 <h2 className="text-xl font-bold mb-4" >
                                     Experience
                                 </h2>
-                                {experiences.map((exp, i) =>(
+                                {experiences.map((exp, i) => (
                                     <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
                                         <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
                                         <label className="flex flex-col gap-1">
                                             <span className="text-lg font-semibold text-primary">Job type</span>
-                                            <select value={ exp.jobType ?? ""} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
+                                            <select value={exp.jobType ?? ""} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
                                                 <option value="" disabled>Select job type</option>
                                                 <option value="FULL_TIME">Full-time</option>
                                                 <option value="PART_TIME">Part-time</option>
@@ -489,7 +595,7 @@ export default function CVExtractionReview(){
 
                             <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4"> Certifications</h2>
-                                {certifications.map((cert, i) =>(
+                                {certifications.map((cert, i) => (
                                     <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Title" value={cert.title} onChange={(v) => updateCertification(i, { title: v })} />
                                         <FormField label="Issuing body" value={cert.issuingBody} onChange={(v) => updateCertification(i, { issuingBody: v })} />
@@ -501,7 +607,7 @@ export default function CVExtractionReview(){
 
                             <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4"> Education</h2>
-                                {education.map((edu, i) =>(
+                                {education.map((edu, i) => (
                                     <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Institution" value={edu.institution} onChange={(v) => updateEducation(i, { institution: v })} />
                                         <FormField label="Qualification" value={edu.qualification} onChange={(v) => updateEducation(i, { qualification: v })} />
@@ -519,29 +625,30 @@ export default function CVExtractionReview(){
                                 </button>
 
                                 <button className="h-12 px-8 rounded-lg font-semibold text-white "
-                                style={{ backgroundColor: "var(--color-primary)" }}
+                                    style={{ backgroundColor: "var(--color-primary)" }}
                                     onClick={handleApprove} disabled={isSubmitting || isDiscarding} >
                                     {isSubmitting ? "Creating profile..." : "Approve and create profile"}
                                 </button>
                             </div>
                         </div>
                     )}
-            </main>
+                </main>
+            </div>
         </div>
-    </div>
     );
 }
 
-function FormField({label, value, warning, onChange}: {
-    readonly label: string; readonly value: string; readonly warning?: string; readonly onChange: (value:string) =>void; }){
-    return(
+function FormField({ label, value, warning, onChange }: {
+    readonly label: string; readonly value: string; readonly warning?: string; readonly onChange: (value: string) => void;
+}) {
+    return (
         <label className="flex flex-col gap-1">
             <span className="text-lg font-semibold text-primary">{label}</span>
-            <input  className="border rounded-lg h-10 px-3"
-        style={{ borderColor: warning ? "#f59e0b" : undefined }}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}/>
-        {warning && <span className="text-sm text-yellow-500">{warning}</span>}
+            <input className="border rounded-lg h-12 px-3"
+                style={{ borderColor: warning ? "#f59e0b" : undefined }}
+                value={value}
+                onChange={(e) => onChange(e.target.value)} />
+            {warning && <span className="text-sm text-yellow-500">{warning}</span>}
         </label>
     )
 }

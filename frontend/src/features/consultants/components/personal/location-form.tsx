@@ -19,6 +19,10 @@ export default function LocationForm({ onComplete }: Props) {
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [formattedAddress, setFormattedAddress] = useState("");
+  const [placeId, setPlaceId] = useState("");
   const [error, setError] = useState("");
 
   const handleDone = () => {
@@ -43,6 +47,11 @@ export default function LocationForm({ onComplete }: Props) {
       city: city.trim(),
       province: province.trim(),
       postalCode: postalCode.trim(),
+      latitude: latitude,
+      longitude: longitude,
+      placeId: placeId.trim(),
+      formattedAddress: formattedAddress.trim()
+
 
     });
     toast.success("Location saved!");
@@ -65,6 +74,10 @@ export default function LocationForm({ onComplete }: Props) {
       setCity(parsed.city ?? "");
       setProvince(parsed.province);
       setPostalCode((parsed.postalCode ?? "").replace(/\D/g, ""));
+      setLatitude(parsed.latitude ?? undefined);
+      setLongitude(parsed.longitude ?? undefined);
+      setPlaceId(parsed.placeId ?? "");
+      setFormattedAddress(parsed.formattedAddress ?? "");
     },
   });
 

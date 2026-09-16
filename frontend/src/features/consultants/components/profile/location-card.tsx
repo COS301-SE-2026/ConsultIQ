@@ -15,17 +15,36 @@ interface LocationCardProps {
   readonly province: string;
   readonly postalCode: string
   readonly canEdit?: boolean;
-  readonly onSave?: (updatedLocation: { addressLine1: string; addressLine2?: string; suburb?: string; city: string; province: string, postalCode?: string }) => void;
+  readonly latitude?: number;
+  readonly longitude?: number;
+  readonly placeId?: string;
+  readonly formattedAddress?: string;
+  readonly onSave?: (updatedLocation: {
+    addressLine1: string;
+    addressLine2?: string;
+    suburb?: string;
+    city: string;
+    province: string,
+    postalCode?: string,
+    latitude?: number,
+    longitude?: number,
+    placeId?: string,
+    formattedAddress?: string,
+  }) => void;
 }
 
 
-interface LocationForm{
+interface LocationForm {
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly suburb: string;
   readonly city: string;
   readonly province: string;
-  readonly postalCode: string
+  readonly postalCode: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
+  readonly placeId?: string;
+  readonly formattedAddress?: string;
 }
 
 interface FormFieldProps {
@@ -35,12 +54,12 @@ interface FormFieldProps {
   error?: string;
 }
 
-function FormField({ label,value,onChange,error}: FormFieldProps) {
+function FormField({ label, value, onChange, error }: FormFieldProps) {
   return (
 
     <div>
       <label className="text-sm font-medium " htmlFor="form-address-line-one">{label}</label>
-      <Input value={value} onChange={(e) => onChange( e.target.value)} />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} />
       {error && <span className="text-red-500 text-xs mt-1 block">{error}</span>}
     </div>
   );
@@ -55,6 +74,10 @@ export default function LocationCard({
   province,
   postalCode: initialPostalCode,
   canEdit,
+  latitude,
+  longitude,
+  placeId,
+  formattedAddress,
   onSave,
 
 }: LocationCardProps) {
@@ -71,6 +94,10 @@ export default function LocationCard({
     city,
     province,
     postalCode: initialPostalCode ?? "",
+    latitude: latitude,
+    longitude: longitude,
+    placeId: placeId ?? "",
+    formattedAddress: formattedAddress ?? "",
   });
 
   const [location, setLocation] = useState<LocationForm>(createLocation);
@@ -110,6 +137,10 @@ export default function LocationCard({
         city: location.city.trim(),
         province: location.province,
         postalCode: location.postalCode.trim() || undefined,
+        latitude: location.latitude || undefined,
+        longitude: location.longitude || undefined,
+        placeId: location.placeId?.trim(),
+        formattedAddress: location.formattedAddress?.trim(),
       });
       setIsEditing(false);
       toast.success("Location has been updated successfully");
@@ -148,23 +179,29 @@ export default function LocationCard({
         city: parsed.city ?? "",
         province: parsed.province,
         postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
+        latitude: parsed.latitude ?? undefined,
+        longitude: parsed.longitude ?? undefined,
+        placeId: parsed.placeId ?? "",
+        formattedAddress: parsed.formattedAddress ?? "",
       });
     },
   });
 
-  const Field_Map: {key: keyof LocationForm;label:string;error?:string }[]=[
-  {key:"addressLine1",label:"Address line 1"},
-  {key:"addressLine2",label:"Address line 2"},
-  {key:"suburb",label:"Suburb"},
-  {key:"city",label:"City"},
-  {key:"postalCode",label:"Postal Code"},
+  type StringLocationKey = Exclude<keyof LocationForm, "latitude" | "longitude" | "placeId" | "formattedAddress">;
 
-];
+  const Field_Map: { key: StringLocationKey; label: string; error?: string }[] = [
+    { key: "addressLine1", label: "Address line 1" },
+    { key: "addressLine2", label: "Address line 2" },
+    { key: "suburb", label: "Suburb" },
+    { key: "city", label: "City" },
+    { key: "postalCode", label: "Postal Code" },
 
-const fieldErrors:Partial<Record<keyof LocationForm,string>>={
-  addressLine1: address1Error,
-  city: cityError,
-}
+  ];
+
+  const fieldErrors: Partial<Record<StringLocationKey, string>> = {
+    addressLine1: address1Error,
+    city: cityError,
+  }
 
 
   return (
@@ -221,12 +258,12 @@ const fieldErrors:Partial<Record<keyof LocationForm,string>>={
           {isEditing ? (
 
             <>
-              {Field_Map.map(({key,label})=>(
+              {Field_Map.map(({ key, label }) => (
                 <FormField
                   key={key}
                   label={label}
                   value={location[key]}
-                  onChange={(v)=>updateLocation(key,v)}
+                  onChange={(v) => updateLocation(key, v)}
                   error={fieldErrors[key]}
                 />
               ))}
@@ -255,15 +292,15 @@ const fieldErrors:Partial<Record<keyof LocationForm,string>>={
             </>
           ) : (
             <>
-            {Field_Map.map(({key,label})=>(
-              <DetailField
-                key={key}
-                label={key === "postalCode" ? "Postal code" : label}
-                value={location[key] || `${label} not provided`}
-                variant="compact"
-              />
-            ))}
-            
+              {Field_Map.map(({ key, label }) => (
+                <DetailField
+                  key={key}
+                  label={key === "postalCode" ? "Postal code" : label}
+                  value={location[key] || `${label} not provided`}
+                  variant="compact"
+                />
+              ))}
+
               <DetailField label="Province" value={location.province} variant="compact" />
             </>
           )}

@@ -37,6 +37,10 @@ export interface Profile {
   city: string;
   province: string;
   postalCode: string;
+  latitude: number;
+  longitude: number;
+  placeId: string;
+  formattedAddress?: string;
   skills: Skill[];
   experience: Experience[];
   education: Education[];
@@ -186,6 +190,10 @@ function ConsultantProfileViewPage() {
               city={profile.city}
               province={profile.province}
               postalCode={profile.postalCode}
+              latitude={profile.latitude}
+              longitude={profile.longitude}
+              placeId={profile.placeId}
+              formattedAddress={profile.formattedAddress}
               canEdit={canEdit}
               onSave={async (loc) => {
                 await save({

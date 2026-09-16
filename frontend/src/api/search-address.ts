@@ -37,7 +37,7 @@ export const searchAddress = async (query: string): Promise<LocationDto> => {
 
 
 export const parseGoogleAddress = async (data: LocationDto): Promise<ParsedAddress> => {
-    let components = data.addressComponents;
+    const components = data.addressComponents;
     function findComponent(addressType: string): string {
         const found = components.find(comp => comp.types.includes(addressType));
         return found ? found.long_name : "";

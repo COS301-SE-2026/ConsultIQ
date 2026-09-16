@@ -43,6 +43,10 @@ export interface CreateConsultantProfilePayload {
   city: string;
   province: string;
   postalCode?: string;
+  latitude? :  number;
+  longitude?:   number;
+  placeId?:  string;
+  formattedAddress?: string;
   costToCompany: number;
   availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE";
   skills: CreateConsultantSkillPayload[];

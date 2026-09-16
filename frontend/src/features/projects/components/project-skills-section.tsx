@@ -4,6 +4,7 @@ import ProjectSkillsTable from "./project-skills-table";
 import ProjectSkillsCard from "./project-skills-card";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 import { Card } from "../../../components/ui/card";
+import { normalizeCompetency } from "../../consultants/types/consultant.types";
 
 
 interface ProjectSkillsSectionProps {
@@ -67,7 +68,7 @@ export default function ProjectSkillsSection({
           skills={currentSkills.map((skill, skillId) => ({
             id: String(skillId),
             name: skill.name,
-            competency: skill.competency,
+            competency: normalizeCompetency(skill.competency),
             years: skill.years,
             mandatory: skill.mandatory,
           }))}
@@ -83,7 +84,7 @@ export default function ProjectSkillsSection({
         skills={currentSkills.map((skill, skillId) => ({
           id: String(skillId),
           name: skill.name,
-          competency: skill.competency,
+          competency: normalizeCompetency(skill.competency),
           years: skill.years,
           mandatory: skill.mandatory,
         }))}

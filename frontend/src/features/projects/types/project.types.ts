@@ -14,6 +14,10 @@ export interface ProjectLocation {
   readonly city: string;
   readonly province: string;
   readonly postalCode: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
+  readonly  placeId?: string;
+  readonly  formattedAddress?: string;
 }
 
 export interface Project {

@@ -39,7 +39,7 @@ export function useAddressSearch({ onSelect, debounceTime = 500, minLength = 3 }
                 return;
             }
 
-            const parsedAddress = await parseGoogleAddress(data.addressComponents);
+            const parsedAddress = await parseGoogleAddress(data);
             if (requestId !== searchIdRef.current) return;
 
             setLocationResults(parsedAddress);
@@ -86,6 +86,35 @@ export function useAddressSearch({ onSelect, debounceTime = 500, minLength = 3 }
 
     }, [locationResults, onSelect]);
 
+    const searchAddressAndApply = useCallback(async (query: string) => {
+        if(!query.trim() || query.trim().length < minLength) return;
+
+        const requestId= ++searchIdRef.current;
+
+        try {
+            setIsAddressLoading(true);
+            const data = await searchAddress(query);
+            if(requestId !== searchIdRef.current) return;
+            if(!data?.addressComponents) return;
+
+            const parsedAddress = await parseGoogleAddress(data);
+            if (requestId !== searchIdRef.current || !parsedAddress) return;
+
+            onSelect(parsedAddress);
+            setAddressSearch([parsedAddress.addressLine1, parsedAddress.city].filter(Boolean).join(", "));
+            
+        } catch (error) {
+             if (requestId === searchIdRef.current) {
+                toast.error(error instanceof Error ? error.message : "Failed to validate extracted address");
+            }
+            
+        }finally{
+            if(requestId === searchIdRef.current) setIsAddressLoading(false);
+
+        }
+
+    },[minLength,onSelect]);
+
     return {
         addressSearch,
         locationResults,
@@ -93,6 +122,7 @@ export function useAddressSearch({ onSelect, debounceTime = 500, minLength = 3 }
         showDropdown,
         handleSearchAddress,
         handleSelectAddress,
+        searchAddressAndApply,
     };
 
 

@@ -5,18 +5,22 @@ on :
     branches:
       - main
       - dev
+      - mobilise-pm-pages
   workflow_dispatch:
     inputs:
       target_url: 
         description: 'Target URL to scan (default: staging backend)'
         required: false
-        default: 'http://localhost:3001'
+        default: 'https://consultiq-backend-production-086b.up.railway.app'
 
 jobs: 
   owasp-zap-scan:
     name: OWASP ZAP Baseline Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - name: Checkout repository

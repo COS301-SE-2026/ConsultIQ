@@ -43,6 +43,7 @@ const JOB_TYPE_OPTIONS = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "F
 const WORK_MODEL_OPTIONS = ["ONSITE", "REMOTE", "HYBRID"] as const;
 
 const SA_PROVINCES = [
+    "Gauteng",
     "Eastern Cape",
     "Free State",
     "KwaZulu-Natal",
@@ -54,7 +55,7 @@ const SA_PROVINCES = [
 
 ] as const;
 
-type SAProvince= (typeof SA_PROVINCES)[number];
+
 type JobType = (typeof JOB_TYPE_OPTIONS)[number];
 type WorkModel = (typeof WORK_MODEL_OPTIONS)[number];
 
@@ -118,23 +119,23 @@ export default function CVExtractionReview() {
         formattedAddress?: string;
     }>({});
 
-    const handleAddressSelected = useCallback((parsed: ParsedAddress) =>{
+    const handleAddressSelected = useCallback((parsed: ParsedAddress) => {
         setContact((c) => ({
-                ...c,
-                addressLine1: parsed.addressLine1 ?? "",
-                addressLine2: parsed.addressLine2 ?? "",
-                suburb: parsed.suburb ?? "",
-                city: parsed.city ?? "",
-                province: parsed.province,
-                postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
-            }));
-            setAddressGeo({
-                latitude: parsed.latitude ?? undefined,
-                longitude: parsed.longitude ?? undefined,
-                placeId: parsed.placeId ?? undefined,
-                formattedAddress: parsed.formattedAddress ?? undefined,
-            });
-    },[])
+            ...c,
+            addressLine1: parsed.addressLine1 ?? "",
+            addressLine2: parsed.addressLine2 ?? "",
+            suburb: parsed.suburb ?? "",
+            city: parsed.city ?? "",
+            province: parsed.province,
+            postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
+        }));
+        setAddressGeo({
+            latitude: parsed.latitude ?? undefined,
+            longitude: parsed.longitude ?? undefined,
+            placeId: parsed.placeId ?? undefined,
+            formattedAddress: parsed.formattedAddress ?? undefined,
+        });
+    }, [])
 
     const {
         addressSearch,
@@ -444,11 +445,11 @@ export default function CVExtractionReview() {
                                                 </li>
                                             </ul>
                                         )}
-
+                                        {isAddressLoading && (
+                                            <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+                                        )}
                                     </div>
-                                    {isAddressLoading && (
-                                        <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
-                                    )}
+
 
                                     <FormField label="Address line 1" value={contact.addressLine1 ?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({ ...c, addressLine1: v }))} />
 
@@ -464,8 +465,8 @@ export default function CVExtractionReview() {
                                             onChange={(e) => setContact((c) => ({ ...c, province: e.target.value }))}
                                         >
                                             <option value="" disabled>Select Province</option>
-                                            {SA_PROVINCES.map((province) =>(
-                                                  <option key={province}>{province}</option>
+                                            {SA_PROVINCES.map((province) => (
+                                                <option key={province}>{province}</option>
                                             ))}
                                         </select>
                                         {warningByPath.get("contact.province") && (
@@ -483,7 +484,7 @@ export default function CVExtractionReview() {
 
                                     <label className="flex flex-col gap-1">
                                         <span className="text-lg font-semibold text-primary">Availability</span>
-                                        <select className="border rounded-lg h-10 px-2"
+                                        <select className="border rounded-lg h-12 px-2"
                                             value={manualFields.availability}
                                             onChange={(event) =>
                                                 setManualFields((curr) => ({ ...curr, availability: event.target.value as ManualFields["availability"] }))}

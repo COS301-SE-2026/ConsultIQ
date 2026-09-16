@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, Loader2, Trash2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { createConsultantProfile } from "../../consultants/services/consultant.s
 import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
 import { useAddressSearch } from "../../../hooks/useAddressSearch";
 import SearchBar from "../../../components/shared/search-bar";
+import type { ParsedAddress } from "../../../api/search-address";
 
 import type {
     CvFileStatus,
@@ -41,6 +42,19 @@ interface SkillFormRow extends ParsedSkill {
 const JOB_TYPE_OPTIONS = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "FREELANCE"] as const;
 const WORK_MODEL_OPTIONS = ["ONSITE", "REMOTE", "HYBRID"] as const;
 
+const SA_PROVINCES = [
+    "Eastern Cape",
+    "Free State",
+    "KwaZulu-Natal",
+    "Limpopo",
+    "Mpumalanga",
+    "North West",
+    "Northern Cape",
+    "Western Cape",
+
+] as const;
+
+type SAProvince= (typeof SA_PROVINCES)[number];
 type JobType = (typeof JOB_TYPE_OPTIONS)[number];
 type WorkModel = (typeof WORK_MODEL_OPTIONS)[number];
 
@@ -104,18 +118,8 @@ export default function CVExtractionReview() {
         formattedAddress?: string;
     }>({});
 
-    const {
-        addressSearch,
-        locationResults,
-        isAddressLoading,
-        showDropdown,
-        handleSearchAddress,
-        handleSelectAddress,
-        searchAddressAndApply
-
-    } = useAddressSearch({
-        onSelect: (parsed) => {
-            setContact((c) => ({
+    const handleAddressSelected = useCallback((parsed: ParsedAddress) =>{
+        setContact((c) => ({
                 ...c,
                 addressLine1: parsed.addressLine1 ?? "",
                 addressLine2: parsed.addressLine2 ?? "",
@@ -130,7 +134,19 @@ export default function CVExtractionReview() {
                 placeId: parsed.placeId ?? undefined,
                 formattedAddress: parsed.formattedAddress ?? undefined,
             });
-        },
+    },[])
+
+    const {
+        addressSearch,
+        locationResults,
+        isAddressLoading,
+        showDropdown,
+        handleSearchAddress,
+        handleSelectAddress,
+        searchAddressAndApply
+
+    } = useAddressSearch({
+        onSelect: handleAddressSelected,
     });
 
 
@@ -216,7 +232,7 @@ export default function CVExtractionReview() {
             cancelled = true;
             if (pollTimer.current) clearInterval(pollTimer.current);
         };
-    }, [cvFileId]);
+    }, [cvFileId, searchAddressAndApply]);
 
     const updateSkill = (idx: number, patch: Partial<SkillFormRow>) => {
         setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s)));
@@ -430,6 +446,9 @@ export default function CVExtractionReview() {
                                         )}
 
                                     </div>
+                                    {isAddressLoading && (
+                                        <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+                                    )}
 
                                     <FormField label="Address line 1" value={contact.addressLine1 ?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({ ...c, addressLine1: v }))} />
 
@@ -442,18 +461,12 @@ export default function CVExtractionReview() {
                                             id="form-province"
                                             className="flex h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#002D72]"
                                             value={contact.province ?? ""}
-                                            onChange={(e) => setContact((c) => ({...c,province: e.target.value}))}
+                                            onChange={(e) => setContact((c) => ({ ...c, province: e.target.value }))}
                                         >
                                             <option value="" disabled>Select Province</option>
-                                            <option value="Eastern Cape">Eastern Cape</option>
-                                            <option value="Free State">Free State</option>
-                                            <option value="Gauteng">Gauteng</option>
-                                            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                                            <option value="Limpopo">Limpopo</option>
-                                            <option value="Mpumalanga">Mpumalanga</option>
-                                            <option value="North West">North West</option>
-                                            <option value="Northern Cape">Northern Cape</option>
-                                            <option value="Western Cape">Western Cape</option>
+                                            {SA_PROVINCES.map((province) =>(
+                                                  <option key={province}>{province}</option>
+                                            ))}
                                         </select>
                                         {warningByPath.get("contact.province") && (
                                             <span className="text-sm text-yellow-500">{warningByPath.get("contact.province")}</span>

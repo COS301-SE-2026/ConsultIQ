@@ -14,9 +14,12 @@ interface ProjectCardProps {
 interface GapBadgeProps {
   readonly severity?: "COVERED" | "AT_RISK" | "CRITICAL";
   readonly onClick: () => void;
+  readonly isOpen: boolean;
+  readonly onOpen: () => void;
+  readonly onClose: () => void;
 }
 
-const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
+const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick, isOpen, onOpen, onClose }) =>{
   if(!severity) return null;
 
   const config = {
@@ -46,7 +49,6 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
     },
   };
 
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   const getTooltipBgColor = (sev : typeof severity) : string =>{
     switch(sev){
@@ -81,10 +83,10 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
     <div className="group relative">
       <button type="button"
         onClick={onClick}
-        onFocus={() => setIsTooltipOpen(true)}
-        onBlur={() => setIsTooltipOpen(false)}
-        onMouseEnter={() => setIsTooltipOpen(true)}
-        onMouseLeave={() => setIsTooltipOpen(false)}
+        onFocus={() => onOpen}
+        onBlur={() => onClose}
+        onMouseEnter={() => onOpen}
+        onMouseLeave={() => onClose}
         aria-label={`View skill gap analysis for ${style.label}`}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
@@ -92,7 +94,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
         <span>{style.label}</span>
       </button>
 
-     {isTooltipOpen &&(
+     {isOpen &&(
       <div className="absolute bottom-full left-0 z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2">
         <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
         >
@@ -113,6 +115,9 @@ export default function ProjectCard({
   onConfigureScore,
   onViewSkillGap,
 }: ProjectCardProps) {
+
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
   return (
     <Card className="flex min-h-[250px] w-full min-w-0 flex-col overflow-visible rounded-xl bg-white">
       <div className="flex flex-col h-full flex-1 p-6 sm:p-8">
@@ -141,7 +146,13 @@ export default function ProjectCard({
               {project.clientName}
               </p>
               {project.gapSeverity && (
-                  <GapBadge severity={project.gapSeverity} onClick={() => onViewSkillGap?.(project)} />
+                  <GapBadge 
+                  severity={project.gapSeverity} 
+                  onClick={() => onViewSkillGap?.(project)} 
+                  isOpen={tooltipOpen}
+                  onOpen={() => setTooltipOpen(true)}
+                  onClose={() => setTooltipOpen(false)}
+                  />
               )}
             </div>
           </div>

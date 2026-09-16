@@ -294,7 +294,7 @@ export default function ProjectDetailsModal({
 
     fetchAssignedConsultants();
 
-  }, [fullProject]);
+  }, [fullProject, targetConsultantId]);
 
 
   if (!open || !project) {

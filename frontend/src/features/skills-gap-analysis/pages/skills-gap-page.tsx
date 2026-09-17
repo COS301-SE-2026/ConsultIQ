@@ -1,6 +1,5 @@
 import React, { useEffect, useState} from "react";
 import { useParams } from "react-router-dom";
-import { Home} from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { projectManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import type { ProjectSkillGapResponse, PortfolioSkillGapResponse} from "../types/skill-gap.types";
@@ -21,13 +20,13 @@ interface SkillGapProps {
     readonly onBack?: () => void;
 }
 
-export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project", onViewModeChange }) => {
+export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProjectData, portfolioData: propPortfolioData, mode= "project" }) => {
     const { projectId } = useParams();
 
     const [fetchedProjectData, setFetchedProjectData] = useState<ProjectSkillGapResponse>();
     const [fetchedPortfolioData, setFetchedPortfolioData] = useState<PortfolioSkillGapResponse>();
     const [isLoading, setIsLoading] = useState(!propProjectData && !propPortfolioData);
-    const [viewMode, setViewMode] = useState<ViewMode>( projectId ? mode : "portfolio");
+    const [viewMode] = useState<ViewMode>( projectId ? mode : "portfolio");
     const projectData = propProjectData ?? fetchedProjectData;
     const portfolioData = propPortfolioData ?? fetchedPortfolioData;
 
@@ -60,32 +59,15 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
         loadData();
     },[projectId, propProjectData, propPortfolioData]);
 
-    const handleModeChange = async (newMode: ViewMode) =>{
-        if(newMode === "portfolio" && !portfolioData){
-            try {
-                setIsLoading(true);
-                const data = await getPortfolioSkillGap();
-                setFetchedPortfolioData(data);
-            }catch{
-                toast.error("Failed to load portfolio skill gap data.");
-            }finally {
-                setIsLoading(false);
-            }
-        }
-        
-        setViewMode(newMode);
-        onViewModeChange?.(newMode);
-    };
-
     const isProjectView = viewMode === "project" && projectData;
     const isPortfolioView = viewMode === "portfolio" && portfolioData;
 
     if(isLoading){
-        return <div className="p-8 text-center text-gray-500">Loading skill gap analysis..</div>
+        return <div className="p-5 text-center text-gray-500 sm:p-8">Loading skill gap analysis..</div>
     }
 
     if(!isPortfolioView && !isProjectView){
-        return <div className="p-8 text-center text-gray-500">No data available.</div>
+        return <div className="p-5 text-center text-gray-500 sm:p-8">No data available.</div>
     }
 
     const data = isProjectView ? projectData! : portfolioData!;
@@ -94,94 +76,81 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
     const projectName = isProjectView ? projectData!.projectName : undefined;
 
     return (
-        <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
         <Sidebar items={projectManagerSidebarItems(projectId)} />
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
-            <header className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-            style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+        <div className="min-w-0 flex min-h-screen flex-1 flex-col overflow-hidden">
+            <header className="sticky top-0 z-20 flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+            style={{ borderColor: "var(--color-border)"}}
             >
                 <div className="flex items-center gap-4">
-                    
-                    <div>
-                        <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                             {isProjectView ? "Skill Gap Analysis" : "Portfolio Gap Overview"}
                         </h1>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 truncate text-sm text-gray-500 sm:text-base">
                             {projectName && `Project: ${projectName}`}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    {projectData && (
-                        <button onClick={() => handleModeChange("project")}
-                            className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
-                            viewMode === "project" ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`} 
-                            >
-                            <Home size={16} className="inline mr-2"/>
-                            This Project
-                        </button>
-                    )}
-
-                </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto">
-                <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+            <main className="min-w-0 flex-1 overflow-y-auto">
+                <div className="mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-6 sm:py-8 lg:px-10">
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
                         <SkillGapSummaryCards summary={data.summary} />
                     </section>
 
                     <section className="mb-8">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Skill Analysis</h2>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className = "bg-white p-6 rounded-lg border" style={{ borderColor: "var(--color-border)" }} >
+                        <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">Skill Analysis</h2>
+                        <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+                            <div className = "min-w-0 overflow-hidden rounded-lg border bg-white p-4 sm:p-6" style={{ borderColor: "var(--color-border)" }} >
                                 <h3 className="text-lg font-semibold mb-1">
                                     Required vs Actual Skills
                                 </h3>
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm break-words text-gray-500 mb-4">
                                  Compares the number of consultants required for each skill with the number currently available. Available bars are coloured by coverage status.
                                 </p>
-                                <SkillGapBarChart  data={skills} height={400} />
+                                <SkillGapBarChart  data={skills} height={320} />
                             </div>
 
-                            <div className = "bg-white p-6 rounded-lg border" style={{ borderColor: "var(--color-border)" }} >
+                            <div className = "min-w-0 overflow-hidden rounded-lg border bg-white p-4 sm:p-6" style={{ borderColor: "var(--color-border)" }} >
                                 <h3 className="text-lg font-semibold mb-1">
                                     Skill Gap Report
                                 </h3>
-                                <p className="text-sm text-gray-500 mb-4">
+                                <p className="text-sm break-words text-gray-500 mb-4">
                                     Shows coverage percentages for the top 10 skills, helping identify skills with the largest gaps across the project or portfolio.                                </p>
-                                <SkillGapRadarChart  data={skills} height={400} />
+                                <SkillGapRadarChart  data={skills} height={320} />
                             </div>
                         </div>
                     </section>
 
                     {isPortfolioView && alerts.length > 0 &&(
                         <section>
-                            <h2 className = "text-xl font-semibold text-gray-900 mb-4">
+                            <h2 className = "mb-4 text-lg font-semibold text-gray-900 sm:text-xl">
                                 Project Alerts ({alerts.length})
                             </h2>
-                            <div className = "bg-white rounded-lg border" style={{ borderColor: "var(--color-border)" }}>
-                                <SkillGapAlertsList alerts={alerts} maxHeight="max-h-96" />
+                            <div className = "overflow-hidden rounded-lg border bg-white" style={{ borderColor: "var(--color-border)" }}>
+                                <SkillGapAlertsList alerts={alerts} maxHeight="max-h-[28rem]" />
                             </div>
                         </section>
                     )}
                     {isPortfolioView && alerts.length === 0 && (
                         <section>
-                            <div className = "bg-white p-12 rounded-lg border text-center" style={{ borderColor: "var(--color-border)" }} >
+                            <div className = "rounded-lg border bg-white p-8 text-center sm:p-12" style={{ borderColor: "var(--color-border)" }} >
                                 <p className="text-gray-500">No skill gaps detected across portfolio.</p>
                             </div>
                         </section>
                     )}
                     {isProjectView && (
                         <section>
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4"> Identified Skill Gaps</h2>
+                            <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl"> Identified Skill Gaps</h2>
                             <div className="space-y-4">
                                 {skills.filter(s => s.severity !== "COVERED").map((skill) =>(
-                                    <div key={skill.skillName} className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                                    <div key={skill.skillName} className="rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-4">
                                         <p className="text-lg font-semibold text-primary">{skill.skillName}</p>
-                                        <p className="text-lg text-primary/70 mt-1">
+                                        <p className="mt-1 break-words text-base text-primary/70 sm:text-lg">
                                             Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''} with this skill to meet project requirements.
                                         </p>
                                     </div>

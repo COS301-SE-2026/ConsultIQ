@@ -294,7 +294,7 @@ export default function ProjectDetailsModal({
 
     fetchAssignedConsultants();
 
-  }, [fullProject]);
+  }, [fullProject, targetConsultantId]);
 
 
   if (!open || !project) {
@@ -308,17 +308,17 @@ export default function ProjectDetailsModal({
   const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">
-      <div className="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative" style={{ padding: "64px" }}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:items-center sm:p-4 md:p-8">
+      <div className="relative max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-5 sm:p-8 lg:p-12 ">
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 text-gray-500 transition hover:text-gray-800"
+          className="absolute right-4 top-4 z-10 text-gray-500 transition hover:text-gray-800 sm:right-6 sm:top-6"
         >
           <X size={28} />
         </button>
 
         <h2
-          className="text-4xl font-bold mb-4 flex items-center gap-4"
+          className="mb-4 flex items-center gap-3 pr-8 text-2xl font-bold sm:text-3xl md:text-4xl"
           style={{ color: "var(--color-primary)" }}
         >
           Project Details
@@ -326,7 +326,7 @@ export default function ProjectDetailsModal({
         </h2>
 
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-5 sm:gap-8">
           <ProjectOverviewSection 
           key={`overview-${project.id}`}
           project={displayData} 

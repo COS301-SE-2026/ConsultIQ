@@ -116,4 +116,69 @@ describe('SkillAligmentScorer', () => {
         expect(result.triggerHardExclusion).toBe(true);
         expect(result.details).toBe('Invalid data: Consultant has no skills listed')
     })
+
+    it('calculates weighted score when both mandatory and optional skills are present (70/30 split)', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'Java', competencyLevel: CompetencyLevel.INTERMEDIATE }
+            ]),
+            project([
+                { skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true },
+                { skillName: 'Python', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: false }
+            ]),
+        );
+
+
+        expect(result.score).toBe(0.7);
+        expect(result.details).toBe('Mandatory skill(s): 1/1 Matched | Optional skill(s): 0/1 Matched (Missing: Python)');
+    })
+
+    it('deduplicates project required skills and prioritizes the mandatory flag', async () => {
+        const result = scorer.score(
+
+            consultant([
+                { skillName: 'C#', competencyLevel: CompetencyLevel.INTERMEDIATE }
+            ]),
+            project([
+                { skillName: 'java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: false },
+                { skillName: 'Java ', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true },
+            ]),
+        );
+
+        expect(result.score).toBe(0.0);
+        expect(result.missingMandatorySkills).toEqual(['Java']);
+        expect(result.missingOptionalSkills).toBeUndefined();
+        expect(result.details).toBe('Mandatory skill(s): 0/1 Matched (Missing: Java)');
+    })
+
+    it('ignores empty or whitespace-only skill names in project requirements', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'React', competencyLevel: CompetencyLevel.INTERMEDIATE }
+            ]),
+            project([
+                { skillName: '   ', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true },
+                { skillName: 'React', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }
+            ]),
+        );
+
+        expect(result.score).toBe(1.0);
+        expect(result.details).toBe('Mandatory skill(s): 1/1 Matched');
+    })
+
+    it('returns a 0 score if a project array contains only empty/whitespace skill names', async () => {
+        const result = scorer.score(
+            consultant([
+                { skillName: 'Java', competencyLevel: CompetencyLevel.INTERMEDIATE }
+            ]),
+            project([
+
+                { skillName: '   ', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true },
+                { skillName: '', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: false }
+            ]),
+        );
+
+        expect(result.score).toBe(0.0);
+        expect(result.details).toBe('');
+    })
 })

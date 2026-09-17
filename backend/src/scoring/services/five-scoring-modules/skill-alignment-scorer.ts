@@ -7,13 +7,14 @@ import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 const MANDATORY_WEIGHT = 0.7;
 const OPTIONAL_WEIGHT = 0.3;
 
+type ProcessedRequirement = { skillName: string; isMandatory: boolean };
+
 function normalizeSkillName(name: string): string {
   return name.trim().toLowerCase();
 }
 
 // Helper: Capitalizes the first letter of each word for clean UI display.
 function formatSkillForDisplay(name: string): string {
-  if (!name) return '';
   return name
     .trim()
     .split(/\s+/)
@@ -25,122 +26,131 @@ function formatSkillForDisplay(name: string): string {
 export class SkillAligmentScorer {
   private readonly logger = new Logger(SkillAligmentScorer.name);
 
-  score(
-    consultant: RawConsultantDto,
-    project: RawProjectDto,
-  ): FactorScoreResult {
-    const { requiredSkills } = project;
+  score(consultant: RawConsultantDto, project: RawProjectDto): FactorScoreResult {
 
-    // HARD EXCLUSION 1: Project has no required skills defined at all
-    if (!requiredSkills || requiredSkills.length === 0) {
-      this.logger.warn(
-        `Project ${project.projectId} has no required skills defined`,
-      );
-      return {
-        score: 0,
-        triggerHardExclusion: true,
-        details: 'Invalid data: Project has no required skills defined',
-      };
+    if (!project.requiredSkills || project.requiredSkills.length === 0) {
+      this.logger.warn(`Project ${project.projectId} has no required skills defined`);
+      return this.buildHardExclusion('Invalid data: Project has no required skills defined');
     }
 
-    // HARD EXCLUSION 2: Consultant has no skills listed at all
     if (!consultant.skills || consultant.skills.length === 0) {
-      this.logger.warn(
-        `Consultant ${consultant.consultantId} has no skills listed`,
-      );
-      return {
-        score: 0,
-        triggerHardExclusion: true,
-        details: 'Invalid data: Consultant has no skills listed',
-      };
+      this.logger.warn(`Consultant ${consultant.consultantId} has no skills listed`);
+      return this.buildHardExclusion('Invalid data: Consultant has no skills listed');
     }
 
-    // Deduplicate requirements and prep display names
-    const dedupedReqs = new Map<string, { skillName: string; isMandatory: boolean }>();
+
+    const uniqueReqs = this.getUniqueRequirements(project.requiredSkills);
+    const mandatoryReqs = uniqueReqs.filter((r) => r.isMandatory);
+    const optionalReqs = uniqueReqs.filter((r) => !r.isMandatory);
+
+    const possessedSkillNames = new Set(
+      consultant.skills.map((skill) => normalizeSkillName(skill.skillName)),
+    );
+
+
+    const { matched: matchedMandatory, missing: missingMandatory } =
+      this.categorizeSkills(mandatoryReqs, possessedSkillNames);
+
+    const { matched: matchedOptional, missing: missingOptional } =
+      this.categorizeSkills(optionalReqs, possessedSkillNames);
+
+    const finalScore = this.calculateScore(
+      matchedMandatory.length, mandatoryReqs.length,
+      matchedOptional.length, optionalReqs.length
+    );
+
+    const details = this.buildDetailsString(
+      matchedMandatory.length, mandatoryReqs.length, missingMandatory,
+      matchedOptional.length, optionalReqs.length, missingOptional
+    );
+
+    return {
+      score: finalScore,
+      triggerHardExclusion: false,
+      missingMandatorySkills: missingMandatory.length > 0 ? missingMandatory : undefined,
+      missingOptionalSkills: missingOptional.length > 0 ? missingOptional : undefined,
+      details,
+    };
+  }
+
+
+  private buildHardExclusion(details: string): FactorScoreResult {
+    return {
+      score: 0,
+      triggerHardExclusion: true,
+      details,
+    };
+  }
+
+  private getUniqueRequirements(requiredSkills: { skillName: string; isMandatory: boolean }[]): ProcessedRequirement[] {
+    const dedupedReqs = new Map<string, ProcessedRequirement>();
+
     for (const req of requiredSkills) {
       const key = normalizeSkillName(req.skillName);
       if (!key) continue;
+
       const existing = dedupedReqs.get(key);
       dedupedReqs.set(key, {
         skillName: formatSkillForDisplay(req.skillName),
         isMandatory: existing ? existing.isMandatory || req.isMandatory : req.isMandatory,
       });
     }
-    const uniqueReqs = [...dedupedReqs.values()];
 
-    const possessedSkillNames = new Set(
-      consultant.skills.map((skill) => normalizeSkillName(skill.skillName)),
-    );
+    return Array.from(dedupedReqs.values());
+  }
 
-    const mandatoryReqs = uniqueReqs.filter((r) => r.isMandatory);
-    const optionalReqs = uniqueReqs.filter((r) => !r.isMandatory);
+  private categorizeSkills(requirements: ProcessedRequirement[], possessed: Set<string>) {
+    const matched: string[] = [];
+    const missing: string[] = [];
 
-    const matchedMandatorySkills: string[] = [];
-    const missingMandatorySkills: string[] = [];
-
-    const matchedOptionalSkills: string[] = [];
-    const missingOptionalSkills: string[] = [];
-
-    // Evaluate Mandatory Skills
-    for (const req of mandatoryReqs) {
-      if (possessedSkillNames.has(normalizeSkillName(req.skillName))) {
-        matchedMandatorySkills.push(req.skillName);
+    for (const req of requirements) {
+      if (possessed.has(normalizeSkillName(req.skillName))) {
+        matched.push(req.skillName);
       } else {
-        missingMandatorySkills.push(req.skillName);
+        missing.push(req.skillName);
       }
     }
 
-    // Evaluate Optional Skills
-    for (const req of optionalReqs) {
-      if (possessedSkillNames.has(normalizeSkillName(req.skillName))) {
-        matchedOptionalSkills.push(req.skillName);
-      } else {
-        missingOptionalSkills.push(req.skillName);
-      }
+    return { matched, missing };
+  }
+
+  private calculateScore(
+    matchedMandatory: number, totalMandatory: number,
+    matchedOptional: number, totalOptional: number
+  ): number {
+    if (totalMandatory > 0 && totalOptional > 0) {
+      const mandatoryRatio = matchedMandatory / totalMandatory;
+      const optionalRatio = matchedOptional / totalOptional;
+      return (MANDATORY_WEIGHT * mandatoryRatio) + (OPTIONAL_WEIGHT * optionalRatio);
     }
 
-    let score = 0;
-
-    if (mandatoryReqs.length > 0 && optionalReqs.length > 0) {
-      const mandatoryRatio = matchedMandatorySkills.length / mandatoryReqs.length;
-      const optionalRatio = matchedOptionalSkills.length / optionalReqs.length;
-      score = (MANDATORY_WEIGHT * mandatoryRatio) + (OPTIONAL_WEIGHT * optionalRatio);
-    } else if (mandatoryReqs.length > 0) {
-      score = matchedMandatorySkills.length / mandatoryReqs.length;
-    } else if (optionalReqs.length > 0) {
-      score = matchedOptionalSkills.length / optionalReqs.length;
+    if (totalMandatory > 0) {
+      return matchedMandatory / totalMandatory;
     }
 
-    const detailParts: string[] = [];
-
-
-    if (mandatoryReqs.length > 0) {
-      let text = `Mandatory skill(s): ${matchedMandatorySkills.length}/${mandatoryReqs.length} Matched`;
-      if (missingMandatorySkills.length > 0) {
-        text += ` (Missing: ${missingMandatorySkills.join(', ')})`;
-      }
-      detailParts.push(text);
+    if (totalOptional > 0) {
+      return matchedOptional / totalOptional;
     }
 
-    // Format Optional
-    if (optionalReqs.length > 0) {
-      let text = `Optional skill(s): ${matchedOptionalSkills.length}/${optionalReqs.length} Matched`;
-      if (missingOptionalSkills.length > 0) {
-        text += ` (Missing: ${missingOptionalSkills.join(', ')})`;
-      }
-      detailParts.push(text);
+    return 0;
+  }
+
+  private buildDetailsString(
+    matchedMandatory: number, totalMandatory: number, missingMandatory: string[],
+    matchedOptional: number, totalOptional: number, missingOptional: string[]
+  ): string {
+    const parts: string[] = [];
+
+    if (totalMandatory > 0) {
+      const missingText = missingMandatory.length > 0 ? ` (Missing: ${missingMandatory.join(', ')})` : '';
+      parts.push(`Mandatory skill(s): ${matchedMandatory}/${totalMandatory} Matched${missingText}`);
     }
 
-    const details = detailParts
-      .map((part) => part.trim())
-      .join(' | ');
+    if (totalOptional > 0) {
+      const missingText = missingOptional.length > 0 ? ` (Missing: ${missingOptional.join(', ')})` : '';
+      parts.push(`Optional skill(s): ${matchedOptional}/${totalOptional} Matched${missingText}`);
+    }
 
-    return {
-      score,
-      triggerHardExclusion: false,
-      missingMandatorySkills: missingMandatorySkills.length > 0 ? missingMandatorySkills : undefined,
-      missingOptionalSkills: missingOptionalSkills.length > 0 ? missingOptionalSkills : undefined,
-      details,
-    };
+    return parts.join(' | ');
   }
 }

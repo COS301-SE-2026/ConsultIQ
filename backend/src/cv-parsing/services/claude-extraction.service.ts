@@ -13,6 +13,7 @@ import {
   CvParsingResult,
   ParsedCvData,
   SkillCompetencySignal,
+  CvSecurityFlag,
 } from '../types/parsed-cv.types';
 
 const MODEL = 'claude-haiku-4-5-20251001';
@@ -38,6 +39,7 @@ export class ClaudeExtractionService {
     const startTime = Date.now();
 
     if (!rawText || rawText.trim().length === 0) {
+      console.log('No text available for extraction.');
       return {
         success: false,
         error: 'No text available for extraction.',
@@ -49,6 +51,7 @@ export class ClaudeExtractionService {
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       try {
+        console.log(`Attempt ${attempt} to extract CV data...`);
         const response = await this.client.messages.create({
           model: MODEL,
           max_tokens: MAX_TOKENS,
@@ -63,6 +66,7 @@ export class ClaudeExtractionService {
         const toolUseBlock = response.content.find(
           (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
         );
+        console.log('Claude response:', JSON.stringify(response, null, 2));
         if (!toolUseBlock) {
           lastError = 'Claude did not return a tool_use block in the response.';
           this.logger.warn(
@@ -73,7 +77,9 @@ export class ClaudeExtractionService {
 
         const rawOutput = toolUseBlock.input as ParsedCvData & {
           competencySignals: SkillCompetencySignal[];
+          securityFlags: CvSecurityFlag[];
         };
+        console.log('Raw output from Claude:', JSON.stringify(rawOutput, null, 2));
         const shapeError = this.validateParsedCvData(rawOutput);
         if (shapeError) {
           lastError = `Claude returned data that does not match the expected schema: ${shapeError}`;
@@ -81,6 +87,12 @@ export class ClaudeExtractionService {
             `Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${lastError}`,
           );
           continue;
+        }
+
+        if(rawOutput.securityFlags.length > 0){
+          this.logger.warn(
+            `CV extraction flagged ${rawOutput.securityFlags.length} suspicious item(s): ${JSON.stringify(rawOutput.securityFlags)}`,
+          );
         }
 
         const { competencySignals, ...data } = rawOutput;
@@ -125,6 +137,7 @@ export class ClaudeExtractionService {
   }
 
   private validateParsedCvData(data: any): string | null {
+    console.log('Validating parsed CV data:', JSON.stringify(data, null, 2));
     if (!data?.contact || typeof data.contact !== 'object')
       return 'missing contact object';
     if (!Array.isArray(data.skills)) return 'missing skills array';
@@ -136,6 +149,8 @@ export class ClaudeExtractionService {
       return 'missing confidenceScores object';
     if (!Array.isArray(data.competencySignals))
       return 'missing competencySignals array';
+    if (!Array.isArray(data.securityFlags))
+      return 'missing securityFlags array';
     return null;
   }
 }

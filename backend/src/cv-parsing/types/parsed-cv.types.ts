@@ -71,6 +71,7 @@ export interface CvParsingResult {
   success: boolean;
   data?: ParsedCvData;
   competencySignals?: SkillCompetencySignal[];
+  securityFlags?: CvSecurityFlag[];
   fieldWarnings?: FieldWarning[];
   error?: string;
   processingTimeMs: number;
@@ -79,4 +80,9 @@ export interface CvParsingResult {
 export interface FieldWarning {
   path: string; // e.g. "contact.email", "experiences[1].endDate"
   message: string; // human-readable, shown directly on the review screen
+}
+
+export interface CvSecurityFlag {
+  field: string;
+  excerpt: string;
 }

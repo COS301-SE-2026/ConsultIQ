@@ -14,6 +14,7 @@ import {
   ParsedCvData,
   SkillCompetencySignal,
   CvSecurityFlag,
+  CV_SECURITY_FLAG_TYPES,
 } from '../types/parsed-cv.types';
 
 const MODEL = 'claude-haiku-4-5-20251001';
@@ -151,6 +152,17 @@ export class ClaudeExtractionService {
       return 'missing competencySignals array';
     if (!Array.isArray(data.securityFlags))
       return 'missing securityFlags array';
+    for (const flag of data.securityFlags) {
+      const hasValidShape =
+        flag &&
+        typeof flag.field === 'string' &&
+        typeof flag.excerpt === 'string' &&
+        CV_SECURITY_FLAG_TYPES.includes(flag.flagType);
+
+      if (!hasValidShape) {
+        return `securityFlags contains a malformed entry: ${JSON.stringify(flag)}`;
+      }
+    }
     return null;
   }
 }

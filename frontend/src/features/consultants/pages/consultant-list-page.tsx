@@ -10,7 +10,7 @@ import type { PendingProfileUserDto } from "../services/consultant.service";
 import { toast } from "sonner";
 import { UserCircle2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import  useUnreadNotificationsCount  from "../../../hooks/useUnreadNotificationsCount"; 
+import useUnreadNotificationsCount from "../../../hooks/useUnreadNotificationsCount";
 
 function ConsultantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,7 +22,7 @@ function ConsultantsPage() {
   const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
 
-  const{count: unreadCount} = useUnreadNotificationsCount();
+  const { count: unreadCount } = useUnreadNotificationsCount();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +32,7 @@ function ConsultantsPage() {
           getConsultants(1, 50),
           getPendingProfiles(),
         ]);
-    
+
 
         const mapped = consultantsResponse.consultants.map((dto) => {
           const parts = dto.fullName.split(" ");
@@ -95,10 +95,10 @@ function ConsultantsPage() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="shrink-0 z-20 bg-white border-b min-h-[70px] md:h-[90px]  flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-0 pl-18 landscape:pl-16 px-4 sm:px-8 lg:px-20 py-4 sm:py-0"
+          style={{ borderColor: "var(--color-border)" }}
         >
-          <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+          <h1 className="font-bold text-xl sm:text-2xl lg:text-[32px]" style={{ color: "var(--color-primary)" }}>
             Consultants
           </h1>
 
@@ -116,18 +116,17 @@ function ConsultantsPage() {
 
         <main className="flex-1 overflow-y-auto">
           <div
-            className="max-w-[1600px] mx-auto py-8 w-full"
-            style={{ paddingLeft: "80px", paddingRight: "80px" }}
+            className="max-w-[1600px] mx-auto py-8 w-full px-8 sm:px-10 lg:px-20"
           >
             <div className="h-6" />
 
             {/* Section tabs */}
-            <div className="flex gap-6 mb-8">
+            <div className="flex gap-3 sm:gap-6 mb-8 overflow-x-auto">
               <button
                 onClick={() => { setActiveSection("active"); setCurrentPage(1); }}
-                className="rounded-4xl font-semibold text-base transition flex items-center gap-3"
+                className="rounded-4xl font-semibold text-sm sm:text-base transition flex items-center gap-2 sm:gap-3 whitespace-nowrap"
                 style={{
-                  padding: "18px 40px",
+                  padding: "12px 20px",
                   backgroundColor: activeSection === "active" ? "var(--color-primary)" : "var(--color-surface)",
                   color: activeSection === "active" ? "white" : "var(--color-text-secondary)",
                   border: "2px solid var(--color-border)",
@@ -166,38 +165,41 @@ function ConsultantsPage() {
                 </span>
               </div>
             )}
-            
+
 
             {/* Search bar */}
             <SearchBar
               value={searchQuery}
               onChange={handleSearchChange}
               placeholder={activeSection === "active" ? "Search by name, skill, email..." : "Search by name or email..."}
-              
+
             />
             <div className="h-6" />
 
             {/* Active consultants grid */}
             {activeSection === "active" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1  md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {isLoading && (
                   <p className="text-center mt-16 col-span-full" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
                     Loading consultants...
                   </p>
                 )}
                 {!isLoading && (currentItems as Consultant[]).map((consultant) => (
-                  <ConsultantCard
-                    key={consultant.id}
-                    consultant={consultant}
-                    onViewDetails={(id) => {
-                      navigate("/profile-view", {
-                        state: {
-                          selectedConsultantId: id,
-                          fromDashboard: true
-                        }
-                      });
-                    }}
-                  />
+                  <div key={consultant.id} className="w-full max-w-[420px] mx-auto sm:max-w-none sm:mx-0" >
+                    <ConsultantCard
+                      key={consultant.id}
+                      consultant={consultant}
+                      onViewDetails={(id) => {
+                        navigate("/profile-view", {
+                          state: {
+                            selectedConsultantId: id,
+                            fromDashboard: true
+                          }
+                        });
+                      }}
+                    />
+                  </div>
+
                 ))}
                 {!isLoading && filteredConsultants.length === 0 && (
                   <p className="text-center mt-16 col-span-full" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
@@ -218,11 +220,11 @@ function ConsultantsPage() {
                 {!isLoading && (currentItems as PendingProfileUserDto[]).map((user) => (
                   <div
                     key={user.userId}
-                    className="bg-white rounded-xl border flex items-center justify-between"
-                    style={{ borderColor: "var(--color-border)", padding: "28px 32px" }}
+                    className="bg-white rounded-xl border flex  flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    style={{ borderColor: "var(--color-border)", padding: "16px 20px" }}
                   >
-                    <div>
-                      <p className="font-semibold text-lg" style={{ color: "var(--color-primary)" }}>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-base sm:text-lg truncate" style={{ color: "var(--color-primary)" }}>
                         {user.fullName}
                       </p>
                       <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
@@ -234,7 +236,7 @@ function ConsultantsPage() {
                     </div>
                     <button
                       onClick={() => navigate(`/create-profile-entry/${user.userId}`)}
-                      className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90"
+                      className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90 w-full sm:w-auto justify-center"
                       style={{
                         backgroundColor: "var(--color-primary)",
                         color: "white",

@@ -108,23 +108,23 @@ function AdminPage() {
 
 
     return (
-        <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen flex-col bg-[var(--color-surface)] md:flex-row">
             <Sidebar items={adminSidebarItems} notificationCount={unreadCount} />
 
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto  gap-4">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-22.5 flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                    style={{ borderColor: "var(--color-border)"}}
                 >
-                    <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                    <h1 className="font-bold text-[26px] sm:text-[28px] lg:text-[32px]" style={{ color: "var(--color-primary)" }}>
                         Admin Dashboard
                     </h1>
                 </header>
 
 
 
-                <main className="flex-1 overflow-y-auto  overscroll-none relative ">
-                    <div className=" flex flex-col gap-4  max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+                <main className="flex-1 overflow-y-auto">
+                    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6 lg:px-10">
                         <div className="flex flex-wrap  max-w-[1600px] mx-auto w-full pb-8 mt-6 gap-4">
                             <CountCard
                                 title="Total Users"
@@ -160,7 +160,7 @@ function AdminPage() {
 
                         </div>
                         <div
-                            className="sticky top-0 w-full "
+                            className="sticky top-0 z-20 w-full bg-[var(--color-surface)]"
                             style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
                         >
 

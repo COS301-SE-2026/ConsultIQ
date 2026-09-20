@@ -57,6 +57,13 @@ export class CvController {
     return this.cvUploadService.getSecurityReviewQueue();
   }
 
+  @Get('security-review-stats')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.SUPER_ADMIN)
+  async getDashboardStats() {
+    return this.cvUploadService.getDashboardStats();
+  }
+
   @Get('flagged')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.CONSULTANT_MANAGER)

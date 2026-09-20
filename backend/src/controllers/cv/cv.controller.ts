@@ -57,6 +57,13 @@ export class CvController {
     return this.cvUploadService.getSecurityReviewQueue();
   }
 
+  @Get('flagged')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.CONSULTANT_MANAGER)
+  async getFlagged(@Req() req: any) {
+    return this.cvUploadService.getFlaggedForCm(req.user.id);
+  }
+
   @Get(':cvFileId')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.CONSULTANT_MANAGER)

@@ -64,6 +64,13 @@ export class CvController {
     return this.cvUploadService.getFlaggedForCm(req.user.id);
   }
 
+  @Get('security-review-history')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.SUPER_ADMIN)
+  async getSecurityReviewHistory() {
+    return this.cvUploadService.getResolvedHistory();
+  }
+
   @Get(':cvFileId')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.CONSULTANT_MANAGER)

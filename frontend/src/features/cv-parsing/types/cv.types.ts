@@ -114,3 +114,14 @@ export interface CvUploadResponse{
     cvFileId: string;
     message: string;
 }
+
+export interface FlaggedCvSummary {
+    cvFileId: string;
+    fileName: string;
+    uploadedAt: string;
+    consultantUserId: string;
+    consultantName: string;
+    consultantEmail: string;
+    securityReviewStatus: "PENDING" | "REJECTED";
+    securityFlags: CvSecurityFlag[];
+}

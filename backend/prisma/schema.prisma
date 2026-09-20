@@ -338,6 +338,7 @@ model CvFile {
   id               String           @id @default(uuid())
   userId           String
   consultantId     String?
+  uploadedByUserId  String?
   fileName         String
   mimeType         String
   fileSize         Int

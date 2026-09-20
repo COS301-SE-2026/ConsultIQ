@@ -42,6 +42,13 @@ const getIntials = (name: string) => {
   return last ? `${first[0]}${last[0]}`.toUpperCase() : first[0].toLocaleUpperCase();
 }
 
+const formatConstantCase = (value: string) => 
+  value
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
 export default function UsersTab({ searchQuery = "", roleFilter = "", statusFilter = "", users, meta, loading, currentPage, onPageChange, refresh, error }: UserTabProps) {
   const navigate = useNavigate();
   const filtered = users.filter((u) => {
@@ -143,13 +150,13 @@ export default function UsersTab({ searchQuery = "", roleFilter = "", statusFilt
 
                 <td className="text-center text-sm px-3 py-3 sm:px-5">
                   <span>
-                    {user.status}
+                    {formatConstantCase(user.status)}
                   </span>
                 </td>
 
-                <td className="text-center px-3 py-3 sm:px-5">
+                <td className="text-center text-sm px-3 py-3 sm:px-5">
                   <span>
-                    {user.role}
+                    {formatConstantCase(user.role)}
                   </span>
                 </td>
                 <td className="text-center px-3 py-3 sm:px-5">

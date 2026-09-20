@@ -113,9 +113,9 @@ export default function UsersTab({ searchQuery = "", roleFilter = "", statusFilt
             <tr className="bg-[#F5F9FF] h-6">
               <th className="!text-lg px-8 py-4 font-bold text-[16px]">Name</th>
               <th className="!text-lg px-8 py-4 font-bold text-[16px]">Email</th>
-              <th className="!text-lg px-8 py-4 font-bold text-[16px]">Status</th>
-              <th className="!text-lg px-8 py-4 font-bold text-[16px]">Role</th>
-              <th className="!text-lg px-8 py-4 font-bold text-[16px]">Actions</th>
+              <th className="!text-lg px-8 py-4 text-center font-bold text-[16px]">Status</th>
+              <th className="!text-lg px-8 py-4 text-center font-bold text-[16px]">Role</th>
+              <th className="!text-lg px-8 py-4 text-center font-bold text-[16px]">Actions</th>
             </tr>
           </thead>
 
@@ -141,19 +141,19 @@ export default function UsersTab({ searchQuery = "", roleFilter = "", statusFilt
                   </span>
                 </td>
 
-                <td className="text-sm px-3 py-3 sm:px-5">
+                <td className="text-center text-sm px-3 py-3 sm:px-5">
                   <span>
                     {user.status}
                   </span>
                 </td>
 
-                <td className="px-3 py-3 sm:px-5">
+                <td className="text-center px-3 py-3 sm:px-5">
                   <span>
                     {user.role}
                   </span>
                 </td>
-                <td className="px-3 py-3 sm:px-5">
-                  <div className="flex items-center gap-4">
+                <td className="text-center px-3 py-3 sm:px-5">
+                  <div className="flex items-center justify-center gap-4">
 
                     {user.status === "ACTIVE" ? (
                       <Button

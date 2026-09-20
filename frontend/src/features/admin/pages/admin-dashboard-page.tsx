@@ -174,7 +174,7 @@ function AdminPage() {
                            
 
                             {showFilters &&  (
-                                <div className="mt-6">
+                                <div className="mt-4 sm:mt-6">
                                   <AdminFilters
                                     activeTab={activeTab}
                                     roleFilter={roleFilter}

@@ -338,7 +338,7 @@ model CvFile {
   id               String           @id @default(uuid())
   userId           String
   consultantId     String?
-  uploadedByUserId  String?
+  uploadedByUserId String?
   fileName         String
   mimeType         String
   fileSize         Int
@@ -359,6 +359,7 @@ model CvFile {
 
   @@index([securityReviewStatus])
   @@index([consultantId, securityReviewStatus])
+  @@index([uploadedByUserId, securityReviewStatus])
   @@map("cv_files")
 }
 

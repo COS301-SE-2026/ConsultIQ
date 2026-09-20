@@ -1,4 +1,4 @@
-export type ExtractionStatus = | "PENDING" | "PROCESSING" | "FAILED" | "REVIEW_REQUIRED";
+export type ExtractionStatus = | "PENDING" | "PROCESSING" | "FAILED" | "REVIEW_REQUIRED" | "SECURITY_REJECTED";
 
 export interface FieldWarning{
     path: string;
@@ -82,6 +82,8 @@ export type CvSecurityFlagType =
     | "SCHEMA_MANIPULATION_ATTEMPT"
     | "OTHER_SUSPICIOUS_CONTENT";
 
+export type SecurityReviewStatus = "NONE" | "PENDING" | "CLEARED" | "REJECTED";
+
 export interface CvSecurityFlag {
     field: string;
     flagType: CvSecurityFlagType;
@@ -103,6 +105,7 @@ export interface CvFileStatus{
     mimeType: string;
     uploadStatus: string;
     extractionStatus: ExtractionStatus;
+    securityReviewStatus: SecurityReviewStatus;
     parsedData : CvParsedDataEnvelope | null;
     updatedAt: string;
 }

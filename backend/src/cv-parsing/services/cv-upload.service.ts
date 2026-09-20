@@ -255,6 +255,47 @@ export class CVUploadService {
     };
   }
 
+  async getResolvedHistory(limit = 20) {
+    const cvFiles = await this.prisma.cvFile.findMany({
+      where: {
+        securityReviewStatus: { in: ['CLEARED', 'REJECTED'] },
+        securityReviewedAt: { not: null },
+      },
+      select: {
+        id: true,
+        fileName: true,
+        securityReviewStatus: true,
+        securityReviewedAt: true,
+        securityReviewedBy: true,
+        userId: true,
+        user: { select: { fullName: true } },
+      },
+      orderBy: { securityReviewedAt: 'desc' },
+      take: limit,
+    });
+
+    const reviewerIds = Array.from(
+      new Set(cvFiles.map((cv) => cv.securityReviewedBy).filter((id): id is string => !!id)),
+    );
+
+    const reviewers = await this.prisma.user.findMany({
+      where: { id: { in: reviewerIds } },
+      select: { id: true, fullName: true },
+    });
+    const reviewerNameById = new Map(reviewers.map((r) => [r.id, r.fullName]));
+
+    return cvFiles.map((cv) => ({
+      cvFileId: cv.id,
+      fileName: cv.fileName,
+      consultantName: cv.user.fullName,
+      decision: cv.securityReviewStatus as 'CLEARED' | 'REJECTED',
+      reviewedAt: cv.securityReviewedAt,
+      reviewedByName: cv.securityReviewedBy
+        ? (reviewerNameById.get(cv.securityReviewedBy) ?? 'Unknown')
+        : 'Unknown',
+    }));
+  }
+
   private async notifyAdminsOfRejection(
     cvFileId: string,
     consultantUserId: string,
@@ -281,4 +322,5 @@ export class CVUploadService {
       ),
     );
   }
+
 }

@@ -10,12 +10,15 @@ import {
   BadRequestException,
   Body,
   Delete,
+  Req,
+  Patch
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CVUploadService } from '../../cv-parsing/services/cv-upload.service';
 import { Roles } from '../../common/guards/roles.guard';
 import { Role } from '../../auth/enums/role.enum';
 import { UploadCvDto } from '../../cv-parsing/dto/upload-cv.dto';
+import { ResolveSecurityReviewDto } from '../../cv-parsing/dto/resolve-security-review.dto';
 
 @Controller('cv')
 export class CvController {
@@ -45,6 +48,13 @@ export class CvController {
   ): Promise<{ url: string }> {
     return this.cvUploadService.getPresignedUrl(cvFileId);
   }
+  
+  @Get('security-review-queue')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.SUPER_ADMIN)
+  async getSecurityReviewQueue() {
+    return this.cvUploadService.getSecurityReviewQueue();
+  }
 
   @Get(':cvFileId')
   @HttpCode(HttpStatus.OK)
@@ -69,5 +79,20 @@ export class CvController {
     @Param('cvFileId') cvFileId: string,
   ): Promise<{ message: string }> {
     return this.cvUploadService.discardCvFile(cvFileId);
+  }
+
+  @Patch(':cvFileId/security-review')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.SUPER_ADMIN)
+  async resolveSecurityReview(
+    @Param('cvFileId') cvFileId: string,
+    @Body() dto: ResolveSecurityReviewDto,
+    @Req() req: any,
+  ): Promise<{ message: string }> {
+    return this.cvUploadService.resolveSecurityReview(
+      cvFileId,
+      dto.decision,
+      req.user.id,
+    );
   }
 }

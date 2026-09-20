@@ -90,17 +90,19 @@ export class ClaudeExtractionService {
           continue;
         }
 
-        if(rawOutput.securityFlags.length > 0){
+        const { competencySignals,securityFlags, ...data } = rawOutput;
+        
+        if(securityFlags.length > 0){
           this.logger.warn(
             `CV extraction flagged ${rawOutput.securityFlags.length} suspicious item(s): ${JSON.stringify(rawOutput.securityFlags)}`,
           );
         }
 
-        const { competencySignals, ...data } = rawOutput;
         return {
           success: true,
           data: data,
           competencySignals: competencySignals,
+          securityFlags: securityFlags,
           processingTimeMs: Date.now() - startTime,
         };
       } catch (error) {

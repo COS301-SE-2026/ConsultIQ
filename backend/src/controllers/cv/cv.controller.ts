@@ -31,13 +31,14 @@ export class CvController {
   async uploadCv(
     @Param('userId') userId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
     @Body() dto?: UploadCvDto,
   ): Promise<{ cvFileId: string; message: string }> {
     if (!file) {
       throw new BadRequestException('No file was uploaded.');
     }
 
-    return this.cvUploadService.uploadCV(userId, file, dto?.parsingMethod);
+    return this.cvUploadService.uploadCV(userId, req.user.id, file, dto?.parsingMethod);
   }
 
   @Get(':cvFileId/url')
@@ -48,7 +49,7 @@ export class CvController {
   ): Promise<{ url: string }> {
     return this.cvUploadService.getPresignedUrl(cvFileId);
   }
-  
+
   @Get('security-review-queue')
   @HttpCode(HttpStatus.OK)
   @Roles(Role.SUPER_ADMIN)

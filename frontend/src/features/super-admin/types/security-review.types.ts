@@ -18,3 +18,9 @@ export interface SecurityHistoryItem {
     reviewedAt: string;
     reviewedByName: string;
 }
+
+export interface DashboardStats {
+    totalProcessed: number;
+    flagRatePercent: number;
+    avgResolutionHours: number | null;
+}

@@ -296,6 +296,38 @@ export class CVUploadService {
     }));
   }
 
+  async getDashboardStats() {
+    const [totalProcessed, flaggedCount, resolved] = await Promise.all([
+      this.prisma.cvFile.count({
+        where: { extractionStatus: { in: ['REVIEW_REQUIRED', 'SECURITY_REJECTED'] } },
+      }),
+      this.prisma.cvFile.count({
+        where: { securityReviewStatus: { not: 'NONE' } },
+      }),
+      this.prisma.cvFile.findMany({
+        where: {
+          securityReviewedAt: { not: null },
+        },
+        select: { uploadedAt: true, securityReviewedAt: true },
+      }),
+    ]);
+
+    const flagRatePercent = totalProcessed > 0
+      ? Math.round((flaggedCount / totalProcessed) * 100)
+      : 0;
+
+    let avgResolutionHours: number | null = null;
+    if (resolved.length > 0) {
+      const totalHours = resolved.reduce((sum, cv) => {
+        const diffMs = cv.securityReviewedAt!.getTime() - cv.uploadedAt.getTime();
+        return sum + diffMs / (1000 * 60 * 60);
+      }, 0);
+      avgResolutionHours = totalHours / resolved.length;
+    }
+
+    return { totalProcessed, flagRatePercent, avgResolutionHours };
+  }
+
   private async notifyAdminsOfRejection(
     cvFileId: string,
     consultantUserId: string,

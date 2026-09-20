@@ -103,6 +103,14 @@ enum ExtractionStatus {
   COMPLETED
   FAILED
   REVIEW_REQUIRED
+  SECURITY_REJECTED
+}
+
+enum SecurityReviewStatus {
+  NONE
+  PENDING
+  CLEARED
+  REJECTED
 }
 
 enum MatchRunStatus {
@@ -121,6 +129,8 @@ enum AuditAction {
   PLACEMENT_UPDATED
   PLACEMENT_CANCELLED
   CV_EXTRACTED
+  CV_SECURITY_CLEARED
+  CV_SECURITY_REJECTED
 }
 
 enum GapSeverity {
@@ -252,6 +262,7 @@ model Consultant {
   consultantExperiences ConsultantExperience[]
   education             ConsultantEducation[]
   matchRunResults       MatchRunResult[]
+  hadSecurityFlagOnIntake Boolean @default(false)
 
   @@map("consultants")
 }
@@ -334,6 +345,9 @@ model CvFile {
   s3Url            String
   uploadStatus     UploadStatus     @default(UPLOADED)
   extractionStatus ExtractionStatus @default(PENDING)
+  securityReviewStatus  SecurityReviewStatus @default(NONE)
+  securityReviewedAt    DateTime?
+  securityReviewedBy    String?
   parsingMethod    CvParsingMethod  @default(RULE_BASED)
   rawText          String?
   parsedData       Json?
@@ -342,6 +356,8 @@ model CvFile {
   consultant       Consultant?      @relation(fields: [consultantId], references: [id])
   user             User             @relation(fields: [userId], references: [id])
 
+  @@index([securityReviewStatus])
+  @@index([consultantId, securityReviewStatus])
   @@map("cv_files")
 }
 

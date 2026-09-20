@@ -92,10 +92,13 @@ export class CvExtractionService {
     cvFileId: string,
     result: CvParsingResult,
   ): Promise<void> {
+    const hasSecurityFlags = (result.securityFlags?.length ?? 0) > 0;
+
     await this.prisma.cvFile.update({
       where: { id: cvFileId },
       data: {
         extractionStatus: result.success ? 'REVIEW_REQUIRED' : 'FAILED',
+        securityReviewStatus: result.success ? hasSecurityFlags ? 'PENDING' : 'NONE' : undefined,
         parsedData: result.success
           ? ({
               data: result.data,

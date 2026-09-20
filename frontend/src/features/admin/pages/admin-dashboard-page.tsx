@@ -102,7 +102,6 @@ function AdminPage() {
         };
 
         loadProjects();
-
     }, [projectPage, projectRefreshKey]);
 
 
@@ -153,7 +152,7 @@ function AdminPage() {
 
                             <CountCard
                                 title="Total Projects"
-                                count={projectMeta?.absoluteTotalRecords ?? 0}
+                                count={projectMeta?.totalRecords ?? 0}
                                 icon={Folder}
                                 iconBackgroundColour="#F0EDFD"
                                 iconColour="#664CC8"

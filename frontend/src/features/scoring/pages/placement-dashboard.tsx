@@ -8,7 +8,7 @@ import type { MatchRunStatus } from "../services/placement.service";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface RawMatchResult {
@@ -26,6 +26,7 @@ interface RawMatchResult {
 }
 
 export default function PlacementDashboard() {
+    const navigate = useNavigate();
 
     const location = useLocation();
 
@@ -55,8 +56,6 @@ export default function PlacementDashboard() {
                 isPlaced: placedConsultantIds.includes(result.consultantId ?? result.id ?? "") || (result.isPlaced ?? false),
             }));
     }, [rawMatchData, placedConsultantIds]);
-
-    console.log("URL Parameters:", { projectId, runId });
 
     useEffect(() => {
         if (!projectId || !runId) return;
@@ -135,6 +134,7 @@ export default function PlacementDashboard() {
     };
     const handlePlaceConsultant = async (consultantId: string) => {
         if (!projectId || !project) {
+            navigate("/projects", {replace: true});
             throw new Error("Project information is missing.");
         }
         try {
@@ -158,30 +158,29 @@ export default function PlacementDashboard() {
         }
     };
 
-    const handleViewAll = () => {
-        console.log("Viewing full list");
-    };
-
     return (
-        <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex h-screen overflow-hidden bg-[var(--color-surface)] lg:flex-row">
             <div className="h-screen shrink-0">
-                <Sidebar items={projectManagerSidebarItems} />
+                <Sidebar items={projectManagerSidebarItems(projectId, runId)} />
             </div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                    className="z-20 shrink-0 border-b bg-white px-4 py-4 sm:px-6 lg:px-[80px]"
+                    style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
-                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
-                        Placement Dashboard</h1>
-                    <span className="text-right">
-                        <p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
+                        Placement Dashboard
+                    </h1>
+                    <div className="text-left sm:text-right">
+                        <p className="text-lg font-medium text-slate-500 lg:text-lg">{project?.projectName}</p>
                         {matchRunStatus?.status === "IN_PROGRESS" && (
                             <p className="text-sm text-slate-400">Scoring in progress: {matchRunStatus.progress}%</p>
                         )}
-                    </span>
+                    </div>
+                   </div>
                 </header>
-                <div className="flex-1 px-[80px] py-[32px]">
+                <div className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-[80px] lg:py-[32px]">
                     <MatchStatsGrid
                         scoringBasis={projectScoringBasis}
                         totalEvaluated={projectTotalEvaluated}
@@ -192,7 +191,6 @@ export default function PlacementDashboard() {
                         recommendations={recommendations}
                         onSelectConsultant={handleSelectConsultant}
                         onPlaceConsultant={handlePlaceConsultant}
-                        onViewAll={handleViewAll}
                     />
                 </div>
 

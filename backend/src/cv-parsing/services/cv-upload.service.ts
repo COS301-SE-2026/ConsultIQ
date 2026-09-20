@@ -51,7 +51,7 @@ export class CVUploadService {
     const s3Key = this.s3Service.generateS3Key(userId, file.originalname);
     await this.s3Service.uploadFile(s3Key, file.buffer, file.mimetype);
 
-    const s3Url = `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+    const s3Url = this.s3Service.getObjectUrl(s3Key);
 
     // Then create record
     const cvFile = await this.prisma.cvFile.create({

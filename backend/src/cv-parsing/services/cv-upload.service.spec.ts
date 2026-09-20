@@ -20,6 +20,7 @@ const mockPrismaService = {
 const mockS3Service = {
   generateS3Key: jest.fn(),
   uploadFile: jest.fn(),
+  getObjectUrl: jest.fn(),
   generatePresignedUrl: jest.fn(),
   deleteFile: jest.fn() 
 };

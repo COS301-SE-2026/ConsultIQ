@@ -1,4 +1,3 @@
-import { Camera, Upload } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import type { ProjectFormData } from "../pages/project-specification-page";
 
@@ -13,7 +12,41 @@ const MAX_BUDGET = 999999999;
 const MIN_ALLOCATION = 10;
 const MAX_ALLOCATION = 100;
 const MAX_DESCRIPTION_LENGTH = 250;
+const FULL_DAY_HOURS = 8;
+const FULL_WEEK_HOURS = 40;
 
+
+const getProjectDays = (start: string, end: string): number =>{
+  if(!start || !end) return 0;
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if(Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+
+  const diffTime = endDate.getTime() - startDate.getTime();
+
+  if(diffTime < 0) return 0;
+
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+}
+  
+  const calculateBudgetBreakdown = (data: ProjectFormData) => {
+    const projectDays = getProjectDays(data.startDate, data.endDate);
+    const budget = (typeof data.budget === "number" && data.budget > 0) ? data.budget : 0;
+    const teamSize = (typeof data.teamSize === "number" && data.teamSize > 0 ) ? data.teamSize : 1;
+    
+    if(projectDays <= 0 || budget <= 0) return null;
+
+    return{
+      projectDays,
+      teamSize,
+      dailyProjectBudget: budget / projectDays,
+      dailyPerConsultantBudget: budget / (projectDays * teamSize),
+    };
+  };
+
+  const formatHours = (hours: number) => Number.isInteger(hours) ? `${hours}` : hours.toFixed(1);
 
 export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: ProjectBasicInfoCardProps) {
 
@@ -70,40 +103,21 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
   `h-14 rounded-xl border px-4 text-base outline-none transition-colors ${(hasError ?? !!errors[fieldName]) ? "border-red-500 focus:border-red-600" : "focus:border-[var(--color-primary)]"
     }`;
 
+  const allocationHours = typeof data.allocation === "number" &&
+    data.allocation >= MIN_ALLOCATION && data.allocation <= MAX_ALLOCATION ? {
+      daily: (data.allocation / 100) *FULL_DAY_HOURS,
+      weekly: (data.allocation / 100)* FULL_WEEK_HOURS,
+    } : null;
+
+  const budgetBreakdown = calculateBudgetBreakdown(data);
+
   return (
-    <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
-      <div className="w-full max-w-[800px] flex flex-col gap-12">
-        <div className="h-1" />
+    <Card className="flex w-full items-center justify-center px-4 py-8 sm:px-8 sm:py-12 md:px-20 md:py-16">
+      <div className="flex w-full max-w-[800px] flex-col gap-8 sm:gap-12">
+       
+       <h1 className= "text-xl font-bold sm:text-2xl">Project Details</h1>
 
-        {/* Logo Upload */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8">
-          <div className="relative shrink-0 w-[160px] h-[160px] rounded-2xl bg-[var(--color-primary)] flex items-center justify-center">
-            <span className="text-5xl font-bold text-white">UN</span>
-            <button
-              type="button"
-              className="absolute bottom-3 right-3 w-12 h-12 rounded-full bg-white shadow-md flex items-center justify-center"
-            >
-              <Camera className="w-6 h-6 text-gray-700" />
-            </button>
-          </div>
-          {/* Upload Area */}
-          <div className="flex-1 w-full">
-            <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
-              Upload project logo
-            </p>
-            <div
-              className="border-2 border-dashed rounded-xl h-[160px] flex flex-col items-center justify-center gap-4 cursor-pointer transition hover:bg-gray-50"
-              style={{ borderColor: "var(--color-border)" }}
-            >
-              <Upload className="w-12 h-12 text-gray-500" />
-              <p className="text-lg" style={{ color: "var(--color-text-secondary)" }}>
-                Click to upload or drag and drop
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
           {/* LEFT SIDE */}
           <div className="flex flex-col gap-6">
             {/* Project Name */}
@@ -226,25 +240,59 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
                 className={getInputClass("budget", !!budgetError)}
               />
               {budgetError && <span className="text-sm text-red-500">{budgetError}</span>}
+
+              {budgetBreakdown && (
+                 <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 sm:p-4">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-semibold">
+                      <span>Daily Rate Breakdown</span>
+                      <span className="text-sm px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
+                        {budgetBreakdown.projectDays} {budgetBreakdown.projectDays === 1 ? "Day" : "Days"} Duration
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2 border-t border-blue-200/60">
+                      <div>
+                        <span className="text-sm text-blue-700 font-medium">Daily Project Budget: </span>
+                        <p className="text-base font-bold text-blue-950 mt-0.5">
+                          R {Math.round(budgetBreakdown.dailyProjectBudget).toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-blue-700 font-medium">
+                          Daily Rate per Consultant ({budgetBreakdown.teamSize} {budgetBreakdown.teamSize === 1 ? "consultant" : "consultants"}):
+                        </span>
+                        <p className="text-base font-bold text-blue-950 mt-0.5">
+                          R {Math.round(budgetBreakdown.dailyPerConsultantBudget).toLocaleString()} / day
+                        </p>
+                      </div>
+                    </div>
+                </div>
+              )}
             </div>
+
             <div className="flex flex-col gap-2">
               <label htmlFor="allocation" className="text-base font-semibold">
                 Consultant Allocation (%)
               </label>
               <input type="number"
+              step={10}
               id="allocation"
-              min={1}
-              max={100}
+              min={MIN_ALLOCATION}
+              max={MAX_ALLOCATION}
               value={data.allocation}
               onChange={(e) =>{
                 const value= Number(e.target.value);
                 onChange("allocation", value);
               }}
-              className={getInputClass("allocation")}/>
+              className={getInputClass("allocation", !!allocationError)}/>
 
-              <span className="text-sm text-slate-500">
-                Percentage of a consultant's capacity required for this project.
-              </span>
+              {allocationHours && (
+                <p className="text-sm font-medium text-blue-600">
+                  {data.allocation}% allocation means approximately{" "}
+                  {formatHours(allocationHours.daily)} hours per day and{" "}
+                  {formatHours(allocationHours.weekly)} hours per week.
+                </p>
+              )}
 
               {allocationError  &&(
                 <span className="test-sm text-red-500">{errors.allocation}</span>
@@ -267,7 +315,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
             className={`min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none transition-colors ${errors.description ? "border-red-500" : "focus:border-[var(--color-primary)]"
               }`}
           />
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap items-center justify-between gap-2">
           {errors.description && <span className="text-sm text-red-500">{errors.description}</span>}
           <span
             className={`text-sm ml-auto ${descriptionLength >= MAX_DESCRIPTION_LENGTH ? "text-red-500" : "text-slate-500"

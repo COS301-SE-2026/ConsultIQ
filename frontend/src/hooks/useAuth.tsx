@@ -15,6 +15,7 @@ export type UserProfile = {
 interface AuthContextValue {
   user: UserProfile | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (payload: LoginPayload) => Promise<string | undefined>;
   logout: () => void;
 }
@@ -86,16 +87,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       isAuthenticated: user !== null,
+      isLoading,
       login,
       logout,
     }),
-    [user, login, logout],
+    [user, isLoading, login, logout],
   );
-
-  // Don't render children until we know if the user is authenticated
-  if (isLoading) {
-    return null;
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

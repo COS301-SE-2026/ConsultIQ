@@ -4,6 +4,7 @@ import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 import type { CreateConsultantSkillPayload } from "../../services/consultant.service";
+import {normalizeCompetency} from "../../types/consultant.types"
 
 const sanitizeText = (input: string) => {
   if (!input) return "";
@@ -95,28 +96,28 @@ export default function SkillsForm() {
               id="competency-level"
               type="text"
               placeholder="Auto-calculated"
-              value={competencyLevel}
+              value={normalizeCompetency(competencyLevel)}
               readOnly
               className="bg-slate-50 text-slate-500 cursor-not-allowed"
             />
           </div>
         </div>
 
-      
+
 
         <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
-            <Button
-              variant="default"
-              onClick={handleAddSkill}
-              disabled={!skillName.trim() || !years || !confidence}
-              className="flex items-center justify-center"
-              
-            >
-              Add Skill
-            </Button>
+          <Button
+            variant="default"
+            onClick={handleAddSkill}
+            disabled={!skillName.trim() || !years || !confidence}
+            className="flex items-center justify-center"
+
+          >
+            Add Skill
+          </Button>
         </div>
 
-        
+
 
 
         {/* Skills list */}
@@ -134,7 +135,7 @@ export default function SkillsForm() {
                 <div className="flex flex-col gap-2">
                   <span className="text-sm font-medium ">{skill.skillName}</span>
                   <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                    {skill.competencyLevel} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
+                    {normalizeCompetency(skill.competencyLevel)} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
                   </span>
                 </div>
                 <button
@@ -148,7 +149,7 @@ export default function SkillsForm() {
           </div>
         )}
 
-     
+
       </div>
     </Card>
   );

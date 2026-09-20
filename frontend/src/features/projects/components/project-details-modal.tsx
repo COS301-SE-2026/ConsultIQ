@@ -1,5 +1,5 @@
 import { X, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, } from "react";
 import type { Project, AssignedConsultants } from "../types/project.types";
 import ProjectLocationSection from "./project-location-section";
 import ProjectOverviewSection from "./project-overview-section";
@@ -15,6 +15,7 @@ interface ProjectDetailsModalProps {
   readonly onClose: () => void;
   readonly isConsultant?: boolean;
   readonly onUpdate: (updatedProject: Project) => void;
+  readonly targetConsultantId?: string;
 }
 
 
@@ -55,6 +56,7 @@ export default function ProjectDetailsModal({
   onClose,
   isConsultant,
   onUpdate,
+  targetConsultantId = ""
 }: ProjectDetailsModalProps) {
 
   const [fullProject, setFullProject] = useState<Project | null>(null);
@@ -62,9 +64,11 @@ export default function ProjectDetailsModal({
   const [activeEditSection, setActiveEditSection] = useState<string | null>(null);
   const [assignedConsultants, setAssignedConsultants] = useState<AssignedConsultants[] | null>(null);
   const [consultantsLoading, setConsultantsLoading] = useState(false);
-  //const isNonConsultant= !isConsultant;
+ 
 
-  const mapPayload: Record<string, (fields: Partial<Project>) => Record<string, unknown>> = {
+  
+
+  const mapPayload: Record<string, (fields: Partial<Project>, currProject: Project) => Record<string, unknown>> = {
     "project-overview": (fields) => ({
       ...(fields.projectName !== undefined && { projectName: fields.projectName }),
       ...(fields.clientName !== undefined && { clientName: fields.clientName }),
@@ -83,15 +87,22 @@ export default function ProjectDetailsModal({
       ...(fields.location?.province !== undefined && { province: fields.location.province }),
       ...(fields.location?.postalCode !== undefined && { postalCode: fields.location.postalCode }),
     }),
-    "project-skills": (fields) => ({
-      skills: (fields.skills ?? []).map((skill) => ({
+    "project-skills": (fields, currProject) => {
+      const newSkills = fields.skills ?? [];
+      const newIds = new Set(newSkills.filter((s) => s.id).map((s) => s.id));
+      const removeSkillIds = (currProject.skills ?? []).filter((s) => s.id && !newIds.has(s.id)).map((s) =>s.id!);
+     
+      return {
+      skills: newSkills.map((skill) => ({
         id: skill.id,
         name: skill.name,
         competency: skill.competency,
         years: skill.years,
         mandatory: skill.mandatory,
       })),
-    }),
+      ...(removeSkillIds.length > 0 && {removeSkillIds}),
+      };
+    },
   };
   const mapStates: Record<string, (currProject: Project, fields: Partial<Project>) => Project> = {
     "project-overview": (currProject, fields) => ({
@@ -126,7 +137,7 @@ export default function ProjectDetailsModal({
     if (!fullProject) return;
 
     const pMapper = mapPayload[section];
-    const payload = pMapper ? pMapper(updatedFields) : {};
+    const payload = pMapper ? pMapper(updatedFields, fullProject) : {};
 
 
     if (Object.keys(payload).length === 0) {
@@ -266,7 +277,14 @@ export default function ProjectDetailsModal({
 
       try {
         const data = await getConsultantsByProject(fullProject.id);
-        setAssignedConsultants(data);
+      
+        if(targetConsultantId){
+           const filteredData= data.filter(consultant => consultant.id !== targetConsultantId);
+           setAssignedConsultants(filteredData);
+        }else{
+          setAssignedConsultants(data);
+        }
+        
       } catch (error) {
         toast.error("Failed to fetch assigned consultants" + error);
       } finally {
@@ -276,7 +294,7 @@ export default function ProjectDetailsModal({
 
     fetchAssignedConsultants();
 
-  }, [fullProject]);
+  }, [fullProject, targetConsultantId]);
 
 
   if (!open || !project) {
@@ -290,17 +308,17 @@ export default function ProjectDetailsModal({
   const displayData = (fullProject && fullProject.id === project.id) ? fullProject : project;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 md:p-12">
-      <div className="bg-white rounded-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative" style={{ padding: "64px" }}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-2 sm:items-center sm:p-4 md:p-8">
+      <div className="relative max-h-[95vh] w-full max-w-5xl overflow-y-auto rounded-xl bg-white p-5 sm:p-8 lg:p-12 ">
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 text-gray-500 transition hover:text-gray-800"
+          className="absolute right-4 top-4 z-10 text-gray-500 transition hover:text-gray-800 sm:right-6 sm:top-6"
         >
           <X size={28} />
         </button>
 
         <h2
-          className="text-4xl font-bold mb-4 flex items-center gap-4"
+          className="mb-4 flex items-center gap-3 pr-8 text-2xl font-bold sm:text-3xl md:text-4xl"
           style={{ color: "var(--color-primary)" }}
         >
           Project Details
@@ -308,9 +326,9 @@ export default function ProjectDetailsModal({
         </h2>
 
 
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-5 sm:gap-8">
           <ProjectOverviewSection 
-          key={project.id}
+          key={`overview-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-overview"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-overview"}
@@ -321,7 +339,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectLocationSection 
-          key={project.id}
+          key={`location-${project.id}`}
           project={displayData} 
           isEditing = {activeEditSection === "project-location"}
           isDisabled = { activeEditSection !== null && activeEditSection !== "project-location"}
@@ -332,7 +350,7 @@ export default function ProjectDetailsModal({
           />
 
           <ProjectSkillsSection
-            key={fullProject ? fullProject.id : "loading"}
+            key={`skills-${fullProject ? fullProject.id : "loading"}`}
             skills={[...(displayData.skills ?? [])]}
             isEditing={activeEditSection === "project-skills"}
             isDisabled={activeEditSection !== null && activeEditSection !== "project-skills"}

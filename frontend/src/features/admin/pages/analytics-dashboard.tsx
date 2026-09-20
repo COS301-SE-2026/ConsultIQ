@@ -111,7 +111,7 @@ export default function AnalyticsPage() {
                         Analytics Dashboard
                     </h1>
                     <p className="text-[13px] text-[#6b7280] ">
-                        Internal consultant pool — Internal consultant pool — {overallUtilisation?.totalConsultants ?? 0} consultants total </p>
+                       Internal consultant pool — {overallUtilisation?.totalConsultants ?? 0} consultants total </p>
                 </header>
 
                 <main className="flex-1 overflow-y-auto  overscroll-none relative ">
@@ -194,6 +194,7 @@ export default function AnalyticsPage() {
                                             {dataKey:"utilised",label:"Utilised"},
                                             {dataKey:"bench",label:"Benched"},
                                         ]}
+                                        truncateLength={10}
                                     />
 
                                     <BarChart<PlacementsBySkillDto>

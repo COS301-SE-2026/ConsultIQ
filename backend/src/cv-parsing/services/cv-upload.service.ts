@@ -35,6 +35,7 @@ export class CVUploadService {
 
   async uploadCV(
     userId: string,
+    uploadedByUserId: string,
     file: Express.Multer.File,
     parsingMethod?: CvParsingMethodDto,
   ): Promise<{ cvFileId: string; message: string }> {
@@ -64,6 +65,7 @@ export class CVUploadService {
     const cvFile = await this.prisma.cvFile.create({
       data: {
         userId,
+        uploadedByUserId,
         fileName: file.originalname,
         mimeType: file.mimetype,
         fileSize: file.size,
@@ -83,6 +85,36 @@ export class CVUploadService {
       cvFileId: cvFile.id,
       message: 'CV uploaded successfully.',
     };
+  }
+
+  async getFlaggedForCm(cmUserId: string) {
+    const cvFiles = await this.prisma.cvFile.findMany({
+      where: {
+        uploadedByUserId: cmUserId,
+        securityReviewStatus: { in: ['PENDING', 'REJECTED'] },
+      },
+      select: {
+        id: true,
+        fileName: true,
+        uploadedAt: true,
+        userId: true,
+        securityReviewStatus: true,
+        parsedData: true,
+        user: { select: { fullName: true, email: true } },
+      },
+      orderBy: { uploadedAt: 'desc' },
+    });
+
+    return cvFiles.map((cv) => ({
+      cvFileId: cv.id,
+      fileName: cv.fileName,
+      uploadedAt: cv.uploadedAt,
+      consultantUserId: cv.userId,
+      consultantName: cv.user.fullName,
+      consultantEmail: cv.user.email,
+      securityReviewStatus: cv.securityReviewStatus as 'PENDING' | 'REJECTED',
+      securityFlags: (cv.parsedData as any)?.securityFlags ?? [],
+    }));
   }
 
   async getPresignedUrl(cvFileId: string): Promise<{ url: string }> {

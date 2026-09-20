@@ -1,9 +1,14 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException,NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from './s3.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { CvParsingMethodDto } from '../dto/upload-cv.dto';
+import { SecurityReviewDecision } from '../dto/resolve-security-review.dto';
+import { NotificationService } from '../../notification/service/notification.service';
+import { AuditAction, Role } from '@prisma/client';
+import { AuditLogService } from '../../audit-log/services/audit-log.service';
+
 import {
   CV_PROCESSING_QUEUE,
   CV_PARSE_JOB,
@@ -23,6 +28,8 @@ export class CVUploadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly s3Service: S3Service,
+    private readonly auditLog: AuditLogService,
+    private readonly notificationService: NotificationService,
     @InjectQueue(CV_PROCESSING_QUEUE) private readonly cvQueue: Queue,
   ) {}
 
@@ -102,6 +109,9 @@ export class CVUploadService {
         mimeType: true,
         uploadStatus: true,
         extractionStatus: true,
+        securityReviewStatus: true,
+        securityReviewedAt: true,
+        securityReviewedBy: true,
         parsedData: true,
         updatedAt: true,
       },
@@ -134,5 +144,109 @@ export class CVUploadService {
     await this.prisma.cvFile.delete({ where: { id: cvFileId } });
 
     return { message: 'CV discarded successfully.' };
+  }
+
+   async getSecurityReviewQueue() {
+    const cvFiles = await this.prisma.cvFile.findMany({
+      where: { securityReviewStatus: 'PENDING' },
+      select: {
+        id: true,
+        fileName: true,
+        uploadedAt: true,
+        userId: true,
+        consultantId: true,
+        parsedData: true,
+        user: { select: { fullName: true, email: true } },
+      },
+      orderBy: { uploadedAt: 'asc' },
+    });
+
+    return cvFiles.map((cv) => ({
+      cvFileId: cv.id,
+      fileName: cv.fileName,
+      uploadedAt: cv.uploadedAt,
+      consultantUserId: cv.userId,
+      consultantName: cv.user.fullName,
+      consultantEmail: cv.user.email,
+      securityFlags: (cv.parsedData as any)?.securityFlags ?? [],
+    }));
+  }
+
+  async resolveSecurityReview(
+    cvFileId: string,
+    decision: SecurityReviewDecision,
+    superAdminUserId: string,
+  ): Promise<{ message: string }> {
+    const cvFile = await this.prisma.cvFile.findUnique({
+      where: { id: cvFileId },
+    });
+
+    if (!cvFile) {
+      throw new NotFoundException(`CV file with id ${cvFileId} not found.`);
+    }
+
+    if (cvFile.securityReviewStatus !== 'PENDING') {
+      throw new BadRequestException(
+        `This CV is not pending security review (current status: ${cvFile.securityReviewStatus}).`,
+      );
+    }
+
+    await this.prisma.cvFile.update({
+      where: { id: cvFileId },
+      data: {
+        securityReviewStatus: decision,
+        securityReviewedAt: new Date(),
+        securityReviewedBy: superAdminUserId,
+        extractionStatus:
+          decision === SecurityReviewDecision.REJECTED
+            ? 'SECURITY_REJECTED'
+            : undefined,
+      },
+    });
+
+    await this.auditLog.log({
+      action:
+        decision === SecurityReviewDecision.CLEARED
+          ? AuditAction.CV_SECURITY_CLEARED
+          : AuditAction.CV_SECURITY_REJECTED,
+      actingUserId: superAdminUserId,
+      entityType: 'CvFile',
+      entityId: cvFileId,
+    });
+
+    if (decision === SecurityReviewDecision.REJECTED) {
+      await this.notifyAdminsOfRejection(cvFile.id, cvFile.userId);
+    }
+
+    return {
+      message: `CV security review resolved as ${decision}.`,
+    };
+  }
+
+  private async notifyAdminsOfRejection(
+    cvFileId: string,
+    consultantUserId: string,
+  ): Promise<void> {
+    const [consultantUser, admins] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: consultantUserId },
+        select: { fullName: true },
+      }),
+      this.prisma.user.findMany({
+        where: { role: Role.ADMIN },
+        select: { id: true },
+      }),
+    ]);
+
+    await Promise.all(
+      admins.map((admin) =>
+        this.notificationService.createAndSendNotification(
+          admin.id,
+          'CV rejected in security review',
+          `A super admin rejected ${consultantUser?.fullName ?? 'a consultant'}'s CV after detecting a manipulation attempt. Review this user's account.`,
+          `/consultants/security/${consultantUserId}`,
+        ),
+      ),
+    );
   }
 }

@@ -67,9 +67,31 @@ education: ParsedEducation[];
 confidenceScores: ConfidenceScores;
 }
 
+export interface SkillCompetencySignal {
+    skillName: string;
+    inferredCompetency: "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+    reasoning: string;
+}
+
+export type CvSecurityFlagType =
+    | "INSTRUCTION_OVERRIDE"
+    | "AUTHORITY_IMPERSONATION"
+    | "DATA_EXFILTRATION_ATTEMPT"
+    | "HIDDEN_OR_OBFUSCATED_TEXT"
+    | "TOOL_USE_OR_EXTERNAL_REQUEST"
+    | "SCHEMA_MANIPULATION_ATTEMPT"
+    | "OTHER_SUSPICIOUS_CONTENT";
+
+export interface CvSecurityFlag {
+    field: string;
+    flagType: CvSecurityFlagType;
+    excerpt: string;
+}
+
 export interface CvParsedDataEnvelope {
     data?: ParsedCvData;
-    comptencySignals?: unknown[];
+    competencySignals?: SkillCompetencySignal[];
+    securityFlags?: CvSecurityFlag[];
     fieldWarnings?: FieldWarning[];
     error?: string;
 }

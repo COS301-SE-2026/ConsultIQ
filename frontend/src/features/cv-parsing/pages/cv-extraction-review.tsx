@@ -7,6 +7,7 @@ import { Card } from "../../../components/ui/card";
 import { cvParsingService } from "../services/cv-parsing.service";
 import { createConsultantProfile } from "../../consultants/services/consultant.service";  
 import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
+import SecurityFlagsModal from "../pages/security-flags-modal";
 
 import type {
     CvFileStatus,
@@ -16,6 +17,7 @@ import type {
     ParsedEducation,
     ParsedCertification,
     FieldWarning,
+    CvSecurityFlag,
 } from "../types/cv.types";
 import { toast } from "sonner";
 
@@ -62,7 +64,8 @@ export default function CVExtractionReview(){
     const [cvFile, setCvFile] = useState<CvFileStatus | null>(null);
     const [fieldWarnings, setFieldWarnings] = useState<FieldWarning[]>([]);
     const [failureReason, setFailureReason] = useState<string>("");
-
+    const [flagsAcknowledged, setFlagsAcknowledged] = useState(false);
+    const [securityFlags, setCvSecurityFlags] = useState<CvSecurityFlag[]>([]);
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
     const [experiences, setExperiences] = useState<ExperienceFormRow[]>([]);
@@ -114,6 +117,7 @@ export default function CVExtractionReview(){
 
         const data = result.parsedData?.data;
         setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
+        setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
 
         if (data) {
           setContact(data.contact ?? {});
@@ -326,6 +330,13 @@ export default function CVExtractionReview(){
                 )}
 
                 { viewState === "review" && cvFile &&(
+                    <>
+                        {securityFlags.length > 0 && !flagsAcknowledged && (
+                            <SecurityFlagsModal
+                                flags={securityFlags}
+                                onAcknowledge={() => setFlagsAcknowledged(true)}
+                            />
+                        )}
                         <div className="max-w-4xl mx-auto flex flex-col gap-8">
                             <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
@@ -477,6 +488,7 @@ export default function CVExtractionReview(){
                                 </button>
                             </div>
                         </div>
+                     </>
                     )}
             </main>
         </div>

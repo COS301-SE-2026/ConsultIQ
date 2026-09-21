@@ -5,7 +5,7 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import SearchBar from "../../../components/shared/search-bar";
 import {useState, useEffect} from "react";
 import { Button } from "../../../components/ui/button";
-import { CheckCheck } from "lucide-react";
+import { CheckCheck, ChevronDown } from "lucide-react";
 import  NotificationTabs  from "../components/notifications-tab";
 import NotificationListTab from "../components/notification-list-tab";
 import {Card} from "../../../components/ui/card"
@@ -13,7 +13,6 @@ import { getNotifications,getArchivedNotifications,markAsRead, markAllAsRead, ar
 import type { NotificationItems } from "../types/notification.types";
 import {toast} from "sonner";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
-import { ChevronDown } from "lucide-react";
 
 export type notificationTab = "All" | "Unread" | "Archived";
 

@@ -4,15 +4,15 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 export default function BrandChangeLogSection(){
         return (
         <div className="min-h-screen w-full bg-[var(--color-surface)] text-primary p-6 md:p-12">
-            <div className= " max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-3">
-                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Back Home</Link>
-                <Link to="/brand-story-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Brand Story</Link>
-                <Link to="/brand-typography-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Typography</Link>
-                <Link to="/brand-spacing-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Spacing</Link>
-                <Link to="/brand-icons-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Iconography</Link>
-                <Link to="/brand-tone-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Tone</Link>
-                <Link to="/brand-logo-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border  text-sm font-semibold text-accent mb-8">Logo</Link>
-                <Link to="/brand-colors-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border  text-sm font-semibold text-accent mb-8">Colors</Link>
+            <div className= " max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Back Home</Link>
+                <Link to="/brand-story-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Brand Story</Link>
+                <Link to="/brand-typography-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Typography</Link>
+                <Link to="/brand-spacing-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Spacing</Link>
+                <Link to="/brand-icons-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Iconography</Link>
+                <Link to="/brand-tone-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Tone</Link>
+                <Link to="/brand-logo-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Logo</Link>
+                <Link to="/brand-colors-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Colors</Link>
             </div>
             <div className= "max-w-5xl mx-auto ">
                 <h1 className="text-4xl md:text-4xl font-bold text-primary tracking-tight mb-4">Changelog (Demo 1 to Demo 2)</h1>

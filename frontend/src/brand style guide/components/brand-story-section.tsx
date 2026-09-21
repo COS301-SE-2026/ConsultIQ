@@ -15,7 +15,7 @@ const principles=[
 
     return (
         <div className= "relative min-h-screen w-full overflow-hidden text-white rounded-2xl shadow-2xl mb-12" style={{ backgroundColor: "var(--color-primary)",}}>
-          <div className= "relative z-10 px-8 py-16 md:px-16 md:py20 border-b border-white/10">
+          <div className= "relative z-10 px-6 sm:px-8 py-12 sm:py-16 md:px-16 md:py-20 border-b border-white/10">
             <div className="max-w-4xl">
                 <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border border-white/15 text-sm font-semibold text-accent mb-10">
                 Back To Home
@@ -43,7 +43,7 @@ const principles=[
                         <div key={item.title || itemIndex}
                         className="p-6 rounded-xl bg-white/10 border border-white/10 hover:border-accent/50 hover:bg-white/10 transition-all duration-300 flex flex-col justify-between group">
                             <div>
-                                <div className="w-10 h-10flex items-center justify-center text-accent mb-4 group-hover:scale-110 transition-transform duration-300" >
+                                <div className="w-10 h-10 flex items-center justify-center text-accent mb-4 group-hover:scale-110 transition-transform duration-300" >
                                     <Icon size={20} />
                                 </div>
                                 <h3 className="text-lg font-bold !text-white mb-2"> {item.title}</h3>

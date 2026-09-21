@@ -166,6 +166,47 @@ export default function PlacementDashboard() {
         }
     };
 
+    function renderMatchContent() {
+        if(isMatchLoading){
+            return (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin" style={{color: "var(--color-primary)"}}/>
+                    <div className="text-lg font-semibold text-slate-800">
+                        <h2 className="text-lg font-semibold text-slate-800">
+                            Scoring consultants...
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                            {matchRunStatus ? `Progress: ${matchRunStatus.progress}%` : "Preparing the match run"}
+                        </p>
+                    </div>
+                </div>            
+            );
+        }
+        if(matchRunStatus?.status === "FAILED"){
+            return(
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
+                    {matchRunStatus.errorMessage ?? "The match run failed. Please try again."}
+                </div>                
+            );
+        }
+
+        return (
+            <>
+                <MatchStatsGrid
+                    scoringBasis={projectScoringBasis}
+                    totalEvaluated={projectTotalEvaluated}
+                    matched={projectPlaced}
+                    excluded={projectExcluded}
+                />
+                <RecommendationsTable
+                    recommendations={recommendations}
+                    onSelectConsultant={handleSelectConsultant}
+                    onPlaceConsultant={handlePlaceConsultant}
+                />
+            </>    
+        );
+    }
+
     return (
         <div className="flex h-screen overflow-hidden bg-[var(--color-surface)] lg:flex-row">
             <div className="h-screen shrink-0">
@@ -189,37 +230,7 @@ export default function PlacementDashboard() {
                    </div>
                 </header>
                 <div className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-[80px] lg:py-[32px]">
-                 {isMatchLoading ? (
-                    <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
-                        <Loader2 className="h-10 w-10 animate-spin" style={{color: "var(--color-primary)"}}/>
-                        <div className="text-lg font-semibold text-slate-800">
-                            <h2 className="text-lg font-semibold text-slate-800">
-                                Scoring consultants...
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-500">
-                                {matchRunStatus ? `Progress: ${matchRunStatus.progress}%` : "Preparing the match run"}
-                            </p>
-                        </div>
-                    </div>
-                 ) : matchRunStatus?.status === "FAILED" ?(
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
-                        {matchRunStatus.errorMessage ?? "The match run failed. Please try again."}
-                    </div>
-                 ) : (
-                 <>
-                 <MatchStatsGrid
-                    scoringBasis={projectScoringBasis}
-                    totalEvaluated={projectTotalEvaluated}
-                    matched={projectPlaced}
-                    excluded={projectExcluded}
-                />
-                <RecommendationsTable
-                    recommendations={recommendations}
-                    onSelectConsultant={handleSelectConsultant}
-                    onPlaceConsultant={handlePlaceConsultant}
-                />
-                </>
-            )}   
+                    {renderMatchContent()}
                 </div>
 
             </div>

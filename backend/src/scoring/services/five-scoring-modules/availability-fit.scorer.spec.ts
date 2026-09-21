@@ -24,6 +24,7 @@ function project(requiredAllocationPercentage: number): RawProjectDto {
         startDate: '2026-01-01',
         endDate: '2026-06-30',
         requiredAllocationPercentage,
+        teamSize: 1,
 
     } as RawProjectDto;
 }

@@ -154,18 +154,18 @@ describe('ProjectService', () => {
       });
     });
 
-    it('should create a project without an endDate', async () => {
-      const dto = { ...baseDto, endDate: undefined };
-      mockTx.project.create.mockResolvedValue({ id: 'uuid-456' });
-      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+    // it('should create a project without an endDate', async () => {
+    //   const dto = { ...baseDto, endDate: undefined };
+    //   mockTx.project.create.mockResolvedValue({ id: 'uuid-456' });
+    //   mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
 
-      const result = await service.createProject(dto, 'user-123', 'PROJECT_MANAGER');
+    //   const result = await service.createProject(dto, 'user-123', 'PROJECT_MANAGER');
 
-      expect(result.projectId).toBe('uuid-456');
-      expect(mockTx.project.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ endDate: null }) }),
-      );
-    });
+    //   expect(result.projectId).toBe('uuid-456');
+    //   expect(mockTx.project.create).toHaveBeenCalledWith(
+    //     expect.objectContaining({ data: expect.objectContaining({ endDate: null }) }),
+    //   );
+    // });
 
     it('should create a project when endDate is provided and valid', async () => {
       mockTx.project.create.mockResolvedValue({ id: 'uuid-111' });

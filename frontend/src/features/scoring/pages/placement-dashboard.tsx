@@ -131,7 +131,11 @@ export default function PlacementDashboard() {
     const projectExcluded = stats?.totalExcluded ?? 0;
     const projectTotalEvaluated = stats?.totalEvaluated ?? (projectMatched + projectExcluded);
 
-    const isMatchLoading = !matchRunStatus || matchRunStatus.status === "IN_PROGRESS" || (matchRunStatus.status === "COMPLETED" && stats === null);
+    const hasInitialRecommendations = rawMatchData.length > 0;
+    const isMatchLoading = 
+        !matchRunStatus ||
+        (matchRunStatus.status === "IN_PROGRESS" && !hasInitialRecommendations ) || 
+        (matchRunStatus.status === "COMPLETED" && stats === null);
 
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);

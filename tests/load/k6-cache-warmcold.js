@@ -36,6 +36,55 @@ export const options = {
     },
 };
 
+let currentCsrfToken = null;
+
+function syncCsrfFromResponse(res) {
+    if (!res || !res.cookies || !res.cookies['XSRF-TOKEN']) return null;
+
+    const csrfCookie = res.cookies['XSRF-TOKEN'];
+    const token = Array.isArray(csrfCookie) ? csrfCookie[0]?.value : csrfCookie.value;
+
+    if (token) {
+        currentCsrfToken = token;
+    }
+
+    return token || null;
+}
+
+function getCsrfToken() {
+    if (currentCsrfToken) return currentCsrfToken;
+
+    const cookies = http.cookieJar().cookiesForURL(__ENV.TARGET_URL || 'http://localhost:3000');
+    const jarEntries = Array.isArray(cookies) ? cookies : Object.values(cookies || {});
+
+    for (let i = 0; i < jarEntries.length; i++) {
+        const cookie = jarEntries[i];
+        const name = cookie && (cookie.name || cookie.key || cookie[0]?.name);
+        if (name === 'XSRF-TOKEN') {
+            const value = cookie && (cookie.value || cookie[0]?.value);
+            if (value) {
+                currentCsrfToken = value;
+                return value;
+            }
+        }
+    }
+
+    return null;
+}
+
+function withCsrfHeader(baseUrl, options = {}) {
+    const requestOptions = { ...options };
+    const headers = { ...(requestOptions.headers || {}) };
+    const csrfToken = getCsrfToken();
+
+    if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
+        headers['X-CSRF-Token'] = csrfToken;
+    }
+
+    requestOptions.headers = headers;
+    return requestOptions;
+}
+
 function login(baseUrl, user) {
     const res = http.post(`${baseUrl}/auth/login`, JSON.stringify({
         email: user.email,
@@ -44,7 +93,13 @@ function login(baseUrl, user) {
         headers: { 'Content-Type': 'application/json' },
         tags: { endpoint: 'auth_login' },
     });
-    check(res, { 'login successful': (r) => r.status === 200 || r.status === 201 });
+
+    syncCsrfFromResponse(res);
+
+    check(res, {
+        'login successful': (r) => r.status === 200 || r.status === 201,
+        'csrf cookie established': () => !!getCsrfToken(),
+    });
     return res;
 }
 
@@ -114,10 +169,10 @@ export function probe() {
     const marker = `Cache invalidation probe ${Date.now()}`;
     const patchRes = http.patch(`${baseUrl}/projects/${projectId}`, JSON.stringify({
         description: marker,
-    }), {
+    }), withCsrfHeader(baseUrl, {
         headers: { 'Content-Type': 'application/json' },
         tags: { endpoint: 'project_update' },
-    });
+    }));
     const writeOk = check(patchRes, { 'write accepted': (r) => r.status === 200 });
     if (!writeOk) {
 

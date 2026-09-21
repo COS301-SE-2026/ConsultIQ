@@ -4,6 +4,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { cleanDatabase } from './prisma-test-utils';
+
+const getBcryptCostFactor = (): number => {
+    const configuredRounds = Number(process.env.BCRYPT_ROUNDS || 0);
+    if (configuredRounds > 0) return configuredRounds;
+    return process.env.NODE_ENV === 'test' ? 4 : 12;
+};
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -15,7 +22,7 @@ async function main() {
 
     const k6TestUsers: Array<{ id: string; email: string; password: string; role: string }> = [];
     const defaultPassword = 'SecureTestPass123!';
-    const passwordHash = await bcrypt.hash(defaultPassword, 12);
+    const passwordHash = await bcrypt.hash(defaultPassword, getBcryptCostFactor());
 
     console.log('Seeding authorized accounts...');
 

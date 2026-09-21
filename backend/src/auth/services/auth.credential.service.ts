@@ -3,6 +3,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { User, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+const getBcryptCostFactor = (): number => {
+  const configuredRounds = Number(process.env.BCRYPT_ROUNDS || 0);
+  if (configuredRounds > 0) return configuredRounds;
+  return process.env.NODE_ENV === 'test' ? 4 : 12;
+};
+
 // TASK-12  — Credential validation service
 // TASK-12b — SELECT query to fetch the user record and hash by email
 
@@ -16,7 +22,7 @@ export type CredentialCheckResult =
 
 @Injectable()
 export class CredentialService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * TASK-12b — Fetch user record by email
@@ -85,8 +91,7 @@ export class CredentialService {
 
   //Helper method to perform a dummy bcrypt compare for non-existent users to mitigate timing attacks.
   private async dummyCompare(): Promise<void> {
-    const dummyHash =
-      '$2b$12$KIXJz6JzY6JzY6JzY6JzYeKIXJz6JzY6JzY6JzY6JzY6JzY6JzYe';
+    const dummyHash = `\$2b\$${String(getBcryptCostFactor()).padStart(2, '0')}$KIXJz6JzY6JzY6JzY6JzYeKIXJz6JzY6JzY6JzY6JzY6JzY6JzYe`;
     await bcrypt.compare('dummy-password', dummyHash).catch(() => false);
   }
 }

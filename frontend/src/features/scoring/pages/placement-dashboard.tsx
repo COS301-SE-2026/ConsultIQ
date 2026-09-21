@@ -169,7 +169,7 @@ export default function PlacementDashboard() {
             </div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
-                    className="z-20 shrink-0 border-b bg-white px-4 py-4 sm:px-6 lg:px-[80px]"
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
                     style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

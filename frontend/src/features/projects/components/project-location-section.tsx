@@ -62,34 +62,34 @@ export default function ProjectLocationSection({
 
 
   return (
-    <Card style={{ padding: "20px", border: "none" }}>
-      <div className= "flex flex-center gap-3">
-        <h3
-          className="text-3xl font-bold mb-4"
+    <Card className={`border-none p-4 sm:p-5 ${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
+      <div className= "flex flex-wrap items-start justify-between gap-3">
+        <h2
+          className="mb-4 text-2xl font-bold sm:text-3xl"
           style={{ color: "var(--color-primary)" }}
         >
           Location
-        </h3>
+        </h2>
         <div>
           {isEditing ? (
-            <div className="flex gap-4">
-              <button 
+            <div className="flex flex-wrap gap-3">
+              <button type="button"
               onClick={handleSaveLocation} 
               className="flex items-center text-green-400 font-medium ">
-              <Check className="h-5 w-5"/> Save
+              <Check className="h-6 w-6"/> Save
               </button>
-              <button 
+              <button type="button"
               onClick={onCancel} 
               className="flex items-center text-red-400 font-medium ">
-              <X className="h-5 w-5"/> Cancel
+              <X className="h-6 w-6"/> Cancel
               </button>
               </div>):(
                 isNonConsultant && (
-                  <button 
+                  <button type="button"
                   onClick={onEdit} 
                   disabled={isDisabled}
                   className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                  <Edit className="h-5 w-5"/> 
+                  <Edit className="h-6 w-6 text-primary"/> 
                   </button>
                 )
                 
@@ -113,7 +113,7 @@ function Info({
   return (
     <div>
       <p className="font-semibold mb-2">{label}</p>
-      <p style={{ color: "var(--color-text-secondary)" }}>
+      <p className="break-words" style={{ color: "var(--color-text-secondary)" }}>
         {value ?? "—"}
       </p>
     </div>

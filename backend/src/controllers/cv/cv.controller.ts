@@ -88,6 +88,9 @@ export class CvController {
     mimeType: string;
     uploadStatus: string;
     extractionStatus: string;
+    securityReviewStatus: string;
+    securityReviewedAt: Date | null;
+    securityReviewedBy: string | null;
     parsedData?: any;
     updatedAt: Date;
   }> {

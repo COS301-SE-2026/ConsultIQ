@@ -37,11 +37,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const progressInterval = setInterval(() => {
       setLogoutProgress((prev) => {
 
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + Math.floor(Math.random() * 10) + 5;
+        const next = prev + (90 - prev) * 0.15;
+        return next > 89 ? 90 : next;
       });
     }, 100);
 

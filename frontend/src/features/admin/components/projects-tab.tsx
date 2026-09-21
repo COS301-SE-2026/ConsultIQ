@@ -94,40 +94,32 @@ export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,m
          border: " 1px solid #f1f5f9"
       }}
       >
-        <div 
-          className="flex items-center justify-between px-8 py-5 "
-          style={{
-            borderColor: "#f1f5f9",
-            padding: "8px"
-          }}
-        >
+        <div className="px-2 py-3 sm:px-4">
           <h2 className="font-bold">Projects</h2>
-          
-          
         </div>
 
          {error && <p className="px-8 text-red-600 text-sm">{error}</p>}
 
-      <div className="w-full overflow-x-auto">
+      <div className="mt-3 w-full overflow-x-auto">
          {loading ? (
         <div className="flex h-screen items-center justify-center font-medium" style={{ backgroundColor: "var(--color-surface)", color: "var(--color-primary)" }}>
           Loading projects...
         </div>
        ):(
-          <table className="w-full border-separate border-spacing-y-4 text-left">
+          <table className="min-w-[640px] w-full border-separate border-spacing-y-3 text-left">
             <thead>
               <tr className="bg-[#F5F9FF] h-6">
-                <th className="px-8 py-4 font-bold text-[16px]">Project name</th>
-                <th className="px-8 py-4 font-bold text-[16px]">Client</th>
-                <th className="px-8 py-4 font-bold text-[16px]">Budget</th>
-                <th className="px-8 py-4 font-bold text-[16px]">Actions</th>
+                <th className="px-3 py-3 font-bold text-[16px]">Project name</th>
+                <th className="px-3 py-3 font-bold text-[16px]">Client</th>
+                <th className="px-3 py-3 text-center font-bold text-[16px]">Budget</th>
+                <th className="px-3 py-3 text-center font-bold text-[16px]">Action</th>
               </tr>
             </thead>
 
             <tbody>
               {filtered.map((project)=>(
                 <tr key={project.id}  className="border-b hover:bg-slate-50 border-b-gray-200 ">
-                  <td className="flex items-center gap-4 px-8 py-4">
+                  <td className="flex items-center text-sm gap-4 px-3 py-3 sm:px-5">
                     <div  
                       className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
                       style={{
@@ -147,53 +139,31 @@ export default function ProjectsTab({searchQuery= "", budgetSort = "",projects,m
                     </span>
                   </td>
 
-                  <td className="px-8 py-4" >
+                  <td className="text-sm px-3 py-3 sm:px-5" >
                     <span>
                       {project.clientName}
                     </span>
                   </td>
 
-                  <td className="px-8 py-4">
+                  <td className="text-center text-sm px-3 py-3 sm:px-5">
                     <span>
                       {project.budget}
                     </span>
                   </td>
 
-                  <td className="px-8 py-4">
-                    <div className="flex item gap-4">
-                      {/* <Button 
-                        variant="ghost"
-                        className="px-5 py-2 rounded-md text-white font-semibold bg-[#F00E0E] hover:bg-red-700"
-                        style={{
-                            color: "white",
-                            fontSize: "14px",
-                            padding: "2px 6px",
-                          }}
-                      >
-                        Delete
-                      </Button> */}
-
+                  <td className="text-center text-sm px-3 py-3 sm:px-5">
+                    <div className="flex items-center justify-center gap-4">
                        {project.status === "ARCHIVED" ? (
                         <Button 
                         onClick={() => handleUnarchive(project.id)}
-                          className="px-5 py-2 rounded-md text-white font-semibold bg-[#46B162] hover:bg-emerald-600" 
-                          style={{
-                            color: "white",
-                            fontSize: "14px",
-                            padding: "2px 6px",
-                          }}
-                        >
+                          className="px-5 py-2 flex items-center gap-2 rounded-md text-white font-semibold bg-[#46B162] hover:bg-emerald-600" 
+                          >
                           Unarchive
                         </Button>
                       ):(
                         <Button
                           onClick={() => handleArchive(project.id)}
-                          className="flex items-center gap-2 rounded-md font-semibold  bg-[#F0780E] transition hover:bg-orange-600"
-                          style={{
-                            color: "white",
-                            fontSize: "14px",
-                            padding: "2px 6px",
-                          }}
+                          className="h-8 flex items-center gap-2 rounded-md font-semibold  bg-[#F0780E] transition hover:bg-orange-600"
                         >
                           Archive
                         </Button>

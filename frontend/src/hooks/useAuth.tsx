@@ -26,24 +26,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
   const [isLoggingOutUI, setIsLoggingOutUI] = useState(false);
+  const [logoutProgress, setLogoutProgress] = useState(0);
 
   const logout = useCallback(async () => {
     setLoggingOut(true);
     setIsLoggingOutUI(true);
+    setLogoutProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setLogoutProgress((prev) => {
+
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.floor(Math.random() * 10) + 5;
+      });
+    }, 100);
 
     try {
       await authService.logout();
     } catch {
       // Ignore logout errors
     } finally {
-      setUser(null);
-      setIsLoading(false);
-    }
+      clearInterval(progressInterval);
+      setLogoutProgress(100);
 
-    window.location.href = '/login';
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 300);
+    }
   }, []);
+
 
   useLayoutEffect(() => {
     injectAuth({
@@ -102,8 +117,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={value}>
       {isLoggingOutUI && (
         <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white h-screen w-screen">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--color-primary)] mb-4"></div>
-          <span className="text-lg font-medium text-gray-600">Logging out...</span>
+
+          <div className="flex justify-between w-64 mb-2">
+            <span className="text-sm font-medium text-gray-600">Logging out...</span>
+            {/* Show the exact percentage number */}
+            <span className="text-sm font-medium text-gray-600">
+              {Math.min(100, Math.round(logoutProgress))}%
+            </span>
+          </div>
+
+          {/* Progress Bar Container */}
+          <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-150 ease-out"
+              style={{ width: `${Math.min(100, logoutProgress)}%` }}
+            ></div>
+          </div>
+
         </div>
       )}
       {children}

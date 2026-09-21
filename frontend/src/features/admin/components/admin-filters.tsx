@@ -20,19 +20,17 @@ interface AdminFiltersProps {
 
 export default function AdminFilters({ activeTab, roleFilter, statusFilter, budgetFilter, onBudgetSortChange, onRoleChange, onStatusChange }: AdminFiltersProps) {
     return (
-        <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-8">
+        <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:flex-wrap sm:gap-4 sm:mb-8">
             {activeTab === "Users" && (
                 <>
-                    <div className="relative w-64 flex justify-center items-center">
+                    <div className="relative flex w-full min-w-0 items-center sm:w-64">
                         <Shield className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
                         <select
                             value={roleFilter}
                             onChange={(e) => onRoleChange(e.target.value)}
-                            className=" h-12 pr-12  w-full min-w-4 rounded-xl border-(--color-border) bg-white pl-14 py-2 text-sm appearance-none outline-none "
+                            className="h-12 w-full min-w-0 appearance-none rounded-xl border-(--color-border) bg-white py-2 pl-14 pr-12 text-sm outline-none"
                             style={{
                                 paddingLeft : "56px",
-                               
-                                
                             }}
                         >
                             <option value="">All roles</option>
@@ -47,17 +45,13 @@ export default function AdminFilters({ activeTab, roleFilter, statusFilter, budg
                         />
                     </div>
 
-                    <div className="relative  w-64">
+                    <div className="relative flex w-full min-w-0 items-center sm:w-64">
                         <CircleDot className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
                         <select
                             value={statusFilter}
                             onChange={(e) => onStatusChange(e.target.value)}
-                            className=" h-12 pr-12  w-full min-w-4 rounded-xl border-(--color-border) bg-white pl-14 py-2 text-sm appearance-none outline-none "
-                            style={{
-                                paddingLeft : "56px",
-                               
-                                
-                            }}
+                            className=" h-12 w-full min-w-0 appearance-none rounded-xl border-(--color-border) bg-white py-2 pl-14 pr-12 text-sm outline-none"
+                            style={{paddingLeft : "56px", }}
                         >
                             <option value="">All statuses</option>
                             <option value="ACTIVE">Active</option>
@@ -74,7 +68,7 @@ export default function AdminFilters({ activeTab, roleFilter, statusFilter, budg
             )}
 
             {activeTab === "Projects" && (
-                <div className="relative w-64">
+                <div className="relative flex w-full min-w-0 items-center sm:w-64">
                     <ArrowUpDown className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
                     <select
                         value={budgetFilter}

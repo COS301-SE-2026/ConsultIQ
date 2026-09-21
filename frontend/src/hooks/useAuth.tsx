@@ -26,16 +26,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
+  const [isLoggingOutUI, setIsLoggingOutUI] = useState(false);
+
   const logout = useCallback(async () => {
     setLoggingOut(true);
+    setIsLoggingOutUI(true);
+
     try {
       await authService.logout();
     } catch {
       // Ignore logout errors
     }
-    setUser(null);
-  }, []);
 
+    window.location.href = '/login';
+  }, []);
 
   useLayoutEffect(() => {
     injectAuth({
@@ -48,8 +53,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [logout]);
 
-  // On mount and check if the user is already logged in by calling /auth/me
-  // The HTTP-only cookie is sent automatically by the browser
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -61,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 
@@ -77,7 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ) as UserProfile;
       setUser(userProfile);
       return (userProfile as Record<string, unknown>).dashboardRoute as string | undefined;
-
     } else {
       throw new Error('Malformed response structure from authentication server.');
     }
@@ -94,9 +95,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, login, logout],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {isLoggingOutUI && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white h-screen w-screen">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--color-primary)] mb-4"></div>
+          <span className="text-lg font-medium text-gray-600">Logging out...</span>
+        </div>
+      )}
+      {children}
+    </AuthContext.Provider>
+  );
 }
-
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');

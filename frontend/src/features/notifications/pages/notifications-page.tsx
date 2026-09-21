@@ -13,6 +13,7 @@ import { getNotifications,getArchivedNotifications,markAsRead, markAllAsRead, ar
 import type { NotificationItems } from "../types/notification.types";
 import {toast} from "sonner";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
+import { ChevronDown } from "lucide-react";
 
 export type notificationTab = "All" | "Unread" | "Archived";
 
@@ -244,10 +245,10 @@ function NotificationPage(){
 
             <div className="flex-1 flex flex-col h-screen overflow-y-auto  gap-4">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-22.5 flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                    style={{ borderColor: "var(--color-border)" }}
                 >
-                    <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)"}}>
                         Notifications
                     </h1>
                 </header>
@@ -265,18 +266,19 @@ function NotificationPage(){
                          Loading notifications...
                         </div>
                     ): (
-                        <div className=" flex flex-col gap-4  max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
-                        <SearchBar
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            placeholder={"Search notifications..."}
-                        /> 
-
+                        <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-10">
+                        <div className="mb-4 sm:mb-8">
+                            <SearchBar 
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                placeholder={"Search notifications..."}
+                            /> 
+                        </div>
                    
                             <Card className="rounded-md">
-                                <div className="flex gap-6 w-full items-center " style={{ backgroundColor:"#F5F9FF",  padding: "20px"}}>
+                                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:items-center" style={{ backgroundColor:"#F5F9FF", padding: "16px 20px"}}>
                                 
-                                    <div className="flex gap-4 items-center  mr-auto">
+                                    <div className="flex gap-4 items-center sm:mr-auto">
                                         <input 
                                             type="checkbox" 
                                             name="check-all" 
@@ -288,25 +290,27 @@ function NotificationPage(){
                                     </div>
 
 
-                                    <div className="flex justify-end gap-4 w-full">
-                                        <select
-                                            value= {selectedAction}
-                                            onChange={(e) => handleSelectedDropdown(e.target.value)}
-                                            className=" w-32 border bg-white px-4 py-1.5 leading-normal font-bold text-xs   hover:bg-slate-100 "
-                                            style={{
-                                                    borderColor: "var(--color-text-primary)",
-                                                    color: "var(--color-text-primary)",
-                                                    borderRadius: "9999px",
-                                                }}
-                                            >
-                                                <option value="" disabled hidden>Selected</option>
-                                                <option value="read">Mark as read</option>
-                                                <option value="archive">Archive</option>
-                                        </select>
-
+                                    <div className="flex flex-col sm:flex-row flex-wrap justify-end gap-3 sm:gap-4 w-full">
+                                        <div className="relative w-full sm:w-32">
+                                            <select
+                                                value= {selectedAction}
+                                                onChange={(e) => handleSelectedDropdown(e.target.value)}
+                                                className="w-full appearance-none border bg-white pl-4 pr-8 py-1.5 leading-normal font-bold text-xs hover:bg-slate-100"
+                                                style={{
+                                                        borderColor: "var(--color-text-primary)",
+                                                        color: "var(--color-text-primary)",
+                                                        borderRadius: "9999px",
+                                                    }}
+                                                >
+                                                    <option value="" disabled hidden>Selected</option>
+                                                    <option value="read">Mark as read</option>
+                                                    <option value="archive">Archive</option>
+                                            </select>
+                                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-primary)" }}/>
+                                        </div>
                                         <Button
                                             variant="outline"
-                                            className="bg-white px-4 gap-2 h-10 w-36 font-bold text-base flex items-center justify-center"
+                                            className="bg-white px-4 gap-2 h-10 w-full sm:w-36 font-bold text-base flex items-center justify-center"
                                             style={{
                                                     border: "1px solid #002D62",
                                                     color: "var(--color-text-primary)",
@@ -319,21 +323,23 @@ function NotificationPage(){
                                             Mark  all as read
                                         </Button>  
                                         
-
-                                        <select
-                                            className=" w-32 border bg-white px-4 py-1.5 leading-normal font-bold text-xs   hover:bg-slate-100 "
-                                            style={{
-                                                    borderColor: "var(--color-text-primary)",
-                                                    color: "var(--color-text-primary)",
-                                                    borderRadius: "9999px",
-                                                }}
-                                            onChange={(e) => setSort(e.target.value as "new" | "old" | "" )}
-                                            value={Sort}
-                                        >
-                                                <option value="" >Sort by:</option>
-                                                <option value="new">Newest </option>
-                                                <option value="old">Oldest</option>
-                                        </select>
+                                        <div className="relative w-full sm:w-32">
+                                            <select
+                                                className="w-full appearance-none border bg-white pl-4 pr-8 py-1.5 leading-normal font-bold text-xs hover:bg-slate-100"
+                                                style={{
+                                                        borderColor: "var(--color-text-primary)",
+                                                        color: "var(--color-text-primary)",
+                                                        borderRadius: "9999px",
+                                                    }}
+                                                onChange={(e) => setSort(e.target.value as "new" | "old" | "" )}
+                                                value={Sort}
+                                            >
+                                                    <option value="" >Sort by:</option>
+                                                    <option value="new">Newest </option>
+                                                    <option value="old">Oldest</option>
+                                            </select>
+                                            <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-primary)" }}/>
+                                        </div>
                                     </div>
                                     
 

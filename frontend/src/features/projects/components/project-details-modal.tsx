@@ -150,8 +150,19 @@ export default function ProjectDetailsModal({
     try {
 
       await apiClient.patch(`/projects/${fullProject.id}`, payload);
-      setFullProject(updatedProject);
-      onUpdate(updatedProject);
+      
+      let projectToUpdate = updatedProject;
+      
+      if (section === "project-skills"){
+        const gapAnalysis = await apiClient.get<{
+          overallSeverity: Project["gapSeverity"];
+        }>((`/projects/${fullProject.id}/skill-gap-analysis`))
+
+      projectToUpdate = {...updatedProject, gapSeverity: gapAnalysis.overallSeverity
+      };
+    }
+    setFullProject(projectToUpdate);
+    onUpdate(projectToUpdate);
     } catch (error) {
       toast.error("Failed to update project" + error);
     } finally {

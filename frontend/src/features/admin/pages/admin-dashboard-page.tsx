@@ -114,9 +114,9 @@ function AdminPage() {
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <header
                 className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
-                    style={{ borderColor: "var(--color-border)"}}
+                style={{ borderColor: "var(--color-border)"}}
                 >
-                    <h1 className="font-bold text-[26px] sm:text-[28px] lg:text-[32px]" style={{ color: "var(--color-primary)" }}>
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                         Admin Dashboard
                     </h1>
                 </header>
@@ -159,10 +159,7 @@ function AdminPage() {
                             />
 
                         </div>
-                        <div
-                            className="sticky top-0 z-20 w-full bg-[var(--color-surface)]"
-                            style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
-                        >
+                        <div className="sticky top-0 z-20 w-full bg-[var(--color-surface)]">
 
                             {/* Search bar */}
                             <SearchBar

@@ -193,14 +193,14 @@ export default function CVExtractionReview() {
         if (!hasValidCost) {
             return { error: "Cost to company is required and must be a valid non-negative number." };
         }
-        if (!contact.addressLine1) {
-            return { error: "Address Line 1 is required." };
-        }
-        if (!contact.city) {
-            return { error: "City is required." };
-        }
-        if (!contact.province) {
-            return { error: "Province is required." };
+        const missingFields = [];
+
+        if (!contact.addressLine1) missingFields.push("Address");
+        if (!contact.city) missingFields.push("City");
+        if (!contact.province) missingFields.push("Province");
+
+        if (missingFields.length > 0) {
+            return { error: `Please provide the following: ${missingFields.join(", ")}.` };
         }
 
         const invalidIdx = experiences.findIndex(

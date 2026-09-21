@@ -203,7 +203,7 @@ describe('CvExtractionService', () => {
       });
       s3.downloadFile.mockResolvedValue(Buffer.from(''));
       ruleBasedParsing.parse.mockResolvedValue({
-        success: true, data: sampleParsedData, processingTimeMs: 10,
+        success: true, data: sampleParsedData, securityFlags:[], processingTimeMs: 10,
       });
 
       await service.processExtraction('cv-1');
@@ -216,8 +216,31 @@ describe('CvExtractionService', () => {
         metadata: {
           consultantId: 'consultant-1',
           extractedData: sampleParsedData,
+          securityFlags: [],
         },
       });
+    });
+
+    it('includes actual securityFlags in the audit log metadata when present', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      prisma.cvFile.findUnique.mockResolvedValue({
+        userId: 'user-1', consultantId: 'consultant-1',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      const flags = [{ field: 'contact.fullName', flagType: 'SCHEMA_MANIPULATION_ATTEMPT', excerpt: 'x' }];
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true, data: sampleParsedData, securityFlags: flags, processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({ securityFlags: flags }),
+        }),
+      );
     });
 
     it('falls back to "unknown" as actingUserId when the CvFile lookup returns nothing', async () => {
@@ -257,6 +280,74 @@ describe('CvExtractionService', () => {
       await service.processExtraction('missing-id');
 
       expect(auditLog.log).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('security review status', () => {
+    it('sets securityReviewStatus to PENDING when flags are returned', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true,
+        data: sampleParsedData,
+        securityFlags: [{ field: 'contact.fullName', flagType: 'SCHEMA_MANIPULATION_ATTEMPT', excerpt: 'x' }],
+        processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      const finalUpdate = prisma.cvFile.update.mock.calls[1][0];
+      expect(finalUpdate.data.securityReviewStatus).toBe('PENDING');
+      expect(finalUpdate.data.parsedData.securityFlags).toEqual([
+        { field: 'contact.fullName', flagType: 'SCHEMA_MANIPULATION_ATTEMPT', excerpt: 'x' },
+      ]);
+    });
+
+    it('sets securityReviewStatus to NONE when no flags are returned', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true, data: sampleParsedData, securityFlags: [], processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      const finalUpdate = prisma.cvFile.update.mock.calls[1][0];
+      expect(finalUpdate.data.securityReviewStatus).toBe('NONE');
+    });
+
+    it('sets securityReviewStatus to NONE when securityFlags is undefined on the result', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: true, data: sampleParsedData, processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      const finalUpdate = prisma.cvFile.update.mock.calls[1][0];
+      expect(finalUpdate.data.securityReviewStatus).toBe('NONE');
+    });
+
+    it('does not set securityReviewStatus at all when extraction fails', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'RULE_BASED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ruleBasedParsing.parse.mockResolvedValue({
+        success: false, error: 'bad template', processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      const finalUpdate = prisma.cvFile.update.mock.calls[1][0];
+      expect(finalUpdate.data.securityReviewStatus).toBeUndefined();
     });
   });
 

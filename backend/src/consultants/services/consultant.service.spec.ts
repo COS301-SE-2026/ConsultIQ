@@ -748,6 +748,19 @@ describe('ConsultantService', () => {
       expect(result.project.teamMembers).toHaveLength(1);
       expect(result.project.teamMembers[0].email).toBe('jane@bbd.co.za');
     });
+
+    it('only queries ACTIVE placements, excluding terminated placement history', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      await service.getAssignedProjects('user-1');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { consultant: 'consultant-1', stataus: 'ACTIVE'},
+        }),
+      );
+    });
   });
 
   // --- getConsultantsByProject ---------------------------------------------------
@@ -828,6 +841,7 @@ describe('ConsultantService', () => {
       expect(result.consultants).toEqual([]);
     });
   });
+
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1200,6 +1214,7 @@ describe('ConsultantService', () => {
       });
     });
   });
+
   // ---------- uploadProfilePicture------------
   describe('uploadProfilePicture', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1295,7 +1310,6 @@ describe('ConsultantService', () => {
       expect(result.message).toBe('Profile picture uploaded successfully.');
     });
   });
-
 
   // ---------- unassignConsultant ----------
 

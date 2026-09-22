@@ -14,7 +14,7 @@ const principles=[
 ];
 
     return (
-        <div className= "relative min-h-screen w-full overflow-hidden text-white rounded-2xl shadow-2xl mb-12" style={{ backgroundColor: "var(--color-primary)",}}>
+        <div className= "relative min-h-screen w-full overflow-hidden text-white" style={{ backgroundColor: "var(--color-primary)",}}>
           <div className= "relative z-10 px-6 sm:px-8 py-12 sm:py-16 md:px-16 md:py-20 border-b border-white/10">
             <div className="max-w-4xl">
                 <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 py-1 rounded-full backdrop-blur-md border border-white/15 text-sm font-semibold text-accent mb-10">

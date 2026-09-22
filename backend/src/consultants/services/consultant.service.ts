@@ -21,6 +21,7 @@ import {
   JobType,
   Role,
   WorkModel,
+  UserStatus,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -261,8 +262,9 @@ export class ConsultantService {
     page: number,
     limit: number,
     userRole: string,
+    managerUserId: string,
   ): Promise<PaginatedConsultantsResponseDto> {
-    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
+    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}:manager:${managerUserId}`;
     const cachedData =
       await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
     if (cachedData) {
@@ -272,16 +274,25 @@ export class ConsultantService {
     this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     const skip = (page - 1) * limit;
+
+    const whereClause = {
+      user: {
+        deletedAt: null,
+        status: { not: UserStatus.ARCHIVED },
+      },
+      managers: {
+        some: {
+          userId: managerUserId,
+        },
+      },
+    };
+
     const [consultants, total] = await Promise.all([
       this.encryptionPrisma.consultant.findMany({
         skip,
         take: limit,
-        where: {
-          user: {
-            deletedAt: null,
-            status: { not: 'ARCHIVED' },
-          },
-        },
+        where: whereClause,
+
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },
@@ -289,7 +300,9 @@ export class ConsultantService {
           consultantExperiences: { select: { startDate: true, endDate: true } },
         },
       }),
-      this.encryptionPrisma.consultant.count(),
+      this.encryptionPrisma.consultant.count({
+        where: whereClause,
+      }),
     ]);
 
     const mappedConsultants: ConsultantListItemDto[] = consultants.map((c) => {

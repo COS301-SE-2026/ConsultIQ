@@ -4,7 +4,7 @@ import { check } from 'k6';
 let currentCsrfToken = null;
 
 export function syncCsrfFromResponse(res) {
-    if (!res || !res.cookies || !res.cookies['XSRF-TOKEN']) return null;
+    if (!res?.cookies?.['XSRF-TOKEN']) return null;
 
     const csrfCookie = res.cookies['XSRF-TOKEN'];
     const token = Array.isArray(csrfCookie) ? csrfCookie[0]?.value : csrfCookie.value;
@@ -21,8 +21,7 @@ export function getCsrfToken() {
     const cookies = http.cookieJar().cookiesForURL(__ENV.TARGET_URL || 'http://localhost:3000');
     const jarEntries = Array.isArray(cookies) ? cookies : Object.values(cookies || {});
 
-    for (let i = 0; i < jarEntries.length; i++) {
-        const cookie = jarEntries[i];
+    for (const cookie of jarEntries) {
         const name = cookie && (cookie.name || cookie.key || cookie[0]?.name);
         if (name === 'XSRF-TOKEN') {
             const value = cookie && (cookie.value || cookie[0]?.value);
@@ -31,7 +30,7 @@ export function getCsrfToken() {
                 return value;
             }
         }
-    }// NOSONAR
+    }
     return null;
 }
 

@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Counter, Rate, Trend } from 'k6/metrics';
+import { login, withCsrfHeader, syncCsrfFromResponse, getCsrfToken } from './k6-helper.js';
 
 const users = new SharedArray('users', function () {
     return JSON.parse(open('./test-users.json'));
@@ -262,58 +263,58 @@ function syncCsrfFromResponse(res) {
     return token || null;
 }
 
-function getCsrfToken() {
-    if (currentCsrfToken) return currentCsrfToken;
+// function getCsrfToken() {
+//     if (currentCsrfToken) return currentCsrfToken;
 
-    const cookies = http.cookieJar().cookiesForURL(__ENV.TARGET_URL || 'http://localhost:3000');
-    const jarEntries = Array.isArray(cookies) ? cookies : Object.values(cookies || {});
+//     const cookies = http.cookieJar().cookiesForURL(__ENV.TARGET_URL || 'http://localhost:3000');
+//     const jarEntries = Array.isArray(cookies) ? cookies : Object.values(cookies || {});
 
-    for (let i = 0; i < jarEntries.length; i++) {
-        const cookie = jarEntries[i];
-        const name = cookie && (cookie.name || cookie.key || cookie[0]?.name);
-        if (name === 'XSRF-TOKEN') {
-            const value = cookie && (cookie.value || cookie[0]?.value);
-            if (value) {
-                currentCsrfToken = value;
-                return value;
-            }
-        }
-    }
+//     for (let i = 0; i < jarEntries.length; i++) {
+//         const cookie = jarEntries[i];
+//         const name = cookie && (cookie.name || cookie.key || cookie[0]?.name);
+//         if (name === 'XSRF-TOKEN') {
+//             const value = cookie && (cookie.value || cookie[0]?.value);
+//             if (value) {
+//                 currentCsrfToken = value;
+//                 return value;
+//             }
+//         }
+//     }
 
-    return null;
-}
+//     return null;
+// }
 
-function withCsrfHeader(baseUrl, options = {}) {
-    const requestOptions = { ...options };
-    const headers = { ...(requestOptions.headers || {}) };
-    const csrfToken = getCsrfToken();
+// function withCsrfHeader(baseUrl, options = {}) {
+//     const requestOptions = { ...options };
+//     const headers = { ...(requestOptions.headers || {}) };
+//     const csrfToken = getCsrfToken();
 
-    if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
-        headers['X-CSRF-Token'] = csrfToken;
-    }
+//     if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
+//         headers['X-CSRF-Token'] = csrfToken;
+//     }
 
-    requestOptions.headers = headers;
-    return requestOptions;
-}
+//     requestOptions.headers = headers;
+//     return requestOptions;
+// }
 
-function login(baseUrl, user) {
-    const res = http.post(`${baseUrl}/auth/login`, JSON.stringify({
-        email: user.email,
-        password: user.password,
-    }), {
-        headers: { 'Content-Type': 'application/json' },
-        tags: { endpoint: 'auth_login' },
-    });
+// function login(baseUrl, user) {
+//     const res = http.post(`${baseUrl}/auth/login`, JSON.stringify({
+//         email: user.email,
+//         password: user.password,
+//     }), {
+//         headers: { 'Content-Type': 'application/json' },
+//         tags: { endpoint: 'auth_login' },
+//     });
 
-    syncCsrfFromResponse(res);
+//     syncCsrfFromResponse(res);
 
-    check(res, {
-        'login successful': (r) => r.status === 200 || r.status === 201,
-        'has auth cookie': (r) => r.cookies['your_cookie_name'] !== undefined || r.headers['Set-Cookie'] !== undefined,
-        'csrf cookie established': () => !!getCsrfToken(),
-    });
-    return res;
-}
+//     check(res, {
+//         'login successful': (r) => r.status === 200 || r.status === 201,
+//         'has auth cookie': (r) => r.cookies['your_cookie_name'] !== undefined || r.headers['Set-Cookie'] !== undefined,
+//         'csrf cookie established': () => !!getCsrfToken(),
+//     });
+//     return res;
+// }
 
 function getProjectId(response) {
     if (response.status !== 200) {
@@ -331,18 +332,18 @@ function getProjectId(response) {
     return undefined;
 }
 
-function getConsultantId(response) {
-    try {
-        const body = response.json();
-        const consultants = Array.isArray(body) ? body : body.consultants;
-        if (Array.isArray(consultants) && consultants.length > 0) {
-            return consultants[Math.floor(Math.random() * consultants.length)].id; // NOSONAR
-        }
-    } catch (error) {
-        console.log(`Failed to parse consultants: ${error.message}`);
-    }
-    return undefined;
-}
+// function getConsultantId(response) {
+//     try {
+//         const body = response.json();
+//         const consultants = Array.isArray(body) ? body : body.consultants;
+//         if (Array.isArray(consultants) && consultants.length > 0) {
+//             return consultants[Math.floor(Math.random() * consultants.length)].id; // NOSONAR
+//         }
+//     } catch (error) {
+//         console.log(`Failed to parse consultants: ${error.message}`);
+//     }
+//     return undefined;
+// }
 
 function randomWeights() {
     const raw = Array.from({ length: 5 }, () => Math.random()); // NOSONAR

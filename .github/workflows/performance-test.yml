@@ -151,7 +151,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
           RESEND_API_KEY: ${{ secrets.TEST_RESEND_API_KEY || 're_test_dummy_key' }}
           JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret' }}
-          ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY || 'test_encryption_key_32_bytes____' }
+          ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY || 'test_encryption_key_32_bytes____' }}
         run: |
           node dist/main.js > server.log 2>&1 &
           echo "BACKEND_PID=$!" >> "$GITHUB_ENV"

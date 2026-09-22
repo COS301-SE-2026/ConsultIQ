@@ -11,6 +11,7 @@ import { EncryptionPrismaClient } from '../../common/encryption/services/client-
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { mock } from 'node:test';
 
 
 const mockPrismaService = {
@@ -27,6 +28,7 @@ const mockPrismaService = {
   },
   cvFile: {
     updateMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   consultantManager: {
     create: jest.fn(),
@@ -82,6 +84,7 @@ describe('ConsultantService', () => {
 
     service = module.get<ConsultantService>(ConsultantService);
     jest.clearAllMocks();
+    mockPrismaService.cvFile.findFirst.mockResolvedValue(null);
   });
 
   // ─── createConsultantProfile ────────────────────────────────────────────────
@@ -124,7 +127,10 @@ describe('ConsultantService', () => {
 
       const txMock = {
         consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        cvFile: { 
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
         consultantManager: { create: jest.fn().mockResolvedValue({}) },
         skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
         consultantSkill: { create: jest.fn().mockResolvedValue({}) },
@@ -226,7 +232,7 @@ describe('ConsultantService', () => {
 
     it('backfills consultantId onto any CV files uploaded before this profile existed', async () => {
       const txMock = setupActiveConsultantProfile({
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
 
       await service.createConsultantProfile(cmUserId, dto as any);
@@ -239,12 +245,56 @@ describe('ConsultantService', () => {
 
     it('does not throw when the consultant has no CV files uploaded beforehand', async () => {
       setupActiveConsultantProfile({
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
 
       const result = await service.createConsultantProfile(cmUserId, dto as any);
 
       expect(result.message).toBe('Consultant profile created successfully.');
+    });
+
+        it('blocks profile creation when a CV is PENDING security review', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'PENDING' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.consultant.create).not.toHaveBeenCalled();
+    });
+
+    it('blocks profile creation when a CV was REJECTED', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'REJECTED' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('stamps hadSecurityFlagOnIntake=true when the CV was CLEARED after a flag', async () => {
+      const txMock = setupActiveConsultantProfile({
+        cvFile: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findFirst: jest.fn().mockResolvedValue({ securityReviewStatus: 'CLEARED' }),
+        },
+      });
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: true }) }),
+      );
+    });
+
+    it('stamps hadSecurityFlagOnIntake=false when the CV was never flagged', async () => {
+      const txMock = setupActiveConsultantProfile();
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: false }) }),
+      );
     });
 
     it.each([
@@ -748,6 +798,52 @@ describe('ConsultantService', () => {
       expect(result.project.teamMembers).toHaveLength(1);
       expect(result.project.teamMembers[0].email).toBe('jane@bbd.co.za');
     });
+
+    it('only queries ACTIVE placements, excluding terminated placement history', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      await service.getAssignedProjects('user-1');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { consultantId: 'consultant-1', status: 'ACTIVE'},
+        }),
+      );
+    });
+
+    it('regression: does not returen duplicarte cards for a project the conbsultant was place on, unassigned from, and re-placed on', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-2',
+          status: 'ACTIVE',
+          allocation: 60,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            id: 'project-alpha',
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDatw: null,
+            allocation: 100,
+          },
+        },
+      ]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-2');
+      expect(result[0].project.projectName).toBe('Project Alpha');
+    });
   });
 
   // --- getConsultantsByProject ---------------------------------------------------
@@ -828,6 +924,7 @@ describe('ConsultantService', () => {
       expect(result.consultants).toEqual([]);
     });
   });
+
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1200,6 +1297,7 @@ describe('ConsultantService', () => {
       });
     });
   });
+
   // ---------- uploadProfilePicture------------
   describe('uploadProfilePicture', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1295,7 +1393,6 @@ describe('ConsultantService', () => {
       expect(result.message).toBe('Profile picture uploaded successfully.');
     });
   });
-
 
   // ---------- unassignConsultant ----------
 

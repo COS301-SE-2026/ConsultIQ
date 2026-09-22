@@ -231,7 +231,8 @@ export class ProjectService {
         },
       });
 
-      for (const skill of dto.skills) {
+
+      for(const skill of dto.skills) {
         const normalizedSkillName = skill.name.trim().toLowerCase();
         const skillRecord = await tx.skill.upsert({
           where: { name: normalizedSkillName },
@@ -239,17 +240,22 @@ export class ProjectService {
           create: { name: normalizedSkillName, category: 'General' },
         });
 
-        await tx.projectSkill.create({
-          data: {
-            projectId: project.id,
-            skillId: skillRecord.id,
-            competency: skill.competency as CompetencyLevel,
-            mandatory: skill.mandatory,
-            years: skill.years,
-          },
+        const existingProjectSkill = await tx.projectSkill.findFirst({
+          where: { projectId: project.id, skillId: skillRecord.id },
         });
-      }
 
+        if (!existingProjectSkill) {
+          await tx.projectSkill.create({
+            data: {
+              projectId: project.id,
+              skillId: skillRecord.id,
+              competency: skill.competency as CompetencyLevel,
+              mandatory: skill.mandatory,
+              years: skill.years,
+            },
+          });
+        }
+      }
       return { projectId: project.id };
     });
   }

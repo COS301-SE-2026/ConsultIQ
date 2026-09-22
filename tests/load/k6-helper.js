@@ -31,13 +31,13 @@ export function getCsrfToken() {
                 return value;
             }
         }
-    }
+    }// NOSONAR
     return null;
 }
 
 export function withCsrfHeader(baseUrl, options = {}) {
     const requestOptions = { ...options };
-    const headers = { ...(requestOptions.headers || {}) };
+    const headers = { ...(requestOptions.headers || {}) }; // NOSONAR
     const csrfToken = getCsrfToken();
 
     if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {

@@ -2,7 +2,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Counter, Rate, Trend } from 'k6/metrics';
-import { login, withCsrfHeader, syncCsrfFromResponse, getCsrfToken } from './k6-helper.js';
+import { login, withCsrfHeader, syncCsrfFromResponse } from './k6-helper.js';
 
 const users = new SharedArray('users', function () {
     return JSON.parse(open('./test-users.json'));
@@ -248,20 +248,20 @@ function pickConsultantManager() {
     return consultantManagerUsers[Math.floor(Math.random() * consultantManagerUsers.length)]; // NOSONAR
 }
 
-let currentCsrfToken = null;
+// let currentCsrfToken = null;
 
-function syncCsrfFromResponse(res) {
-    if (!res || !res.cookies || !res.cookies['XSRF-TOKEN']) return null;
+// function syncCsrfFromResponse(res) {
+//     if (!res || !res.cookies || !res.cookies['XSRF-TOKEN']) return null;
 
-    const csrfCookie = res.cookies['XSRF-TOKEN'];
-    const token = Array.isArray(csrfCookie) ? csrfCookie[0]?.value : csrfCookie.value;
+//     const csrfCookie = res.cookies['XSRF-TOKEN'];
+//     const token = Array.isArray(csrfCookie) ? csrfCookie[0]?.value : csrfCookie.value;
 
-    if (token) {
-        currentCsrfToken = token;
-    }
+//     if (token) {
+//         currentCsrfToken = token;
+//     }
 
-    return token || null;
-}
+//     return token || null;
+// }
 
 // function getCsrfToken() {
 //     if (currentCsrfToken) return currentCsrfToken;
@@ -630,7 +630,7 @@ export function writeConsultantJourney(data) {
         if (res.status === 200) {
             try {
                 const body = res.json();
-                const candidates = Array.isArray(body) ? body : (Array.isArray(body.consultants) ? body.consultants : []);
+                const candidates = Array.isArray(body) ? body : (Array.isArray(body.consultants) ? body.consultants : []); // NOSONAR
                 consultantId = candidates.length > 0 ? candidates[0].id : null;
             } catch (error) {
                 console.log(`[WC02] Failed to parse consultant list: ${error.message}`);
@@ -688,7 +688,7 @@ export function authHeavyJourney(data) {
             ['POST', `${data.baseUrl}/auth/refresh`, null, withCsrfHeader(data.baseUrl, { tags: { endpoint: 'auth_refresh' } })]
         ));
         const responses = http.batch(batchRequests);
-        const refreshSuccessResponse = responses.find((r) => (r.status === 200 || r.status === 201) && r.cookies && r.cookies['XSRF-TOKEN']);
+        const refreshSuccessResponse = responses.find((r) => (r.status === 200 || r.status === 201) && r.cookies && r.cookies['XSRF-TOKEN']); // NOSONAR
         if (refreshSuccessResponse) {
             syncCsrfFromResponse(refreshSuccessResponse);
         }

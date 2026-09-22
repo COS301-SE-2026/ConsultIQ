@@ -1,4 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
+import { ShieldAlert } from "lucide-react";
 import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
@@ -36,6 +37,20 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
     }
 
 ]
+
+export const superAdminSidebarItems: SidebarItem[] = [
+    {
+    path: "/super-admin-dashboard",
+    label: "Dashboard",
+    icon: House,
+    },
+    {
+    path: "/super-admin/security-review",
+    label: "Security Review",
+    icon: ShieldAlert,
+  },
+
+];
 
 export const projectManagerSidebarItems = (projectId?: string, runId?:string,): SidebarItem[] => {
     const items: SidebarItem[] = [

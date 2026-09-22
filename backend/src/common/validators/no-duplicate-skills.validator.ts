@@ -8,7 +8,7 @@ import {
 
 @ValidatorConstraint({ name: 'noDuplicateSkills', async: false })
 export class NoDuplicateSkillsConstraint implements ValidatorConstraintInterface {
-    validate(skills: { name?: string }[], _args: ValidationArguments): boolean {
+    validate(skills: { name?: string }[]): boolean {
         if(!Array.isArray(skills))
         {
             return true;
@@ -31,7 +31,7 @@ export class NoDuplicateSkillsConstraint implements ValidatorConstraintInterface
         return true;
     }
 
-    defaultMessage(_args: ValidationArguments): string {
+    defaultMessage(): string {
         return 'Duplicate skills are not allowed (skill names are case-insensitive).';
     }
 }

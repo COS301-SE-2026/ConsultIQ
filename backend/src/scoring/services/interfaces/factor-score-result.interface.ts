@@ -7,14 +7,16 @@ export interface FactorScoreResult {
   // name of mandatory skills per project
   missingMandatorySkills?: string[];
 
+  missingOptionalSkills?: string[];
+
   details?: string;
 
   // Tracks the origin of the geographic score (or other future scorers)
   dataSource?:
-    | 'api-duration'
-    | 'api-distance'
-    | 'fallback'
-    | 'remote'
-    | 'error'
-    | (string & {});
+  | 'api-duration'
+  | 'api-distance'
+  | 'fallback'
+  | 'remote'
+  | 'error'
+  | (string & {});
 }

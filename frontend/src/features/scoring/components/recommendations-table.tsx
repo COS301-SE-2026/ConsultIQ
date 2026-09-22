@@ -19,10 +19,10 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
     const pageRecommendations = orderedRecommendations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     return(
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 ">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 ">
             <h2 className="text-lg font-bold">Top Recommendations</h2>
             <div className="overflow-x-auto py-4">
-                <table className="w-full text-left border-collapse">
+                <table className="min-w-[760px] w-full text-left border-collapse">
                     <thead>
                         <tr className="border-b border-slate-200 text-sm folt-bold">
                             <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
@@ -46,7 +46,7 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
             </div>
            
            {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-6 mt-2 pt-4 border-t border-gray-400">
+                <div className="flex justify-center items-center gap-4 mt-2 pt-4 border-t border-gray-400">
                     <button type="button" 
                         onClick={() => setCurrentPage((p) => Math.max(1, p-1))}
                         disabled= {currentPage === 1}

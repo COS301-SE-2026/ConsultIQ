@@ -26,14 +26,14 @@ const STEPS =[
 ];
 export default function MechanicsSection(){
     return(
-          <div className="relative min-h-175 flex flex-col items-center  justify-center p-8  gap-10 w-full">
+          <div className="relative min-h-fit sm:min-h-[600px] md:min-h-175 flex flex-col items-center pt-12 sm:pt-16 md:pt-20 justify-start p-5 sm:p-8 gap-8 sm:gap-10 w-full">
             <div className="flex flex-col items-center gap-2 text-center max-w-4xl mx-auto gap-y-5">
                    
-                    <h1 className="text-brand-blue! text-5xl font-bold ">
+                    <h1 className="text-brand-blue! text-2xl sm:text-3xl md:text-5xl font-bold ">
                         From CV upload to ranked shortlist
                     </h1>
                     
-                    <p className=" text-brand-muted max-w-xl text-lg max-auto ">
+                    <p className="text-brand-muted max-w-xl text-base sm:text-lg mx-auto text-center">
                        Four steps from raw document to client-ready documentation.
                     </p>
             </div> 

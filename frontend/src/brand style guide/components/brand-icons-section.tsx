@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import {Search, Settings,Sparkles, Info, ShieldAlert,} from "lucide-react";
+import BrandGuideNav from "./brand-guide-nav";
 
 interface IconSpecification{
   readonly size: string;
@@ -19,14 +19,7 @@ export default function BrandIconsSection(){
     return(
         <div className="min-h-screen w-full bg-[var(--color-surface)] text-primary p-6 md:p-12">
             <div className= " max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Back Home</Link>
-                <Link to="/brand-story-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Brand Story</Link>
-                <Link to="/brand-typography-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Typography</Link>
-                <Link to="/brand-tone-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Tone</Link>
-                <Link to="/brand-spacing-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Spacing</Link>
-                <Link to="/brand-colors-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Colors</Link>
-                <Link to="/brand-logo-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Logo</Link>
-                <Link to="/brand-changelog-section" className= "inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full backdrop-blur-md border text-xs sm:text-sm font-semibold text-accent">Changelog</Link>
+              <BrandGuideNav current="/brand-icons-section" />
             </div> 
             <div className="max-w-7xl mx-auto mb-12">
                 <h1 className= "text-4xl md:text-5xl font-bold text-primary tracking-tight mb-4">Iconography System</h1>

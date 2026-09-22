@@ -91,7 +91,7 @@ export class CredentialService {
 
   //Helper method to perform a dummy bcrypt compare for non-existent users to mitigate timing attacks.
   private async dummyCompare(): Promise<void> {
-    const dummyHash = `\$2b\$${String(getBcryptCostFactor()).padStart(2, '0')}$KIXJz6JzY6JzY6JzY6JzYeKIXJz6JzY6JzY6JzY6JzY6JzY6JzYe`;
+    const dummyHash = `$2b$${String(getBcryptCostFactor()).padStart(2, '0')}$KIXJz6JzY6JzY6JzY6JzYeKIXJz6JzY6JzY6JzY6JzY6JzY6JzYe`;
     await bcrypt.compare('dummy-password', dummyHash).catch(() => false);
   }
 }

@@ -864,7 +864,10 @@ export class ConsultantService {
     }
 
     const placement = await this.encryptionPrisma.projectPlacement.findMany({
-      where: { consultantId: consultant.id },
+      where: { 
+        consultantId: consultant.id,
+        status: 'ACTIVE',
+      },
       include: {
         project: {
           select: {

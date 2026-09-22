@@ -11,6 +11,7 @@ import { EncryptionPrismaClient } from '../../common/encryption/services/client-
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { mock } from 'node:test';
 
 
 const mockPrismaService = {
@@ -797,6 +798,52 @@ describe('ConsultantService', () => {
       expect(result.project.teamMembers).toHaveLength(1);
       expect(result.project.teamMembers[0].email).toBe('jane@bbd.co.za');
     });
+
+    it('only queries ACTIVE placements, excluding terminated placement history', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      await service.getAssignedProjects('user-1');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { consultantId: 'consultant-1', status: 'ACTIVE'},
+        }),
+      );
+    });
+
+    it('regression: does not returen duplicarte cards for a project the conbsultant was place on, unassigned from, and re-placed on', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-2',
+          status: 'ACTIVE',
+          allocation: 60,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            id: 'project-alpha',
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDatw: null,
+            allocation: 100,
+          },
+        },
+      ]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-2');
+      expect(result[0].project.projectName).toBe('Project Alpha');
+    });
   });
 
   // --- getConsultantsByProject ---------------------------------------------------
@@ -877,6 +924,7 @@ describe('ConsultantService', () => {
       expect(result.consultants).toEqual([]);
     });
   });
+
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1249,6 +1297,7 @@ describe('ConsultantService', () => {
       });
     });
   });
+
   // ---------- uploadProfilePicture------------
   describe('uploadProfilePicture', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1344,7 +1393,6 @@ describe('ConsultantService', () => {
       expect(result.message).toBe('Profile picture uploaded successfully.');
     });
   });
-
 
   // ---------- unassignConsultant ----------
 

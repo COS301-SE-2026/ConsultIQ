@@ -9,8 +9,31 @@ export class ApiError extends Error {
     }
 }
 
+const getCsrfToken = (): string | null => {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    const match = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('XSRF-TOKEN='));
+
+    if (!match) return null;
+
+    const value = match.slice('XSRF-TOKEN='.length);
+    return decodeURIComponent(value);
+};
+
 let refreshTokenFn: () => Promise<string | null> = async () => {
     throw new Error("Refresh function not injected yet");
+};
+
+const isCsrfFailure = (responseData: Record<string, unknown> | null): boolean => {
+    if (!responseData || typeof responseData.message !== 'string') {
+        return false;
+    }
+
+    return responseData.message.toLowerCase().includes('csrf');
 };
 
 let logoutFn: () => void = () => {
@@ -62,6 +85,12 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         headers.set('Content-Type', 'application/json');
     }
 
+    const method = (options.method ?? 'GET').toUpperCase();
+    const csrfToken = getCsrfToken();
+    if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+        headers.set('X-CSRF-Token', csrfToken);
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
@@ -70,8 +99,18 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
     if (response.status === 204) return {} as T;
 
-    // (Token Expiration)
-    if (response.status === 401) {
+    let responseData: Record<string, unknown> | null = null;
+    try {
+        responseData = await response.json();
+    } catch {
+        // If parsing fails
+    }
+
+    const shouldRetryWithRefresh = response.status === 401 ||
+        (response.status === 403 && isCsrfFailure(responseData));
+
+    // (Token Expiration / CSRF recovery)
+    if (shouldRetryWithRefresh) {
         if (isLoggingOut) {
             return waitForLogout<T>();
         }
@@ -125,19 +164,11 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
             if (!isLoggingOut && !isAlreadyOnLoginPage) {
                 logoutFn();
             }
-            throw new ApiError('Session expired', 401);
+            throw new ApiError(response.status === 403 ? 'CSRF validation failed' : 'Session expired', 401);
         } finally {
             isRefreshing = false;
         }
     }
-
-    let responseData: Record<string, unknown> | null = null;
-    try {
-        responseData = await response.json();
-    } catch {
-        // If parsing fails
-    }
-
 
     if (!response.ok) {
         let errorMessage = `Request failed (${response.status})`;

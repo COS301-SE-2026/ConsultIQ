@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { 
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 @Injectable()
@@ -6,6 +10,19 @@ export class AdminProjectService {
   constructor(private readonly prisma: PrismaService) {}
 
   async archiveProject(projectId: string, adminUserId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { status: true },
+    });
+
+    if(!project) {
+      throw new NotFoundException('Project does not exist');
+    }
+
+    if(project.status === 'COMPLETED') {
+      throw new BadRequestException ('Completed project cannot be archived');
+    }
+
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.project.update({

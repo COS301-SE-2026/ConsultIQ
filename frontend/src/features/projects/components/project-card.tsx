@@ -2,6 +2,7 @@ import { Folder, AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card } from "../../../components/ui/card";
 import type { Project } from "../types/project.types";
 import type React from "react";
+import { useState } from "react";
 
 interface ProjectCardProps {
   readonly project: Project;
@@ -13,9 +14,12 @@ interface ProjectCardProps {
 interface GapBadgeProps {
   readonly severity?: "COVERED" | "AT_RISK" | "CRITICAL";
   readonly onClick: () => void;
+  readonly isOpen: boolean;
+  readonly onOpen: () => void;
+  readonly onClose: () => void;
 }
 
-const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
+const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick, isOpen, onOpen, onClose }) =>{
   if(!severity) return null;
 
   const config = {
@@ -44,6 +48,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
       tooltip: "Critical skill gaps detected - placement not recommended"
     },
   };
+
 
   const getTooltipBgColor = (sev : typeof severity) : string =>{
     switch(sev){
@@ -76,14 +81,21 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
 
   return (
     <div className="group relative">
-      <button type="button" onClick={onClick}
+      <button type="button"
+        onClick={onClick}
+        onFocus={() => onOpen}
+        onBlur={() => onClose}
+        onMouseEnter={() => onOpen}
+        onMouseLeave={() => onClose}
+        aria-label={`View skill gap analysis for ${style.label}`}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
         <Icon size={16} />
         <span>{style.label}</span>
       </button>
 
-      <div className="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block">
+     {isOpen &&(
+      <div className="absolute bottom-full left-0 z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2">
         <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
         >
           {style.tooltip}
@@ -91,6 +103,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick }) =>{
           />
         </div>
       </div>
+      )}
     </div>
   )
 
@@ -102,11 +115,14 @@ export default function ProjectCard({
   onConfigureScore,
   onViewSkillGap,
 }: ProjectCardProps) {
+
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+
   return (
-    <Card className="w-full max-w-[460px] min-h-[250px] rounded-xl flex flex-col bg-white overflow-hidden">
+    <Card className="flex min-h-[250px] w-full min-w-0 flex-col overflow-visible rounded-xl bg-white">
       <div className="flex flex-col h-full flex-1 p-6 sm:p-8">
         {/* Header */}
-        <div className="flex items-center gap-4 sm:gap-5 mb-5 min-w-0">
+        <div className="mb-5 flex min-w-0 items-start gap-3 sm:items-center sm:gap-5">
 
           <div className="w-12 h-12 sm:h-14 sm:w-14 rounded-full flex items-center justify-center shrink-0"  style={{
                 backgroundColor: "var(--color-primary)",
@@ -115,7 +131,7 @@ export default function ProjectCard({
           </div>
 
           <div className="flex flex-col min-w-0 flex-1">
-            <h2 className="text-[20px] font-semibold leading-snug"
+            <h2 className="break-words text-lg font-semibold leading-snug sm:text-xl"
               style={{
                 color: "var(--color-primary)",
               }}>
@@ -130,7 +146,13 @@ export default function ProjectCard({
               {project.clientName}
               </p>
               {project.gapSeverity && (
-                  <GapBadge severity={project.gapSeverity} onClick={() => onViewSkillGap?.(project)} />
+                  <GapBadge 
+                  severity={project.gapSeverity} 
+                  onClick={() => onViewSkillGap?.(project)} 
+                  isOpen={tooltipOpen}
+                  onOpen={() => setTooltipOpen(true)}
+                  onClose={() => setTooltipOpen(false)}
+                  />
               )}
             </div>
           </div>
@@ -153,10 +175,10 @@ export default function ProjectCard({
               </p>
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div className="ml-auto flex w-full flex-wrap items-center gap-2 sm:w-auto">
             {onConfigureScore && (
               <button type="button" onClick={() =>onConfigureScore(project)}
-                className="h-8 flex items-center justify-center px-2 text-sm font-medium text-white rounded"
+                className="h-9 min-w-0 flex-1 rounded px-2 text-xs font-medium text-white transition sm:flex-none sm:text-sm"
                 style={{ backgroundColor: "var(--color-primary)"}}>
                   Configure Scoring
             </button>
@@ -164,21 +186,7 @@ export default function ProjectCard({
           <button
             type="button"
             onClick={() => onViewDetails(project)}
-            className="
-            flex
-            items-center
-            justify-center
-            h-8
-            w-25
-            px-6
-            rounded
-            text-sm
-            font-medium
-            transition-colors
-            duration-200
-            hover:bg-[var(--button-secondary-hover)]
-            whitespace-nowrap
-        "
+            className=" flex h-9 min-w-0 flex-1 items-center justify-center rounded px-3 text-xs font-medium transition-colors sm:flex-none sm:px-5 sm:text-sm"
             style={{
               border: "1.5px solid var(--color-primary)",
               color: "var(--color-primary)",

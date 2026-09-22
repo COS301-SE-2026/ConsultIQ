@@ -16,6 +16,7 @@ describe('AdminProjectService', () => {
                     useValue: {
                         project: {
                             update: jest.fn(),
+                            findUnique: jest.fn(),
                             findMany: jest.fn(),
                             count: jest.fn(),
                         },
@@ -94,9 +95,18 @@ describe('AdminProjectService', () => {
                 archivedAt: new Date()
             };
 
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'OPEN',
+            });
+
             (prisma.project.update as jest.Mock).mockResolvedValue(mockUpdatedProject);
 
             const result = await service.archiveProject('1', 'admin-user-id');
+
+            expect(prisma.project.findUnique).toHaveBeenCalledWith({
+                where: { id : '1' },
+                select: { status : true },
+            });
 
             expect(prisma.project.update).toHaveBeenCalledWith({
                 where: { id: '1' },
@@ -112,28 +122,42 @@ describe('AdminProjectService', () => {
         });
 
         it('Archiving a non-existent project', async () => {
-            const prismaError = { code: 'P2025' };
-
-            (prisma.project.update as jest.Mock).mockRejectedValue(prismaError);
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue(null);
 
             await expect(service.archiveProject('2', 'admin-user-id')).rejects.toThrow('Project does not exist');
 
-            expect(prisma.project.update).toHaveBeenCalledWith({
+            expect(prisma.project.findUnique).toHaveBeenCalledWith({
                 where: { id: '2' },
-                data: {
-                    archivedAt: expect.any(Date),
-                    status: 'ARCHIVED'
-                },
+                select: { status: true },
             });
 
+            expect(prisma.project.update).not.toHaveBeenCalled();
 
         });
 
         it('Database error when trying to archive a project', async () => {
             const genericError = new Error('Database connection lost');
+
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'OPEN',
+            });
+
             (prisma.project.update as jest.Mock).mockRejectedValue(genericError);
 
             await expect(service.archiveProject('1', 'admin-user-id')).rejects.toThrow(genericError);
+        });
+
+        it('should not archive a completed project', async () => {
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'COMPLETED',
+            });
+
+            await expect(
+                service.archiveProject('1', 'admin-user-id')
+            ).rejects.toThrow('Completed project cannot be archived');
+
+            expect(prisma.project.update).not.toHaveBeenCalled();
+            expect(prisma.projectAuditLog.create).not.toHaveBeenCalled();
         });
 
 

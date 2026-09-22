@@ -39,10 +39,10 @@ describe('AuthController', () => {
   const mockReq = (userId: string, role: Role) => ({
     user: { userId, role },
   });
-  
+
   const mockRes = {
-  cookie: jest.fn(),
-  clearCookie: jest.fn(),
+    cookie: jest.fn(),
+    clearCookie: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -226,6 +226,7 @@ describe('AuthController', () => {
       expect(authService.login).toHaveBeenCalledWith(dto, '127.0.0.1', 'Mozilla/5.0');
       expect(mockRes.cookie).toHaveBeenCalledWith('ciq_access_token', 'jwt-token', expect.any(Object));
       expect(mockRes.cookie).toHaveBeenCalledWith('ciq_refresh_token', 'refresh-token', expect.any(Object));
+      expect(mockRes.cookie).toHaveBeenCalledWith('XSRF-TOKEN', expect.any(String), expect.any(Object));
       expect(result.message).toBe('Login successful.');
       expect(result.result).not.toHaveProperty('accessToken');
       expect(result.result).not.toHaveProperty('refreshToken');
@@ -258,15 +259,17 @@ describe('AuthController', () => {
 
       expect(refreshTokenService.refresh).toHaveBeenCalledWith('old-refresh-token');
       expect(mockRes.cookie).toHaveBeenCalledWith('ciq_access_token', 'new-jwt', expect.any(Object));
+      expect(mockRes.cookie).toHaveBeenCalledWith('ciq_refresh_token', 'new-refresh-token', expect.any(Object));
+      expect(mockRes.cookie).toHaveBeenCalledWith('XSRF-TOKEN', expect.any(String), expect.any(Object));
       expect(result).toEqual({ message: 'Token refreshed successfully.' });
     });
 
     it('should throw UnauthorizedException if refresh cookie is missing', async () => {
-    const mockReqNoCookie = { cookies: {} };
+      const mockReqNoCookie = { cookies: {} };
 
-    await expect(
-      controller.refresh(mockReqNoCookie as any, mockRes as any),
-    ).rejects.toThrow('Refresh token missing.');
+      await expect(
+        controller.refresh(mockReqNoCookie as any, mockRes as any),
+      ).rejects.toThrow('Refresh token missing.');
     });
 
     it('should propagate errors from refreshTokenService.refresh', async () => {
@@ -357,35 +360,35 @@ describe('AuthController', () => {
   });
 
   //forgot password
-  describe('forgotPassword', ()=>{
-    it('should call authService.forgotPassword and return the result', async() =>{
-      const dto= {email: "botho@consultiq.com"};
-      const expected={message: 'If that account exists, a reset link has been sent.'};
+  describe('forgotPassword', () => {
+    it('should call authService.forgotPassword and return the result', async () => {
+      const dto = { email: "botho@consultiq.com" };
+      const expected = { message: 'If that account exists, a reset link has been sent.' };
 
       authService.forgotPassword.mockResolvedValue(expected);
 
-      const result= await controller.forgotPassword(dto as any);
+      const result = await controller.forgotPassword(dto as any);
 
       expect(authService.forgotPassword).toHaveBeenCalledWith(dto.email);
       expect(result).toEqual(expected);
     });
   });
 
-  describe('resetPassword', ()=>{
-    it('should call authService.resetPassword and return the result', async() =>{
-      const dto={
+  describe('resetPassword', () => {
+    it('should call authService.resetPassword and return the result', async () => {
+      const dto = {
         email: "botho@consultiq.com",
         token: "raw-token-abc123",
         password: "WalkLong@2026"
       };
-      
-      const expected= {
+
+      const expected = {
         message: "Password successfully updated. You can now login.",
       };
 
       authService.resetPassword.mockResolvedValue(expected);
 
-      const result= await controller.resetPassword(dto as any);
+      const result = await controller.resetPassword(dto as any);
 
       expect(authService.resetPassword).toHaveBeenCalledWith(dto);
       expect(result).toEqual(expected);

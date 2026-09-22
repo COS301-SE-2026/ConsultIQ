@@ -40,7 +40,7 @@ export default function BarGraph<T extends object>({
     }
 
     return (
-        <Card className="p-4 rounded-xl">
+        <Card className="min-w-0 w-full rounded-xl p-3 sm:p-4">
             <h2 className="text-lg text-brand-blue">{title}</h2>
             {!hasData ? (
                 <div className="h-[220px] flex items-center justify-center text-sm text-brand-muted!">

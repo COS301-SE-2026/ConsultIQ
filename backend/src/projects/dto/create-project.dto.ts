@@ -42,9 +42,9 @@ export class CreateProjectDto extends BaseLocationDto {
   @IsDateString()
   startDate!: string;
 
-  @IsOptional()
+  // @IsOptional()
   @IsDateString()
-  endDate?: string;
+  endDate!: string;
 
   @IsInt()
   @Min(1)

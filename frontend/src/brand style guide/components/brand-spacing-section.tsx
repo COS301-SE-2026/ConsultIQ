@@ -1,5 +1,5 @@
 import {Box, Layers } from "lucide-react";
-import { Link } from "react-router-dom";
+import BrandGuideNav from "./brand-guide-nav";
 
 interface TokenItem{
     readonly token: string;
@@ -26,15 +26,8 @@ const RADIUS: TokenItem[] = [
 export default function BrandSpacingSection(){
     return(
         <div className="min-h-screen w-full bg-[var(--color-surface)] text-primary p-6 md:p-12">
-            <div className= " max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-3">
-                <Link to="/brand-style-home" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Back Home</Link>
-                <Link to="/brand-story-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Brand Story</Link>
-                <Link to="/brand-typography-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Typography</Link>
-                <Link to="/brand-tone-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Tone</Link>
-                <Link to="/brand-icons-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Iconography</Link>
-                <Link to="/brand-colors-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border text-sm font-semibold text-accent mb-8">Colors</Link>
-                <Link to="/brand-logo-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border  text-sm font-semibold text-accent mb-8">Logo</Link>
-                <Link to="/brand-changelog-section" className= "inline-flex items-center gap-2 px-4 py-1 rounded-full backdrop-blur-md border  text-sm font-semibold text-accent mb-8">Changelog</Link>
+            <div className= " max-w-7xl mx-auto mb-8 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <BrandGuideNav current="/brand-spacing-section" />
             </div>           
             <div className="max-w-7xl mx-auto mb-12">  
                 <h1 className="text-4xl md:text-5xl font-bold text-primary tracking-tight mb-4"> Spacing & Design Tokens</h1>
@@ -53,7 +46,7 @@ export default function BrandSpacingSection(){
                 </div>
                 <div className="space-y-4">
                     {SPACING_SCALE.map((item) =>(
-                        <div key={item.token} className="grid grid-cols-[400px_1fr_2fr] items-center p-4 rounded-xl border border-secondary/10 bg-slate-50/50 hover:bg-white transition-colors gap-x-6">
+                        <div key={item.token} className="grid grid-cols-1 sm:grid-cols-[minmax(0,220px)_1fr_2fr] lg:grid-cols-[400px_1fr_2fr] items-start sm:items-center p-4 rounded-xl border border-secondary/10 bg-slate-50/50 hover:bg-white transition-colors gap-3 sm:gap-x-6">
                             <div className= "flex items-center gap-8 px-4">
                                 <span className="text-sm font-mono font-semibold text-primary whitespace-nowrap">{item.token}</span>
                                 <span className="text-sm font-mono text-secondary">{item.val}</span>

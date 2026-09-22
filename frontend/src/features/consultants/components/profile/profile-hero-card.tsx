@@ -64,22 +64,18 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
 
   return (
     <div
-      className="bg-white rounded-2xl w-full flex-col mb-4 "
+      className="bg-white rounded-2xl w-full flex-col mb-4 p-5 sm:p-7"
       style={{
-        padding: "28px 28px 28px 28px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}
     >
       {/* Avatar */}
-      <div className="flex items-start justify-between w-full">
-        <div className="flex items-center gap-5">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 w-full">
+        <div className="flex items-center gap-4 sm:gap-5">
           <div
-            className="relative rounded-full flex items-center justify-center text-white font-bold shrink-0"
+            className="relative rounded-full flex items-center justify-center text-white font-bold shrink-0 w-20 h-20 sm:w-[120px] sm:h-[120px] text-xl sm:text-[30px]"
             style={{
-              width: "120px",
-              height: "120px",
               backgroundColor: "var(--color-primary)",
-              fontSize: "30px",
             }}
           >
 
@@ -108,7 +104,7 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
 
 
           {/* Name + badge */}
-          <div className="flex flex-col" style={{ marginLeft: "20px", gap: "8px" }}>
+          <div className="flex flex-col gap-2">
             <p
               className="font-bold"
               style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1.25" }}
@@ -165,7 +161,7 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
       </div>
 
       {isEditing && (
-        <div className=" w-full max-w-xl mt-6">
+        <div className=" w-full max-w-xl mt-4 sm:mt-6">
           <h3 className="mb-2">Upload profile photo</h3>
           <ImageDropzone onFileSelect={(file) => {
 

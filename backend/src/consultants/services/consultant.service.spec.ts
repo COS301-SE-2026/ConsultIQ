@@ -11,6 +11,7 @@ import { EncryptionPrismaClient } from '../../common/encryption/services/client-
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { mock } from 'node:test';
 
 
 const mockPrismaService = {
@@ -757,9 +758,42 @@ describe('ConsultantService', () => {
 
       expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { consultant: 'consultant-1', stataus: 'ACTIVE'},
+          where: { consultantId: 'consultant-1', status: 'ACTIVE'},
         }),
       );
+    });
+
+    it('regression: does not returen duplicarte cards for a project the conbsultant was place on, unassigned from, and re-placed on', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-2',
+          status: 'ACTIVE',
+          allocation: 60,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            id: 'project-alpha',
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDatw: null,
+            allocation: 100,
+          },
+        },
+      ]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-2');
+      expect(result[0].project.projectName).toBe('Project Alpha');
     });
   });
 

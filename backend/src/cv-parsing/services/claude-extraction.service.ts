@@ -40,7 +40,7 @@ export class ClaudeExtractionService {
     const startTime = Date.now();
 
     if (!rawText || rawText.trim().length === 0) {
-      console.log('No text available for extraction.');
+      this.logger.warn('No text available for extraction.');
       return {
         success: false,
         error: 'No text available for extraction.',
@@ -51,80 +51,20 @@ export class ClaudeExtractionService {
     let lastError = 'Unknown error';
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      try {
-        console.log(`Attempt ${attempt} to extract CV data...`);
-        const response = await this.client.messages.create({
-          model: MODEL,
-          max_tokens: MAX_TOKENS,
-          system: CV_EXTRACTION_SYSTEM_PROMPT,
-          messages: [
-            { role: 'user', content: buildExtractionUserMessage(rawText) },
-          ],
-          tools: [cvExtractionSchema],
-          tool_choice: { type: 'tool', name: CV_EXTRACTION_TOOL_NAME },
-        });
+      const outcome = await this.runSingleAttempt(rawText, attempt);
 
-        const toolUseBlock = response.content.find(
-          (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
-        );
-        console.log('Claude response:', JSON.stringify(response, null, 2));
-        if (!toolUseBlock) {
-          lastError = 'Claude did not return a tool_use block in the response.';
-          this.logger.warn(
-            `Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${lastError}`,
-          );
-          continue;
-        }
+      if (outcome.status === 'success') {
+        return { ...outcome.result, processingTimeMs: Date.now() - startTime };
+      }
 
-        const rawOutput = toolUseBlock.input as ParsedCvData & {
-          competencySignals: SkillCompetencySignal[];
-          securityFlags: CvSecurityFlag[];
-        };
-        console.log('Raw output from Claude:', JSON.stringify(rawOutput, null, 2));
-        const shapeError = this.validateParsedCvData(rawOutput);
-        if (shapeError) {
-          lastError = `Claude returned data that does not match the expected schema: ${shapeError}`;
-          this.logger.warn(
-            `Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${lastError}`,
-          );
-          continue;
-        }
+      lastError = outcome.error;
 
-        const { competencySignals,securityFlags, ...data } = rawOutput;
-        
-        if(securityFlags.length > 0){
-          this.logger.warn(
-            `CV extraction flagged ${rawOutput.securityFlags.length} suspicious item(s): ${JSON.stringify(rawOutput.securityFlags)}`,
-          );
-        }
+      if (outcome.status === 'fatal') {
+        break;
+      }
 
-        return {
-          success: true,
-          data: data,
-          competencySignals: competencySignals,
-          securityFlags: securityFlags,
-          processingTimeMs: Date.now() - startTime,
-        };
-      } catch (error) {
-        lastError = (error as Error).message || 'Unknown error';
-
-        const nonRetryable =
-          error instanceof Anthropic.AuthenticationError ||
-          error instanceof Anthropic.PermissionDeniedError ||
-          error instanceof Anthropic.BadRequestError ||
-          (error instanceof Anthropic.APIError && error.status === 402);
-
-        if (nonRetryable) {
-          this.logger.error(`Extraction failed, not retrying: ${lastError}`);
-          break;
-        }
-
-        this.logger.warn(
-          `Attempt ${attempt}/${MAX_ATTEMPTS} threw: ${lastError}`,
-        );
-        if (attempt < MAX_ATTEMPTS) {
-          await this.sleep(BASE_RETRY_DELAY_MS * attempt);
-        }
+      if (attempt < MAX_ATTEMPTS) {
+        await this.sleep(BASE_RETRY_DELAY_MS * attempt);
       }
     }
 
@@ -167,4 +107,87 @@ export class ClaudeExtractionService {
     }
     return null;
   }
+
+  private async runSingleAttempt( rawText: string, attempt: number): Promise <
+  | { status: 'success'; result: Omit<CvParsingResult, 'processingTimeMs'> }
+  | { status: 'retry'; error: string }
+  | { status: 'fatal'; error: string }
+ > {
+  try {
+    this.logger.log(`Attempt ${attempt} to extract CV data...`);
+
+    const response = await this.client.messages.create({
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: CV_EXTRACTION_SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: buildExtractionUserMessage(rawText) }],
+      tools: [cvExtractionSchema],
+      tool_choice: { type: 'tool', name: CV_EXTRACTION_TOOL_NAME },
+    });
+
+    return this.processResponse(response, attempt);
+  } catch (error) {
+    const message = (error as Error).message || 'Unknown error';
+
+    if (this.isNonRetryableError(error)) {
+      this.logger.error(`Extraction failed, not retrying: ${message}`);
+      return { status: 'fatal', error: message };
+    }
+
+    this.logger.warn(`Attempt ${attempt}/${MAX_ATTEMPTS} threw: ${message}`);
+    return { status: 'retry', error: message };
+  }
+}
+
+private processResponse(
+  response: Anthropic.Message,
+  attempt: number,
+): { status: 'success'; result: Omit<CvParsingResult, 'processingTimeMs'> } | { status: 'retry'; error: string } {
+  const toolUseBlock = response.content.find(
+    (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use',
+  );
+
+  if (!toolUseBlock) {
+    const error = 'Claude did not return a tool_use block in the response.';
+    this.logger.warn(`Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${error}`);
+    return { status: 'retry', error };
+  }
+
+  const rawOutput = toolUseBlock.input as ParsedCvData & {
+    competencySignals: SkillCompetencySignal[];
+    securityFlags: CvSecurityFlag[];
+  };
+
+  const shapeError = this.validateParsedCvData(rawOutput);
+  if (shapeError) {
+    const error = `Claude returned data that does not match the expected schema: ${shapeError}`;
+    this.logger.warn(`Attempt ${attempt}/${MAX_ATTEMPTS} failed: ${error}`);
+    return { status: 'retry', error };
+  }
+
+  const { competencySignals, securityFlags, ...data } = rawOutput;
+
+  if (securityFlags.length > 0) {
+    this.logger.warn(
+      `CV extraction flagged ${securityFlags.length} suspicious item(s): ${JSON.stringify(securityFlags)}`,
+    );
+  }
+
+  return {
+    status: 'success',
+    result: { success: true, data, competencySignals, securityFlags },
+  };
+}
+
+private isNonRetryableError(error: unknown): boolean {
+  return (
+    error instanceof Anthropic.AuthenticationError ||
+    error instanceof Anthropic.PermissionDeniedError ||
+    error instanceof Anthropic.BadRequestError ||
+    (error instanceof Anthropic.APIError && error.status === 402)
+  );
+}
+
+  
+
 }

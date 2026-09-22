@@ -20,7 +20,6 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
-import { normalizeNodeOptions } from 'ioredis/built/cluster/util';
 
 @Injectable()
 export class ProjectService {

@@ -31,7 +31,34 @@ function SecurityReviewPage() {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-    const loadData = async () => {
+    useEffect(() => {
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const [queueRes, historyRes] = await Promise.all([
+                    securityReviewService.getQueue(),
+                    securityReviewService.getHistory(),
+                ]);
+                if (cancelled) return;
+                setQueue(queueRes);
+                setHistory(historyRes);
+            } catch (error) {
+                if (cancelled) return;
+                toast.error(error instanceof Error ? error.message : "Failed to load security review data");
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const refreshData = async () => {
         try {
             const [queueRes, historyRes] = await Promise.all([
                 securityReviewService.getQueue(),
@@ -41,13 +68,34 @@ function SecurityReviewPage() {
             setHistory(historyRes);
         } catch (error) {
             toast.error(error instanceof Error ? error.message : "Failed to load security review data");
-        } finally {
-            setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        loadData();
+        let cancelled = false;
+
+        const load = async () => {
+            try {
+                const [queueRes, historyRes] = await Promise.all([
+                    securityReviewService.getQueue(),
+                    securityReviewService.getHistory(),
+                ]);
+                if (cancelled) return;
+                setQueue(queueRes);
+                setHistory(historyRes);
+            } catch (error) {
+                if (cancelled) return;
+                toast.error(error instanceof Error ? error.message : "Failed to load security review data");
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        void load();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const handleDecision = async (cvFileId: string, decision: "CLEARED" | "REJECTED") => {
@@ -64,7 +112,7 @@ function SecurityReviewPage() {
             await securityReviewService.resolve(cvFileId, decision);
             toast.success(`CV ${label}ed successfully.`);
             setExpandedId(null);
-            await loadData();
+            await refreshData(); // was: await loadData();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : `Failed to ${label} CV.`);
         } finally {

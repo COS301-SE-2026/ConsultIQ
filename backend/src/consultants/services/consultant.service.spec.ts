@@ -27,6 +27,7 @@ const mockPrismaService = {
   },
   cvFile: {
     updateMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   consultantManager: {
     create: jest.fn(),
@@ -82,6 +83,7 @@ describe('ConsultantService', () => {
 
     service = module.get<ConsultantService>(ConsultantService);
     jest.clearAllMocks();
+    mockPrismaService.cvFile.findFirst.mockResolvedValue(null);
   });
 
   // ─── createConsultantProfile ────────────────────────────────────────────────
@@ -124,7 +126,10 @@ describe('ConsultantService', () => {
 
       const txMock = {
         consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        cvFile: { 
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
         consultantManager: { create: jest.fn().mockResolvedValue({}) },
         skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
         consultantSkill: { create: jest.fn().mockResolvedValue({}) },
@@ -226,7 +231,7 @@ describe('ConsultantService', () => {
 
     it('backfills consultantId onto any CV files uploaded before this profile existed', async () => {
       const txMock = setupActiveConsultantProfile({
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
 
       await service.createConsultantProfile(cmUserId, dto as any);
@@ -239,12 +244,56 @@ describe('ConsultantService', () => {
 
     it('does not throw when the consultant has no CV files uploaded beforehand', async () => {
       setupActiveConsultantProfile({
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
 
       const result = await service.createConsultantProfile(cmUserId, dto as any);
 
       expect(result.message).toBe('Consultant profile created successfully.');
+    });
+
+        it('blocks profile creation when a CV is PENDING security review', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'PENDING' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.consultant.create).not.toHaveBeenCalled();
+    });
+
+    it('blocks profile creation when a CV was REJECTED', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'REJECTED' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('stamps hadSecurityFlagOnIntake=true when the CV was CLEARED after a flag', async () => {
+      const txMock = setupActiveConsultantProfile({
+        cvFile: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findFirst: jest.fn().mockResolvedValue({ securityReviewStatus: 'CLEARED' }),
+        },
+      });
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: true }) }),
+      );
+    });
+
+    it('stamps hadSecurityFlagOnIntake=false when the CV was never flagged', async () => {
+      const txMock = setupActiveConsultantProfile();
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: false }) }),
+      );
     });
 
     it.each([

@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BaseLocationDto } from '../../common/dto/base-location.dto';
+import { NoDuplicateSkills } from '../../common/validators/no-duplicate-skills.validator';
 
 export class CreateProjectSkillDto {
   @IsString()
@@ -62,5 +63,7 @@ export class CreateProjectDto extends BaseLocationDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProjectSkillDto)
+  @NoDuplicateSkills()
   skills!: CreateProjectSkillDto[];
+
 }

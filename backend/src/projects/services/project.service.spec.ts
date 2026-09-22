@@ -154,6 +154,20 @@ describe('ProjectService', () => {
       });
     });
 
+
+    it('does not create a duplicate ProjectSkill row if one somehow already exists for this project+skill', async () => {
+      mockTx.project.create.mockResolvedValue({ id: 'uuid-dup' });
+      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockTx.projectSkill.findFirst.mockResolvedValue({ id: 'existing-project-skill-1' });
+
+       await service.createProject(baseDto, 'user-123', 'PROJECT_MANAGER');
+
+       expect(mockTx.projectSkill.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'uuid-dup', skillId: 'skill-1' }
+       });
+       expect(mockTx.projectSkill.create).not.toHaveBeenCalled();
+    })
+
     // it('should create a project without an endDate', async () => {
     //   const dto = { ...baseDto, endDate: undefined };
     //   mockTx.project.create.mockResolvedValue({ id: 'uuid-456' });

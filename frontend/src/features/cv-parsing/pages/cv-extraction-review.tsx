@@ -115,6 +115,40 @@ export default function CVExtractionReview(){
         return map;
     }, [fieldWarnings]);
 
+    const hydrateFormFromResult = (result: CvFileStatus) => {
+        const data = result.parsedData?.data;
+        setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
+        setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
+
+        if (!data) return;
+
+        setContact(data.contact ?? {});
+        setSkills(
+            (data.skills ?? []).map((s) => ({
+                ...s,
+                competencyLevel: "BEGINNER",
+                confidenceLevel: 1,
+            })),
+        );
+        setExperiences(
+            (data.experiences ?? []).map((e) => ({
+                ...e,
+                jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
+                workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
+            })),
+        );
+        setCertifications(data.certifications ?? []);
+        setEducation(data.education ?? []);
+    };
+
+    const maybeShowClearedModal = (currentStatus: CvFileStatus["securityReviewStatus"]) => {
+        if (wasPendingOnLoadRef.current === null) {
+            wasPendingOnLoadRef.current = currentStatus === "PENDING";
+        }
+        if (currentStatus === "CLEARED" && wasPendingOnLoadRef.current && !clearedAcknowledged) {
+            setShowClearedModal(true);
+        }
+    };
     useEffect(() => {
     if (!cvFileId) return;
 
@@ -182,7 +216,6 @@ export default function CVExtractionReview(){
         setViewState("review");
 
         if (currentStatus !== "PENDING") {
-          // CLEARED, REJECTED, or was never flagged — nothing left to wait on.
           formHydrated = true;
           if (pollTimer.current) clearInterval(pollTimer.current);
         }

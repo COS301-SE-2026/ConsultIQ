@@ -10,30 +10,29 @@ import { RawConsultantDto } from '../dto/raw-consultant.dto';
 
 export type ScoringResults =
   | {
-      excluded: false;
-      factorScores: Partial<Record<ScoringFactor, number>>;
-      redistributedWeights: Partial<Record<ScoringFactor, number>>;
-      factorDetails: Partial<Record<ScoringFactor, string>>;
-    }
+    excluded: false;
+    factorScores: Partial<Record<ScoringFactor, number>>;
+    redistributedWeights: Partial<Record<ScoringFactor, number>>;
+    factorDetails: Partial<Record<ScoringFactor, string>>;
+  }
   | {
-      excluded: true;
-      reason: string;
-      missingMandatorySkills: string[];
-    };
+    excluded: true;
+    reason: string;
+    missingMandatorySkills: string[];
+  };
 /*
 Calcaute the five scoring factors considering the avtive ones and redistributing inactive weights into the active weights if the weights are not redistributed
 */
 
 @Injectable()
 export class ScoringOrchestrator {
-  private readonly MANDATORY_SKILL_PENALTY = 0.15;
   constructor(
     private readonly skillAlignment: SkillAligmentScorer,
     private readonly competencyMatchScorer: CompetencyMatchScorer,
     private readonly costFitScorer: CostFitScorer,
     private readonly geographicFitScorer: GeographicFitScorer,
     private readonly availabilityFitScorer: AvailabilityFitScorer,
-  ) {}
+  ) { }
 
   async scoreConsultant(
     consultant: RawConsultantDto,
@@ -50,26 +49,13 @@ export class ScoringOrchestrator {
       const skillResult = this.skillAlignment.score(consultant, project);
 
       if (skillResult.triggerHardExclusion) {
-        const missingSkills = skillResult.missingMandatorySkills ?? [];
-
-        if (excludedFactors.has(ScoringFactor.SKILL_ALIGNMENT)) {
-          return {
-            excluded: true,
-            reason: `Missing mandatory skills: ${missingSkills.join(', ')}`,
-            missingMandatorySkills: missingSkills,
-          };
-        }
-
-        skillResult.score = Math.max(
-          0,
-          skillResult.score - this.MANDATORY_SKILL_PENALTY,
-        );
-
-        const penaltyNotice = `[-15% PENALTY APPLIED] Missing mandatory skills: ${missingSkills.join(', ')}`;
-        skillResult.details = skillResult.details
-          ? `${skillResult.details} | ${penaltyNotice}`
-          : penaltyNotice;
+        return {
+          excluded: true,
+          reason: skillResult.details || 'Invalid data for skill alignment',
+          missingMandatorySkills: [],
+        };
       }
+
       scoresByFactor[ScoringFactor.SKILL_ALIGNMENT] = skillResult.score;
 
       if (skillResult.details) {

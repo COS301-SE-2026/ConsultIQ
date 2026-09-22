@@ -177,45 +177,17 @@ export default function CVExtractionReview(){
         // REVIEW_REQUIRED or SECURITY_REJECTED — securityReviewStatus (not
         // extractionStatus) decides whether the form is editable.
         const currentStatus = result.securityReviewStatus;
-
-        if (wasPendingOnLoadRef.current === null) {
-          wasPendingOnLoadRef.current = currentStatus === "PENDING";
-        }
-
-        if (currentStatus === "CLEARED" && wasPendingOnLoadRef.current && !clearedAcknowledged) {
-          setShowClearedModal(true);
-        }
+        maybeShowClearedModal(currentStatus);
 
         // Hydrate the form only until the CM is allowed to edit.
         if (!formHydrated) {
-          const data = result.parsedData?.data;
-          setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
-          setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
-
-          if (data) {
-            setContact(data.contact ?? {});
-            setSkills(
-              (data.skills ?? []).map((s) => ({
-                ...s,
-                competencyLevel: "BEGINNER",
-                confidenceLevel: 1,
-              })),
-            );
-            setExperiences(
-              (data.experiences ?? []).map((e) => ({
-                  ...e,
-                  jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
-                  workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
-            })), );
-
-            setCertifications(data.certifications ?? []);
-            setEducation(data.education ?? []);
-          }
+          hydrateFormFromResult(result);
         }
 
         setViewState("review");
 
         if (currentStatus !== "PENDING") {
+          // CLEARED, REJECTED, or was never flagged — nothing left to wait on.
           formHydrated = true;
           if (pollTimer.current) clearInterval(pollTimer.current);
         }

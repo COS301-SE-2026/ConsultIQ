@@ -83,7 +83,7 @@ export interface Task {
     splitFromId?: string;
     carriedOver: boolean;
     placement: 'placed' | 'unplaced';
-    unplacedReason?: ReasonCode;
+    unplacedReason?: UnplacedReason;
     createdAt: string;
     updatedAt: string;
 }
@@ -99,6 +99,7 @@ export interface Slot {
     daySpan: number;
     taskIds: string[];
     subtaskIds: string[];
+    tags?: string[];
 }
 
 export interface ProjectBlock {
@@ -133,19 +134,30 @@ export interface PublicHoliday {
 
 // --- Metadata ---
 
+export type UnplacedReason = 'DAY_SPAN_LIMIT' | 'DEADLINE_INFEASIBLE' | 'CONTAINER_FULL';
+
 export interface UnplacedTaskSummary {
+    reason: UnplacedReason;
     neededMinutes: number;
     availableMinutes: number;
     deadline?: string;
 }
 
+// export interface PlaceReport {
+//     placed: Task[];
+//     unplaced: Task[];
+// }
 export interface PlaceReport {
-    placed: Task[];
-    unplaced: Task[];
+    placed: string[]; // Array of successfully placed task IDs
+    unplaced: {
+        taskId: string;
+        summary: UnplacedTaskSummary;
+    }[];
 }
 
 export interface AllocationSummary {
     projectId: string;
+    allocation: number;
     allocatedMinutes: number;
 }
 
@@ -220,3 +232,7 @@ export interface Issue {
     suggestions?: Suggestion[];
     entityIds?: string[];
 }
+
+export type PlaceTaskResult =
+    | { ok: true; data: Slot[] }
+    | { ok: false; summary: UnplacedTaskSummary; code?: string };

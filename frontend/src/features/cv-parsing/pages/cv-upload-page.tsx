@@ -117,10 +117,10 @@ export default function CVUpload (){
   }
 if(stagedFile){
   return(
-<div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 py-10">
+<div className="w-full border border-gray-300 rounded-xl flex flex-col items-center justify-center gap-4 px-4 sm:px-6 py-6 sm:py-10 ">
   <p className="text-lg text-primary"><strong>{stagedFile.name}</strong> : {(stagedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
     <div className="flex items-center  gap-4 mt-2">
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 w-full">
           <label className="flex items-center gap-2 rounded-full border border-gray-300 px-3 py-2">
               <input type="radio" name="parsingMethod" value="RULE_BASED"
                 checked = {selectedParsingMethod === "RULE_BASED"}
@@ -135,7 +135,7 @@ if(stagedFile){
           </label>
       </div>
     </div>
-    <div className="flex gap-4 mt-2">
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-2 w-full sm:w-auto px-2 sm:px-0">
         <button type="button"
           className="h-12 px-8 rounded-lg border font-semibold text-lg"
           style={{ borderColor: "var(--color-primary)", color: "var(--color-primary)" }}
@@ -196,17 +196,17 @@ return(
       <Sidebar items={consultantManagerSidebarItems} />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}>
-          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+          className="shrink-0 z-30 bg-white border-b min-h-[70px] md:h-[90px] flex items-center justify-between w-full pl-16 pr-4 sm:pl-20 sm:pr-8 md:px-20 py-2"
+          style={{ borderColor: "var(--color-border)"}}>
+          <h1 className="text-lg sm:text-2xl md:text-4xl leading-tight font-bold mr-2" style={{ color: "var(--color-primary)" }}>
             Create Consultant Profile
           </h1>
-          <div className="flex gap-6">
+          <div className="flex gap-6 shrink-0" >
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center h-12 w-30 px-6 text-lg rounded-xl font-semibold bg-white shadows:md"
+              className="flex items-center justify-center h-9 sm:h-10   px-3.5 sm:px-4 text-xs sm:text-base rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
               style={{ color: "var(--color-primary)" }}>
-              <ArrowLeft className="mr-2" />
+              <ArrowLeft className="mr-1 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" />
               Back
             </button>
         </div>    

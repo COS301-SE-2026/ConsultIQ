@@ -13,9 +13,9 @@ export default function ProfileCreationEntry(){
       <Sidebar items={consultantManagerSidebarItems} />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
-          className="shrink-0 z-20 bg-white border-b min-h-[70px] md:h-[90px] flex items-center justify-between w-full pl-18 pr-4 sm:pl-20 sm:pr-8 md:px-20 py-2"
+          className="shrink-0 z-20 bg-white border-b min-h-[70px] md:h-[90px] flex items-center justify-between w-full pl-16 pr-4 sm:pl-20 sm:pr-8 md:px-20 py-2"
           style={{ borderColor: "var(--color-border)" }}>
-          <h1 className="text-sm sm:text-base md:text-4xl leading-tight font-bold mr-2" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-lg sm:text-2xl md:text-4xl leading-tight font-bold mr-2" style={{ color: "var(--color-primary)" }}>
             Create Consultant Profile
           </h1>
           <div className="flex gap-6 shrink-0">

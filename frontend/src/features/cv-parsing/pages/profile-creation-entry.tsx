@@ -13,17 +13,17 @@ export default function ProfileCreationEntry(){
       <Sidebar items={consultantManagerSidebarItems} />
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}>
-          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+          className="shrink-0 z-20 bg-white border-b min-h-[70px] md:h-[90px] flex items-center justify-between w-full pl-18 pr-4 sm:pl-20 sm:pr-8 md:px-20 py-2"
+          style={{ borderColor: "var(--color-border)" }}>
+          <h1 className="text-sm sm:text-base md:text-4xl leading-tight font-bold mr-2" style={{ color: "var(--color-primary)" }}>
             Create Consultant Profile
           </h1>
-          <div className="flex gap-6">
+          <div className="flex gap-6 shrink-0">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center h-12 w-30 px-6 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
+              className="flex items-center justify-center h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-base rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
               style={{ color: "var(--color-primary)" }}>
-              <ArrowLeft className="mr-2" />
+              <ArrowLeft className="mr-1 sm:mr-2 w-4 h-4 sm:w-5 sm:h-5" />
               Back
             </button>
           </div>

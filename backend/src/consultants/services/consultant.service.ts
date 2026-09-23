@@ -496,6 +496,11 @@ export class ConsultantService {
     userRole: string,
     requestingUserId: string,
   ): Promise<{ message: string }> {
+    if(dto.costToCompany !== undefined && userRole !== Role.CONSULTANT) {
+      throw new ForbiddenException(
+        'Only the consultant themselves can update their cost to company rate.',
+      );
+    }
     const resolvedConsultantId = await this.resolveEditableConsultantId(
       consultantId,
       userRole,

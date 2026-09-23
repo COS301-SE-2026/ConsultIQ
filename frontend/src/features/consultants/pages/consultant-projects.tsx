@@ -36,16 +36,16 @@ function ConsultantProjects(){
           <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
 
             <header
-              className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-              style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
-            >
-               <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+              className="shrink-0 z-20 bg-white border-b min-h-[90px] flex items-center justify-between w-full pl-16 pr-4 sm:px-6 lg:px-20"
+              style={{ borderColor: "var(--color-border)"}}
+              >
+               <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                 My projects
               </h1>
               
             </header>
              
-            <main className="flex-1 flex flex-col items-center p-10 overflow-y-auto overscroll-none">
+            <main className="flex-1 flex flex-col items-center p-4 sm:p-6 lg:p-10 overflow-y-auto overscroll-none">
               {hasNoProfile ? (
                 <div className="flex-1 flex items-center justify-center">
                   <p className="text-brand-muted font-medium text-lg">No projects assigned yet</p>

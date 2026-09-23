@@ -9,7 +9,7 @@ import { useConsultantProfile } from "../../pages/consultant-profile.context";
 
 export type CostRateType = "DAILY" | "MONTHLY";
 
-const WORKING_DAYS_PER_YEAR = 260;
+const AVERAGE_DAYS_PER_MONTH = 365 / 12;
 
 export default function ProfileInfoForm() {
   const { updateProfileData } = useConsultantProfile();
@@ -110,7 +110,7 @@ export default function ProfileInfoForm() {
 
   };
 
-const dailyCostToCompany = costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
+const dailyCostToCompany = costRateType === "MONTHLY" ? (enteredCost / AVERAGE_DAYS_PER_MONTH)  : enteredCost;
 const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >=0;
 
   return (
@@ -264,7 +264,7 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
             <span className="text-sm text-slate-500">
               {costRateType === "DAILY"
               ? "Enter the cost for on 8-hour working day."
-              : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
+              : "Enter the monthly salary. We will convert it to a daily rate."
               }
             </span>
             

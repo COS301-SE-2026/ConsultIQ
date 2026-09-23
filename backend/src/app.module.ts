@@ -23,6 +23,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
+import { CsrfGuard } from './common/guards/csrf.guard';
+import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -76,6 +78,6 @@ import { HealthModule } from './health/health.module';
     SkillGapModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: CsrfGuard },],
 })
-export class AppModule {}
+export class AppModule { }

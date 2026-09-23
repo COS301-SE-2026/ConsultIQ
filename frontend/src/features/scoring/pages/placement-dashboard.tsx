@@ -10,6 +10,8 @@ import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
 
 interface RawMatchResult {
     consultantId?: string;
@@ -129,6 +131,12 @@ export default function PlacementDashboard() {
     const projectExcluded = stats?.totalExcluded ?? 0;
     const projectTotalEvaluated = stats?.totalEvaluated ?? (projectMatched + projectExcluded);
 
+    const hasInitialRecommendations = rawMatchData.length > 0;
+    const isMatchLoading = 
+        !matchRunStatus ||
+        (matchRunStatus.status === "IN_PROGRESS" && !hasInitialRecommendations ) || 
+        (matchRunStatus.status === "COMPLETED" && stats === null);
+
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);
     };
@@ -158,6 +166,47 @@ export default function PlacementDashboard() {
         }
     };
 
+    function renderMatchContent() {
+        if(isMatchLoading){
+            return (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin" style={{color: "var(--color-primary)"}}/>
+                    <div className="text-lg font-semibold text-slate-800">
+                        <h2 className="text-lg font-semibold text-slate-800">
+                            Scoring consultants...
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                            {matchRunStatus ? `Progress: ${matchRunStatus.progress}%` : "Preparing the match run"}
+                        </p>
+                    </div>
+                </div>            
+            );
+        }
+        if(matchRunStatus?.status === "FAILED"){
+            return(
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
+                    {matchRunStatus.errorMessage ?? "The match run failed. Please try again."}
+                </div>                
+            );
+        }
+
+        return (
+            <>
+                <MatchStatsGrid
+                    scoringBasis={projectScoringBasis}
+                    totalEvaluated={projectTotalEvaluated}
+                    matched={projectPlaced}
+                    excluded={projectExcluded}
+                />
+                <RecommendationsTable
+                    recommendations={recommendations}
+                    onSelectConsultant={handleSelectConsultant}
+                    onPlaceConsultant={handlePlaceConsultant}
+                />
+            </>    
+        );
+    }
+
     return (
         <div className="flex h-screen overflow-hidden bg-[var(--color-surface)] lg:flex-row">
             <div className="h-screen shrink-0">
@@ -165,7 +214,7 @@ export default function PlacementDashboard() {
             </div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
-                    className="z-20 shrink-0 border-b bg-white px-4 py-4 sm:px-6 lg:px-[80px]"
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
                     style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
                 <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -181,17 +230,7 @@ export default function PlacementDashboard() {
                    </div>
                 </header>
                 <div className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-[80px] lg:py-[32px]">
-                    <MatchStatsGrid
-                        scoringBasis={projectScoringBasis}
-                        totalEvaluated={projectTotalEvaluated}
-                        matched={projectPlaced}
-                        excluded={projectExcluded}
-                    />
-                    <RecommendationsTable
-                        recommendations={recommendations}
-                        onSelectConsultant={handleSelectConsultant}
-                        onPlaceConsultant={handlePlaceConsultant}
-                    />
+                    {renderMatchContent()}
                 </div>
 
             </div>

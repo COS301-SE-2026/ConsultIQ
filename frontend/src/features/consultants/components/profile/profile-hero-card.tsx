@@ -70,10 +70,10 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
       }}
     >
       {/* Avatar */}
-      <div className="flex items-start justify-between gap-3 w-full">
-        <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 w-full">
+        <div className="flex items-center gap-4 sm:gap-5">
           <div
-            className="relative rounded-full flex items-center justify-center text-white font-bold shrink-0 h-20 w-20 text-xl sm:h-[120px] sm:w-[120px] sm:text-3xl"
+            className="relative rounded-full flex items-center justify-center text-white font-bold shrink-0 w-20 h-20 sm:w-[120px] sm:h-[120px] text-xl sm:text-[30px]"
             style={{
               backgroundColor: "var(--color-primary)",
             }}
@@ -164,7 +164,7 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
       </div>
 
       {isEditing && (
-        <div className=" w-full max-w-xl mt-6">
+        <div className=" w-full max-w-xl mt-4 sm:mt-6">
           <h3 className="mb-2">Upload profile photo</h3>
           <ImageDropzone onFileSelect={(file) => {
 

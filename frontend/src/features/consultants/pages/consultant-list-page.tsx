@@ -7,8 +7,10 @@ import SearchBar from "../../../components/shared/search-bar";
 import { useNavigate } from "react-router-dom";
 import { getConsultants, getPendingProfiles } from "../services/consultant.service";
 import type { PendingProfileUserDto } from "../services/consultant.service";
+import { cvParsingService } from "../../cv-parsing/services/cv-parsing.service";
+import type { FlaggedCvSummary } from "../../cv-parsing/types/cv.types";
 import { toast } from "sonner";
-import { UserCircle2 } from "lucide-react";
+import { UserCircle2, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import useUnreadNotificationsCount from "../../../hooks/useUnreadNotificationsCount";
 
@@ -18,7 +20,8 @@ function ConsultantsPage() {
   const [pendingProfiles, setPendingProfiles] = useState<PendingProfileUserDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeSection, setActiveSection] = useState<"active" | "pending">("active");
+  const [flaggedCvs, setFlaggedCvs] = useState<FlaggedCvSummary[]>([]);
+  const [activeSection, setActiveSection] = useState<"active" | "pending" | "flagged">("active");
   const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
 
@@ -28,9 +31,10 @@ function ConsultantsPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [consultantsResponse, pendingResponse] = await Promise.all([
+        const [consultantsResponse, pendingResponse, flaggedResponse] = await Promise.all([
           getConsultants(1, 50),
           getPendingProfiles(),
+          cvParsingService.getFlagged(),
         ]);
 
 
@@ -51,6 +55,7 @@ function ConsultantsPage() {
 
         setConsultants(mapped);
         setPendingProfiles(pendingResponse);
+        setFlaggedCvs(flaggedResponse);
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to load consultants");
       } finally {
@@ -84,8 +89,16 @@ function ConsultantsPage() {
     return !q || p.fullName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q);
   });
 
-  const activeList = activeSection === "active" ? filteredConsultants : filteredPending;
-  const totalPages = Math.ceil(activeList.length / ITEMS_PER_PAGE);
+  const filteredFlagged = flaggedCvs.filter((f) => {
+    const q = searchQuery.toLowerCase();
+    return !q || f.consultantName.toLowerCase().includes(q) || f.consultantEmail.toLowerCase().includes(q);
+  });
+
+
+ const activeList =
+    activeSection === "active" ? filteredConsultants :
+    activeSection === "pending" ? filteredPending :
+    filteredFlagged;  const totalPages = Math.ceil(activeList.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const currentItems = activeList.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
@@ -252,6 +265,67 @@ function ConsultantsPage() {
                 {!isLoading && filteredPending.length === 0 && (
                   <p className="text-center mt-16" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
                     All consultants have profiles.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Flagged CVs list */}
+            {activeSection === "flagged" && (
+              <div className="flex flex-col gap-4">
+                {isLoading && (
+                  <p className="text-center mt-16" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
+                    Loading...
+                  </p>
+                )}
+                {!isLoading && (currentItems as FlaggedCvSummary[]).map((flagged) => {
+                  const isRejected = flagged.securityReviewStatus === "REJECTED";
+                  return (
+                    <div
+                      key={flagged.cvFileId}
+                      className="bg-white rounded-xl border-2 flex items-center justify-between"
+                      style={{
+                        borderColor: isRejected ? "#dc2626" : "#f59e0b",
+                        padding: "28px 32px",
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        {isRejected
+                          ? <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-1" />
+                          : <ShieldAlert className="h-6 w-6 text-amber-600 shrink-0 mt-1" />}
+                        <div>
+                          <p className="font-semibold text-lg" style={{ color: "var(--color-primary)" }}>
+                            {flagged.consultantName}
+                          </p>
+                          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                            {flagged.consultantEmail}
+                          </p>
+                          <p className={`text-xs mt-1 font-semibold ${isRejected ? "text-red-600" : "text-amber-600"}`}>
+                            {isRejected ? "Rejected during security review" : "Awaiting security review"}
+                          </p>
+                          <p className="text-xs mt-1" style={{ color: "var(--color-text-secondary)" }}>
+                            CV uploaded {new Date(flagged.uploadedAt).toLocaleDateString("en-ZA")}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/cv-extraction-review/${flagged.consultantUserId}/${flagged.cvFileId}`)}
+                        className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90 shrink-0"
+                        style={{
+                          backgroundColor: isRejected ? "#dc2626" : "#b45309",
+                          color: "white",
+                          fontSize: "15px",
+                          padding: "10px 20px",
+                        }}
+                      >
+                        View details
+                      </button>
+                    </div>
+                  );
+                })}
+                {!isLoading && filteredFlagged.length === 0 && (
+                  <p className="text-center mt-16" style={{ color: "var(--color-text-secondary)", fontSize: "18px" }}>
+                    No flagged consultants.
                   </p>
                 )}
               </div>

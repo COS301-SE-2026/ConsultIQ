@@ -15,7 +15,7 @@ export interface FeasibilitySkillDto {
 }
 
 export interface FeasibilityRequestDto {
-    projwctName?: string;
+    projectName?: string;
     clientName?: string;
     description?: string;
     addressLine1?: string;

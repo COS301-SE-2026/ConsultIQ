@@ -16,7 +16,7 @@ interface FeasibilityPreviewPanelProps {
 export default function FeasibilityPreviewPanel({
     open, onToggle, minimumCompetency, onMinimumCompetencyChange, state, result, error }: FeasibilityPreviewPanelProps){
         return (
-            <section className="w-full rounded border bg-white shadow-sm">
+            <section className="w-full rounded border border-slate-300 bg-white shadow-sm">
                 <button 
                 type="button" 
                 onClick={onToggle}

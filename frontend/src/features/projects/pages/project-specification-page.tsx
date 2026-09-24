@@ -9,7 +9,9 @@ import { useState } from "react";
 import { apiClient } from "../../../lib/api-client";
 import { toast } from "sonner";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
-
+import FeasibilityPreviewPanel from "../components/feasibility-preview-panel";
+import { useFeasibilityCheck } from "../hooks/use-feasibility-check";
+import type { FeasibilityCompetency, FeasibilityRequestDto } from "../types/feasibility.types";
 import axios from 'axios';
 
 
@@ -64,6 +66,9 @@ function ProjectSpecificationPage() {
 
   const { count: unreadCount } = useUnreadNotificationCount();
 
+  const [isFeasibilityOpen, setIsFeasibilityOpen] = useState(false);
+  const [minimumCompetency, setMinimumCompetency] = useState<FeasibilityCompetency>("INTERMEDIATE");
+
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -116,6 +121,35 @@ function ProjectSpecificationPage() {
       setIsSubmitting(false);
     }
   };
+
+  const feasibilityRequest : FeasibilityRequestDto | null =
+    isFeasibilityOpen ? {
+      projectName: formData.projectName,
+      clientName: formData.clientName,
+      description: formData.description,
+      addressLine1: formData.addressLine1,
+      addressLine2: formData.addressLine1,
+      suburb: formData.suburb,
+      city: formData.city,
+      province: formData.province,
+      postalCode: formData.postalCode,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      teamSize: formData.teamSize,
+      allocation: formData.allocation,
+      budget: formData.budget,
+      minimumCompetency,
+      skills :formData.skills.map((skill) => ({
+        name: skill.name,
+        competency: skill.competency as FeasibilityCompetency,
+        years: skill.years,
+        mandatory: skill.mandatory,
+      })),
+  } : null;
+
+  const feasibility = useFeasibilityCheck(feasibilityRequest, isFeasibilityOpen);
+
+
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems()} notificationCount={unreadCount} />
@@ -153,6 +187,15 @@ function ProjectSpecificationPage() {
           <div className="flex w-full max-w-[1024px] flex-col gap-5 sm:gap-8">
             
             <ProjectBasicInfoCard data={formData} onChange={updateForm} />
+            <FeasibilityPreviewPanel 
+              open = {isFeasibilityOpen}
+              onToggle = {() => setIsFeasibilityOpen((current) => !current)}
+              minimumCompetency = {minimumCompetency}
+              onMinimumCompetencyChange = {setMinimumCompetency}
+              state = {feasibility.state}
+              result = {feasibility.result}
+              error = {feasibility.error}
+            />
 
             <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-2">
 

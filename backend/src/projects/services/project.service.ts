@@ -128,6 +128,7 @@ export class ProjectService {
       teamSize: p.teamSize,
       requiredAllocationPercentage: p.requiredAllocationPercentage,
       clientBillingBudget: Number(p.clientBillingBudget),
+      workModel: p.workModel,
       status: p.status,
       skillCount: p.skillCount,
       gapSeverity: p.gapSeverity,
@@ -220,6 +221,7 @@ export class ProjectService {
           teamSize: dto.teamSize,
           allocation: dto.allocation,
           budget: dto.budget,
+          workModel: dto.workModel,
           status: ProjectStatus.OPEN,
         },
       });
@@ -356,6 +358,7 @@ export class ProjectService {
             p."teamSize",
             p.allocation AS "requiredAllocationPercentage",
             p.budget AS "clientBillingBudget",
+            p."workModel",
             p.status,
             p."skillGapSeverity" AS "gapSeverity",
             COUNT(ps.id)::int AS "skillCount"

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlacerService, FreeGap } from './placer.service';
-import { TimeService, LocalDate } from './time.service';
+import { TimeService, LocalDate, Instant } from './time.service';
 import { Task, Slot, AllocationSummary, WeekContainer } from '../dto/scheduler.dto';
 
 
@@ -116,7 +116,7 @@ describe('PlacerService', () => {
         describe('3. clipToDeadline', () => {
             const baseGap: FreeGap = { start: '2026-09-21T08:00:00Z', end: '2026-09-21T12:00:00Z', blockId: 'b1' };
             it('should trim gap end to deadline if gap extends past deadline', () => {
-                const deadline = '2026-09-21T10:00:00Z';
+                const deadline = '2026-09-21T10:00:00Z' as Instant;
                 const clipped = service.clipToDeadline(baseGap, deadline);
                 expect(clipped.end).toBe(deadline);
             });
@@ -131,7 +131,7 @@ describe('PlacerService', () => {
         describe('5. makeSlot', () => {
             it('should construct a valid Slot object', () => {
                 const gap: FreeGap = { start: '2026-09-21T08:00:00Z', end: '2026-09-21T12:00:00Z', blockId: 'b1' };
-                const slot = service.makeSlot({ id: 't1', weekId: 'w1' } as Task, gap, 90, '2026-09-21');
+                const slot = service.makeSlot({ id: 't1', weekId: 'w1' } as Task, gap, 90, '2026-09-21' as LocalDate);
                 expect(slot.end).toBe('2026-09-21T09:30:00Z');
                 expect(slot.taskIds).toEqual(['t1']);
             });
@@ -152,7 +152,7 @@ describe('PlacerService', () => {
         describe('7. priorityScore', () => {
             it('should calculate priority based on urgency, complexity, and deadline', () => {
                 const task = { urgency: 2, complexity: 3, deadline: '2026-09-21T10:00:00Z' } as Task;
-                expect(service.priorityScore(task, '2026-09-21T08:00:00Z')).toBe(5.5);
+                expect(service.priorityScore(task, '2026-09-21T08:00:00Z' as Instant)).toBe(5.5);
             });
         });
 
@@ -268,7 +268,7 @@ describe('PlacerService', () => {
             const result = service.batchMicroTasks(week, tasks, window);
 
             expect(result.remaining.length).toBe(0);
-            expect(result.batched.length).toBe(1);
+            expect(result.batched).toHaveLength(1);
 
             const batchSlot = result.batched[0];
             expect(batchSlot.kind).toBe('batch');

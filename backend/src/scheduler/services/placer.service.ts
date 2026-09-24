@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { Task, Slot, Interval, AllocationSummary, WeekContainer, UnplacedReason, PlaceTaskResult, UnplacedTaskSummary, PlaceReport } from '../dto/scheduler.dto';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
-import { TimeService } from './time.service';
+import { TimeService, Instant, LocalDate } from './time.service';
 
-export type Instant = string;
-export type LocalDate = string;
 
 export interface FreeGap extends Interval {
     blockId: string;
@@ -272,30 +270,43 @@ export class PlacerService {
         for (const gap of gaps) {
             if (accumulated >= neededMinutes) break;
 
-            const workingGap = enforceDeadline ? this.clipToDeadline(gap, task.deadline) : gap;
-            const gapMins = this.intervalMinutes(workingGap);
-
-            if (gapMins <= 0) continue;
-
-            // Ensure we don't create fragments smaller than the minimum block size,
-            // unless it's the final tiny piece needed to finish the task.
-            if (gapMins < SCHEDULER_RULES.MIN_BLOCK_MINUTES && gapMins < (neededMinutes - accumulated)) {
-                continue;
-            }
-
-            const day = this.timeService.localDate(workingGap.start, timezone);
-
-            if (!daysUsed.has(day)) {
-                if (daysUsed.size >= maxDays) {
-                    continue; // Cannot use this gap; it would exceed the allowed max days (e.g. 3)
-                }
-                daysUsed.add(day);
-            }
-
-            accumulated += Math.min(gapMins, neededMinutes - accumulated);
+            accumulated += this.evaluateGapForFit(
+                gap, task, neededMinutes, accumulated, daysUsed, maxDays, enforceDeadline, timezone
+            );
         }
 
         return accumulated >= neededMinutes;
+    }
+
+    private evaluateGapForFit(
+        gap: FreeGap,
+        task: Task,
+        neededMinutes: number,
+        accumulated: number,
+        daysUsed: Set<string>,
+        maxDays: number,
+        enforceDeadline: boolean,
+        timezone: string
+    ): number {
+        const workingGap = enforceDeadline ? this.clipToDeadline(gap, task.deadline as Instant) : gap;
+        const gapMins = this.intervalMinutes(workingGap);
+
+        if (gapMins <= 0) return 0;
+
+        // Ensure we don't create fragments smaller than the minimum block size,
+        // unless it's the final tiny piece needed to finish the task.
+        if (gapMins < SCHEDULER_RULES.MIN_BLOCK_MINUTES && gapMins < (neededMinutes - accumulated)) {
+            return 0;
+        }
+
+        const day = this.timeService.localDate(workingGap.start, timezone);
+
+        if (!daysUsed.has(day)) {
+            if (daysUsed.size >= maxDays) return 0; // Exceeds day cap
+            daysUsed.add(day);
+        }
+
+        return Math.min(gapMins, neededMinutes - accumulated);
     }
 
     /**
@@ -307,11 +318,30 @@ export class PlacerService {
         tasks: Task[],
         window: Interval
     ): { batched: Slot[]; remaining: Task[] } {
+        const { microTasksByProject, remaining } = this.splitMicroTasks(tasks);
         const batched: Slot[] = [];
-        const remaining: Task[] = [];
-        const microTasksByProject = new Map<string, Task[]>();
+        const nowIso = new Date().toISOString() as Instant;
 
-        // 1. Split into micro-tasks and remaining
+        for (const [projectId, projectMicroTasks] of microTasksByProject.entries()) {
+            const gaps = this.freeGaps(week, projectId, window);
+            const gapsByDay = this.mapGapsToDays(gaps, week.timezone);
+
+            this.sortMicroTasks(projectMicroTasks, nowIso);
+
+            const { newSlots, unbatched } = this.buildProjectBatches(week, projectMicroTasks, gapsByDay);
+
+            batched.push(...newSlots);
+            remaining.push(...unbatched);
+        }
+
+        return { batched, remaining };
+    }
+
+    // Helper 1: Group tasks by size
+    private splitMicroTasks(tasks: Task[]): { microTasksByProject: Map<string, Task[]>; remaining: Task[] } {
+        const microTasksByProject = new Map<string, Task[]>();
+        const remaining: Task[] = [];
+
         for (const task of tasks) {
             if (task.tMax < SCHEDULER_RULES.MIN_BLOCK_MINUTES) {
                 if (!microTasksByProject.has(task.projectId)) {
@@ -322,93 +352,99 @@ export class PlacerService {
                 remaining.push(task);
             }
         }
+        return { microTasksByProject, remaining };
+    }
 
-        const now = new Date().toISOString(); // Used as baseline for priority score
+    // Helper 2: Map gaps to their local days
+    private mapGapsToDays(gaps: FreeGap[], timezone: string): Map<string, FreeGap[]> {
+        const gapsByDay = new Map<string, FreeGap[]>();
+        for (const gap of gaps) {
+            const day = this.timeService.localDate(gap.start, timezone);
+            if (!gapsByDay.has(day)) gapsByDay.set(day, []);
+            gapsByDay.get(day)!.push(gap);
+        }
+        return gapsByDay;
+    }
 
-        // 2. Process each project group
-        for (const [projectId, projectMicroTasks] of microTasksByProject.entries()) {
-            // 3. Find gaps and group them by local day
-            const gaps = this.freeGaps(week, projectId, window);
-            const gapsByDay = new Map<string, FreeGap[]>();
-
-            for (const gap of gaps) {
-                const day = this.timeService.localDate(gap.start, week.timezone);
-                if (!gapsByDay.has(day)) gapsByDay.set(day, []);
-                gapsByDay.get(day)!.push(gap);
+    // Helper 3: Sort micro-tasks by deadline and priority
+    private sortMicroTasks(tasks: Task[], now: Instant): void {
+        tasks.sort((a, b) => {
+            if (a.deadline && b.deadline) {
+                const diff = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+                if (diff !== 0) return diff;
+            } else if (a.deadline && !b.deadline) {
+                return -1;
+            } else if (!a.deadline && b.deadline) {
+                return 1;
             }
+            return this.priorityScore(b, now) - this.priorityScore(a, now);
+        });
+    }
 
-            // Sort tasks: Earliest deadline first, then by highest priority score
-            projectMicroTasks.sort((a, b) => {
-                if (a.deadline && b.deadline) {
-                    const diff = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-                    if (diff !== 0) return diff;
-                } else if (a.deadline && !b.deadline) {
-                    return -1;
-                } else if (!a.deadline && b.deadline) {
-                    return 1;
-                }
-                return this.priorityScore(b, now) - this.priorityScore(a, now);
-            });
+    // Helper 4: The Core Batching Logic (Restored!)
+    private buildProjectBatches(
+        week: WeekContainer,
+        tasks: Task[],
+        gapsByDay: Map<string, FreeGap[]>
+    ): { newSlots: Slot[]; unbatched: Task[] } {
+        const newSlots: Slot[] = [];
+        const unbatched: Task[] = [];
+        const minBlock = SCHEDULER_RULES.MIN_BLOCK_MINUTES;
+        let taskIdx = 0;
 
-            // 4. Walk day by day through the project's gaps
-            const sortedDays = Array.from(gapsByDay.keys()).sort();
+        for (const gaps of gapsByDay.values()) {
+            for (const gap of gaps) {
+                let gapRemainingMins = this.intervalMinutes(gap);
+                let currentStartMs = new Date(gap.start).getTime();
 
-            for (const day of sortedDays) {
-                if (projectMicroTasks.length === 0) break;
+                while (taskIdx < tasks.length && gapRemainingMins >= minBlock) {
+                    let batchMins = 0;
+                    const batchTaskIds: string[] = [];
 
-                const dayGaps = gapsByDay.get(day)!;
-                // Use the first gap of the day that is large enough to hold at least one min-block batch
-                const usableGap = dayGaps.find(g => this.intervalMinutes(g) >= SCHEDULER_RULES.MIN_BLOCK_MINUTES) || dayGaps[0];
-                if (!usableGap) continue;
+                    // Keep adding tasks to this batch until we hit MIN_BLOCK or run out of gap space
+                    while (taskIdx < tasks.length) {
+                        const task = tasks[taskIdx];
+                        if (batchMins + task.tMax <= gapRemainingMins) {
+                            batchMins += task.tMax;
+                            batchTaskIds.push(task.id);
+                            taskIdx++;
+                            if (batchMins >= minBlock) break;
+                        } else {
+                            break; // Task doesn't fit in this gap
+                        }
+                    }
 
-                const gapCapacity = this.intervalMinutes(usableGap);
-                const currentBatch: Task[] = [];
-                let currentSum = 0;
+                    if (batchTaskIds.length > 0) {
+                        const slotDuration = Math.max(minBlock, batchMins);
+                        const endMs = currentStartMs + (slotDuration * 60000);
 
-                // Accumulate until the next task exceeds the gap when rounded up
-                while (projectMicroTasks.length > 0) {
-                    const nextTask = projectMicroTasks[0];
-                    const projectedSum = currentSum + nextTask.tMax;
-                    const projectedRounded = this.roundUp(projectedSum, SCHEDULER_RULES.MIN_BLOCK_MINUTES);
+                        newSlots.push({
+                            id: crypto.randomUUID(),
+                            weekId: week.id, // Successfully mapping week.id here!
+                            kind: 'batch',
+                            blockId: gap.blockId,
+                            start: new Date(currentStartMs).toISOString() as Instant,
+                            end: new Date(endMs).toISOString() as Instant,
+                            taskIds: batchTaskIds,
+                            locked: false,
+                        });
 
-                    if (projectedRounded <= gapCapacity) {
-                        currentBatch.push(projectMicroTasks.shift()!);
-                        currentSum = projectedSum;
+                        currentStartMs = endMs;
+                        gapRemainingMins -= slotDuration;
                     } else {
                         break;
                     }
                 }
-
-                // 5. Create the slot for the accumulated batch
-                if (currentBatch.length > 0) {
-                    const roundedSum = this.roundUp(currentSum, SCHEDULER_RULES.MIN_BLOCK_MINUTES);
-                    const startMs = new Date(usableGap.start).getTime();
-                    const endIso = new Date(startMs + roundedSum * 60000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-
-                    batched.push({
-                        id: crypto.randomUUID(),
-                        weekId: week.id,
-                        kind: 'batch',
-                        blockId: usableGap.blockId,
-                        start: usableGap.start,
-                        end: endIso,
-                        locked: false,
-                        daySpan: 0,
-                        taskIds: currentBatch.map(t => t.id),
-                        subtaskIds: []
-                    });
-                }
-            }
-
-            // 6. Any micro-tasks left over (couldn't fit in any day) go back to remaining
-            if (projectMicroTasks.length > 0) {
-                remaining.push(...projectMicroTasks);
             }
         }
 
-        return { batched, remaining };
-    }
+        // Push any tasks that couldn't fit into the week's gaps to 'unbatched'
+        for (; taskIdx < tasks.length; taskIdx++) {
+            unbatched.push(tasks[taskIdx]);
+        }
 
+        return { newSlots, unbatched };
+    }
 
     /**
      * Tier 3: placeTask
@@ -447,7 +483,7 @@ export class PlacerService {
                 }
             }
 
-            const usable = this.clipToDeadline(gap, task.deadline);
+            const usable = this.clipToDeadline(gap, task.deadline as Instant);
             let take = Math.min(this.intervalMinutes(usable), remaining);
             const left = remaining - take;
 
@@ -487,30 +523,37 @@ export class PlacerService {
      * Rolls back completely if any displaced task cannot be re-placed.
      */
     public tryBump(week: WeekContainer, attacker: Task, window: Interval): PlaceTaskResult {
+        const nowIso = new Date().toISOString() as Instant;
+
+        const candidateTasks = this.getBumpCandidates(week, attacker, window, nowIso);
+
+        if (candidateTasks.length === 0) {
+            return { ok: false, summary: this.diagnose(week, attacker, window), code: 'NO_BUMP_CANDIDATE' };
+        }
+
+        // Sort by priority ascending (bump least important first)
+        candidateTasks.sort((a, b) => this.priorityScore(a, nowIso) - this.priorityScore(b, nowIso));
+
+        return this.simulatePreemption(week, attacker, candidateTasks, window);
+    }
+
+    private getBumpCandidates(week: WeekContainer, attacker: Task, window: Interval, nowIso: Instant): Task[] {
         const windowStartMs = new Date(window.start).getTime();
         const windowEndMs = new Date(window.end).getTime();
-        const nowIso = new Date().toISOString();
 
-        // 1. Find occupying entities inside the window
         const occupants = week.slots.filter(s => {
             if (s.kind !== 'task') return false;
-            const sStart = new Date(s.start).getTime();
-            const sEnd = new Date(s.end).getTime();
-            return sStart < windowEndMs && sEnd > windowStartMs;
+            return new Date(s.start).getTime() < windowEndMs && new Date(s.end).getTime() > windowStartMs;
         });
 
         const occupantTaskIds = new Set(occupants.flatMap(s => s.taskIds || []));
         const candidateTasks: Task[] = [];
-
         const attackerScore = this.priorityScore(attacker, nowIso);
         const attackerDeadline = attacker.deadline ? new Date(attacker.deadline).getTime() : Infinity;
 
-        // 2. Filter to non-frozen, lower priority, later deadline
         for (const taskId of occupantTaskIds) {
             const t = week.tasks.find(x => x.id === taskId);
-            if (!t) continue;
-
-            if (t.status === 'InProgress' || t.status === 'Done') continue;
+            if (!t || t.status === 'InProgress' || t.status === 'Done') continue;
 
             const hasLockedSlot = week.slots.some(s => s.taskIds?.includes(t.id) && s.locked);
             if (hasLockedSlot) continue;
@@ -523,45 +566,38 @@ export class PlacerService {
             }
         }
 
-        if (candidateTasks.length === 0) {
-            return { ok: false, summary: this.diagnose(week, attacker, window), code: 'NO_BUMP_CANDIDATE' };
-        }
+        return candidateTasks;
+    }
 
-        // Sort by priority ascending (bump least important first)
-        candidateTasks.sort((a, b) => this.priorityScore(a, nowIso) - this.priorityScore(b, nowIso));
-
-        // 3. Take snapshot for rollback
+    private simulatePreemption(week: WeekContainer, attacker: Task, candidateTasks: Task[], window: Interval): PlaceTaskResult {
+        // Take snapshot for rollback
         const snapshotSlots = JSON.stringify(week.slots);
         const snapshotTasks = JSON.stringify(week.tasks);
 
-        // 4. Release candidates' slots and mark as unplaced
+        // Release candidates' slots and mark as unplaced
         const candidateIds = new Set(candidateTasks.map(t => t.id));
-        week.slots = week.slots.filter(s => {
-            return !(s.taskIds && s.taskIds.some(id => candidateIds.has(id)));
-        });
+
+        week.slots = week.slots.filter(s => !s.taskIds?.some(id => candidateIds.has(id)));
+
         candidateTasks.forEach(c => {
             const wt = week.tasks.find(t => t.id === c.id);
             if (wt) wt.placement = 'unplaced';
         });
 
-        // 5. Try placing attacker
         const attackerResult = this.placeTask(week, attacker, window, false);
         if (!attackerResult.ok) {
-            week.slots = JSON.parse(snapshotSlots);
-            week.tasks = JSON.parse(snapshotTasks);
+            this.rollback(week, snapshotSlots, snapshotTasks);
             return { ok: false, summary: this.diagnose(week, attacker, window), code: 'BUMP_FAILED' };
         }
 
         // Temporarily apply attacker slots so candidates see the reduced space
         week.slots.push(...attackerResult.data);
 
-        // 6. Try re-placing candidates
+        // Try re-placing candidates
         for (const candidate of candidateTasks) {
             const candResult = this.placeTask(week, candidate, window, false);
             if (!candResult.ok) {
-                // Rollback EVERYTHING
-                week.slots = JSON.parse(snapshotSlots);
-                week.tasks = JSON.parse(snapshotTasks);
+                this.rollback(week, snapshotSlots, snapshotTasks);
                 return { ok: false, summary: this.diagnose(week, attacker, window), code: 'DISPLACED_TASK_UNPLACEABLE' };
             }
 
@@ -570,12 +606,15 @@ export class PlacerService {
             if (wt) wt.placement = 'placed';
         }
 
-        // 7. Success! Remove the attacker slots from the week so the caller `place()` 
-        // can handle them naturally without duplicating them. The candidate slot mutations remain!
         const attackerSlotIds = new Set(attackerResult.data.map(s => s.id));
         week.slots = week.slots.filter(s => !attackerSlotIds.has(s.id));
 
         return attackerResult;
+    }
+
+    private rollback(week: WeekContainer, snapshotSlots: string, snapshotTasks: string): void {
+        week.slots = JSON.parse(snapshotSlots);
+        week.tasks = JSON.parse(snapshotTasks);
     }
 
 
@@ -650,7 +689,7 @@ export class PlacerService {
                 return 1;  // b comes first
             }
 
-            return this.priorityScore(b, nowIso) - this.priorityScore(a, nowIso);
+            return this.priorityScore(b, nowIso as Instant) - this.priorityScore(a, nowIso as Instant);
         });
 
         // 6. Attempt to place each remaining task

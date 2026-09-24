@@ -14,23 +14,26 @@
  * Tuesday. The design week here starts on the real Monday, 14 Sep.
  */
 
-import { ReasonCode, SCHEDULER_RULES,type Project } from '../types/scheduler.types';
-import type {
-  AllocationSummary,
-  CalendarEntry,
-  CalendarEntryType,
-  Instant,
-  Issue,
-  LocalDate,
-  Minutes,
-  ProjectBlock,
-  PublicHoliday,
-  Slot,
-  Subtask,
-  Task,
-  UnplacedTaskSummary,
-  WeekContainer,
-  WeekMetadata,
+
+import  {
+  ReasonCode, 
+  SCHEDULER_RULES,
+  type AllocationSummary,
+  type CalendarEntry,
+  type CalendarEntryType,
+  type Instant,
+  type Issue,
+  type LocalDate,
+  type Minutes,
+  type ProjectBlock,
+  type PublicHoliday,
+  type Slot,
+  type Subtask,
+  type Task,
+  type UnplacedTaskSummary,
+  type WeekContainer,
+  type WeekMetadata,
+  type Project, 
 } from '../types/scheduler.types';
 
 // ─────────────────────────────────────────────────────────────────────────────

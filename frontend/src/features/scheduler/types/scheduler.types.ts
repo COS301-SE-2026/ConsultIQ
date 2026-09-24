@@ -1,10 +1,10 @@
 
 
-export type Instant = string;
+export type Instant = string;// nosonar
 
-export type LocalDate = string;
+export type LocalDate = string;// nosonar
 
-export type Minutes = number;
+export type Minutes = number;// nosonar
 
 export interface Interval {
     start: Instant;

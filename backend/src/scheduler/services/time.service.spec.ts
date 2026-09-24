@@ -132,28 +132,13 @@ describe('TimeService', () => {
             expect(service.isRangeInCoreHours(start, end, 'Africa/Johannesburg')).toBe(true);
         });
 
-        it('should return false if start or end are invalid', () => {
-            expect(service.isRangeInCoreHours('invalid', '2026-09-21T15:00:00Z', 'Africa/Johannesburg')).toBe(false);
-            expect(service.isRangeInCoreHours('2026-09-21T06:00:00Z', 'invalid', 'Africa/Johannesburg')).toBe(false);
-        });
-
-        it('should return false if end comes before start', () => {
-            const start = '2026-09-21T10:00:00Z';
-            const end = '2026-09-21T08:00:00Z';
-            expect(service.isRangeInCoreHours(start, end, 'Africa/Johannesburg')).toBe(false);
-        });
-
-        it('should return false if the range spans across different calendar days', () => {
-            // Friday 16:00 to Monday 09:00
-            const start = '2026-09-25T14:00:00Z';
-            const end = '2026-09-28T07:00:00Z';
-            expect(service.isRangeInCoreHours(start, end, 'Africa/Johannesburg')).toBe(false);
-        });
-
-        it('should return false if range spills outside of core hours', () => {
-            // 16:00 to 18:00 SAST (core ends at 17:00)
-            const start = '2026-09-21T14:00:00Z';
-            const end = '2026-09-21T16:00:00Z';
+        it.each([
+            ['start is invalid', 'invalid', '2026-09-21T15:00:00Z'],
+            ['end is invalid', '2026-09-21T06:00:00Z', 'invalid'],
+            ['end comes before start', '2026-09-21T10:00:00Z', '2026-09-21T08:00:00Z'],
+            ['the range spans across different calendar days', '2026-09-25T14:00:00Z', '2026-09-28T07:00:00Z'],
+            ['the range spills outside of core hours', '2026-09-21T14:00:00Z', '2026-09-21T16:00:00Z']
+        ])('should return false if %s', (_, start, end) => {
             expect(service.isRangeInCoreHours(start, end, 'Africa/Johannesburg')).toBe(false);
         });
     });

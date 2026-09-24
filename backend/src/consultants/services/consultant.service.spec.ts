@@ -11,8 +11,6 @@ import { EncryptionPrismaClient } from '../../common/encryption/services/client-
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
-import { mock } from 'node:test';
-
 
 const mockPrismaService = {
   user: {
@@ -1296,6 +1294,38 @@ describe('ConsultantService', () => {
         },
       });
     });
+
+    it('throws ForbiddenException when a CONSULTANT_MANAGER tries to update costToCompany', async () => {
+      await expect(
+        service.updateConsultantProfile(
+          consultantId,
+          { costToCompany: 50000 } as any,
+          'CONSULTANT_MANAGER',
+          'cm-user-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows a CONSULTANT to update their own costToCompany', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = createUpdateTxMock();
+
+      const result = await service.updateConsultantProfile(
+        consultantId,
+        { costToCompany: 60000 } as any,
+        'CONSULTANT',
+        'consultant-user-1',
+      )
+
+      expect(result.message).toBe('Consultant profile updated successfully.');
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+         where: { id: consultantId },
+         data: expect.objectContaining({ costToCompany: 60000 }),
+      });
+    });
   });
 
   // ---------- uploadProfilePicture------------
@@ -1508,6 +1538,5 @@ describe('ConsultantService', () => {
     });
 
   });
-
 });
 

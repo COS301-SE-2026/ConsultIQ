@@ -117,12 +117,12 @@ function ConsultantProfileViewPage() {
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
         <header
-          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="shrink-0 sticky top-0 z-20 bg-white border-b h-[90px] flex items-center pl-20 pr-4 md:px-20"
+          style={{ borderColor: "var(--color-border)"}}
         >
-          <div className="flex items-center gap-6 px-4 w-full">
+          <div className="flex items-center gap-3 md:gap-6 w-full">
             {fromDashboard && (
               <button
                 onClick={() => navigate(-1)}
@@ -139,15 +139,15 @@ function ConsultantProfileViewPage() {
                 <ArrowLeft size={20} /> Back
               </button>
             )}
-            <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
+            <h1 className={`font-bold text-2xl md:text-4xl ${fromDashboard ? "mx-auto" : ""}`   } style={{ color: "var(--color-primary)" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
-            {fromDashboard && <div style={{ width: "70px" }}></div>}
+            {fromDashboard && <div className="hidden md:block" style={{ width: "70px" }}></div>}
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10">
-          <div className="flex flex-col gap-8 w-full max-w-[1024px]">
+        <main className="flex-1 flex flex-col items-center p-4 sm:p-10">
+          <div className="flex flex-col gap-6 sm:gap-8 w-full max-w-[1024px]">
             <div className="h-1" />
 
             <ProfileHeroCard

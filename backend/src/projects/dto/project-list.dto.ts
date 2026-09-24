@@ -10,6 +10,7 @@ export class ProjectListItemDto {
   teamSize!: number;
   requiredAllocationPercentage!: number;
   clientBillingBudget!: number;
+  workModel!: string;
   status!: string;
   skillCount!: number;
   gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";

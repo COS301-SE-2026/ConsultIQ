@@ -35,6 +35,7 @@ interface LocationCardProps {
 
 
 interface LocationForm {
+interface LocationForm {
   readonly addressLine1: string;
   readonly addressLine2: string;
   readonly suburb: string;
@@ -211,13 +212,16 @@ export default function LocationCard({
         title="Location"
         edit={
           canEdit && (
-            <EditControls
-              isEditing={isEditing}
-              isSaving={isSaving}
-              onEdit={handleEditClick}
-              onSave={handleSave}
-              onCancel={handleCancel}
-            />
+            <div className="shrink-0">
+              <EditControls
+                isEditing={isEditing}
+                isSaving={isSaving}
+                onEdit={handleEditClick}
+                onSave={handleSave}
+                onCancel={handleCancel}
+              />
+            </div>
+
           )
         }
       >

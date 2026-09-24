@@ -121,7 +121,7 @@ export interface CalendarEntry {
     start: string;
     end: string;
     tags: string[];
-    origin: 'user' | 'feed';
+    origin: 'user' | 'feed' | 'system' | 'public-holiday';
 }
 
 export interface PublicHoliday {
@@ -218,7 +218,7 @@ export type Change =
 
 
 export interface ValidateContext {
-    previousWeek: WeekContainer;
+    previousWeek?: WeekContainer;
     bumpedEntityIds?: string[];
     allocations?: AllocationSummary[];
 }

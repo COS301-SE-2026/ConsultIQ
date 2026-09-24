@@ -50,16 +50,26 @@ function AdminPage() {
 
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
+        setUserPage(1);
 
     };
 
+    const handleRoleFilterChange = (role: string) => {
+        setRoleFilter(role);
+        setUserPage(1);
+    }
+
+    const handleStatusFilterChange = (status: string) => {
+        setStatusFilter(status);
+        setUserPage(1);
+    }
 
     useEffect(() => {
 
         const loadUsers = async () => {
             setIsUserLoading(true);
             try {
-                const res = await getAllUsers(userPage, 10);
+                const res = await getAllUsers(userPage, 10, searchQuery, roleFilter, statusFilter);
                 setUsers(res.data);
                 setUserMeta(res.meta);
 
@@ -76,7 +86,7 @@ function AdminPage() {
 
 
 
-    }, [userPage, userRefreshKey]);
+    }, [userPage, userRefreshKey, searchQuery, roleFilter, statusFilter]);
 
 
 
@@ -88,7 +98,7 @@ function AdminPage() {
             setProjectError(null);
 
             try {
-                const res = await getAllProjects(projectPage, 10);
+                const res = await getAllProjects(projectPage, 10, searchQuery, budgetSort);
                 setProjects(res.data);
                 setProjectMeta(res.meta);
             } catch (err) {
@@ -96,36 +106,34 @@ function AdminPage() {
 
             } finally {
                 setIsProjectLoading(false);
-
             }
-
         };
 
         loadProjects();
 
-    }, [projectPage, projectRefreshKey]);
+    }, [projectPage, projectRefreshKey, searchQuery, budgetSort]);
 
 
 
 
     return (
-        <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen flex-col bg-[var(--color-surface)] md:flex-row">
             <Sidebar items={adminSidebarItems} notificationCount={unreadCount} />
 
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto  gap-4">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-22.5 flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                style={{ borderColor: "var(--color-border)"}}
                 >
-                    <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                         Admin Dashboard
                     </h1>
                 </header>
 
 
 
-                <main className="flex-1 overflow-y-auto  overscroll-none relative ">
-                    <div className=" flex flex-col gap-4  max-w-[1600px] mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+                <main className="flex-1 overflow-y-auto">
+                    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 px-4 pb-8 pt-4 sm:px-6 lg:px-10">
                         <div className="flex flex-wrap  max-w-[1600px] mx-auto w-full pb-8 mt-6 gap-4">
                             <CountCard
                                 title="Total Users"
@@ -153,17 +161,14 @@ function AdminPage() {
 
                             <CountCard
                                 title="Total Projects"
-                                count={projectMeta?.absoluteTotalRecords ?? 0}
+                                count={projectMeta?.totalRecords ?? 0}
                                 icon={Folder}
                                 iconBackgroundColour="#F0EDFD"
                                 iconColour="#664CC8"
                             />
 
                         </div>
-                        <div
-                            className="sticky top-0 w-full "
-                            style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
-                        >
+                        <div className="sticky top-0 z-20 w-full bg-[var(--color-surface)]">
 
                             {/* Search bar */}
                             <SearchBar
@@ -175,14 +180,14 @@ function AdminPage() {
                            
 
                             {showFilters &&  (
-                                <div className="mt-6">
+                                <div className="mt-4 sm:mt-6">
                                   <AdminFilters
                                     activeTab={activeTab}
                                     roleFilter={roleFilter}
                                     statusFilter={statusFilter}
                                     budgetFilter={budgetSort}
-                                    onRoleChange={setRoleFilter}
-                                    onStatusChange={setStatusFilter}
+                                    onRoleChange={handleRoleFilterChange}
+                                    onStatusChange={handleStatusFilterChange}
                                     onBudgetSortChange={setBudgetSort}
                                 />  
                                 </div>

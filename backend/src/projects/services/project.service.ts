@@ -30,7 +30,7 @@ export class ProjectService {
     private readonly prisma: PrismaService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly redisUtilityService: RedisUtilityService,
-  ) {}
+  ) { }
 
   async invalidateProjectsCache() {
     await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
@@ -128,6 +128,7 @@ export class ProjectService {
       teamSize: p.teamSize,
       requiredAllocationPercentage: p.requiredAllocationPercentage,
       clientBillingBudget: Number(p.clientBillingBudget),
+      workModel: p.workModel,
       status: p.status,
       skillCount: p.skillCount,
       gapSeverity: p.gapSeverity,
@@ -169,9 +170,14 @@ export class ProjectService {
 
     if (dto.startDate || dto.endDate) {
       const start = new Date(dto.startDate ?? project.startDate);
-      const end = dto.endDate ? new Date(dto.endDate) : project.endDate;
-      if (end && end <= start) {
-        throw new BadRequestException('End date must be after start date.');
+      const endRaw = dto.endDate ?? project.endDate;
+
+      // Only check the end date if it actually exists
+      if (endRaw) {
+        const end = new Date(endRaw);
+        if (end <= start) {
+          throw new BadRequestException('End date must be after start date.');
+        }
       }
     }
     await this.invalidateProjectsCache();
@@ -215,6 +221,7 @@ export class ProjectService {
           teamSize: dto.teamSize,
           allocation: dto.allocation,
           budget: dto.budget,
+          workModel: dto.workModel,
           status: ProjectStatus.OPEN,
         },
       });
@@ -226,7 +233,8 @@ export class ProjectService {
         },
       });
 
-      for (const skill of dto.skills) {
+
+      for(const skill of dto.skills) {
         const normalizedSkillName = skill.name.trim().toLowerCase();
         const skillRecord = await tx.skill.upsert({
           where: { name: normalizedSkillName },
@@ -234,17 +242,22 @@ export class ProjectService {
           create: { name: normalizedSkillName, category: 'General' },
         });
 
-        await tx.projectSkill.create({
-          data: {
-            projectId: project.id,
-            skillId: skillRecord.id,
-            competency: skill.competency as CompetencyLevel,
-            mandatory: skill.mandatory,
-            years: skill.years,
-          },
+        const existingProjectSkill = await tx.projectSkill.findFirst({
+          where: { projectId: project.id, skillId: skillRecord.id },
         });
-      }
 
+        if (!existingProjectSkill) {
+          await tx.projectSkill.create({
+            data: {
+              projectId: project.id,
+              skillId: skillRecord.id,
+              competency: skill.competency as CompetencyLevel,
+              mandatory: skill.mandatory,
+              years: skill.years,
+            },
+          });
+        }
+      }
       return { projectId: project.id };
     });
   }
@@ -345,6 +358,7 @@ export class ProjectService {
             p."teamSize",
             p.allocation AS "requiredAllocationPercentage",
             p.budget AS "clientBillingBudget",
+            p."workModel",
             p.status,
             p."skillGapSeverity" AS "gapSeverity",
             COUNT(ps.id)::int AS "skillCount"

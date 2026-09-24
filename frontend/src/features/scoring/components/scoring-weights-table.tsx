@@ -53,16 +53,16 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto my-12 px-4 sm:px-6 lg:px-8 py-6 bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible">
+        <div className="mx-auto my-6 w-full max-w-5xl overflow-visible rounded-lg border border-slate-200 bg-white px-3 py-4 shadow-sm sm:my-12 sm:px-6 sm:py-6 lg:px-8">
             {isProjectOverride && (
-                <div className="px-6 py-4 sm:px-4 bg-white border-b border-slate-200 flex justify-between items-center">
-                    <div className="px-4 flex items-center gap-2">
+                <div className="flex flex-col gap-3 border-b border-slate-200 bg-white py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-xl text-sm font-bold 
                             ${isUsingDefaultWeights ? 'bg-slate-100 text-slate-600' : 'bg-green-50 text-green-700 border border-green-200'}`}>
                             <span className={`h-5 w-5 rounded-full ${isUsingDefaultWeights ? 'bg-slate-400' : 'bg-green-500'}`} />
                             {isUsingDefaultWeights ? 'Using Consultancy Defaults' : 'Custom Override Active'}
                         </span>
-                        <button onClick={onRunMatch} disabled={isMatching}
+                        <button type="button" onClick={onRunMatch} disabled={isMatching}
                             className="h-9 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-white rounded-lg" style={{ backgroundColor: "var(--color-primary)" }}>
                             {isMatching && <Loader2 className="h-5 w-5 animate-spin" />}
                             {isMatching ? "Running..." : "Run Match"}
@@ -70,15 +70,15 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                     </div>
 
                     {!isUsingDefaultWeights && onRevertToDefaultWeights && (
-                        <button onClick={onRevertToDefaultWeights}
-                            className="flex items-center gap-1 text-xs text-slate-500 font-bold">
+                        <button type="button" onClick={onRevertToDefaultWeights}
+                            className="flex items-center gap-1 self-start text-sm text-slate-500 font-bold sm:self-auto">
                             <RotateCcw className="h-5 w-5" />Revert to Defaults
                         </button>)}
 
                 </div>
             )}
-            <div className="border-b border-slate-100">
-                <div className="py-4 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center text-sm font-bold text-primary tracking-wide">
+            <div className="hidden border-b border-slate-100 md:block">
+                <div className="grid grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center gap-1 py-4 text-sm font-bold tracking-wide text-primary">
                     <div></div>
                     <div className="flex"><h3>Factor</h3></div>
                     <div className="flex justify-center gap-2"><h3>Weight</h3></div>
@@ -97,16 +97,17 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 {factors.map((factor, idx) => (
                     <div key={`${factor.factorName}-${idx}`} >
                         <div className={`mb-4 border border-slate-200 rounded shadow-sm ${!factor.isActive && 'opacity-60'}`}>
-                            <div className="py-2 grid gap-1 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center">
-                                <div></div>
-                                <div className="space-y-3">
+                            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] md:items-center md:gap-1 md:p-0 md:py-2">
+                                <div className="hidden md:block"></div>
+                                <div className="space-y-2 md:space-y-3">
                                     <h4 className="text-base font-semibold text-[#002D62]">{factor.factorName}</h4>
                                     <p className="text-sm text-slate-600">{factor.description}</p>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-center">
-                                        <div className="max-w-[75px] w-full ">
+                                <div className="flex items-center justify-between gap-3 md:block md:space-y-2">
+                                    <span className="text-sm font-semibold text-slate-500 md:hidden">Weight</span>
+                                    <div className="flex items-center justify-end gap-2 md:justify-center">
+                                        <div className="w-full max-w-[75px]">
                                             <input type="number" min="0" max="100" step="1"
                                                 disabled={!factor.isActive}
                                                 value={factor.isActive ? factor.weight : 0}
@@ -119,32 +120,34 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                                         <span className="text-lg font-semibold text-slate-500">%</span>
                                     </div>
                                 </div>
-                                <div className="flex justify-center">
+                                <div className="flex items-center justify-between md:justify-center">
+                                    <span className="text-sm font-semibold text-slate-500 md:hidden">Active</span>
                                     <input type="checkbox" checked={factor.isActive}
                                         onChange={(e) => handleWeightChange(idx, 'isActive', e.target.checked)}
-                                        className="h-4 w-4 rounded-full accent-blue-900" />
+                                        className="h-5 w-5 rounded-full accent-blue-900 md:h-4 md:w-4" />
                                 </div>
-                                <div className="flex justify-center">
+                                <div className="flex items-center justify-between md:justify-center">
+                                    <span className="text-sm font-semibold text-slate-500 md:hidden">Hard Exclusion</span>            
                                     <input type="checkbox" disabled={!factor.isActive} checked={factor.hardExclusion}
                                         onChange={(e) => handleWeightChange(idx, 'hardExclusion', e.target.checked)}
-                                        className="h-4 w-4 rounded accent-blue-900" />
+                                        className="h-5 w-5 rounded accent-blue-900 md:h-4 md:w-4" />
                                 </div>
-                                <div></div>
+                                <div className="hidden md:block"></div>
                             </div>
                         </div>
                     </div>
                 ))}</div>
-            <div className=" h-14 mt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="w-6" />
-                <div className={`h-8 flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-lg 
+            <div className=" mt-6 flex flex-col items-stretch gap-4 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between sm:pt-0">
+                <div className="hidden w-6 sm:block" />
+                <div className={`flex items-center gap-2 text-sm font-bold px-4 py-3 rounded-lg 
                     ${isValidSum ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
                     {isValidSum ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
                     Active weights sum up to {totalActiveWeight}% {isValidSum ? '(Valid)' : '(Must equal 100%)'}
                 </div>
                 <div className="flex gap-3">
-                    <button disabled={!isValidSum || isSaving}
+                    <button type="button" disabled={!isValidSum || isSaving}
                         onClick={() => { setIsSaving(true); onSave(factors).finally(() => setIsSaving(false)); }}
-                        className="h-8 w-25 bg-[#002D62] text-white rounded-lg text-sm font-bold shadow-sm disabled:bg-slate-200 disabled:text-slate-400">
+                        className="h-10 w-full rounded-lg bg-[#002D62] text-sm font-bold text-white shadow-sm disabled:bg-slate-200 disabled:text-slate-400 sm:h-8 sm:w-25">
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>

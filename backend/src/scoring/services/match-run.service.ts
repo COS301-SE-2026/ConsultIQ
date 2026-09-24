@@ -36,7 +36,7 @@ export class MatchRunService {
     @Optional()
     @InjectQueue('match-run')
     private readonly matchRunQueue?: Queue,
-  ) {}
+  ) { }
 
   async enqueueMatchRun(
     projectId: string,
@@ -358,6 +358,7 @@ export class MatchRunService {
       })),
 
       billingBudgetPerHour: project.budget,
+      teamSize: project.teamSize || 1,
       city: project.city,
       province: project.province,
       latitude: project.latitude,
@@ -396,25 +397,25 @@ export class MatchRunService {
     return await this.prisma.$transaction(async (tx) => {
       const matchRun = existingRunId
         ? await tx.matchRun.update({
-            where: { id: existingRunId },
-            data: {
-              totalConsultantsScored: results.length,
-              totalConsultantsExcluded: excludedCount,
-              totalConsultantsPlaced: placedCount,
-              status: MatchRunStatus.COMPLETED,
-            },
-          })
+          where: { id: existingRunId },
+          data: {
+            totalConsultantsScored: results.length,
+            totalConsultantsExcluded: excludedCount,
+            totalConsultantsPlaced: placedCount,
+            status: MatchRunStatus.COMPLETED,
+          },
+        })
         : await tx.matchRun.create({
-            data: {
-              project: { connect: { id: projectId } },
-              executedByUser: { connect: { id: executedByUserId } },
-              configurationSnapshot: activeWeights,
-              totalConsultantsScored: results.length,
-              totalConsultantsExcluded: excludedCount,
-              totalConsultantsPlaced: placedCount,
-              status: MatchRunStatus.COMPLETED,
-            },
-          });
+          data: {
+            project: { connect: { id: projectId } },
+            executedByUser: { connect: { id: executedByUserId } },
+            configurationSnapshot: activeWeights,
+            totalConsultantsScored: results.length,
+            totalConsultantsExcluded: excludedCount,
+            totalConsultantsPlaced: placedCount,
+            status: MatchRunStatus.COMPLETED,
+          },
+        });
       await tx.matchRunResult.deleteMany({
         where: { matchRunId: matchRun.id },
       });

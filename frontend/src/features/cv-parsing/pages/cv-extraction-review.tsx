@@ -1,12 +1,15 @@
 import { useMemo, useState, useRef, useEffect } from "react";
+import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Loader2 , Trash2} from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Trash2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
 import { cvParsingService } from "../services/cv-parsing.service";
-import { createConsultantProfile } from "../../consultants/services/consultant.service";  
+import { createConsultantProfile } from "../../consultants/services/consultant.service";
 import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
+import SecurityReviewModal from "./security-review-modal";
+import SecurityClearedModal from "./security-cleared-modal";
 
 import type {
     CvFileStatus,
@@ -16,6 +19,7 @@ import type {
     ParsedEducation,
     ParsedCertification,
     FieldWarning,
+    CvSecurityFlag,
 } from "../types/cv.types";
 import { toast } from "sonner";
 
@@ -24,6 +28,7 @@ type ViewState = "loading" | "processing" | "review" | "failed";
 interface ManualFields {
     idNumber: string;
     costToCompany: string;
+    costRateType: CostRateType;
     availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE"
 }
 
@@ -31,7 +36,6 @@ interface SkillFormRow extends ParsedSkill {
     competencyLevel:  "BEGINNER" | "INTERMEDIATE" | "EXPERT";
     confidenceLevel: number;
 }
-
 
 //normalize job type and work model options to match backend enum values
 const JOB_TYPE_OPTIONS = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "FREELANCE"] as const;
@@ -53,6 +57,7 @@ const normaliseEnum = <T extends string>(raw: string | undefined, options: reado
 
 const POLL_INTERVAL_MS = 2000;
 const LOW_CONFIDENCE_THRESHOLD = 0.6;
+const WORKING_DAYS_PER_YEAR = 260;
 
 export default function CVExtractionReview(){
     const navigate = useNavigate();
@@ -62,7 +67,7 @@ export default function CVExtractionReview(){
     const [cvFile, setCvFile] = useState<CvFileStatus | null>(null);
     const [fieldWarnings, setFieldWarnings] = useState<FieldWarning[]>([]);
     const [failureReason, setFailureReason] = useState<string>("");
-
+    const [securityFlags, setCvSecurityFlags] = useState<CvSecurityFlag[]>([]);
     const [contact, setContact] = useState<ParsedCvData["contact"]>({});
     const [skills, setSkills] = useState<SkillFormRow[]>([]);
     const [experiences, setExperiences] = useState<ExperienceFormRow[]>([]);
@@ -71,6 +76,7 @@ export default function CVExtractionReview(){
     const [manualFields, setManualFields] = useState<ManualFields>({
         idNumber: "",
         costToCompany: "",
+        costRateType: "MONTHLY",
         availability: "AVAILABLE",
     });
 
@@ -79,16 +85,75 @@ export default function CVExtractionReview(){
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
 
+    const enteredCost = Number(manualFields.costToCompany);
+    const hasValidCost = manualFields.costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >= 0;
+    const dailyCostToCompany = manualFields.costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
+
+    // Security review gates everything else.
+    const securityReviewStatus = cvFile?.securityReviewStatus ?? "NONE";
+
+    // Tracks whether this CV was PENDING the first time we successfully
+    // loaded it in this visit — used to decide whether a later CLEARED
+    // is a live transition (show the "cleared" modal) or just this CV's
+    // normal resting state (skip straight to the editable form).
+    const wasPendingOnLoadRef = useRef<boolean | null>(null);
+
+    const [showClearedModal, setShowClearedModal] = useState(false);
+    const [clearedAcknowledged, setClearedAcknowledged] = useState(false);
+
+    // Blocked = form is read-only. PENDING/REJECTED always block. A fresh
+    // CLEARED transition also blocks until the CM acknowledges the
+    // "cleared" modal, so the form never silently reappears mid-session.
+    const isSecurityBlocked =
+        securityReviewStatus === "PENDING" ||
+        securityReviewStatus === "REJECTED" ||
+        showClearedModal;
+
     const warningByPath = useMemo(() =>{
         const map = new Map<string, string>();
         fieldWarnings.forEach((w) => map.set(w.path, w.message));
         return map;
     }, [fieldWarnings]);
 
+    const hydrateFormFromResult = (result: CvFileStatus) => {
+        const data = result.parsedData?.data;
+        setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
+        setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
+
+        if (!data) return;
+
+        setContact(data.contact ?? {});
+        setSkills(
+            (data.skills ?? []).map((s) => ({
+                ...s,
+                competencyLevel: "BEGINNER",
+                confidenceLevel: 1,
+            })),
+        );
+        setExperiences(
+            (data.experiences ?? []).map((e) => ({
+                ...e,
+                jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
+                workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
+            })),
+        );
+        setCertifications(data.certifications ?? []);
+        setEducation(data.education ?? []);
+    };
+
+    const maybeShowClearedModal = (currentStatus: CvFileStatus["securityReviewStatus"]) => {
+        if (wasPendingOnLoadRef.current === null) {
+            wasPendingOnLoadRef.current = currentStatus === "PENDING";
+        }
+        if (currentStatus === "CLEARED" && wasPendingOnLoadRef.current && !clearedAcknowledged) {
+            setShowClearedModal(true);
+        }
+    };
     useEffect(() => {
-    if (!cvFileId) return; 
+    if (!cvFileId) return;
 
     let cancelled = false;
+    let formHydrated = false; // once true, a poll tick must never overwrite in-progress edits
 
     const fetchOnce = async () => {
       try {
@@ -102,40 +167,30 @@ export default function CVExtractionReview(){
           return;
         }
 
-        if (result.extractionStatus ==="FAILED") {
+        if (result.extractionStatus === "FAILED") {
           setViewState("failed");
           setFailureReason(result.parsedData?.error ?? "CV extraction failed.");
           if (pollTimer.current) clearInterval(pollTimer.current);
           return;
         }
 
-        // REVIEW_REQUIRED status
-        if (pollTimer.current) clearInterval(pollTimer.current);
+        // REVIEW_REQUIRED or SECURITY_REJECTED — securityReviewStatus (not
+        // extractionStatus) decides whether the form is editable.
+        const currentStatus = result.securityReviewStatus;
+        maybeShowClearedModal(currentStatus);
 
-        const data = result.parsedData?.data;
-        setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
-
-        if (data) {
-          setContact(data.contact ?? {});
-          setSkills(
-            (data.skills ?? []).map((s) => ({
-              ...s,
-              competencyLevel: "BEGINNER",
-              confidenceLevel: 1,
-            })),
-          );
-          setExperiences(
-            (data.experiences ?? []).map((e) =>({
-                ...e,
-                jobType: normaliseEnum(e.jobType, JOB_TYPE_OPTIONS) || undefined,
-                workModel: normaliseEnum(e.workModel, WORK_MODEL_OPTIONS) || undefined,
-          })), );
-
-          setCertifications(data.certifications ?? []);
-          setEducation(data.education ?? []);
+        // Hydrate the form only until the CM is allowed to edit.
+        if (!formHydrated) {
+          hydrateFormFromResult(result);
         }
 
         setViewState("review");
+
+        if (currentStatus !== "PENDING") {
+          // CLEARED, REJECTED, or was never flagged — nothing left to wait on.
+          formHydrated = true;
+          if (pollTimer.current) clearInterval(pollTimer.current);
+        }
       } catch (error) {
         if (cancelled) return;
         setViewState("failed");
@@ -153,21 +208,25 @@ export default function CVExtractionReview(){
       cancelled = true;
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
-  }, [cvFileId]);
+  }, [cvFileId, clearedAcknowledged]);
 
     const updateSkill = (idx: number, patch:Partial<SkillFormRow>) =>{
+        if (isSecurityBlocked) return;
         setSkills((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch} : s)));
     };
 
     const updateExperience = (idx: number, patch: Partial<ExperienceFormRow>) =>{
+        if (isSecurityBlocked) return;
         setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
     }
 
     const updateCertification = (idx: number, patch: Partial<ParsedCertification>) =>{
+        if (isSecurityBlocked) return;
         setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch} : c)));
     }
 
     const updateEducation = (idx: number, patch: Partial<ParsedEducation>) =>{
+        if (isSecurityBlocked) return;
         setEducation((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch} : e)));
     }
 
@@ -175,15 +234,15 @@ export default function CVExtractionReview(){
         const normalisedPhone = normaliseSAPhone(contact.phone ?? "");
 
         if(!contact.fullName) return {error : "Full name is required."};
-        
+
         if(!/^\d{10}$/.test(normalisedPhone)) {
             return {error : "Phone number must be exactly 10 digits."};
         }
         if(!manualFields.idNumber || !validateSAID(manualFields.idNumber)) {
             return { error : "Please enter a valid South African ID number."};
         }
-        if(manualFields.costToCompany && Number.isNaN(Number(manualFields.costToCompany))) {
-            return { error : "Cost to company must be a valid number."};
+        if(!hasValidCost) {
+            return { error : "Cost to company is required and must be a valid non-negative number."};
         }
         if(!contact.city || !contact.province || !contact.addressLine1){
             return {error : "Adress, city and province are required."};
@@ -200,7 +259,7 @@ export default function CVExtractionReview(){
     };
 
     const handleApprove = async  () =>{
-        if(!userId) return;
+        if(!userId || isSecurityBlocked) return;
 
         const validation = validateBeforeSubmit();
         if(validation.error){
@@ -223,7 +282,7 @@ export default function CVExtractionReview(){
                 city: contact.city ?? "",
                 province: contact.province ?? "",
                 postalCode: contact.postalCode,
-                costToCompany: Number(manualFields.costToCompany),
+                costToCompany: hasValidCost ? dailyCostToCompany : 0,
                 availability: manualFields.availability,
                 skills: skills.map((s) => ({
                 skillName: s.skillName,
@@ -235,18 +294,18 @@ export default function CVExtractionReview(){
                 certifications,
                 education,
             });
-            
+
             toast.success("Consultant profile created successfully");
             navigate("/consultants-manager");
-        }catch(error){ 
+        }catch(error){
             toast.error(error instanceof Error ? error.message : "Failed to create consultant profile.");
         }finally{
             setIsSubmitting(false);
-        } 
+        }
     };
 
     const handleDiscard = async  () =>{
-        if(!cvFileId) return;
+        if(!cvFileId || isSecurityBlocked) return;
 
         const confirmed = window.confirm("This will permanently delete the uploaded CV. Continue?");
 
@@ -264,8 +323,17 @@ export default function CVExtractionReview(){
         }
     };
 
+    const handleExitFlagged = () => {
+        navigate("/consultants-manager");
+    };
+
+    const handleClearedContinue = () => {
+        setShowClearedModal(false);
+        setClearedAcknowledged(true);
+    };
+
     const isLowConfidence = (section: keyof NonNullable<typeof confidenceScores>) => (confidenceScores?.[section] ?? 1) < LOW_CONFIDENCE_THRESHOLD;
-    
+
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -296,14 +364,14 @@ export default function CVExtractionReview(){
                 {viewState === "loading" &&(
                     <div className="flex items-center justify-center h-full gap-2">
                         <Loader2  className="h-6 w-6 animate-spin"/>
-                        <p>Loading...</p>   
+                        <p>Loading...</p>
                     </div>
                 )}
 
                 {viewState === "processing" &&(
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                         <Loader2  className="h-10 w-10 animate-spin" style={{color: "var(--color-primary"}}/>
-                        <p className="text-lg">Extracting CV details...</p>  
+                        <p className="text-lg">Extracting CV details...</p>
                         <p className="text-sm text-gray-500">
                             This can take a moment. Please do not close this page.
                         </p>
@@ -313,7 +381,7 @@ export default function CVExtractionReview(){
                 {viewState === "failed" &&(
                     <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
                         <AlertTriangle  className="h-10 w-10 text-red-600"/>
-                        <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>  
+                        <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>
                         <p className="text-sm ">
                             {failureReason}
                         </p>
@@ -326,6 +394,19 @@ export default function CVExtractionReview(){
                 )}
 
                 { viewState === "review" && cvFile &&(
+                    <>
+                        {showClearedModal && (
+                            <SecurityClearedModal onContinue={handleClearedContinue} />
+                        )}
+
+                        {(securityReviewStatus === "PENDING" || securityReviewStatus === "REJECTED") && !showClearedModal && (
+                            <SecurityReviewModal
+                                status={securityReviewStatus as "PENDING" | "REJECTED"}
+                                flags={securityFlags}
+                                onExit={handleExitFlagged}
+                            />
+                        )}
+                        <fieldset disabled={isSecurityBlocked} className="contents">
                         <div className="max-w-4xl mx-auto flex flex-col gap-8">
                             <Card className="p-6 rounded-lg">
                                 <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
@@ -354,16 +435,57 @@ export default function CVExtractionReview(){
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({...m, idNumber:  v}))} />
 
-                                    <FormField label="Cost to company" value={manualFields.costToCompany} onChange={(v) => setManualFields((m) => ({...m, costToCompany:  v}))} />
-
                                     <label className="flex flex-col gap-1">
-                                        <span className="text-sm font-medium">Availability</span>
-                                        <select className="border rounded-lg h-10 px-2">
+                                        <span className="text-lg font-semibold text-primary">Availability</span>
+                                        <select className="border rounded-lg h-10 px-2"
+                                            value={manualFields.availability}
+                                            disabled={isSecurityBlocked}
+                                            onChange={(event) =>
+                                                setManualFields((curr) => ({...curr, availability: event.target.value as ManualFields["availability"]}))}
+                                        >
                                             <option value="AVAILABLE" >Available</option>
                                             <option value="UNAVAILABLE">Unavailable</option>
                                             <option value="ON_LEAVE">On leave</option>
                                         </select>
                                     </label>
+
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-lg font-semibold text-primary">Cost to Company (R)</span>
+                                        <div className="flex rounded-lg border overflow-hidden">
+                                            <button type="button" disabled={isSecurityBlocked} onClick={() => setManualFields((m) => ({...m, costRateType: "DAILY"}))}
+                                                className={`flex-1 px-3 py-2 text-sm font-medium
+                                                ${manualFields.costRateType === "DAILY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                                                >
+                                                Daily rate
+                                            </button>
+                                            <button type="button" disabled={isSecurityBlocked} onClick={() => setManualFields((m) => ({...m, costRateType: "MONTHLY"}))}
+                                                className={`flex-1 px-3 py-2 text-sm font-medium
+                                                ${manualFields.costRateType === "MONTHLY" ? "bg-[var(--color-primary)] text-white": "bg-white text-gray-600"}`}
+                                                >
+                                               Monthly salary
+                                            </button>
+                                        </div>
+                                        <p className="text-sm text-slate-500">
+                                            {manualFields.costRateType === "DAILY"
+                                            ? "Enter the cost for on 8-hour working day."
+                                            : "Enter the monthly salary. We will convert it to a daily rate using 260 working days per year."
+                                            }
+                                        </p>
+                                        <FormField
+                                        label={manualFields.costRateType === "DAILY" ? "Daily cost to company" : "Monthly cost to company "}
+                                        value={manualFields.costToCompany}
+                                        onChange={(value) => {setManualFields((m) => ({...m, costToCompany: value}));}}
+                                        />
+
+                                        {hasValidCost && manualFields.costRateType === "MONTHLY" && (
+                                            <p className="text-sm font-medium text-blue-700">
+                                                Estimated daily rate : R {dailyCostToCompany.toFixed(2)}
+                                                <br/>
+                                                Based on an 8-hour working day.
+                                            </p>
+                                            )}
+                                    </div>
+
                                 </div>
                             </Card>
 
@@ -376,19 +498,20 @@ export default function CVExtractionReview(){
                                 {skills.map((skill, i) =>(
                                     <div key={i} className="grid grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
                                         <FormField label="Skill" value={skill.skillName} onChange={(v) => updateSkill(i, { skillName: v})}/>
-                                        <FormField label="Years experience" value={String(skill.yearsExperience)} 
+                                        <FormField label="Years experience" value={String(skill.yearsExperience)}
                                         onChange={(v) => updateSkill(i, {yearsExperience: Number(v) || 0})} />
-                                        
+
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium">Competency</span>
-                                            <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel}>
+                                            <span className="text-lg font-semibold text-primary">Competency</span>
+                                            <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel} disabled={isSecurityBlocked}
+                                                onChange={(e) => updateSkill(i, { competencyLevel: e.target.value as SkillFormRow["competencyLevel"] })}>
                                                 <option value="BEGINNER">Beginner</option>
                                                 <option value="INTERMEDIATE">Intermediate</option>
                                                 <option value="EXPERT">Expert</option>
                                             </select>
                                         </label>
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm font-medium"> Confidence (1-4) </span>
+                                            <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
                                             <input type="number" min={1} max={4} className="border rounded-lg h-10 px-2"
                                                 value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {confidenceLevel: Number(e.target.value)})}
                                              />
@@ -411,8 +534,8 @@ export default function CVExtractionReview(){
                                         <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
                                         <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm">Job type</span>
-                                            <select value={ exp.jobType ?? ""} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
+                                            <span className="text-lg font-semibold text-primary">Job type</span>
+                                            <select value={ exp.jobType ?? ""} disabled={isSecurityBlocked} onChange={(e) => updateExperience(i, { jobType: e.target.value as JobType })}>
                                                 <option value="" disabled>Select job type</option>
                                                 <option value="FULL_TIME">Full-time</option>
                                                 <option value="PART_TIME">Part-time</option>
@@ -422,8 +545,8 @@ export default function CVExtractionReview(){
                                             </select>
                                         </label>
                                         <label className="flex flex-col gap-1">
-                                            <span className="text-sm">Work model</span>
-                                            <select value={exp.workModel ?? ""} onChange={(e) => updateExperience(i, { workModel: e.target.value as WorkModel })}>
+                                            <span className="text-lg font-semibold text-primary">Work model</span>
+                                            <select value={exp.workModel ?? ""} disabled={isSecurityBlocked} onChange={(e) => updateExperience(i, { workModel: e.target.value as WorkModel })}>
                                                 <option value="">Select work model</option>
                                                 <option value="ONSITE">Onsite</option>
                                                 <option value="REMOTE">Remote</option>
@@ -463,6 +586,7 @@ export default function CVExtractionReview(){
                                 ))}
                             </Card>
 
+                            {!isSecurityBlocked &&(
                             <div className="flex justify-between items-center pb-10">
                                 <button className="flex items-center gap-2 h-12 px-6 rounded-lg font-semibold border border-red-300 text-red-600"
                                     onClick={handleDiscard} disabled={isDiscarding || isSubmitting} >
@@ -476,7 +600,10 @@ export default function CVExtractionReview(){
                                     {isSubmitting ? "Creating profile..." : "Approve and create profile"}
                                 </button>
                             </div>
+                            )}
                         </div>
+                        </fieldset>
+                     </>
                     )}
             </main>
         </div>
@@ -488,7 +615,7 @@ function FormField({label, value, warning, onChange}: {
     readonly label: string; readonly value: string; readonly warning?: string; readonly onChange: (value:string) =>void; }){
     return(
         <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium">{label}</span>
+            <span className="text-lg font-semibold text-primary">{label}</span>
             <input  className="border rounded-lg h-10 px-3"
         style={{ borderColor: warning ? "#f59e0b" : undefined }}
         value={value}

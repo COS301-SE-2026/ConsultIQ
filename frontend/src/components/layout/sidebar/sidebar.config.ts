@@ -1,4 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
+import { ShieldAlert } from "lucide-react";
 import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
@@ -37,30 +38,66 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
 
 ]
 
-export const projectManagerSidebarItems: SidebarItem[] = [
+export const superAdminSidebarItems: SidebarItem[] = [
     {
+    path: "/super-admin-dashboard",
+    label: "Dashboard",
+    icon: House,
+    },
+    {
+    path: "/super-admin/security-review",
+    label: "Security Review",
+    icon: ShieldAlert,
+  },
+
+];
+
+export const projectManagerSidebarItems = (projectId?: string, runId?:string,): SidebarItem[] => {
+    const items: SidebarItem[] = [
+       {
         label: "Projects",
         path: "/projects",
         icon: Briefcase
     },
     {
-        label: "Configurations",
-        path: "/project-scoring-config",
-        icon: Cog
+        label: "Portfolio Gaps",
+        path: "/skill-gap",
+        icon: ChartPie
     },
-    {
-        label: "Placements",
-        path: "/placement-dashboard",
-        icon: Users
-    },
-    {
+
+   ];
+
+   if(projectId){
+    items.push(
+        {
+            label: "Configurations",
+            path: `/project-scoring-config/${projectId}`,
+            icon: Cog
+        },
+        {
+        label: "Project Skill Gaps",
+        path: `/skill-gap/${projectId}`,
+        icon: ChartPie,
+    });
+   }
+
+   if(projectId && runId){
+    items.push(
+        {
+            label: "Placements",
+            path: `/placement-dashboard/${projectId}/${runId}`,
+            icon: Users
+        })
+   }
+
+   items.push({
         label: "Help",
         path: "/help-page",
         icon: HelpCircle
-    }
-
-
-]
+    });
+    
+    return items;
+}
 
 export const consultantSidebarItems: SidebarItem[] = [
     {

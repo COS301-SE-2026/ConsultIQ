@@ -4,6 +4,7 @@ import {Trash2,Plus} from "lucide-react"
 import { Input } from "../../../../components/ui/input";
 import { toast } from "sonner";
 import EditControls from "./edit-controls";
+import {normalizeCompetency} from "../../types/consultant.types"
 
 export type CompetencyLevel = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
  
@@ -93,7 +94,8 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
     if(field === "name"){
       currentSkill.name = value;
     }else if(field === "yearsOfExperience"){
-      currentSkill.yearsOfExperience = Number.parseFloat(value) || 0;
+      const parsedValue = value === "" ? 0 : Number.parseFloat(value);
+      currentSkill.yearsOfExperience = Number.isNaN(parsedValue) ? 0: parsedValue;
 
     }else if(field === "confidenceLevel"){
         currentSkill.confidenceLevel = Number.parseInt(value,10) || 1;
@@ -210,7 +212,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                 <Input
                   type="text"
                   placeholder="Auto-calculated"
-                  value={skill.competencyLevel}
+                  value={normalizeCompetency(skill.competencyLevel)}
                   readOnly
                   className="bg-slate-50 text-slate-500 cursor-not-allowed"
                 />
@@ -220,7 +222,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                   placeholder="5"
                   min="0"
                   max="70"
-                  value={skill.yearsOfExperience}
+                  value={skill.yearsOfExperience === 0 ? "" : skill.yearsOfExperience}
                   onChange={(e) => updateSkill(index,"yearsOfExperience",e.target.value)}
                 />
 
@@ -241,7 +243,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
               <>
                <span>{skill.name}</span>
-               <span className="capitalize">{skill.competencyLevel.toLowerCase()}</span>
+               <span>{normalizeCompetency(skill.competencyLevel)}</span>
                <span>{skill.yearsOfExperience}</span>
               </>
               

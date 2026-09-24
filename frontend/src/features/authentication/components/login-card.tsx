@@ -76,7 +76,7 @@ export const LoginCard: React.FC = () => {
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); void handleSubmit(); }}
-      className="flex flex-col w-[560px] min-h-[580px] bg-white rounded-lg shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] items-center gap-6 pt-12 pb-10"
+      className="flex w-full max-w-[560px] flex-col items-center gap-6 rounded-lg bg-white px-6 pb-8 pt-10 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1),0_4px_6px_-4px_rgba(0,0,0,0.1)] sm:px-10 sm:pb-10 sm:pt-12"
     >
       {/* Logo placeholder */}
       <div className="flex justify-center mb-8">
@@ -86,7 +86,7 @@ export const LoginCard: React.FC = () => {
       {/* Header */}
       <div className="mb-8 w-full text-center">
         <h1
-          className="font-bold mb-3"
+          className="mb-3 text-xl font-bold sm:text-2xl"
           style={{ color: "var(--color-primary)" }}
         >
           Welcome to ConsultIQ
@@ -100,7 +100,7 @@ export const LoginCard: React.FC = () => {
       </div>
 
       {/* Form Fields */}
-      <div className="flex flex-col gap-6">
+      <div className="flex w-full flex-col gap-6">
         {/* Email */}
         <div className="flex flex-col gap-2">
           <label
@@ -118,7 +118,7 @@ export const LoginCard: React.FC = () => {
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className="mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border border-[#E2E8F0] text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+            className="h-[50px] w-full max-w-[520px] rounded border border-[#E2E8F0] px-4 text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
           />
         </div>
 
@@ -139,12 +139,12 @@ export const LoginCard: React.FC = () => {
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className="mx-auto w-96 max-w-[520px] h-[50px] px-4 rounded border border-[#E2E8F0] text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
+            className="h-[50px] w-full max-w-[520px] px-4 rounded border border-[#E2E8F0] text-base outline-none transition focus:ring-2 focus:ring-blue-100 disabled:opacity-50"
           />
         </div>
 
         {/* Forgot password link - centered */}
-        <div className="w-96 max-w-[520px] flex justify-center mt-1">
+        <div className="mt-1 flex w-full max-w-[520px] flex justify-center">
           <Link
             to="/forgot-password"
             className="text-sm font-semibold !text-slate-500 hover:!underline hover:!text-blue-600 transition">
@@ -157,7 +157,7 @@ export const LoginCard: React.FC = () => {
       <button
         type="submit"
         disabled={loading}
-        className="mx-auto w-96 max-w-[520px] h-[48px] mt-10 rounded text-white font-bold text-base transition hover:brightness-110 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="mt-8 flex h-[48px] w-full max-w-[520px] items-center justify-center gap-2 rounded text-base font-bold text-white transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:mt-10"
         style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? (

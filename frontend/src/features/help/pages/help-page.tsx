@@ -62,7 +62,7 @@ export default function HelpPage() {
     const roleSidebar = {
         CONSULTANT_MANAGER: consultantManagerSidebarItems,
         CONSULTANT: consultantSidebarItems,
-        PROJECT_MANAGER: projectManagerSidebarItems,
+        PROJECT_MANAGER: projectManagerSidebarItems(),
         ADMIN: adminSidebarItems,
     };
 
@@ -72,19 +72,19 @@ export default function HelpPage() {
         <div className={`flex h-screen overflow-hidden overscroll-none ${showSideBar ? "" : "flex-col overflow-y-auto"}`}>
                 {showSideBar ? (<Sidebar items={sidebarItems} />) : (<Navbar />)}
           
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className={`flex-1 flex flex-col min-w-0 ${showSideBar ? "" : "pt-16 md:pt-0"}`}>
                 {showSideBar ? (
                     <header
-                        className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-                        style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                        className="shrink-0 z-20 bg-white border-b min-h-[90px] flex items-center justify-between w-full pl-16 pr-4 sm:px-6 lg:px-20"
+                        style={{ borderColor: "var(--color-border)"}}
                     >
-                        <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                        <h1 className="font-bold text-xl sm:text-2xl lg:text-[32px]" style={{ color: "var(--color-primary)"}}>
                             How can we help?
                         </h1>
                     </header>
                     ): (
                         <header>
-                            <section className="relative flex flex-col items-center overflow-hidden py-20 bg-brand-blue mb-5 sm:py-20 sm:mb-10 text-center px-4">
+                            <section className="relative flex flex-col items-center overflow-hidden py-12 sm:py-16 md:py-20 bg-brand-blue mb-5 sm:mb-10 text-center px-4">
                                 <div
                                     className="absolute inset-0 pointer-events-none opacity-20"
                                     style={{
@@ -104,9 +104,9 @@ export default function HelpPage() {
                                     Help centre
                                 </span>
                                 <div className="mb-2">
-                                    <span className="text-white text-5xl font-bold">How can we </span><span className="text-brand-gold text-5xl font-bold">help you?</span>
+                                    <span className="text-white text-3xl sm:text-4xl md:text-5xl font-bold">How can we </span><span className="text-brand-gold text-3xl sm:text-4xl md:text-5xl font-bold">help you?</span>
                                 </div>
-                                <p className="text-white/40 font-bold text-2xl">
+                                <p className="text-white/40 font-bold text-base sm:text-xl md:text-2xl">
                                     Explore tutorials and common questions about consultIQ
                                 </p>
 
@@ -114,15 +114,15 @@ export default function HelpPage() {
                         </header>
 
                     )}
-                <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-10 lg:px-16" : "lg:px-8 sm:px-6"}`}>
+                <main className={`w-full max-w-7xl mx-auto mb-8 overflow-y-auto ${showSideBar ? "pt-2 sm:pt-4 px-4 sm:px-6 lg:px-16" : "px-4 sm:px-6 lg:px-8"}`}>
                     <section id="tutorials">
                         <TutorialSection/>
                      </section> 
 
                      <section id="FAQ">
                         <div className="mb-8">
-                            <p className="font-bold text-brand-muted text-2xl tracking-wide mb-1">FAQs</p>
-                            <h2 className="font-bold text-2xl">Frequently asked questions</h2>
+                            <p className="font-bold text-brand-muted text-xl sm:text-2xl tracking-wide mb-1">FAQs</p>
+                            <h2 className="font-bold text-xl sm:text-2xl">Frequently asked questions</h2>
                         </div>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                             {faqGroups.map((g) => <FaqSection key={g.group} {...g}/>)}

@@ -21,6 +21,7 @@ import {
   JobType,
   Role,
   WorkModel,
+  UserStatus,
 } from '@prisma/client';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -73,6 +74,30 @@ export class ConsultantService {
       );
     }
 
+    // --- Security review guard ---
+    // A CV may still be sitting unlinked (consultantId: null) awaiting this
+    // profile creation. If its security review hasn't cleared, block here —
+    // regardless of what the frontend shows or disables.
+    const pendingCv = await this.encryptionPrisma.cvFile.findFirst({
+      where: {
+        userId: dto.consultantUserId,
+        consultantId: null,
+        securityReviewStatus: { in: ['PENDING', 'REJECTED'] },
+      },
+      orderBy: { uploadedAt: 'desc' },
+    });
+
+    if (pendingCv) {
+      if (pendingCv.securityReviewStatus === 'PENDING') {
+        throw new ForbiddenException(
+          'This consultant\'s CV is pending security review and cannot be approved yet.',
+        );
+      }
+      throw new ForbiddenException(
+        'This consultant\'s CV was rejected during security review and cannot be processed.',
+      );
+    }
+
     // Check if profile already exists
     const existing = await this.encryptionPrisma.consultant.findUnique({
       where: { userId: dto.consultantUserId },
@@ -85,6 +110,18 @@ export class ConsultantService {
     }
     return await this.encryptionPrisma
       .$transaction(async (tx) => {
+
+      // Was this consultant's CV ever cleared after having been flagged?
+      // (Not just "cleared" in general — CLEARED only ever gets set on a CV
+      // that was PENDING, so this check alone is sufficient.)
+      const wasClearedAfterFlag = await tx.cvFile.findFirst({
+        where: {
+          userId: dto.consultantUserId,
+          consultantId: null,
+          securityReviewStatus: 'CLEARED',
+        },
+      });
+
         // Create consultant profile
         const consultant = await tx.consultant.create({
           data: {
@@ -105,6 +142,7 @@ export class ConsultantService {
             longitude: dto.longitude ?? null,
             placeId: dto.placeId ?? null,
             formattedAddress: dto.formattedAddress ?? null,
+            hadSecurityFlagOnIntake: !!wasClearedAfterFlag,
           },
         });
 
@@ -261,8 +299,9 @@ export class ConsultantService {
     page: number,
     limit: number,
     userRole: string,
+    managerUserId: string,
   ): Promise<PaginatedConsultantsResponseDto> {
-    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}`;
+    const cacheKey = `cache:consultants:page:${page}:limit:${limit}:role:${userRole}:manager:${managerUserId}`;
     const cachedData =
       await this.cacheManager.get<PaginatedConsultantsResponseDto>(cacheKey);
     if (cachedData) {
@@ -272,16 +311,25 @@ export class ConsultantService {
     this.logger.log(`CACHE MISS for key: ${cacheKey}. Fetching from DB...`);
 
     const skip = (page - 1) * limit;
+
+    const whereClause = {
+      user: {
+        deletedAt: null,
+        status: { not: UserStatus.ARCHIVED },
+      },
+      managers: {
+        some: {
+          userId: managerUserId,
+        },
+      },
+    };
+
     const [consultants, total] = await Promise.all([
       this.encryptionPrisma.consultant.findMany({
         skip,
         take: limit,
-        where: {
-          user: {
-            deletedAt: null,
-            status: { not: 'ARCHIVED' },
-          },
-        },
+        where: whereClause,
+
         include: {
           user: { select: { fullName: true, email: true } },
           skills: { include: { skill: { select: { name: true } } } },
@@ -289,7 +337,9 @@ export class ConsultantService {
           consultantExperiences: { select: { startDate: true, endDate: true } },
         },
       }),
-      this.encryptionPrisma.consultant.count(),
+      this.encryptionPrisma.consultant.count({
+        where: whereClause,
+      }),
     ]);
 
     const mappedConsultants: ConsultantListItemDto[] = consultants.map((c) => {
@@ -459,6 +509,11 @@ export class ConsultantService {
     userRole: string,
     requestingUserId: string,
   ): Promise<{ message: string }> {
+    if(dto.costToCompany !== undefined && userRole !== Role.CONSULTANT) {
+      throw new ForbiddenException(
+        'Only the consultant themselves can update their cost to company rate.',
+      );
+    }
     const resolvedConsultantId = await this.resolveEditableConsultantId(
       consultantId,
       userRole,
@@ -827,7 +882,10 @@ export class ConsultantService {
     }
 
     const placement = await this.encryptionPrisma.projectPlacement.findMany({
-      where: { consultantId: consultant.id },
+      where: { 
+        consultantId: consultant.id,
+        status: 'ACTIVE',
+      },
       include: {
         project: {
           select: {

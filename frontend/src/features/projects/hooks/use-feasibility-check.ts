@@ -138,7 +138,7 @@ export type FeasibilityCheckState =
   const isCurrentRequest = enabled && requestKey !== null && snapshot.requestKey === requestKey;
 
   if(!isCurrentRequest){
-    return {state: enabled && requestKey ? "idle" : "idle", result: null, error: null}
+    return {state : "idle", result: null, error: null};
   }
 
   return { state: snapshot.state, result: snapshot.result, error: snapshot.error };

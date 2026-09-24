@@ -67,23 +67,23 @@ const{count: unreadCount} = useUnreadNotificationCount();
       
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
-        >
-          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+          className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+          style={{ borderColor: "var(--color-border)"}}
+          >
+          <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
             Consultancy Scoring Configurations
           </h1>
 
         </header>
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
             {error && (
-              <div className="w-full h-8 items-center bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-semibold">
+              <div className="mb-4 w-full rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 sm:p-4">
                 Error: {error}
               </div>
             )}
 
             {successMessage && (
-              <div className="w-full h-8 items-center max-w-5xl mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm font-semibold transition-opacity duration-300">
+              <div className="mb-4 w-full rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-semibold text-green-700 transition-opacity sm:p-41">
                 {successMessage}
               </div>
             )}

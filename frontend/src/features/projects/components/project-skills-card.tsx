@@ -73,10 +73,10 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
-      <div className="w-full max-w-[440px] flex flex-col h-full">
+    <Card className="flex w-full items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12">
+      <div className="flex w-full max-w-[440px] flex-col ">
 
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl" style={{ color: "var(--color-primary)" }}>
           {editingSkill ? "Edit Skill" : "Add Skills"}
         </h2>
 

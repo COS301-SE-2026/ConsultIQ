@@ -16,6 +16,7 @@ describe('AdminProjectService', () => {
                     useValue: {
                         project: {
                             update: jest.fn(),
+                            findUnique: jest.fn(),
                             findMany: jest.fn(),
                             count: jest.fn(),
                         },
@@ -59,7 +60,7 @@ describe('AdminProjectService', () => {
             ];
             // const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, 10]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, 10, 25]);
             const result = await service.getAllProjects(1, 10);
 
             expect(prisma.$transaction).toHaveBeenCalledWith([
@@ -75,12 +76,41 @@ describe('AdminProjectService', () => {
                 data: mockProjects,
                 meta: {
                     totalRecords: mockProjects.length,
-                    absoluteTotalRecords: mockProjects.length,
+                    absoluteTotalRecords: 25,
                     currentPage: 1,
                     totalPages: 1,
                 },
             });
         });
+
+        it('applies the search filter when provided', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0]);
+
+            await service.getAllProjects(1, 10, 'Project 1');
+
+            expect(prisma.project.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        OR: [
+                            { projectName: { contains: 'Project 1', mode: 'insensitive' } },
+                            { clientName: { contains: 'Project 1', mode: 'insensitive' } },
+                        ],
+                    }),
+                }),
+            );
+        });
+
+        it('applies budgetSort to orderBy when provided', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0]);
+
+            await service.getAllProjects(1, 10, undefined, 'asc');
+
+            expect(prisma.project.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    orderBy: { budget: 'asc' },
+                }),
+            );
+        })
     })
 
     // Archiving a project
@@ -94,9 +124,18 @@ describe('AdminProjectService', () => {
                 archivedAt: new Date()
             };
 
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'OPEN',
+            });
+
             (prisma.project.update as jest.Mock).mockResolvedValue(mockUpdatedProject);
 
             const result = await service.archiveProject('1', 'admin-user-id');
+
+            expect(prisma.project.findUnique).toHaveBeenCalledWith({
+                where: { id : '1' },
+                select: { status : true },
+            });
 
             expect(prisma.project.update).toHaveBeenCalledWith({
                 where: { id: '1' },
@@ -112,28 +151,42 @@ describe('AdminProjectService', () => {
         });
 
         it('Archiving a non-existent project', async () => {
-            const prismaError = { code: 'P2025' };
-
-            (prisma.project.update as jest.Mock).mockRejectedValue(prismaError);
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue(null);
 
             await expect(service.archiveProject('2', 'admin-user-id')).rejects.toThrow('Project does not exist');
 
-            expect(prisma.project.update).toHaveBeenCalledWith({
+            expect(prisma.project.findUnique).toHaveBeenCalledWith({
                 where: { id: '2' },
-                data: {
-                    archivedAt: expect.any(Date),
-                    status: 'ARCHIVED'
-                },
+                select: { status: true },
             });
 
+            expect(prisma.project.update).not.toHaveBeenCalled();
 
         });
 
         it('Database error when trying to archive a project', async () => {
             const genericError = new Error('Database connection lost');
+
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'OPEN',
+            });
+
             (prisma.project.update as jest.Mock).mockRejectedValue(genericError);
 
             await expect(service.archiveProject('1', 'admin-user-id')).rejects.toThrow(genericError);
+        });
+
+        it('should not archive a completed project', async () => {
+            (prisma.project.findUnique as jest.Mock).mockResolvedValue({
+                status: 'COMPLETED',
+            });
+
+            await expect(
+                service.archiveProject('1', 'admin-user-id')
+            ).rejects.toThrow('Completed project cannot be archived');
+
+            expect(prisma.project.update).not.toHaveBeenCalled();
+            expect(prisma.projectAuditLog.create).not.toHaveBeenCalled();
         });
 
 

@@ -112,12 +112,12 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
   const budgetBreakdown = calculateBudgetBreakdown(data);
 
   return (
-    <Card className="py-20 px-8 md:px-20 w-full flex items-center justify-center">
-      <div className="w-full max-w-[800px] flex flex-col gap-12">
+    <Card className="flex w-full items-center justify-center px-4 py-8 sm:px-8 sm:py-12 md:px-20 md:py-16">
+      <div className="flex w-full max-w-[800px] flex-col gap-8 sm:gap-12">
        
-       <h1>Project Details</h1>
+       <h1 className= "text-xl font-bold sm:text-2xl">Project Details</h1>
 
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
           {/* LEFT SIDE */}
           <div className="flex flex-col gap-6">
             {/* Project Name */}
@@ -242,8 +242,8 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               {budgetError && <span className="text-sm text-red-500">{budgetError}</span>}
 
               {budgetBreakdown && (
-                 <div className="mt-3 p-4 rounded-xl border border-blue-200 bg-blue-50 text-blue-900 text-sm">
-                    <div className="flex items-center justify-between font-semibold mb-2">
+                 <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 sm:p-4">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-semibold">
                       <span>Daily Rate Breakdown</span>
                       <span className="text-sm px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 font-bold">
                         {budgetBreakdown.projectDays} {budgetBreakdown.projectDays === 1 ? "Day" : "Days"} Duration
@@ -315,7 +315,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
             className={`min-h-[150px] rounded-xl border p-4 text-base outline-none resize-none transition-colors ${errors.description ? "border-red-500" : "focus:border-[var(--color-primary)]"
               }`}
           />
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap items-center justify-between gap-2">
           {errors.description && <span className="text-sm text-red-500">{errors.description}</span>}
           <span
             className={`text-sm ml-auto ${descriptionLength >= MAX_DESCRIPTION_LENGTH ? "text-red-500" : "text-slate-500"

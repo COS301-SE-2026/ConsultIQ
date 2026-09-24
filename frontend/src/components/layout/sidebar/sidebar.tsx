@@ -1,7 +1,7 @@
 import consultIqLogo from "../../../assets/logos/ConsultIQ logo.jpeg";
-
+import { useState } from "react";
 import type { SidebarItem } from "./sidebar.types";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -14,56 +14,63 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
   const { logout, user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  return (
-    <aside
-      style={{
-        width: "280px",
-        minHeight: "100vh",
-        backgroundColor: "var(--color-primary)",
 
-        display: "flex",
-        flexDirection: "column",
-      }}
+  const [isOpen, setIsOpen] = useState(false);
+  const activeItemPath = [...items]
+    .filter((item) => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`))
+    .sort((left, right) => right.path.length - left.path.length)[0]?.path;
+  
+
+    return (
+    <>
+    <button type="button"
+      onClick={() => setIsOpen((open) => !open)}
+      aria-label= {isOpen ? "Close navigation menu" : "Open navigation menu"}
+      aria-expanded={isOpen}
+      className="fixed left-4 top-4 z-50 rounded-lg bg-[var(--color-primary)] p-3 text-white shadow-lg md:hidden"
+      >
+      {isOpen ? <X size={22} /> : <Menu size={22} />}
+    </button>
+
+    {isOpen &&(
+      <button type="button"
+        aria-label="Close navigation menu"
+        onClick={() => setIsOpen(false)}
+        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        />
+    )}
+    
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col overflow-hidden transition-transform duration-200 md:relative md:translate-x-0
+      ${isOpen ? "translate-x-0" : "-translate-x-full" } md:sticky md:top-0 md:translate-x-0`}
+      style={{backgroundColor: "var(--color-primary)",}}
     >
       {/* Logo Section */}
-      <div
-        style={{
-          backgroundColor: "var(--color-surface)",
-          height: "90px",
-
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-
-        }}
+      <div className="flex h-[72px] items-center justify-center md:h-[90px]"
+        style={{ backgroundColor: "var(--color-surface)" }}
       >
         <img
           src={consultIqLogo}
           alt="ConsultIQ Logo"
-          style={{
-            width: "fit-content",
-            height: "100%",
-            objectFit: "fill",
-          }}
+          className="h-full w-auto object-contain"
         />
       </div>
 
       {/* Navigation */}
-      <nav
-        style={{
-          flex: 1,
-          padding: "32px 0",
-        }}
-      >
+      <nav className="min-h-0 flex-1 overflow-y-auto py-8 ">
+
         {items.map((item) => {
           const Icon = item.icon;
+          const isActve = item.path === activeItemPath;
           const isNotifications = item.path === "/notifications";
           const showBadge = isNotifications && notificationCount >0;
 
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path,{state:{from:"sidebar"}})}
+              onClick={() =>{
+                navigate(item.path, { state: { from: "sidebar" } });
+                setIsOpen(false);
+              }}
               style={{
                 padding: "14px 24px",
 
@@ -82,13 +89,11 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
                 width: "100%",
 
                 border: "none",
-                borderLeft:
-                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                borderLeft: isActve
                     ? "4px solid var(--color-accent)"
                     : "4px solid transparent",
 
-                backgroundColor:
-                  location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                backgroundColor: isActve
                     ? "var(--color-secondary)"
                     : "transparent",
 
@@ -115,6 +120,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       {user && (
         <div
           style={{
+            flexShrink: 0,
             padding: "20px 24px 12px 24px",
             borderTop: "1px solid rgba(255,255,255,0.1)",
             display: "flex",
@@ -195,6 +201,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       {/* Logout - FIXED: Changed from div to button for standard accessibility */}
       
     </aside>
+    </>
   );
 }
 

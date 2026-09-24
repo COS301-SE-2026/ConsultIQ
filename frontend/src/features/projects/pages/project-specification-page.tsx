@@ -117,22 +117,22 @@ function ProjectSpecificationPage() {
     }
   };
   return (
-    <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={projectManagerSidebarItems()} notificationCount={unreadCount} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="min-w-0  flex-1 flex flex-col overflow-y-auto">
       <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-3 border-b bg-white pl-16 pr-4 py-3 sm:px-6 lg:px-10"
+          style={{ borderColor: "var(--color-border)"}}
         >
-          <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
+          <h1 className="text-xl font-bold sm:text-2xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
             New Project
           </h1>
 
-          <div className="flex gap-6">
+          <div className="flex w-full gap-3 sm:w-auto sm:gap-6">
             <button
               onClick={() => navigate(-1)}
-              className="h-12 w-35 text-lg rounded-xl font-semibold transition bg-gray-50 hover:bg-gray-100"
+              className="h-10 flex-1 rounded-xl text-sm font-semibold transition bg-gray-50 hover:bg-gray-100 sm:h-12 sm:flex-none sm:w-35 sm:text-lg"
               style={{ color: "var(--color-primary)" }}
             >
               Cancel
@@ -141,7 +141,7 @@ function ProjectSpecificationPage() {
             <button
               onClick={handleSave}
               disabled={isSubmitting}
-              className="h-12 w-35 text-lg rounded-xl text-white font-semibold transition hover:brightness-110 disabled:opacity-50"
+              className="h-10 flex-1 rounded-xl text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50 sm:h-12 sm:flex-none sm:w-35 sm:text-lg"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               {isSubmitting ? "Saving..." : "Save"}
@@ -149,14 +149,12 @@ function ProjectSpecificationPage() {
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10">
-          <div className="flex flex-col gap-8 w-full max-w-[1024px]">
-            <div className="h-1" />
-
-
+        <main className="flex-1 flex flex-col items-center px-3 py-5 sm:px-6 sm:py-8 lg:px-10">
+          <div className="flex w-full max-w-[1024px] flex-col gap-5 sm:gap-8">
+            
             <ProjectBasicInfoCard data={formData} onChange={updateForm} />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-2">
 
               <ProjectLocationCard data={formData} onChange={updateLocation} />
 

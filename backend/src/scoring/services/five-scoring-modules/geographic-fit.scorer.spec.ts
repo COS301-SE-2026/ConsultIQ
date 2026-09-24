@@ -29,7 +29,8 @@ function project(city: string, province: string, isRemote = false, latitude?: nu
         requiredAllocationPercentage: 50,
         isRemote,
         latitude,
-        longitude
+        longitude,
+        teamSize: 1,
     } as RawProjectDto;
 }
 

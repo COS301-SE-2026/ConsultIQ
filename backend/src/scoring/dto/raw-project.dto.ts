@@ -24,6 +24,10 @@ export class RawProjectDto {
   @Min(0)
   billingBudgetPerHour!: number;
 
+  @IsNumber()
+  @Min(1)
+  teamSize!: number;
+
   @IsString()
   city!: string;
 

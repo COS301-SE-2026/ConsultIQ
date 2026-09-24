@@ -5,7 +5,8 @@ import {
     Issue,
     WeekMetadata,
     Slot,
-    Result
+    Result,
+    Task,
 } from '../dto/scheduler.dto';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
 import { TimeService } from './time.service';
@@ -98,68 +99,81 @@ export class ValidatorService {
     private checkFrozenEntities(week: WeekContainer, ctx: ValidateContext): Issue[] {
         if (!ctx.previousWeek) return []; // First commit of the week: nothing to compare against
 
-        const issues: Issue[] = [];
         const bumpedIds = new Set(ctx.bumpedEntityIds || []);
 
+        return [
+            ...this.checkFrozenBlocks(week, ctx.previousWeek, bumpedIds),
+            ...this.checkFrozenTasks(week, ctx.previousWeek, bumpedIds),
+            ...this.checkFrozenSlots(week, ctx.previousWeek, bumpedIds),
+            ...this.checkFrozenEntries(week, ctx.previousWeek, bumpedIds),
+        ];
+    }
+
+    private checkFrozenBlocks(week: WeekContainer, prevWeek: WeekContainer, bumpedIds: Set<string>): Issue[] {
+        const issues: Issue[] = [];
         const currentBlocks = new Map(week.blocks.map(b => [b.id, b]));
-        const currentTasks = new Map(week.tasks.map(t => [t.id, t]));
-        const currentSlots = new Map(week.slots.map(s => [s.id, s]));
-        const currentEntries = new Map(week.calendarEntries.map(e => [e.id, e]));
 
-        const frozen = (id: string, message: string) => {
-            if (!bumpedIds.has(id)) {
-                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [id], message });
-            }
-        };
+        for (const prev of prevWeek.blocks) {
+            if (prev.mobility !== 'pinned' || bumpedIds.has(prev.id)) continue;
 
-        // 1. Pinned blocks
-        for (const prev of ctx.previousWeek.blocks.filter(b => b.mobility === 'pinned')) {
             const current = currentBlocks.get(prev.id);
-            if (!current || current.start !== prev.start || current.end !== prev.end) {
-                frozen(prev.id, `Pinned block ${prev.id} was moved.`);
+
+            if (current?.start !== prev.start || current?.end !== prev.end) {
+                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Pinned block ${prev.id} was moved.` });
             }
         }
+        return issues;
+    }
 
-        // 2. InProgress / Done tasks (InProgress -> Done is a legitimate transition)
-        for (const prev of ctx.previousWeek.tasks.filter(t => t.status === 'InProgress' || t.status === 'Done')) {
+    private checkFrozenTasks(week: WeekContainer, prevWeek: WeekContainer, bumpedIds: Set<string>): Issue[] {
+        const issues: Issue[] = [];
+        const currentTasks = new Map(week.tasks.map(t => [t.id, t]));
+
+        for (const prev of prevWeek.tasks) {
+            if ((prev.status !== 'InProgress' && prev.status !== 'Done') || bumpedIds.has(prev.id)) continue;
+
             const current = currentTasks.get(prev.id);
-            if (!current) {
-                frozen(prev.id, `Frozen task ${prev.id} is missing.`);
-                continue;
-            }
+            const isStatusValid = (prev.status === 'InProgress' && current?.status === 'Done') || (prev.status === current?.status);
 
-            const isStatusValid =
-                (prev.status === 'InProgress' && current.status === 'Done') ||
-                prev.status === current.status;
-
-            if (current.placement !== prev.placement || !isStatusValid) {
-                frozen(prev.id, `Frozen task ${prev.id} was moved or its status changed.`);
+            if (current?.placement !== prev.placement || !isStatusValid) {
+                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Frozen task ${prev.id} mutated.` });
             }
         }
+        return issues;
+    }
 
-        // 3. Locked slots (taskIds compared order-insensitively so swaps are caught
-        //    but [] vs undefined and reordering are not false positives)
-        for (const prev of ctx.previousWeek.slots.filter(s => s.locked)) {
+    private checkFrozenSlots(week: WeekContainer, prevWeek: WeekContainer, bumpedIds: Set<string>): Issue[] {
+        const issues: Issue[] = [];
+        const currentSlots = new Map(week.slots.map(s => [s.id, s]));
+
+        for (const prev of prevWeek.slots) {
+            if (!prev.locked || bumpedIds.has(prev.id)) continue;
+
             const current = currentSlots.get(prev.id);
             if (
-                !current ||
-                current.start !== prev.start ||
-                current.end !== prev.end ||
-                current.blockId !== prev.blockId ||
-                this.normalizeIds(current.taskIds) !== this.normalizeIds(prev.taskIds)
+                current?.start !== prev.start ||
+                current?.end !== prev.end ||
+                current?.blockId !== prev.blockId ||
+                current?.taskIds?.join() !== prev.taskIds?.join()
             ) {
-                frozen(prev.id, `Locked slot ${prev.id} was moved.`);
+                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Locked slot ${prev.id} moved.` });
             }
         }
+        return issues;
+    }
 
-        // 4. Ad-hoc / calendar entries
-        for (const prev of ctx.previousWeek.calendarEntries) {
+    private checkFrozenEntries(week: WeekContainer, prevWeek: WeekContainer, bumpedIds: Set<string>): Issue[] {
+        const issues: Issue[] = [];
+        const currentEntries = new Map(week.calendarEntries.map(e => [e.id, e]));
+
+        for (const prev of prevWeek.calendarEntries) {
+            if (bumpedIds.has(prev.id)) continue;
+
             const current = currentEntries.get(prev.id);
-            if (!current || current.start !== prev.start || current.end !== prev.end) {
-                frozen(prev.id, `Calendar entry ${prev.id} was moved.`);
+            if (current?.start !== prev.start || current?.end !== prev.end) {
+                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Calendar entry ${prev.id} moved.` });
             }
         }
-
         return issues;
     }
 
@@ -175,26 +189,38 @@ export class ValidatorService {
             const dependentStart = this.getEarliestStart(taskSlotsMap.get(task.id) || []);
             if (dependentStart === null) continue;
 
-            for (const prereqId of task.dependsOn) {
-                if (taskById.get(prereqId)?.status === 'Done') continue;
-
-                const prereqSlots = taskSlotsMap.get(prereqId) || [];
-                if (prereqSlots.length === 0) continue;
-
-                const prereqEnd = this.getLatestEnd(prereqSlots);
-                if (prereqEnd !== null && dependentStart < prereqEnd) {
-                    issues.push({
-                        level: 'violation',
-                        code: 'DEPENDENCY_ORDER',
-                        message: `Task ${task.id} starts before prerequisite ${prereqId} finishes.`,
-                        entityIds: [task.id, prereqId]
-                    });
-                }
-            }
+            issues.push(...this.getDependencyIssuesForTask(task, dependentStart, taskSlotsMap, taskById));
         }
         return issues;
     }
 
+    private getDependencyIssuesForTask(
+        task: Task,
+        dependentStart: number,
+        taskSlotsMap: Map<string, Slot[]>,
+        taskById: Map<string, Task>
+    ): Issue[] {
+        const issues: Issue[] = [];
+
+        for (const prereqId of task.dependsOn || []) {
+            if (taskById.get(prereqId)?.status === 'Done') continue;
+
+            const prereqSlots = taskSlotsMap.get(prereqId) || [];
+            if (prereqSlots.length === 0) continue;
+
+            const prereqEnd = this.getLatestEnd(prereqSlots);
+            if (prereqEnd !== null && dependentStart < prereqEnd) {
+                issues.push({
+                    level: 'violation',
+                    code: 'DEPENDENCY_ORDER',
+                    message: `Task ${task.id} starts before prerequisite ${prereqId} finishes.`,
+                    entityIds: [task.id, prereqId]
+                });
+            }
+        }
+
+        return issues;
+    }
     /** #8 ~ TASK_LARGER_THAN_CONTAINER (violation) */
     private checkTaskFitsContainer(week: WeekContainer): Issue[] {
         const issues: Issue[] = [];
@@ -275,8 +301,7 @@ export class ValidatorService {
     private checkEntryOrigin(week: WeekContainer): Issue[] {
         const issues: Issue[] = [];
         for (const entry of week.calendarEntries) {
-            // TODO: add 'public-holiday' to the CalendarEntry origin union and drop this cast.
-            if ((entry.origin as string) === 'public-holiday') {
+            if (entry.origin === 'public-holiday') {
                 const entryDate = this.timeService.localDate(entry.start, week.timezone);
                 const hasMatchingHoliday = week.holidays.some(h => h.date === entryDate);
                 if (!hasMatchingHoliday) {
@@ -515,7 +540,10 @@ export class ValidatorService {
     }
 
     private normalizeIds(ids?: string[]): string {
-        return (ids ?? []).slice().sort().join(',');
+        return (ids ?? [])
+            .slice()
+            .sort((a, b) => a.localeCompare(b))
+            .join(',');
     }
 
     private durationMinutes(start: string, end: string): number {

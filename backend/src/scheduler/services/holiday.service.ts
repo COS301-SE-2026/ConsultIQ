@@ -3,14 +3,14 @@ import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PublicHoliday } from '../dto/scheduler.dto';
 
-export type LocalDate = string; // YYYY-MM-DD
+export type LocalDate = string & { readonly __brand: unique symbol }; // YYYY-MM-DD
 
 @Injectable()
 export class HolidayService {
     constructor(private readonly prisma: PrismaService) { }
 
 
-    async getForDate(date: LocalDate): Promise<PublicHoliday | null> {
+    async getForDate(date: string | LocalDate): Promise<PublicHoliday | null> {
 
         const queryDate = DateTime.fromISO(date, { zone: 'utc' }).toJSDate();
 
@@ -28,7 +28,7 @@ export class HolidayService {
     /**
      * Every public holiday falling inside the 7-day span starting at weekStart.
      */
-    async getForWeek(weekStart: LocalDate): Promise<PublicHoliday[]> {
+    async getForWeek(weekStart: string | LocalDate): Promise<PublicHoliday[]> {
         const startDt = DateTime.fromISO(weekStart, { zone: 'utc' });
         const endDt = startDt.plus({ days: 7 });
 
@@ -51,7 +51,7 @@ export class HolidayService {
     private mapToDomain(dbHoliday: any): PublicHoliday {
         return {
             id: dbHoliday.id,
-            date: dbHoliday.date.toISOString().split('T')[0],
+            date: dbHoliday.date.toISOString().split('T')[0] as LocalDate,
             name: dbHoliday.name,
             createdAt: dbHoliday.createdAt.toISOString(),
             updatedAt: dbHoliday.updatedAt.toISOString(),

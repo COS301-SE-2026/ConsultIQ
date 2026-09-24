@@ -54,7 +54,7 @@ describe('TimeService', () => {
         it('should generate 10 intervals (5 days x 2 blocks) accounting for a 1-hour lunch break', () => {
             const windows = service.workingWindows('2026-09-21', 'Africa/Johannesburg');
 
-            expect(windows.length).toBe(10);
+            expect(windows).toHaveLength(10);
 
             // Monday Morning Block: 08:00 to 13:00 SAST (06:00 to 11:00 UTC)
             expect(windows[0]).toEqual({

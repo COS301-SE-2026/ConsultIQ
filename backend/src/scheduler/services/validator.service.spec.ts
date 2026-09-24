@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ValidatorService } from './validator.service';
-import { TimeService } from './time.service';
-import { WeekContainer, ValidateContext, Task, Slot, ProjectBlock, CalendarEntry } from '../dto/scheduler.dto';
+import { TimeService, LocalDate } from './time.service';
+import { WeekContainer, ValidateContext, Task } from '../dto/scheduler.dto';
 // import { SCHEDULER_RULES } from './scheduler-rules.constant';
 
 describe('ValidatorService', () => {
@@ -46,7 +46,7 @@ describe('ValidatorService', () => {
     beforeEach(async () => {
         const mockTimeService = {
             isInCoreHours: jest.fn().mockReturnValue(true),
-            localDate: jest.fn().mockReturnValue('2026-09-21'),
+            localDate: jest.fn().mockReturnValue('2026-09-21' as LocalDate),
             workingWindows: jest.fn().mockReturnValue([]),
         };
 
@@ -169,7 +169,7 @@ describe('ValidatorService', () => {
 
         it('#14 - should raise INVALID_ENTRY_ORIGIN if holiday entry lacks DB match', () => {
             week.calendarEntries.push({ id: 'ce1', type: 'meeting', origin: 'public-holiday' as any, start: '2026-12-25T08:00:00Z' } as any);
-            timeService.localDate.mockReturnValue('2026-12-25');
+            timeService.localDate.mockReturnValue('2026-12-25' as LocalDate);
             // week.holidays is empty
 
             const result = validatorService.validate(week, context);
@@ -195,7 +195,7 @@ describe('ValidatorService', () => {
         });
 
         it('#2 - should raise DAILY_MAX_EXCEEDED if slots AND entries sum > 480 mins on same day', () => {
-            timeService.localDate.mockReturnValue('2026-09-21');
+            timeService.localDate.mockReturnValue('2026-09-21' as LocalDate);
             week.slots.push({ id: 's1', start: '2026-09-21T08:00:00Z', end: '2026-09-21T12:00:00Z', taskIds: [] } as any); // 240 mins
             week.calendarEntries.push({ id: 'ce1', start: '2026-09-21T13:00:00Z', end: '2026-09-21T18:00:00Z', tags: [] } as any); // 300 mins
 
@@ -241,7 +241,7 @@ describe('ValidatorService', () => {
                 { start: '2026-09-24T06:00:00Z', end: '2026-09-24T14:00:00Z' },
                 { start: '2026-09-25T06:00:00Z', end: '2026-09-25T14:00:00Z' }
             ]);
-            timeService.localDate.mockImplementation((iso: string) => iso.split('T')[0]);
+            timeService.localDate.mockImplementation((iso: string) => iso.split('T')[0] as LocalDate);
             timeService.isInCoreHours.mockReturnValue(true);
         });
 
@@ -275,7 +275,7 @@ describe('ValidatorService', () => {
             week = createBaseWeek();
             context = createBaseContext(createBaseWeek());
             timeService.workingWindows.mockReturnValue([]);
-            timeService.localDate.mockReturnValue('2026-09-21');
+            timeService.localDate.mockReturnValue('2026-09-21' as LocalDate);
             timeService.isInCoreHours.mockReturnValue(true);
         });
 

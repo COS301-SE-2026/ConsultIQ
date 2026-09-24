@@ -180,8 +180,9 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
             {isEditing ? (
               <>
                 <div className="col-span-2 sm:col-span-1 min-w-0">
-                  <label className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Skill name</label>
+                  <label htmlFor="skillName" className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Skill name</label>
                   <Input
+                    id="skillName"
                     placeholder="React"
                     value={skill.name}
                     onChange={(e) => updateSkill(index, "name", e.target.value)}
@@ -194,7 +195,7 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                 </div>
 
                 <div className="min-w-0">
-                  <label className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Confidence (1-4)</label>
+                  <label htmlFor="confidence" className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Confidence (1-4)</label>
                   <select
                     id="confidence"
                     value={skill.confidenceLevel || 1}
@@ -213,8 +214,9 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
 
 
                 <div className="min-w-0">
-                  <label className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Competency level</label>
+                  <label htmlFor="competency-level" className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Competency level</label>
                   <Input
+                    id="competency-level"
                     type="text"
                     placeholder="Auto-calculated"
                     value={normalizeCompetency(skill.competencyLevel)}
@@ -224,8 +226,9 @@ function SkillsCard({ skills, canEdit, onSave }: SkillsCardProps) {
                 </div>
 
                 <div className=" col-span-2 sm:col-span-1 min-w-0">
-                  <label className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Years of experience</label>
+                  <label htmlFor="years-of-Experience" className="sm:hidden block text-xs font-semibold text-slate-500 mb-1">Years of experience</label>
                   <Input
+                    id="years-of-Experience"
                     type="number"
                     placeholder="5"
                     min="0"

@@ -531,7 +531,7 @@ export default function CVExtractionReview() {
                                     Experience
                                 </h2>
                                 {experiences.map((exp, i) => (
-                                    <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
+                                    <div key={i} /* NOSONAR: list is never reordered or filtered */  className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                         <FormField label="Job title" value={exp.jobTitle} onChange={(v) => updateExperience(i, { jobTitle: v })} />
                                         <FormField label="Company" value={exp.companyName} onChange={(v) => updateExperience(i, { companyName: v })} />
                                         <label className="flex flex-col gap-1">

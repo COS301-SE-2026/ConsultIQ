@@ -42,9 +42,9 @@ export default function Navbar(){
     const navigate= useNavigate();
 
     return(
-        <header className="fixed  top-0 left-0 w-full z-50 md:sticky md:bg-white md:border-b md:border-[#e2e8f0] md:shadow-sm  ">
-                <div className=" px-8  h-16 flex md:grid md:grid-cols-3 items-center justify-between ">
-                    <div className="hidden md:flex h-16 items-center justify-self-start">
+        <header className="fixed top-0 left-0 w-full z-50 bg-brand-blue/90 backdrop-blur-sm lg:sticky lg:bg-white lg:border-b lg:border-[#e2e8f0] lg:shadow-sm">
+                <div className="px-8 h-16 flex lg:grid lg:grid-cols-[auto_1fr_auto] items-center justify-between gap-4">
+                    <div className="hidden lg:flex h-16 items-center justify-self-start">
                          <NavHashLink
                                 smooth
                                 to="/#hero"
@@ -57,7 +57,7 @@ export default function Navbar(){
                         />
                         </NavHashLink>
                     </div>
-                    <nav className=" hidden md:flex  items-center gap-16 justify-self-center">
+                    <nav className="hidden lg:flex items-center gap-8 xl:gap-16 justify-self-center">
                             <NavHashLink
                                 smooth
                                 to="/#management"
@@ -93,7 +93,7 @@ export default function Navbar(){
                     </nav>
                    
 
-                <div className="hidden md:flex items-center  gap-3  justify-self-end">
+                <div className="hidden lg:flex items-center gap-3 justify-self-end">
                         {/* Help dropdown */}
                         <div className="relative" ref={helpRef}>
                             <Button
@@ -110,7 +110,7 @@ export default function Navbar(){
                         <BlueButton title={"Log in"} onClick={()=> navigate("/login")}/>
                 </div>
                     <button
-                        className="md:hidden p-2 ml-auto"
+                        className="lg:hidden p-2 ml-auto"
                         onClick={() => setMobileOpen((open) => !open)}
                         aria-label="Toggle menu"
                     >
@@ -120,10 +120,10 @@ export default function Navbar(){
                     
 
                     {mobileOpen && (
-                        <div className="md:hidden flex flex-col gap-4 border-b border-brand-slate bg-white shadow-sm px-8 py-4">
+                        <div className="lg:hidden flex flex-col gap-4 border-b border-brand-slate bg-white shadow-sm px-8 py-4">
                             <NavHashLink
                                 smooth
-                                to="/#managemet" 
+                                to="/#management" 
                                 onClick={() => setMobileOpen(false)}
                                 className="text-base font-semibold text-brand-muted  hover:text-brand-blue! transition-colors"
                             >

@@ -3,7 +3,7 @@ import ConfigurationImage from "../../../assets/configuration.png"
 
 export default function ConfigurationSection(){
     return(
-        <div className="flex flex-col  lg:flex-row items-center lg:items-center justify-center gap-12 px-8 py-6 max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-center justify-center gap-8 sm:gap-12 px-5 sm:px-8 py-6 max-w-7xl mx-auto">
              <div className="flex flex-1 flex-col items-start gap-6 max-w-2xl ">
                <span className=" inline-block px-4 py-1.5 bg-[#fdf6e7] text-[#8a6420] border border-brand-gold text-xs font-bold rounded-full ">
                     Two-Tier Configuration

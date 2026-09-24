@@ -79,6 +79,52 @@ describe('ValidatorService', () => {
             expect(issue?.level).toBe('warning');
         });
 
+        it('#6 - should raise FROZEN_ENTITY_MOVED if a locked slot properties change (task swapped)', () => {
+
+            context.previousWeek!.slots.push({
+                id: 's1', locked: true, start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z', blockId: 'b1', taskIds: ['t1']
+            } as any);
+
+            week.slots.push({
+                id: 's1', locked: true, start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z', blockId: 'b1', taskIds: ['t2']
+            } as any);
+
+            const result = validatorService.validate(week, context);
+            expect(result.issues?.find(i => i.code === 'FROZEN_ENTITY_MOVED')?.entityIds).toContain('s1');
+        });
+
+        it('#6 - should raise FROZEN_ENTITY_MOVED if a frozen task is mutated unacceptably (Done -> Ready)', () => {
+
+            context.previousWeek!.tasks.push({ id: 't1', status: 'Done', placement: 'placed' } as any);
+            week.tasks.push({ id: 't1', status: 'Ready', placement: 'placed' } as any);
+
+            const result = validatorService.validate(week, context);
+            expect(result.issues?.find(i => i.code === 'FROZEN_ENTITY_MOVED')?.entityIds).toContain('t1');
+        });
+
+        it('#6 - should raise FROZEN_ENTITY_MOVED if a calendar entry is moved', () => {
+            context.previousWeek!.calendarEntries.push({ id: 'ce1', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' } as any);
+            week.calendarEntries.push({ id: 'ce1', start: '2026-09-21T11:00:00Z', end: '2026-09-21T12:00:00Z' } as any);
+
+            const result = validatorService.validate(week, context);
+            expect(result.issues?.find(i => i.code === 'FROZEN_ENTITY_MOVED')?.entityIds).toContain('ce1');
+        });
+
+        it('#6 - should raise FROZEN_ENTITY_MOVED if frozen entities are deleted entirely (testing optional chaining)', () => {
+
+            context.previousWeek!.slots.push({ id: 's1', locked: true, start: '1', end: '2' } as any);
+            context.previousWeek!.tasks.push({ id: 't1', status: 'InProgress', placement: 'placed' } as any);
+            context.previousWeek!.calendarEntries.push({ id: 'ce1', start: '1', end: '2' } as any);
+            const result = validatorService.validate(week, context);
+
+            const movedIssues = result.issues?.filter(i => i.code === 'FROZEN_ENTITY_MOVED') || [];
+            const movedIds = movedIssues.flatMap(i => i.entityIds || []);
+
+            expect(movedIds).toContain('s1');
+            expect(movedIds).toContain('t1');
+            expect(movedIds).toContain('ce1');
+        });
+
         it('#4 - should PASS at exactly the hard cap (2700 mins)', () => {
             week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T21:00:00Z', taskIds: [] } as any); // 2700 mins
             const result = validatorService.validate(week, context);

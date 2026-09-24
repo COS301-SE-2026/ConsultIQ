@@ -539,12 +539,12 @@ export class ValidatorService {
         return map;
     }
 
-    private normalizeIds(ids?: string[]): string {
-        return (ids ?? [])
-            .slice()
-            .sort((a, b) => a.localeCompare(b))
-            .join(',');
-    }
+    // private normalizeIds(ids?: string[]): string {
+    //     return (ids ?? [])
+    //         .slice()
+    //         .sort((a, b) => a.localeCompare(b))
+    //         .join(',');
+    // }
 
     private durationMinutes(start: string, end: string): number {
         return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);

@@ -15,6 +15,10 @@ export const SCHEDULER_RULES = {
     CORE_HOURS_START: '08:00',
     CORE_HOURS_END: '16:00',
 
+    // Unpaid lunch: taken after this many minutes of continuous work
+    LUNCH_AFTER_CONTINUOUS_MINUTES: 300, // 5 hours
+    UNPAID_LUNCH_MINUTES: 60,            // 1 hour
+
     // System scheduling
     DAILY_TICK_TIME: '07:30',
     WEEKLY_TICK_DAY: 0,              // Sunday

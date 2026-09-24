@@ -6,14 +6,34 @@ import { SCHEDULER_RULES } from './scheduler-rules.constant';
 export type Instant = string & { readonly __brand: unique symbol };
 export type LocalDate = string & { readonly __brand: unique symbol }; // YYYY-MM-DD
 
+const parseHM = (hm: string): { hour: number; minute: number } => {
+    const [hour, minute] = hm.split(':').map(Number);
+    return { hour, minute };
+};
+
 @Injectable()
 export class TimeService {
 
+    // Core hours are parsed once, not on every call
+    private readonly coreStart = parseHM(SCHEDULER_RULES.CORE_HOURS_START);
+    private readonly coreEnd = parseHM(SCHEDULER_RULES.CORE_HOURS_END);
+
+
+    private parse(instant: string | Instant, timezone: string): DateTime {
+        return DateTime.fromISO(instant as string, { zone: 'utc', setZone: true }).setZone(timezone);
+    }
+
+    private toIso(dt: DateTime): string {
+        return dt.toUTC().toISO({ suppressMilliseconds: true }) as string;
+    }
+
     /**
+     * Local calendar date of an instant in the given timezone.
+     * Expects a full instant, not a date-only string.
      * e.g., localDate("2026-09-21T22:30:00Z", "Africa/Johannesburg") -> "2026-09-22"
      */
     localDate(instant: string | Instant, timezone: string): LocalDate {
-        const dt = DateTime.fromISO(instant as string, { setZone: true }).setZone(timezone);
+        const dt = this.parse(instant, timezone);
 
         if (!dt.isValid) {
             throw new BadRequestException(`Invalid instant or timezone: ${dt.invalidReason}`);
@@ -30,7 +50,7 @@ export class TimeService {
             throw new BadRequestException(`Invalid date/time/timezone: ${dt.invalidReason}`);
         }
 
-        return dt.toUTC().toISO({ suppressMilliseconds: true }) as Instant;
+        return this.toIso(dt) as Instant;
     }
 
     weekOf(date: string | LocalDate): LocalDate {
@@ -52,37 +72,28 @@ export class TimeService {
             throw new BadRequestException(`Invalid weekStart: ${startDt.invalidReason}`);
         }
 
-        const [coreStartHour, coreStartMinute] = SCHEDULER_RULES.CORE_HOURS_START.split(':').map(Number);
-        const [coreEndHour, coreEndMinute] = SCHEDULER_RULES.CORE_HOURS_END.split(':').map(Number);
+        if (startDt.weekday !== 1) {
+            throw new BadRequestException(`weekStart must be a Monday, got ${startDt.toFormat('yyyy-MM-dd')}`);
+        }
 
         for (let i = 0; i < 5; i++) {
             const day = startDt.plus({ days: i });
 
-            const workStart = day.set({ hour: coreStartHour, minute: coreStartMinute, second: 0, millisecond: 0 });
-            const workEnd = day.set({ hour: coreEndHour, minute: coreEndMinute, second: 0, millisecond: 0 });
+            const workStart = day.set({ hour: this.coreStart.hour, minute: this.coreStart.minute, second: 0, millisecond: 0 });
+            const workEnd = day.set({ hour: this.coreEnd.hour, minute: this.coreEnd.minute, second: 0, millisecond: 0 });
 
-            // Calculate lunch break: 1 hour unpaid after 5 hours continuous
-            const lunchStart = workStart.plus({ hours: 5 });
-            const lunchEnd = lunchStart.plus({ hours: 1 });
+            // Unpaid lunch after a stretch of continuous work (durations come from SCHEDULER_RULES).
+            const lunchStart = workStart.plus({ minutes: SCHEDULER_RULES.LUNCH_AFTER_CONTINUOUS_MINUTES });
+            const lunchEnd = lunchStart.plus({ minutes: SCHEDULER_RULES.UNPAID_LUNCH_MINUTES });
 
             if (lunchEnd < workEnd) {
                 // Split into two intervals (morning and afternoon)
                 windows.push(
-                    {
-                        start: workStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                        end: lunchStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                    },
-                    {
-                        start: lunchEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                        end: workEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                    }
+                    { start: this.toIso(workStart), end: this.toIso(lunchStart) },
+                    { start: this.toIso(lunchEnd), end: this.toIso(workEnd) }
                 );
             } else {
-
-                windows.push({
-                    start: workStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                    end: workEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                });
+                windows.push({ start: this.toIso(workStart), end: this.toIso(workEnd) });
             }
         }
 
@@ -90,19 +101,27 @@ export class TimeService {
     }
 
     isInCoreHours(instant: string | Instant, timezone: string): boolean {
-        const dt = DateTime.fromISO(instant as string, { setZone: true }).setZone(timezone);
+        const dt = this.parse(instant, timezone);
 
         if (!dt.isValid) return false;
 
         if (dt.weekday > 5) return false;
 
-        const [startHour, startMinute] = SCHEDULER_RULES.CORE_HOURS_START.split(':').map(Number);
-        const [endHour, endMinute] = SCHEDULER_RULES.CORE_HOURS_END.split(':').map(Number);
-
         const timeInMinutes = dt.hour * 60 + dt.minute;
-        const coreStartInMinutes = startHour * 60 + startMinute;
-        const coreEndInMinutes = endHour * 60 + endMinute;
+        const coreStartInMinutes = this.coreStart.hour * 60 + this.coreStart.minute;
+        const coreEndInMinutes = this.coreEnd.hour * 60 + this.coreEnd.minute;
 
         return timeInMinutes >= coreStartInMinutes && timeInMinutes <= coreEndInMinutes;
+    }
+
+    isRangeInCoreHours(start: string | Instant, end: string | Instant, timezone: string): boolean {
+        const s = this.parse(start, timezone);
+        const e = this.parse(end, timezone);
+
+        if (!s.isValid || !e.isValid) return false;
+        if (e.toMillis() < s.toMillis()) return false;
+        if (s.toFormat('yyyy-MM-dd') !== e.toFormat('yyyy-MM-dd')) return false;
+
+        return this.isInCoreHours(start, timezone) && this.isInCoreHours(end, timezone);
     }
 }

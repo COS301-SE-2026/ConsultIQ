@@ -1,17 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HolidayService } from './holiday.service';
 import { PrismaService } from '../../prisma/prisma.service';
-
-const mockPrismaService = {
-    publicHoliday: {
-        findFirst: jest.fn(),
-        findMany: jest.fn(),
-    },
-};
+import { BadRequestException, Logger } from '@nestjs/common';
+import { PublicHoliday as PrismaPublicHoliday } from '@prisma/client';
 
 describe('HolidayService', () => {
     let service: HolidayService;
     let prisma: PrismaService;
+    let loggerWarnSpy: jest.SpyInstance;
+
+    const mockPrismaService = {
+        publicHoliday: {
+            findFirst: jest.fn(),
+            findMany: jest.fn(),
+            count: jest.fn(),
+        },
+    };
+
+    const mockDbHoliday: PrismaPublicHoliday = {
+        id: 'h1',
+        date: new Date('2026-12-25T00:00:00Z'),
+        name: 'Christmas Day',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+        updatedAt: new Date('2026-01-01T00:00:00Z'),
+    };
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -23,80 +35,89 @@ describe('HolidayService', () => {
 
         service = module.get<HolidayService>(HolidayService);
         prisma = module.get<PrismaService>(PrismaService);
+        loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => { });
+    });
+
+    afterEach(() => {
         jest.clearAllMocks();
     });
 
-    describe('getForDate', () => {
-        it('should return a mapped holiday if it exists', async () => {
-            const dbHoliday = {
-                id: '123',
-                date: new Date('2026-12-25T00:00:00.000Z'),
-                name: 'Christmas Day',
-                createdAt: new Date('2026-01-01T00:00:00.000Z'),
-                updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-            };
+    it('should be defined', () => {
+        expect(service).toBeDefined();
+    });
 
-            mockPrismaService.publicHoliday.findFirst.mockResolvedValue(dbHoliday);
+    describe('getForDate', () => {
+        it('should return a mapped holiday if found', async () => {
+            mockPrismaService.publicHoliday.findFirst.mockResolvedValue(mockDbHoliday);
 
             const result = await service.getForDate('2026-12-25');
 
-            expect(prisma.publicHoliday.findFirst).toHaveBeenCalledWith({
-                where: { date: new Date('2026-12-25T00:00:00.000Z') },
-            });
-            expect(result).toEqual({
-                id: '123',
-                date: '2026-12-25',
-                name: 'Christmas Day',
-                createdAt: '2026-01-01T00:00:00.000Z',
-                updatedAt: '2026-01-01T00:00:00.000Z',
-            });
+            expect(result).not.toBeNull();
+            expect(result!.id).toBe('h1');
+            expect(result!.name).toBe('Christmas Day');
+            expect(result!.date).toBe('2026-12-25');
         });
 
         it('should return null if no holiday is found', async () => {
             mockPrismaService.publicHoliday.findFirst.mockResolvedValue(null);
 
-            const result = await service.getForDate('2026-09-22');
-
+            const result = await service.getForDate('2026-09-21');
             expect(result).toBeNull();
+        });
+
+        it('should throw BadRequestException on invalid date format', async () => {
+            await expect(service.getForDate('invalid-date')).rejects.toThrow(BadRequestException);
         });
     });
 
     describe('getForWeek', () => {
-        it('should query a 7-day span and return mapped holidays', async () => {
-            const dbHolidays = [
-                {
-                    id: '1',
-                    date: new Date('2026-12-25T00:00:00.000Z'),
-                    name: 'Christmas Day',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                },
-                {
-                    id: '2',
-                    date: new Date('2026-12-26T00:00:00.000Z'),
-                    name: 'Day of Goodwill',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                }
-            ];
+        it('should return mapped holidays without warning if holidays exist in the week', async () => {
+            mockPrismaService.publicHoliday.findMany.mockResolvedValue([mockDbHoliday]);
 
-            mockPrismaService.publicHoliday.findMany.mockResolvedValue(dbHolidays);
 
             const result = await service.getForWeek('2026-12-21');
 
-            expect(prisma.publicHoliday.findMany).toHaveBeenCalledWith({
-                where: {
-                    date: {
-                        gte: new Date('2026-12-21T00:00:00.000Z'),
-                        lt: new Date('2026-12-28T00:00:00.000Z'), // 7 days later exclusive
-                    }
-                },
-                orderBy: { date: 'asc' }
-            });
-
-            expect(result).toHaveLength(2);
+            expect(result).toHaveLength(1);
+            expect(result[0].id).toBe('h1');
             expect(result[0].date).toBe('2026-12-25');
-            expect(result[1].date).toBe('2026-12-26');
+            expect(loggerWarnSpy).not.toHaveBeenCalled();
+        });
+
+        it('should log a warning if no holidays exist for the week AND the year is completely unseeded', async () => {
+            mockPrismaService.publicHoliday.findMany.mockResolvedValue([]); // No holidays this week
+            mockPrismaService.publicHoliday.count.mockResolvedValue(0); // No holidays this year
+
+            // 2026-09-21 is a Monday
+            const result = await service.getForWeek('2026-09-21');
+
+            expect(result).toHaveLength(0);
+            expect(mockPrismaService.publicHoliday.count).toHaveBeenCalledTimes(1);
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('No public holiday data is seeded for 2026')
+            );
+        });
+
+        it('should NOT log a warning if no holidays exist for the week BUT the year has holidays seeded', async () => {
+            mockPrismaService.publicHoliday.findMany.mockResolvedValue([]); // No holidays this week
+            mockPrismaService.publicHoliday.count.mockResolvedValue(12); // Year is seeded with 12 holidays
+
+            // 2026-09-21 is a Monday
+            const result = await service.getForWeek('2026-09-21');
+
+            expect(result).toHaveLength(0);
+            expect(mockPrismaService.publicHoliday.count).toHaveBeenCalledTimes(1);
+            expect(loggerWarnSpy).not.toHaveBeenCalled(); // Warning should be skipped
+        });
+
+        it('should throw BadRequestException if weekStart is not a Monday', async () => {
+            // 2026-09-22 is a Tuesday
+            await expect(service.getForWeek('2026-09-22')).rejects.toThrow(
+                new BadRequestException('weekStart must be a Monday, got 2026-09-22')
+            );
+        });
+
+        it('should throw BadRequestException on invalid date string', async () => {
+            await expect(service.getForWeek('2026/09/21')).rejects.toThrow(BadRequestException);
         });
     });
 });

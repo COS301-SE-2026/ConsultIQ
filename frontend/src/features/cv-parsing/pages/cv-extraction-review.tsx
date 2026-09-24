@@ -8,6 +8,9 @@ import { Card } from "../../../components/ui/card";
 import { cvParsingService } from "../services/cv-parsing.service";
 import { createConsultantProfile } from "../../consultants/services/consultant.service";
 import { validateSAID, normaliseSAPhone } from "../../consultants/components/profile/validation-helpers";
+import { useAddressSearch } from "../../../hooks/useAddressSearch";
+import SearchBar from "../../../components/shared/search-bar";
+import type { ParsedAddress } from "../../../api/search-address";
 import SecurityReviewModal from "./security-review-modal";
 import SecurityClearedModal from "./security-cleared-modal";
 
@@ -40,6 +43,20 @@ interface SkillFormRow extends ParsedSkill {
 //normalize job type and work model options to match backend enum values
 const JOB_TYPE_OPTIONS = ["FULL_TIME", "PART_TIME", "CONTRACT", "INTERNSHIP", "FREELANCE"] as const;
 const WORK_MODEL_OPTIONS = ["ONSITE", "REMOTE", "HYBRID"] as const;
+
+const SA_PROVINCES = [
+    "Gauteng",
+    "Eastern Cape",
+    "Free State",
+    "KwaZulu-Natal",
+    "Limpopo",
+    "Mpumalanga",
+    "North West",
+    "Northern Cape",
+    "Western Cape",
+
+] as const;
+
 
 type JobType = (typeof JOB_TYPE_OPTIONS)[number];
 type WorkModel = (typeof WORK_MODEL_OPTIONS)[number];
@@ -80,6 +97,8 @@ export default function CVExtractionReview() {
         availability: "AVAILABLE",
     });
 
+
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDiscarding, setIsDiscarding] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -115,7 +134,45 @@ export default function CVExtractionReview() {
         return map;
     }, [fieldWarnings]);
 
-    const hydrateFormFromResult = (result: CvFileStatus) => {
+    const [addressGeo, setAddressGeo] = useState<{
+        latitude?: number;
+        longitude?: number;
+        placeId?: string;
+        formattedAddress?: string;
+    }>({});
+
+    const handleAddressSelected = useCallback((parsed: ParsedAddress) => {
+        setContact((c) => ({
+            ...c,
+            addressLine1: parsed.addressLine1 ?? "",
+            addressLine2: parsed.addressLine2 ?? "",
+            suburb: parsed.suburb ?? "",
+            city: parsed.city ?? "",
+            province: parsed.province,
+            postalCode: (parsed.postalCode ?? "").replace(/\D/g, ""),
+        }));
+        setAddressGeo({
+            latitude: parsed.latitude ?? undefined,
+            longitude: parsed.longitude ?? undefined,
+            placeId: parsed.placeId ?? undefined,
+            formattedAddress: parsed.formattedAddress ?? undefined,
+        });
+    }, [])
+
+    const {
+        addressSearch,
+        locationResults,
+        isAddressLoading,
+        showDropdown,
+        handleSearchAddress,
+        handleSelectAddress,
+        searchAddressAndApply
+
+    } = useAddressSearch({
+        onSelect: handleAddressSelected,
+    });
+
+    const hydrateFormFromResult = useCallback((result: CvFileStatus) => {
         const data = result.parsedData?.data;
         setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
         setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
@@ -123,6 +180,20 @@ export default function CVExtractionReview() {
         if (!data) return;
 
         setContact(data.contact ?? {});
+
+
+        const extractedAddress = [
+            data.contact?.addressLine1,
+            data.contact?.suburb,
+            data.contact?.city,
+            data.contact?.province,
+            data.contact?.postalCode,
+        ].filter(Boolean).join(", ");
+
+        if (data.contact?.addressLine1 && data.contact?.city) {
+            void searchAddressAndApply(extractedAddress);
+        }
+
         setSkills(
             (data.skills ?? []).map((s) => ({
                 ...s,
@@ -139,7 +210,10 @@ export default function CVExtractionReview() {
         );
         setCertifications(data.certifications ?? []);
         setEducation(data.education ?? []);
-    };
+
+    }, [searchAddressAndApply]);
+
+
 
   
 
@@ -212,7 +286,7 @@ export default function CVExtractionReview() {
             cancelled = true;
             if (pollTimer.current) clearInterval(pollTimer.current);
         };
-    }, [cvFileId, clearedAcknowledged,maybeShowClearedModal]);
+    }, [cvFileId, searchAddressAndApply, clearedAcknowledged, hydrateFormFromResult, maybeShowClearedModal]);
 
     const updateSkill = (idx: number, patch: Partial<SkillFormRow>) => {
         if (isSecurityBlocked) return;
@@ -249,7 +323,7 @@ export default function CVExtractionReview() {
             return { error: "Cost to company is required and must be a valid non-negative number." };
         }
         if (!contact.city || !contact.province || !contact.addressLine1) {
-            return { error: "Adress, city and province are required." };
+            return { error: "Address, city and province are required." };
         }
 
         const invalidIdx = experiences.findIndex(
@@ -286,6 +360,10 @@ export default function CVExtractionReview() {
                 city: contact.city ?? "",
                 province: contact.province ?? "",
                 postalCode: contact.postalCode,
+                latitude: addressGeo.latitude ?? undefined,
+                longitude: addressGeo.longitude ?? undefined,
+                placeId: addressGeo.placeId ?? "",
+                formattedAddress: addressGeo.formattedAddress ?? "",
                 costToCompany: hasValidCost ? dailyCostToCompany : 0,
                 availability: manualFields.availability,
                 skills: skills.map((s) => ({
@@ -426,13 +504,56 @@ export default function CVExtractionReview() {
                                             <FormField label="Phone (10 digits)" value={contact.phone ?? ""} warning={warningByPath.get("contact.phone")} onChange={(v) => setContact((c) => ({ ...c, phone: v }))} />
 
                                             <FormField label="Nationality" value={contact.nationality ?? ""} warning={warningByPath.get("contact.nationality")} onChange={(v) => setContact((c) => ({ ...c, nationality: v }))} />
+                                            
+                                             <div className="relative w-full col-span-2 mb-2 mt-3">
+                                                <SearchBar
+                                                    value={addressSearch}
+                                                    onChange={handleSearchAddress}
+                                                    placeholder="Search for an address..."
+                                                />
+
+                                                {showDropdown && locationResults && (
+                                                    <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl w-full flex justify-start"
+                                                                onClick={handleSelectAddress}
+                                                            >
+                                                                {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                )}
+                                                {isAddressLoading && (
+                                                    <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+                                                )}
+                                            </div>
 
                                             <FormField label="Address line 1" value={contact.addressLine1 ?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({ ...c, addressLine1: v }))} />
 
                                             <FormField label="Suburb" value={contact.suburb ?? ""} warning={warningByPath.get("contact.suburb")} onChange={(v) => setContact((c) => ({ ...c, suburb: v }))} />
 
                                             <FormField label="City" value={contact.city ?? ""} warning={warningByPath.get("contact.city")} onChange={(v) => setContact((c) => ({ ...c, city: v }))} />
+                                            <label className="flex flex-col gap-1">
+                                                <span className=" text-lg font-semibold text-primary" >Province</span>
+                                                <select
+                                                    id="form-province"
+                                                    className="flex h-12 w-full rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm outline-none transition focus:border-[#002D72]"
+                                                    value={contact.province ?? ""}
+                                                    onChange={(e) => setContact((c) => ({ ...c, province: e.target.value }))}
+                                                >
+                                                    <option value="" disabled>Select Province</option>
+                                                    {SA_PROVINCES.map((province) => (
+                                                        <option key={province}>{province}</option>
+                                                    ))}
+                                                </select>
+                                                {warningByPath.get("contact.province") && (
+                                                    <span className="text-sm text-yellow-500">{warningByPath.get("contact.province")}</span>
+                                                )}
+                                            </label>
 
+                                            {/* <FormField label="Province" value={contact.province ?? ""} warning={warningByPath.get("contact.province")} onChange={(v) => setContact((c) => ({ ...c, province: v }))} /> */}
                                             <FormField label="Postal code" value={contact.postalCode ?? ""} warning={warningByPath.get("contact.postalCode")} onChange={(v) => setContact((c) => ({ ...c, postalCode: v }))} />
                                         </div>
 
@@ -440,19 +561,19 @@ export default function CVExtractionReview() {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({ ...m, idNumber: v }))} />
 
-                                            <label className="flex flex-col gap-1">
-                                                <span className="text-lg font-semibold text-primary">Availability</span>
-                                                <select className="border rounded-lg h-10 px-2"
-                                                    value={manualFields.availability}
-                                                    disabled={isSecurityBlocked}
-                                                    onChange={(event) =>
-                                                        setManualFields((curr) => ({ ...curr, availability: event.target.value as ManualFields["availability"] }))}
-                                                >
-                                                    <option value="AVAILABLE" >Available</option>
-                                                    <option value="UNAVAILABLE">Unavailable</option>
-                                                    <option value="ON_LEAVE">On leave</option>
-                                                </select>
-                                            </label>
+                                                    <label className="flex flex-col gap-1">
+                                                        <span className="text-lg font-semibold text-primary">Availability</span>
+                                                        <select className="border rounded-lg h-12 px-2"
+                                                            value={manualFields.availability}
+                                                            disabled={isSecurityBlocked}
+                                                            onChange={(event) =>
+                                                                setManualFields((curr) => ({  ...curr, availability: event.target.value as ManualFields["availability"]  }))}
+                                                        >
+                                                            <option value="AVAILABLE" >Available</option>
+                                                            <option value="UNAVAILABLE">Unavailable</option>
+                                                            <option value="ON_LEAVE">On leave</option>
+                                                        </select>
+                                                    </label>
 
                                             <div className="flex flex-col gap-2">
                                                 <span className="text-lg font-semibold text-primary">Cost to Company (R)</span>
@@ -506,29 +627,29 @@ export default function CVExtractionReview() {
                                                 <FormField label="Years experience" value={String(skill.yearsExperience)}
                                                     onChange={(v) => updateSkill(i, { yearsExperience: Number(v) || 0 })} />
 
-                                                <label className="flex flex-col gap-1">
-                                                    <span className="text-lg font-semibold text-primary">Competency</span>
-                                                    <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel} disabled={isSecurityBlocked}
-                                                        onChange={(e) => updateSkill(i, { competencyLevel: e.target.value as SkillFormRow["competencyLevel"] })}>
-                                                        <option value="BEGINNER">Beginner</option>
-                                                        <option value="INTERMEDIATE">Intermediate</option>
-                                                        <option value="EXPERT">Expert</option>
-                                                    </select>
-                                                </label>
-                                                <label className="flex flex-col gap-1">
-                                                    <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
-                                                    <input type="number" min={1} max={4} className="border rounded-lg h-10 px-2"
-                                                        value={skill.confidenceLevel} onChange={(e) => updateSkill(i, { confidenceLevel: Number(e.target.value) })}
-                                                    />
-                                                </label>
-                                                {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
-                                                    <p className="col-span-1 sm:col-span-2 lg:col-span-4 text-xs text-amber-700">
-                                                        Low extraction confidence for this skill — please verify.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </Card>
+                                                        <label className="flex flex-col gap-1">
+                                                            <span className="text-lg font-semibold text-primary">Competency</span>
+                                                            <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel} disabled={isSecurityBlocked}
+                                                                onChange={(e) => updateSkill(i, { competencyLevel: e.target.value as SkillFormRow["competencyLevel"] })}>
+                                                                <option value="BEGINNER">Beginner</option>
+                                                                <option value="INTERMEDIATE">Intermediate</option>
+                                                                <option value="EXPERT">Expert</option>
+                                                            </select>
+                                                        </label>
+                                                        <label className="flex flex-col gap-1">
+                                                            <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
+                                                            <input type="number" min={1} max={4} className="border rounded-lg h-12 px-2"
+                                                                value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {  confidenceLevel: Number(e.target.value)  })}
+                                                           />
+                                                        </label>
+                                                        {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
+                                                            <p className="col-span-1 sm:col-span-2 lg:col-span-4 text-xs text-amber-700">
+                                                                Low extraction confidence for this skill — please verify.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </Card>
 
                                     <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-lg sm:text-xl font-bold mb-4" >

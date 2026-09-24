@@ -504,6 +504,31 @@ export default function CVExtractionReview() {
                                             <FormField label="Phone (10 digits)" value={contact.phone ?? ""} warning={warningByPath.get("contact.phone")} onChange={(v) => setContact((c) => ({ ...c, phone: v }))} />
 
                                             <FormField label="Nationality" value={contact.nationality ?? ""} warning={warningByPath.get("contact.nationality")} onChange={(v) => setContact((c) => ({ ...c, nationality: v }))} />
+                                            
+                                             <div className="relative w-full col-span-2 mb-2 mt-3">
+                                                <SearchBar
+                                                    value={addressSearch}
+                                                    onChange={handleSearchAddress}
+                                                    placeholder="Search for an address..."
+                                                />
+
+                                                {showDropdown && locationResults && (
+                                                    <ul className="absolute z-10 w-full bg-white border border-slate-200 rounded-xl mt-1 shadow-lg">
+                                                        <li>
+                                                            <button
+                                                                type="button"
+                                                                className="px-4 py-3 cursor-pointer hover:bg-slate-100 rounded-xl w-full flex justify-start"
+                                                                onClick={handleSelectAddress}
+                                                            >
+                                                                {[locationResults.addressLine1, locationResults.suburb, locationResults.city, locationResults.province, locationResults.postalCode].filter(Boolean).join(", ")}
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                )}
+                                                {isAddressLoading && (
+                                                    <p className="text-sm text-brand-muted mt-2 animate-pulse">Finding address details...</p>
+                                                )}
+                                            </div>
 
                                             <FormField label="Address line 1" value={contact.addressLine1 ?? ""} warning={warningByPath.get("contact.addressLine1")} onChange={(v) => setContact((c) => ({ ...c, addressLine1: v }))} />
 

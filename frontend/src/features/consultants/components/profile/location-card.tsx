@@ -34,7 +34,7 @@ interface LocationCardProps {
 }
 
 
-interface LocationForm {
+
 interface LocationForm {
   readonly addressLine1: string;
   readonly addressLine2: string;

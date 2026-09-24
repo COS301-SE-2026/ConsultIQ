@@ -5,13 +5,16 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
+  IsEnum,
   ValidateNested,
   IsDateString,
   Min,
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { WorkModel } from '@prisma/client';
 import { BaseLocationDto } from '../../common/dto/base-location.dto';
+import { NoDuplicateSkills } from '../../common/validators/no-duplicate-skills.validator';
 
 export class CreateProjectSkillDto {
   @IsString()
@@ -59,8 +62,15 @@ export class CreateProjectDto extends BaseLocationDto {
   @Min(0)
   budget!: number;
 
+  @IsEnum(WorkModel, {
+    message: 'Work model must be one of: ONSITE, REMOTE, HYBRID'
+  })
+  workModel!: WorkModel;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateProjectSkillDto)
+  @NoDuplicateSkills()
   skills!: CreateProjectSkillDto[];
+
 }

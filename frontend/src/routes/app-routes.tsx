@@ -27,12 +27,16 @@ import ProjectSpecificationPage from "../features/projects/pages/project-specifi
 import ProjectListPage from "../features/projects/pages/project-list-page";
 import ProjectScoringOverridePage from "../features/projects/pages/scoring-config-override-page";
 import PlacementDashboard from "../features/scoring/pages/placement-dashboard";
-import {SkillGapPage} from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
+import { SkillGapPage } from "../features/skills-gap-analysis/pages/skills-gap-page.tsx"
 
-//Admin pages
+// Admin pages
 import AdminPage from "../features/admin/pages/admin-dashboard-page";
 import AdminScoringConfigPage from "../features/admin/pages/scoring-config-page"
 import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
+
+// Super Admin pages
+import SecurityReviewPage from "../features/super-admin/pages/security-review-page.tsx";
+import SuperAdminDashboardPage from "../features/super-admin/pages/super-admin-dashboard-page.tsx";
 
 import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
@@ -52,7 +56,7 @@ import BrandToneSection from "../brand style guide/components/brand-tone-section
 import BrandIconsSection from "../brand style guide/components/brand-icons-section.tsx";
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
-import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";  
+import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";
 
 function AnimatedRoutes() {
     const location = useLocation();
@@ -89,6 +93,8 @@ function AnimatedRoutes() {
                     <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
                     <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
                     <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
+                    <Route path="/super-admin/security-review" element={<PageTransition><SecurityReviewPage /></PageTransition>} />
+                    <Route path="/super-admin-dashboard" element={<PageTransition><SuperAdminDashboardPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
                     <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
@@ -103,14 +109,14 @@ function AnimatedRoutes() {
                     <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
-                    <Route path="/skill-gap" element={<PageTransition><SkillGapPage mode="portfolio"/></PageTransition>} />
+                    <Route path="/skill-gap" element={<PageTransition><SkillGapPage mode="portfolio" /></PageTransition>} />
                     <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage mode="project" /></PageTransition>} />
                     <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
 
                 </Route>
 
-                {/* Catch-all: Redirect unknown URLs to login */}
-                <Route path="*" element={<Navigate to="/landing-page" replace />} />
+                {/* Catch-all: Redirect unknown URLs to the public landing page */}
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </AnimatePresence>
     );

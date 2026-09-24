@@ -60,7 +60,7 @@ describe('AdminProjectService', () => {
             ];
             // const totalUsers = 10;
 
-            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, 10]);
+            (prisma.$transaction as jest.Mock).mockResolvedValue([mockProjects, 10, 25]);
             const result = await service.getAllProjects(1, 10);
 
             expect(prisma.$transaction).toHaveBeenCalledWith([
@@ -76,12 +76,41 @@ describe('AdminProjectService', () => {
                 data: mockProjects,
                 meta: {
                     totalRecords: mockProjects.length,
-                    absoluteTotalRecords: mockProjects.length,
+                    absoluteTotalRecords: 25,
                     currentPage: 1,
                     totalPages: 1,
                 },
             });
         });
+
+        it('applies the search filter when provided', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0]);
+
+            await service.getAllProjects(1, 10, 'Project 1');
+
+            expect(prisma.project.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({
+                        OR: [
+                            { projectName: { contains: 'Project 1', mode: 'insensitive' } },
+                            { clientName: { contains: 'Project 1', mode: 'insensitive' } },
+                        ],
+                    }),
+                }),
+            );
+        });
+
+        it('applies budgetSort to orderBy when provided', async () => {
+            (prisma.$transaction as jest.Mock).mockResolvedValue([[], 0, 0]);
+
+            await service.getAllProjects(1, 10, undefined, 'asc');
+
+            expect(prisma.project.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    orderBy: { budget: 'asc' },
+                }),
+            );
+        })
     })
 
     // Archiving a project

@@ -3,7 +3,7 @@ import { ProjectService } from './project.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateProjectDto } from '../dto/create-project.dto';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, WorkModel } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
 
@@ -70,6 +70,7 @@ const baseDto: CreateProjectDto = {
   teamSize: 5,
   allocation: 80,
   budget: 500000,
+  workModel:  WorkModel.HYBRID,
   skills: [
     { name: 'TypeScript', competency: 'INTERMEDIATE', mandatory: true, years: 2 },
   ],
@@ -87,6 +88,7 @@ const mockProjectRows = [
     teamSize: 5,
     requiredAllocationPercentage: 80,
     clientBillingBudget: 500000,
+    workModel: 'HYBRID',
     status: 'OPEN',
     skillCount: 3,
   },
@@ -105,6 +107,7 @@ const mockProjectRows = [
     teamSize: 3,
     requiredAllocationPercentage: 50,
     clientBillingBudget: 200000,
+    workModel: 'REMOTE',
     status: 'OPEN',
     skillCount: 0,
   },
@@ -153,6 +156,20 @@ describe('ProjectService', () => {
         data: { userId: 'user-123', projectId: 'uuid-123' },
       });
     });
+
+
+    it('does not create a duplicate ProjectSkill row if one somehow already exists for this project+skill', async () => {
+      mockTx.project.create.mockResolvedValue({ id: 'uuid-dup' });
+      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockTx.projectSkill.findFirst.mockResolvedValue({ id: 'existing-project-skill-1' });
+
+       await service.createProject(baseDto, 'user-123', 'PROJECT_MANAGER');
+
+       expect(mockTx.projectSkill.findFirst).toHaveBeenCalledWith({
+        where: { projectId: 'uuid-dup', skillId: 'skill-1' }
+       });
+       expect(mockTx.projectSkill.create).not.toHaveBeenCalled();
+    })
 
     // it('should create a project without an endDate', async () => {
     //   const dto = { ...baseDto, endDate: undefined };
@@ -228,6 +245,21 @@ describe('ProjectService', () => {
             placeId: null,
             formattedAddress: null,
           }),
+        }),
+      );
+    });
+
+    it('should pass workModel through to project.create', async () => {
+      mockTx.project.create.mockResolvedValue({ id: 'uuid-workmodel' });
+      mockTx.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+
+      const dtoWithWorkModel = { ...baseDto, workModel: 'REMOTE' as any };
+
+      await service.createProject(dtoWithWorkModel, 'user-123', 'PROJECT_MANAGER');
+
+      expect(mockTx.project.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ workModel: 'REMOTE' }),
         }),
       );
     });
@@ -314,6 +346,7 @@ describe('ProjectService', () => {
       expect(result.total).toBe(1);
     });
   });
+
   describe('Caching Logic', () => {
     beforeEach(() => {
       jest.clearAllMocks();
@@ -382,6 +415,7 @@ describe('ProjectService', () => {
       expect(invalidateSpy).toHaveBeenCalled();
     });
   });
+
   describe('getAllProjects - CONSULTANT_MANAGER', () => {
     it('should return projects of managed consultants for CONSULTANT_MANAGER', async () => {
       mockPrismaService.$queryRaw
@@ -456,6 +490,17 @@ describe('ProjectService', () => {
 
       expect(result.projects).toEqual([]);
       expect(result.total).toBe(0);
+    });
+
+    it('should include workModel in the mapped project response', async () => {
+      mockPrismaService.$queryRaw
+        .mockResolvedValueOnce(mockProjectRows)
+        .mockResolvedValueOnce([{ count: 2 }]);
+
+        const result = await service.getAllProjects(1, 10, 'ADMIN', null);
+
+        expect(result.projects[0].workModel).toBe('HYBRID');
+        expect(result.projects[1].workModel).toBe('REMOTE');
     });
   });
 
@@ -723,6 +768,21 @@ describe('ProjectService', () => {
         }),
       });
     });
+
+    it('includes workModel when updating project details', async () => {
+      const dto: any = {
+        workModel: 'REMOTE',
+      };
+
+      await service.updateProject('project-123', dto, 'user-1');
+      
+      expect(mockTx.project.update).toHaveBeenLastCalledWith({
+        where: { id: 'project-123' },
+        data: expect.objectContaining({
+          workModel: 'REMOTE'
+        })
+      })
+    })
   });
 
   describe('getAllProjects - total fallback', () => {

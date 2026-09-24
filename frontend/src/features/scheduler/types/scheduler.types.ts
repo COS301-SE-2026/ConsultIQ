@@ -129,7 +129,7 @@ export interface Slot {
     id: string;
     kind: SlotKind;
     taskIds: string[];
-    subtasksIds?: string[];
+    subtaskIds?: string[];
     blockId: string;
     start: Instant;
     end: Instant;
@@ -141,7 +141,23 @@ export type TaskStatus = "Ready" | "InProgress" | "Done";
 
 export type TaskPlacement = "placed" | "unplaced";
 
+export type Urgency = 1 | 2 | 3 | 4;
 
+export type Complexity = 1 | 2 | 3 ;
+
+export const URGENCY_LABELS: Record<Urgency, string> = {
+    1: "Low",
+    2: "Medium",
+    3: "High",
+    4: "Critical",
+
+}
+
+export const COMPLEXITY_LABELS: Record<Complexity,string>={
+    1: "Low",
+    2: "Medium",
+    3: "High",
+}
 export interface Task {
     id: string;
     projectId: string;
@@ -149,8 +165,8 @@ export interface Task {
     tMin: Minutes;
     tMax: Minutes;
     deadline?: string;
-    urgency: number;
-    complexity: number;
+    urgency: Urgency;
+    complexity: Complexity;
     status: TaskStatus;
     subtasks: Subtask[];
     slots: Slot[];
@@ -167,8 +183,8 @@ export interface NewTask {
     tMin: Minutes;
     tMax: Minutes;
     deadline?: Instant;
-    urgency: number;
-    complexity: number;
+    urgency: Urgency;
+    complexity: Complexity;
     subtasks: Subtask[];
     dependsOn: string[];
 }
@@ -207,7 +223,7 @@ export interface CalendarEntry {
     type: CalendarEntryType;
     start: Instant;
     end: Instant;
-    tags: CalendarTag;
+    tags: CalendarTag[];
     origin: CalendarEntryOrigin;
 }
 
@@ -219,7 +235,7 @@ export interface PublicHoliday {
 
 }
 
-interface UnplacedTaskSummary {
+export interface UnplacedTaskSummary {
     taskId: string;
     reason: ReasonCode;
     neededMinutes: Minutes;
@@ -227,7 +243,7 @@ interface UnplacedTaskSummary {
     deadline?: Instant;
 }
 
-interface AllocationSummary {
+export interface AllocationSummary {
     consultantId: string;
     projectId: string;
     allocation: number;
@@ -235,7 +251,7 @@ interface AllocationSummary {
     periodEnd?: LocalDate;
 }
 
-interface WeekMetadata {
+export interface WeekMetadata {
     contractedMinutes: Minutes;
     availableMinutes: Minutes;
     allocatedMinutes: Minutes;
@@ -260,7 +276,7 @@ interface WeekMetadata {
     unplaced: UnplacedTaskSummary[];
 }
 
-interface WeekContainer {
+export interface WeekContainer {
     id: string;
     consultantId: string;
     timezone: string;
@@ -302,68 +318,92 @@ export interface PlaceReport {
     unplaced: UnplacedTaskSummary[];
 }
 
-export type CreateTaskDto = NewTask;
+export interface VersionedRequest{
+    expectedVersion: number;
+}
 
-export type UpdateTaskDto = Partial<Task>;
+export type ReplanDto = VersionedRequest;
 
-export interface SetTaskStatusDto {
+export type CreateTaskDto = NewTask & VersionedRequest;
+
+export type UpdateTaskDto = Partial<Task> & VersionedRequest
+
+export interface SetTaskStatusDto extends VersionedRequest{
     status: TaskStatus;
 }
 
-export interface SplitTaskDto{
+export type ToggleSubtaskDto= VersionedRequest;
+
+
+export interface SplitTaskDto extends VersionedRequest{
     atMinutes: Minutes;
 }
 
-export type AcceptDeadlineMissDto = Record<string, never>;
+export type AcceptDeadlineMissDto = VersionedRequest;
 
 
-export interface DeferToNextWeekDto{
+export interface DeferToNextWeekDto extends VersionedRequest{
     taskIds: string[];
 
 }
 
-export interface PlaceUnplacedDto{
+export interface PlaceUnplacedDto extends VersionedRequest{
     taskIds: string[];
 }
 
-export interface PullForwardDto{
+export interface PullForwardDto extends VersionedRequest{
     taskIds: string[];
 }
 
-export type CalendarEntryDto = Omit<CalendarEntry, 'id'> & {
-  id?: string;
-  confirmedOverride?: boolean;
-};
+export type CalendarEntryDto = Omit<CalendarEntry, 'id'> &
+  VersionedRequest & {
+    id?: string;
+    confirmedOverride?: boolean;
+  };
 
-export interface MoveSlotDto {
+export type RemovedCalendarEntryDto= VersionedRequest;
+
+export interface MoveSlotDto extends VersionedRequest {
   slotId: string;
   to: Interval;
   confirmedOverride?: boolean;
 }
 
-export interface MoveBlockDto{
+export interface MoveBlockDto extends VersionedRequest{
     blockId: string;
     to: Interval;
     confirmedOverride? : boolean;
 }
 
-export interface ResizeBlockDto{
+export interface ResizeBlockDto extends VersionedRequest{
     blockId: string;
     to: Interval;
     confirmedOverride? : boolean;
 }
 
-export interface PinBlockDto{
+export interface PinBlockDto extends VersionedRequest{
     blockId: string;
     pinned: boolean;
 }
+
 
 export interface DryRunDto{
     change: Change;
 }
 
-export interface ProjectSummary{
-    id: string;
-    name: string;
-    clientName: string;
+export interface Project {
+  id: string;
+  projectName: string;
+  clientName: string;
+  description: string;
+  teamSize: number;
+  requiredAllocationPercentage: number;
+  clientBillingBudget: number;
+  startDate: string;
+  endDate?: string;
+  status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "COMPLETED";
+  city: string;
+  province: string;
+  gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
+ 

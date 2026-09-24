@@ -29,7 +29,6 @@ export interface FeasibilityRequestDto {
     teamSize: number;
     allocation: number;
     budget: number;
-    minimumCompetency: FeasibilityCompetency;
     skills: FeasibilitySkillDto[];
 }
 

@@ -67,7 +67,6 @@ function ProjectSpecificationPage() {
   const { count: unreadCount } = useUnreadNotificationCount();
 
   const [isFeasibilityOpen, setIsFeasibilityOpen] = useState(false);
-  const [minimumCompetency, setMinimumCompetency] = useState<FeasibilityCompetency>("INTERMEDIATE");
 
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -138,7 +137,6 @@ function ProjectSpecificationPage() {
       teamSize: formData.teamSize,
       allocation: formData.allocation,
       budget: formData.budget,
-      minimumCompetency,
       skills :formData.skills.map((skill) => ({
         name: skill.name,
         competency: skill.competency as FeasibilityCompetency,
@@ -190,8 +188,6 @@ function ProjectSpecificationPage() {
             <FeasibilityPreviewPanel 
               open = {isFeasibilityOpen}
               onToggle = {() => setIsFeasibilityOpen((current) => !current)}
-              minimumCompetency = {minimumCompetency}
-              onMinimumCompetencyChange = {setMinimumCompetency}
               state = {feasibility.state}
               result = {feasibility.result}
               error = {feasibility.error}

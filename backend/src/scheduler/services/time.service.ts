@@ -67,14 +67,16 @@ export class TimeService {
 
             if (lunchEnd < workEnd) {
                 // Split into two intervals (morning and afternoon)
-                windows.push({
-                    start: workStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                    end: lunchStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                });
-                windows.push({
-                    start: lunchEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                    end: workEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
-                });
+                windows.push(
+                    {
+                        start: workStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
+                        end: lunchStart.toUTC().toISO({ suppressMilliseconds: true }) as string,
+                    },
+                    {
+                        start: lunchEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
+                        end: workEnd.toUTC().toISO({ suppressMilliseconds: true }) as string,
+                    }
+                );
             } else {
 
                 windows.push({

@@ -172,9 +172,7 @@ export default function CVExtractionReview() {
         onSelect: handleAddressSelected,
     });
 
-
-
-    const hydrateFormFromResult = (result: CvFileStatus) => {
+    const hydrateFormFromResult = useCallback((result: CvFileStatus) => {
         const data = result.parsedData?.data;
         setFieldWarnings(result.parsedData?.fieldWarnings ?? []);
         setCvSecurityFlags(result.parsedData?.securityFlags ?? []);
@@ -212,16 +210,20 @@ export default function CVExtractionReview() {
         );
         setCertifications(data.certifications ?? []);
         setEducation(data.education ?? []);
-    };
 
-    const maybeShowClearedModal = (currentStatus: CvFileStatus["securityReviewStatus"]) => {
+    }, [searchAddressAndApply]);
+
+
+
+    const maybeShowClearedModal = useCallback((currentStatus: CvFileStatus["securityReviewStatus"]) => {
         if (wasPendingOnLoadRef.current === null) {
             wasPendingOnLoadRef.current = currentStatus === "PENDING";
         }
         if (currentStatus === "CLEARED" && wasPendingOnLoadRef.current && !clearedAcknowledged) {
             setShowClearedModal(true);
         }
-    };
+    }, [clearedAcknowledged]);
+   
     useEffect(() => {
         if (!cvFileId) return;
 
@@ -281,7 +283,7 @@ export default function CVExtractionReview() {
             cancelled = true;
             if (pollTimer.current) clearInterval(pollTimer.current);
         };
-    }, [cvFileId, searchAddressAndApply, clearedAcknowledged]);
+    }, [cvFileId, searchAddressAndApply, clearedAcknowledged, hydrateFormFromResult, maybeShowClearedModal]);
 
     const updateSkill = (idx: number, patch: Partial<SkillFormRow>) => {
         if (isSecurityBlocked) return;

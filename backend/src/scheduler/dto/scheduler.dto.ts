@@ -96,9 +96,9 @@ export interface Slot {
     start: string;
     end: string;
     locked: boolean;
-    daySpan: number;
+    daySpan?: number;
     taskIds: string[];
-    subtaskIds: string[];
+    subtaskIds?: string[];
     tags?: string[];
 }
 

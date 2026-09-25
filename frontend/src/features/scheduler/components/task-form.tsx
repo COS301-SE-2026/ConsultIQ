@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X, Plus, AlertOctagon, AlertTriangle} from 'lucide-react'; 
 import  { COMPLEXITY_LABELS, ReasonCode, SCHEDULER_RULES, URGENCY_LABELS,
@@ -78,6 +77,7 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
   useEffect(() => {
     if(!open)  return;
     
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTitle(initialTask?.title ?? "");
     setProjectId(initialTask?.projectId ?? projects[0]?.id ?? "");
     setMinHours(initialTask ? initialTask.tMin / 60 : 1);
@@ -139,6 +139,71 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
 
     const activeProject = projects.find((project) => project.id === projectId);
 
+    function updateSubtask(id: string, patch: Partial<SubtaskDraft>) {
+        setSubtasks((current) => current.map((subtask) => subtask.id === id ? { ...subtask, ...patch } : subtask));
+    }
+
+    function addSubtask() {
+        setSubtasks((current) => [...current, { id: createId(), title: "", estimate: "" }]);
+    }
+
+    function removeSubtask(id: string) {
+        setSubtasks((current) => current.filter((subtask) => subtask.id !== id));
+    }
+
+    function toggleDependency(id: string) {
+        setDependsOn((current) => current.includes(id) ? current.filter((dependencyId) => dependencyId !== id) : [...current, id]);
+    }
+
+    function buildSubtasks() : Subtask[] {
+        return subtasks.filter((subtask) => subtask.title.trim().length > 0)
+        .map((subtask) => {
+            const parsedEstimate = Number(subtask.estimate);
+            const existingSubtask = initialTask?.subtasks.find((item) => item.id === subtask.id);
+            return {
+                id: subtask.id,
+                title: subtask.title,
+                estimate: subtask.estimate && Number.isFinite(parsedEstimate) ? parsedEstimate : undefined,
+                done: existingSubtask?.done ?? false,
+            };
+        }); 
+    }
+
+    async function handleSubmit(event: FormEvent) {
+        event.preventDefault();
+
+        if(!canSave) return;
+
+        setSaving(true);
+        setSubmitError(null);
+
+        const commonPayload = {
+            projectId,
+            title: title.trim(),
+            tMin,
+            tMax,
+            deadline: toInstant(deadline),
+            urgency,
+            complexity,
+            subtasks: buildSubtasks(),
+            dependsOn,
+            expectedVersion,
+        };
+
+        try{
+            if(mode === "create"){
+                await onSubmit({ mode: "create", dto : commonPayload });
+            } else if(initialTask){
+                await onSubmit({ mode: "edit", taskId: initialTask.id, dto: commonPayload })
+            }
+        }catch (error) {
+            setSubmitError( error instanceof Error ? error.message : "Unable to save task.");
+        }finally {
+            setSaving(false);
+        }
+    }
+
+    if(!open) return null;
 
   return (
     <div className= "fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
@@ -150,7 +215,7 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
         <form role="dialog" 
             aria-modal="true" 
             aria-labelledby="task-form-title"
-            //onSubmit = {handleSubmit}
+            onSubmit = {handleSubmit}
             className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white shadow-xl"
         >
             <header className="flex items-start justify-between bg-slate-900 px-6 py-4 text-white">
@@ -158,10 +223,13 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                     <h2 id="task-form-title" className="text-base font-semibold">
                         {mode === "create" ? "Create Task" : "Edit Task"}
                     </h2>
-                    <p className="mt-1 text-sm text-slate-300">Active Project</p>
+                    {activeProject && (
+                        <p className="mt-1 text-sm text-slate-300">{activeProject.label} · {activeProject.clientName}</p>
+                    )}
                 </div>
 
                 <button type="button" aria-label="Close task form"
+                onClick={onCancel}
                 className= "text-slate-300 hover:text-white">
                     <X size={20} />
                 </button>
@@ -172,7 +240,10 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                     <span className="text-sm font-medium text-slate-700">
                         Task Title
                     </span>
-                    <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+                    <Input value={title} 
+                    placeholder="What needs to be done?"
+                    autoFocus
+                    onChange={(e) => setTitle(e.target.value)} />
                 </label>
 
                 <label className= "block space-y-1.5">
@@ -203,10 +274,18 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                     <Input type="number" min={minHours} step={0.25} value={maxHours} onChange={(e) => setMaxHours(Number(e.target.value))} />
                 </label>
                </div>
-
+                
+                {!hasValidEstimate && (
                <p className= "text-sm text-red-600">
                   Maximum estimate must be greater than or equal to minimum estimate.      
                </p>
+                )}
+
+                {isBatched &&(
+                    <p className="-mt-3 text-xs text-slate-500">
+                        Estimates under {SCHEDULER_RULES.minBlockDuration} minutes will be batched with other short tasks.
+                    </p>
+                )}
 
                <ToggleGroup 
                 label="Complexity"
@@ -234,7 +313,9 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                 <section className= "space-y-2">
                     <div className= "flex items-center justify-between">
                         <h3 className= "text-sm font-medium text-slate-700"> Subtasks </h3>
-                        <button type="button" className = "inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900"
+                        <button type="button" 
+                        onClick={addSubtask}
+                         className = "inline-flex items-center gap-1 text-xs font-medium text-slate-600 hover:text-slate-900"
                         >
                             <Plus size={14} />
                             Add
@@ -244,16 +325,18 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                     {subtasks.map((subtask) =>(
                         <div className= "flex items-center gap-2" key={subtask.id}>
                             <Input value={subtask.title}
-                            //onchange -> update subtask title
+                            placeholder="Subtask title"
+                            onChange={(event) => updateSubtask(subtask.id, { title : event.target.value })}
                             />
 
-                            <Input type="number" min={1} placeholder="Estimate (hours)" value={subtask.estimate}
-                            //onchange -> update subtask estimate
+                            <Input type="number" min={1} placeholder="Min" value={subtask.estimate}
+                            onChange={(event) => updateSubtask(subtask.id, { estimate : event.target.value })}
+                            className="w-24"
                             />
 
                             <button type="button" aria-label="Remove subtask"
+                                onClick={() => removeSubtask(subtask.id)}
                                 className= "text-slate-400 hover:text-red-600"
-                            //onclick -> remove subtask
                             >
                                 <X size={16} />
                             </button>
@@ -264,6 +347,7 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                         <p className= "text-sm text-slate-500">No subtasks added.</p>
                     )}
                     </section>
+
                     {dependencyOptions.length > 0 && (
                         <section className= "space-y-2">
                             <h3 className= "text-sm font-medium text-slate-700">
@@ -273,7 +357,10 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                             <div className="divide-y rounded-md border border-slate-200">
                                 {dependencyOptions.filter((dependency) => dependency.id !== initialTask?.id).map((dependency) => (
                                     <label key={dependency.id} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
-                                        <input type="checkbox" checked={dependsOn.includes(dependency.id)} />
+                                        <input type="checkbox" 
+                                        checked={dependsOn.includes(dependency.id)}
+                                        onChange={() => toggleDependency(dependency.id)}
+                                         />
                                           {dependency.title}
                                     </label>
                                 ))}

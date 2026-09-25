@@ -101,7 +101,7 @@ export class AvailabilityFitScorer {
     return {
       score,
       triggerHardExclusion: false,
-      details: detailString,
+      details: `Consultant's remaining capacity is ${shortfallPercent}% lower than the required capacity.`
     };
   }
 }

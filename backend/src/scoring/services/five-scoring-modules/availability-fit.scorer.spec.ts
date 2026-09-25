@@ -140,7 +140,7 @@ describe('AvailabilityFitScorer', () => {
             expect(result.score).toBe(0.8);
 
             expect(result.details).toBe(
-                'Requires 50% capacity | Has 40% remaining',
+                "Consultant's remaining capacity is 20% lower than the required capacity.",
             );
         });
     })

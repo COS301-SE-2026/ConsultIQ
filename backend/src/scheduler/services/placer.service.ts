@@ -42,9 +42,7 @@ export class PlacerService {
         });
 
         // 3. Collect obstacles (Meetings, leave, ad-hoc, and already-placed sticky slots)
-        const obstacles: Interval[] = [];
-        obstacles.push(...week.calendarEntries);
-        obstacles.push(...week.slots);
+        const obstacles: Interval[] = [...week.calendarEntries, ...week.slots];
 
         const resultGaps: FreeGap[] = [];
 
@@ -172,6 +170,7 @@ export class PlacerService {
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public makeSlot(task: Task, gap: FreeGap, minutes: number, _day: LocalDate): Slot {
+        void _day;
         const start = new Date(gap.start);
         const end = new Date(start.getTime() + minutes * 60000);
         return {
@@ -271,7 +270,7 @@ export class PlacerService {
             if (accumulated >= neededMinutes) break;
 
             accumulated += this.evaluateGapForFit(
-                gap, task, neededMinutes, accumulated, daysUsed, maxDays, enforceDeadline, timezone
+                gap, task, neededMinutes - accumulated, daysUsed, maxDays, enforceDeadline, timezone
             );
         }
 
@@ -281,8 +280,7 @@ export class PlacerService {
     private evaluateGapForFit(
         gap: FreeGap,
         task: Task,
-        neededMinutes: number,
-        accumulated: number,
+        missingMinutes: number,
         daysUsed: Set<string>,
         maxDays: number,
         enforceDeadline: boolean,
@@ -295,7 +293,7 @@ export class PlacerService {
 
         // Ensure we don't create fragments smaller than the minimum block size,
         // unless it's the final tiny piece needed to finish the task.
-        if (gapMins < SCHEDULER_RULES.MIN_BLOCK_MINUTES && gapMins < (neededMinutes - accumulated)) {
+        if (gapMins < SCHEDULER_RULES.MIN_BLOCK_MINUTES && gapMins < missingMinutes) {
             return 0;
         }
 
@@ -306,7 +304,7 @@ export class PlacerService {
             daysUsed.add(day);
         }
 
-        return Math.min(gapMins, neededMinutes - accumulated);
+        return Math.min(gapMins, missingMinutes);
     }
 
     /**
@@ -394,47 +392,8 @@ export class PlacerService {
 
         for (const gaps of gapsByDay.values()) {
             for (const gap of gaps) {
-                let gapRemainingMins = this.intervalMinutes(gap);
-                let currentStartMs = new Date(gap.start).getTime();
-
-                while (taskIdx < tasks.length && gapRemainingMins >= minBlock) {
-                    let batchMins = 0;
-                    const batchTaskIds: string[] = [];
-
-                    // Keep adding tasks to this batch until we hit MIN_BLOCK or run out of gap space
-                    while (taskIdx < tasks.length) {
-                        const task = tasks[taskIdx];
-                        if (batchMins + task.tMax <= gapRemainingMins) {
-                            batchMins += task.tMax;
-                            batchTaskIds.push(task.id);
-                            taskIdx++;
-                            if (batchMins >= minBlock) break;
-                        } else {
-                            break; // Task doesn't fit in this gap
-                        }
-                    }
-
-                    if (batchTaskIds.length > 0) {
-                        const slotDuration = Math.max(minBlock, batchMins);
-                        const endMs = currentStartMs + (slotDuration * 60000);
-
-                        newSlots.push({
-                            id: crypto.randomUUID(),
-                            weekId: week.id, // Successfully mapping week.id here!
-                            kind: 'batch',
-                            blockId: gap.blockId,
-                            start: new Date(currentStartMs).toISOString() as Instant,
-                            end: new Date(endMs).toISOString() as Instant,
-                            taskIds: batchTaskIds,
-                            locked: false,
-                        });
-
-                        currentStartMs = endMs;
-                        gapRemainingMins -= slotDuration;
-                    } else {
-                        break;
-                    }
-                }
+                if (taskIdx >= tasks.length) break;
+                taskIdx = this.processGapForBatches(week, gap, tasks, taskIdx, minBlock, newSlots);
             }
         }
 
@@ -446,6 +405,73 @@ export class PlacerService {
         return { newSlots, unbatched };
     }
 
+    private processGapForBatches(
+        week: WeekContainer,
+        gap: FreeGap,
+        tasks: Task[],
+        initialTaskIdx: number,
+        minBlock: number,
+        newSlots: Slot[]
+    ): number {
+        let gapRemainingMins = this.intervalMinutes(gap);
+        let currentStartMs = new Date(gap.start).getTime();
+        let taskIdx = initialTaskIdx;
+
+        while (taskIdx < tasks.length && gapRemainingMins >= minBlock) {
+            const { batchMins, batchTaskIds, nextTaskIdx } = this.packTasksIntoBatch(
+                tasks, taskIdx, gapRemainingMins, minBlock
+            );
+
+            if (batchTaskIds.length === 0) break;
+
+            const slotDuration = Math.max(minBlock, batchMins);
+            const endMs = currentStartMs + (slotDuration * 60000);
+
+            newSlots.push({
+                id: crypto.randomUUID(),
+                weekId: week.id,
+                kind: 'batch',
+                blockId: gap.blockId,
+                start: new Date(currentStartMs).toISOString() as Instant,
+                end: new Date(endMs).toISOString() as Instant,
+                taskIds: batchTaskIds,
+                locked: false,
+            });
+
+            currentStartMs = endMs;
+            gapRemainingMins -= slotDuration;
+            taskIdx = nextTaskIdx;
+        }
+
+        return taskIdx;
+    }
+
+
+    private packTasksIntoBatch(
+        tasks: Task[],
+        startIdx: number,
+        gapRemainingMins: number,
+        minBlock: number
+    ): { batchMins: number; batchTaskIds: string[]; nextTaskIdx: number } {
+        let batchMins = 0;
+        const batchTaskIds: string[] = [];
+        let taskIdx = startIdx;
+
+        while (taskIdx < tasks.length) {
+            const task = tasks[taskIdx];
+            if (batchMins + task.tMax <= gapRemainingMins) {
+                batchMins += task.tMax;
+                batchTaskIds.push(task.id);
+                taskIdx++;
+
+                if (batchMins >= minBlock) break;
+            } else {
+                break;
+            }
+        }
+
+        return { batchMins, batchTaskIds, nextTaskIdx: taskIdx };
+    }
     /**
      * Tier 3: placeTask
      * Attempts to fragment and place a task. Shrinks fragments to avoid unplaceable tails.
@@ -462,45 +488,7 @@ export class PlacerService {
 
         const gaps = this.freeGaps(week, task.projectId, window); // Fill target is default 0.85
 
-        const plan: Slot[] = [];
-        const daysUsed = new Set<string>();
-        let remaining = need;
-
-        for (const gap of gaps) {
-            if (remaining <= 0) break;
-
-            if (task.deadline) {
-                const gapStartMs = new Date(gap.start).getTime();
-                const deadlineMs = new Date(task.deadline).getTime();
-                if (gapStartMs >= deadlineMs) break; // Gap is at or past deadline
-            }
-
-            const day = this.timeService.localDate(gap.start, week.timezone);
-
-            if (!daysUsed.has(day)) {
-                if (daysUsed.size >= SCHEDULER_RULES.FRAGMENT_MAX_COUNT) {
-                    break; // Stop the whole loop: max days spanned exceeded
-                }
-            }
-
-            const usable = this.clipToDeadline(gap, task.deadline as Instant);
-            let take = Math.min(this.intervalMinutes(usable), remaining);
-            const left = remaining - take;
-
-            // Shrink fragment to leave a minimum block size behind for the final piece
-            if (left > 0 && left < SCHEDULER_RULES.MIN_BLOCK_MINUTES) {
-                take -= (SCHEDULER_RULES.MIN_BLOCK_MINUTES - left);
-            }
-
-            if (take < SCHEDULER_RULES.MIN_BLOCK_MINUTES) {
-                continue; // Skip gap, too small
-            }
-
-            const slot = this.makeSlot(task, gap, take, day);
-            plan.push(slot);
-            daysUsed.add(day);
-            remaining -= take;
-        }
+        const { plan, remaining } = this.planFragments(task, gaps, need, week.timezone);
 
         if (remaining === 0) {
             return { ok: true, data: this.withDaySpanLabels(plan) };
@@ -517,6 +505,56 @@ export class PlacerService {
         return { ok: false, summary };
     }
 
+    private planFragments(
+        task: Task,
+        gaps: FreeGap[],
+        need: number,
+        timezone: string
+    ): { plan: Slot[]; remaining: number } {
+        const plan: Slot[] = [];
+        const daysUsed = new Set();
+        let remaining = need;
+
+        for (const gap of gaps) {
+            if (remaining <= 0) break;
+
+            if (task.deadline) {
+                const gapStartMs = new Date(gap.start).getTime();
+                const deadlineMs = new Date(task.deadline).getTime();
+                if (gapStartMs >= deadlineMs) break;
+            }
+
+            const day = this.timeService.localDate(gap.start, timezone);
+
+            if (!daysUsed.has(day) && daysUsed.size >= SCHEDULER_RULES.FRAGMENT_MAX_COUNT) {
+                break;
+            }
+
+            const take = this.calculateTakeForGap(gap, task.deadline as Instant | undefined, remaining);
+
+            if (take < SCHEDULER_RULES.MIN_BLOCK_MINUTES) continue;
+
+            plan.push(this.makeSlot(task, gap, take, day));
+            daysUsed.add(day);
+            remaining -= take;
+        }
+
+        return { plan, remaining };
+    }
+
+
+    private calculateTakeForGap(gap: FreeGap, deadline: Instant | undefined, remaining: number): number {
+        const usable = this.clipToDeadline(gap, deadline);
+        let take = Math.min(this.intervalMinutes(usable), remaining);
+        const left = remaining - take;
+
+
+        if (left > 0 && left < SCHEDULER_RULES.MIN_BLOCK_MINUTES) {
+            take -= (SCHEDULER_RULES.MIN_BLOCK_MINUTES - left);
+        }
+
+        return take;
+    }
     /**
      * Tier 3: tryBump
      * Displaces lower-priority, non-frozen occupants to make room for an attacking task.

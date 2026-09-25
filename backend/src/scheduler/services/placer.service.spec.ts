@@ -56,7 +56,7 @@ describe('PlacerService', () => {
 
             const gaps = service.freeGaps(week, 'p1', window, { fillTarget: 1.0 });
 
-            expect(gaps.length).toBe(2);
+            expect(gaps).toHaveLength(2);
             expect(gaps[0]).toEqual({ start: '2026-09-21T06:00:00Z', end: '2026-09-21T14:00:00Z', blockId: 'b1' }); // 480 mins
             expect(gaps[1]).toEqual({ start: '2026-09-22T06:00:00Z', end: '2026-09-22T08:00:00Z', blockId: 'b1' }); // 120 mins (Total 600)
         });
@@ -267,7 +267,7 @@ describe('PlacerService', () => {
 
             const result = service.batchMicroTasks(week, tasks, window);
 
-            expect(result.remaining.length).toBe(0);
+            expect(result.remaining).toHaveLength(0);
             expect(result.batched).toHaveLength(1);
 
             const batchSlot = result.batched[0];
@@ -294,8 +294,8 @@ describe('PlacerService', () => {
 
             const result = service.batchMicroTasks(week, tasks, window);
 
-            expect(result.remaining.length).toBe(0);
-            expect(result.batched.length).toBe(2);
+            expect(result.remaining).toHaveLength(0);
+            expect(result.batched).toHaveLength(2);
 
             const monBatch = result.batched.find(b => b.start.startsWith('2026-09-21'));
             const tueBatch = result.batched.find(b => b.start.startsWith('2026-09-22'));
@@ -348,7 +348,7 @@ describe('PlacerService', () => {
 
             expect(result.ok).toBe(true);
             if (result.ok) {
-                expect(result.data.length).toBe(2);
+                expect(result.data).toHaveLength(2);
                 expect(service.intervalMinutes(result.data[0])).toBe(120); // Takes all of Mon
                 expect(service.intervalMinutes(result.data[1])).toBe(60);  // Takes 60 of Tue
             }
@@ -482,8 +482,8 @@ describe('PlacerService', () => {
             const report = service.place(week, { window });
 
             expect(placeSpy).not.toHaveBeenCalled();
-            expect(report.placed.length).toBe(0);
-            expect(report.unplaced.length).toBe(0);
+            expect(report.placed).toHaveLength(0);
+            expect(report.unplaced).toHaveLength(0);
         });
 
         it('should batch micro tasks and place remaining tasks, returning a combined PlaceReport', () => {
@@ -509,7 +509,7 @@ describe('PlacerService', () => {
             expect(week.tasks.find(t => t.id === 'normal1')?.placement).toBe('placed');
 
             // 1 Batch slot + 1 Normal slot = 2 slots total
-            expect(week.slots.length).toBe(2);
+            expect(week.slots).toHaveLength(2);
         });
 
         it('should sort remaining tasks by deadline first, then priority score', () => {
@@ -535,7 +535,7 @@ describe('PlacerService', () => {
 
             // t2 should win because deadline trumps priority score. It gets placed, t1 fails.
             expect(report.placed).toContain('t2');
-            expect(report.unplaced.length).toBe(1);
+            expect(report.unplaced).toHaveLength(1);
             expect(report.unplaced[0].taskId).toBe('t1');
 
             // Verify task statuses were updated

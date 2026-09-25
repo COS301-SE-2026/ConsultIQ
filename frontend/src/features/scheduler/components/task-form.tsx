@@ -66,11 +66,11 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
   const [projectId, setProjectId] = useState("");
   const [minHours, setMinHours] = useState(1);
   const [maxHours, setMaxHours] = useState(2);
-  const [complexity, setComplexity] = useState<Complexity>(2);
-  const [urgency, setUrgency] = useState<Urgency>(2);
+//   const [complexity, setComplexity] = useState<Complexity>(2);
+//   const [urgency, setUrgency] = useState<Urgency>(2);
   const [deadline, setDeadline] = useState("");
-  const [subtasks, setSubtasks] = useState<SubtaskDraft[]>([]);
-  const [dependsOn, setDependsOn] = useState<string[]>([]);
+  const [subtasks, _setSubtasks] = useState<SubtaskDraft[]>([]);
+  const [dependsOn, _setDependsOn] = useState<string[]>([]);
 //   const [saving, setSaving] = useState(false);
 //   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -159,10 +159,63 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                             Add
                         </button>
                     </div>
-                    
-                </section>
 
-            </div>
+                    {subtasks.map((subtask) =>(
+                        <div className= "flex items-center gap-2" key={subtask.id}>
+                            <Input value={subtask.title}
+                            //onchange -> update subtask title
+                            />
+
+                            <Input type="number" min={1} placeholder="Estimate (hours)" value={subtask.estimate}
+                            //onchange -> update subtask estimate
+                            />
+
+                            <button type="button" aria-label="Remove subtask"
+                                className= "text-slate-400 hover:text-red-600"
+                            //onclick -> remove subtask
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    ))}
+
+                    {subtasks.length === 0 && (
+                        <p className= "text-sm text-slate-500">No subtasks added.</p>
+                    )}
+                    </section>
+                    {dependencyOptions.length > 0 && (
+                        <section className= "space-y-2">
+                            <h3 className= "text-sm font-medium text-slate-700">
+                                Dependencies
+                            </h3>
+
+                            <div className="divide-y rounded-md border border-slate-200">
+                                {dependencyOptions.filter((dependency) => dependency.id !== initialTask?.id).map((dependency) => (
+                                    <label key={dependency.id} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                                        <input type="checkbox" checked={dependsOn.includes(dependency.id)} />
+                                          {dependency.title}
+                                    </label>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    // issues
+
+                    {/* {submitError && (
+                        <p className="text-sm text-red-600" role="alert">
+                            {submitError}
+                        </p>
+                    )} */}
+                    </div>
+                    <footer className= "flex justify-end gap-2 border-t bg-slate-50 px-6 py-4">
+                        <button type="button" className= "rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200">
+                            Cancel
+                        </button>
+                        <button type="submit" className= "rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
+                            {mode === "create" ? "Create Task" : "Save Changes"}
+                        </button>
+                    </footer>
         </form>
     </div>
   )}

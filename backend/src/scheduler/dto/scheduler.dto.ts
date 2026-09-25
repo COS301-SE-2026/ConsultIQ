@@ -11,7 +11,8 @@ export type ReasonCode =
     | 'DEPENDENCY_ORDER' | 'CONTAINERS_EXCEED_CONTRACT' | 'TASK_LARGER_THAN_CONTAINER'
     | 'FRAGMENT_LIMIT_AT_RISK' | 'CONTAINER_OVERFLOW' | 'UNPLACED_TASKS' | 'DAY_SPAN_LIMIT'
     | 'DAY_SPAN_LIMIT_AT_RISK' | 'DEADLINE_MISSED' | 'HOLIDAY_ENTRY_IMMUTABLE'
-    | 'NO_BUMP_CANDIDATE' | 'BUMP_FAILED' | 'DISPLACED_TASK_UNPLACEABLE' | 'INVALID_ENTRY_ORIGIN';
+    | 'NO_BUMP_CANDIDATE' | 'BUMP_FAILED' | 'DISPLACED_TASK_UNPLACEABLE' | 'INVALID_ENTRY_ORIGIN'
+    | 'VERSION_CONFLICT';
 
 export interface Issue {
     level: 'violation' | 'warning' | 'info';
@@ -84,6 +85,7 @@ export interface Task {
     carriedOver: boolean;
     placement: 'placed' | 'unplaced';
     unplacedReason?: UnplacedReason;
+    priorityScore?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -122,6 +124,19 @@ export interface CalendarEntry {
     end: string;
     tags: string[];
     origin: 'user' | 'feed' | 'system' | 'public-holiday';
+}
+export interface CalendarEntryDto {
+    id?: string;
+    weekId?: string;
+
+    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc';
+    start: string;
+    end: string;
+    tags: string[];
+    origin: 'user' | 'feed' | 'system' | 'public-holiday';
+
+    confirmedOverride?: boolean;
+    expectedVersion?: number;
 }
 
 export interface PublicHoliday {
@@ -214,12 +229,16 @@ export type Change =
     | (BaseChange & { type: 'move_block'; blockId: string; to: string })
     | (BaseChange & { type: 'resize_block'; blockId: string; to: string })
     | (BaseChange & { type: 'set_project_hours'; allocations: AllocationSummary[] })
-    | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number });
+    | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number })
+    | (BaseChange & { type: 'calendar_upsert'; entry: CalendarEntryDto; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'calendar_remove'; entryId: string; origin: 'user' | 'system'; window: Interval })
+    | { type: 'replan'; window: Interval };
 
 
 export interface ValidateContext {
     previousWeek?: WeekContainer;
     bumpedEntityIds?: string[];
+    allowBump?: boolean;
     allocations?: AllocationSummary[];
 }
 

@@ -57,7 +57,7 @@ export class WeekService {
             throw new NotFoundException(`Week starting ${weekStart} not found for consultant ${consultantId}`);
         }
 
-        const holidays = this.holidayService.getForWeek(weekStart);
+        const holidays = (await this.holidayService.getForWeek(weekStart)) || [];
         const blocks = this.resolveBlocks(dbWeek);
 
         const week: WeekContainer = {

@@ -1,4 +1,4 @@
-
+import { LocalDate } from '../services/time.service'
 export interface Interval {
     start: string;
     end: string;
@@ -233,6 +233,8 @@ export type Change =
     | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number })
     | (BaseChange & { type: 'calendar_upsert'; entry: CalendarEntryDto; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'calendar_remove'; entryId: string; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'rollover'; taskId: string; fromSlotId: string; origin: 'system'; window: Interval })
+    | (BaseChange & { type: 'mark_incomplete'; date: LocalDate; origin: 'system'; window?: Interval })
     | { type: 'replan'; window: Interval };
 
 

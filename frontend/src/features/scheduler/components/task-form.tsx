@@ -66,8 +66,8 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
   const [projectId, setProjectId] = useState("");
   const [minHours, setMinHours] = useState(1);
   const [maxHours, setMaxHours] = useState(2);
-//   const [complexity, setComplexity] = useState<Complexity>(2);
-//   const [urgency, setUrgency] = useState<Urgency>(2);
+  const [complexity, setComplexity] = useState<Complexity>(2);
+  const [urgency, setUrgency] = useState<Urgency>(2);
   const [deadline, setDeadline] = useState("");
   const [subtasks, _setSubtasks] = useState<SubtaskDraft[]>([]);
   const [dependsOn, _setDependsOn] = useState<string[]>([]);
@@ -142,6 +142,22 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                <p className= "text-sm text-red-600">
                   Maximum estimate must be greater than or equal to minimum estimate.      
                </p>
+
+               <ToggleGroup 
+                label="Complexity"
+                options={complexityOptions}
+                value={complexity}
+                labels={COMPLEXITY_LABELS}
+                onChange={setComplexity}
+               />
+
+               <ToggleGroup
+                label="Urgency"
+                options={urgencyOptions}
+                value={urgency}
+                labels={URGENCY_LABELS}
+                onChange={setUrgency}
+               />
 
                <label className= "block space-y-1.5">
                 <span className= "text-sm font-medium text-slate-700">
@@ -220,3 +236,23 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
     </div>
   )}
 
+function ToggleGroup<T extends number>({ label, options, value, labels, onChange }:
+    { label: string; options: T[]; value: T; labels: Record<T, string>; onChange: (value: T) => void }) {
+        return (
+            <div className="space-y-1">
+                <span className="text-sm font-medium text-slate-700" >{label}</span>
+                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }} >
+                    {options.map((option) => (
+                        <button key={option} type="button"
+                         onClick={() => onChange(option)}
+                         className = {`rounded-md border px-3 py-2 text-sm transition-colors 
+                            ${value === option ? "border-slate-900 bg-slate-900 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
+                            >
+                            {labels[option]}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    }

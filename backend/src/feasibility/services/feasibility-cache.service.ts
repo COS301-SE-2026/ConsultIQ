@@ -1,6 +1,6 @@
 // feasibility/feasibility-cache.service.ts
 import { Injectable, Inject } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import Redis from 'ioredis';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
 import { FeasibilityCheckResponse } from '../interface/feasibility-response.interface';

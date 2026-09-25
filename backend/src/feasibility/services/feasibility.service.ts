@@ -9,6 +9,7 @@ import { RawProjectDto } from '../../scoring/dto/raw-project.dto';
 import { ConsultantPoolEntry } from '../../scoring/services/interfaces/consultant-pool-entry.interface';
 import { FeasibilityCheckResult } from '../interface/feasibility-result.interface';
 import { FeasibilityCheckResponse } from '../interface/feasibility-response.interface';
+import { randomUUID } from 'node:crypto';
 
 @Injectable()
 export class FeasibilityService {
@@ -71,7 +72,7 @@ export class FeasibilityService {
 
   private mapSpecToRawProject(spec: FeasibilityCheckRequestDto): RawProjectDto {
     return {
-      projectId: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      projectId: `draft-${randomUUID()}`,
       requiredSkills: spec.skills.map((s) => ({
         skillName: s.name,
         minimumCompetencyLevel: this.toCompetencyLevel(s.competency),

@@ -334,55 +334,55 @@ describe('PlacerService', () => {
             }
         });
 
-        it('tryBump should successfully bump a lower priority task, replace it, and return attacker slots', () => {
-            const victim = { id: 'victim', urgency: 1, complexity: 1, placement: 'placed', tMax: 120 } as Task;
-            week.tasks.push(victim);
-            week.slots.push({
-                id: 'vs1', kind: 'task', taskIds: ['victim'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z'
-            } as any);
+        describe('tryBump scenarios', () => {
+            let victim: Task;
+            let attacker: Task;
 
-            const attacker = { id: 'attacker', projectId: 'p1', tMax: 120, urgency: 5, complexity: 5 } as Task;
+            beforeEach(() => {
+                victim = { id: 'victim', urgency: 1, complexity: 1, placement: 'placed', tMax: 120 } as Task;
+                week.tasks.push(victim);
 
-            jest.spyOn(service, 'freeGaps')
-                .mockReturnValueOnce([{ start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', blockId: 'b1' }])
-                .mockReturnValueOnce([{ start: '2026-09-22T08:00:00Z', end: '2026-09-22T10:00:00Z', blockId: 'b1' }]);
+                week.slots.push({
+                    id: 'vs1', kind: 'task', taskIds: ['victim'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z'
+                } as any);
 
-            const result = service.tryBump(week, attacker, window);
+                attacker = { id: 'attacker', projectId: 'p1', tMax: 120, urgency: 5, complexity: 5 } as Task;
+            });
 
-            expect(result.ok).toBe(true);
-            if (result.ok) {
-                expect(result.data[0].taskIds).toEqual(['attacker']);
-                expect(result.data[0].start).toBe('2026-09-21T08:00:00Z');
+            it('should successfully bump a lower priority task, replace it, and return attacker slots', () => {
+                jest.spyOn(service, 'freeGaps')
+                    .mockReturnValueOnce([{ start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', blockId: 'b1' }])
+                    .mockReturnValueOnce([{ start: '2026-09-22T08:00:00Z', end: '2026-09-22T10:00:00Z', blockId: 'b1' }]);
 
-                const victimSlot = week.slots.find(s => s.taskIds?.includes('victim'));
-                expect(victimSlot?.start).toBe('2026-09-22T08:00:00Z');
+                const result = service.tryBump(week, attacker, window);
+
+                expect(result.ok).toBe(true);
+                if (result.ok) {
+                    expect(result.data[0].taskIds).toEqual(['attacker']);
+                    expect(result.data[0].start).toBe('2026-09-21T08:00:00Z');
+
+                    const victimSlot = week.slots.find(s => s.taskIds?.includes('victim'));
+                    expect(victimSlot?.start).toBe('2026-09-22T08:00:00Z');
+                    expect(week.tasks.find(t => t.id === 'victim')?.placement).toBe('placed');
+                }
+            });
+
+            it('should rollback everything and fail if displaced task cannot be re-placed', () => {
+                jest.spyOn(service, 'freeGaps')
+                    .mockReturnValueOnce([{ start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', blockId: 'b1' }])
+                    .mockReturnValueOnce([]);
+
+                const result = service.tryBump(week, attacker, window);
+
+                expect(result.ok).toBe(false);
+                if (!result.ok) {
+                    expect(result.code).toBe('DISPLACED_TASK_UNPLACEABLE');
+                }
+
+                const restoredVictimSlot = week.slots.find(s => s.taskIds?.includes('victim'));
+                expect(restoredVictimSlot?.start).toBe('2026-09-21T08:00:00Z');
                 expect(week.tasks.find(t => t.id === 'victim')?.placement).toBe('placed');
-            }
-        });
-
-        it('tryBump should rollback everything and fail if displaced task cannot be re-placed', () => {
-            const victim = { id: 'victim', urgency: 1, complexity: 1, placement: 'placed', tMax: 120 } as Task;
-            week.tasks.push(victim);
-            week.slots.push({
-                id: 'vs1', kind: 'task', taskIds: ['victim'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z'
-            } as any);
-
-            const attacker = { id: 'attacker', projectId: 'p1', tMax: 120, urgency: 5, complexity: 5 } as Task;
-
-            jest.spyOn(service, 'freeGaps')
-                .mockReturnValueOnce([{ start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', blockId: 'b1' }])
-                .mockReturnValueOnce([]);
-
-            const result = service.tryBump(week, attacker, window);
-
-            expect(result.ok).toBe(false);
-            if (!result.ok) {
-                expect(result.code).toBe('DISPLACED_TASK_UNPLACEABLE');
-            }
-
-            const restoredVictimSlot = week.slots.find(s => s.taskIds?.includes('victim'));
-            expect(restoredVictimSlot?.start).toBe('2026-09-21T08:00:00Z');
-            expect(week.tasks.find(t => t.id === 'victim')?.placement).toBe('placed');
+            });
         });
     });
 
@@ -467,7 +467,6 @@ describe('PlacerService', () => {
 
             const gaps = service.freeGaps(week, 'p1', window, { fillTarget: 0.5 });
 
-
             expect(gaps).toHaveLength(1);
             expect(service.intervalMinutes(gaps[0])).toBe(50);
             expect(gaps[0].end).toBe('2026-09-21T08:50:00Z');
@@ -506,6 +505,7 @@ describe('PlacerService', () => {
             expect(week.slots.find(s => s.taskIds?.includes('victim'))).toBeDefined();
             expect(week.tasks.find(t => t.id === 'victim')?.placement).toBe('placed');
         });
+
         it('place should execute tryBump when allowBump is true and standard placement fails', () => {
             week.blocks.push({ id: 'b1', projectId: 'p1', mobility: 'fluid', allocatedMinutes: 120, start: '2026-09-21T00:00:00Z', end: '2026-09-25T23:59:59Z' } as any);
 

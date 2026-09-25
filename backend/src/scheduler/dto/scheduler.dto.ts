@@ -11,7 +11,8 @@ export type ReasonCode =
     | 'DEPENDENCY_ORDER' | 'CONTAINERS_EXCEED_CONTRACT' | 'TASK_LARGER_THAN_CONTAINER'
     | 'FRAGMENT_LIMIT_AT_RISK' | 'CONTAINER_OVERFLOW' | 'UNPLACED_TASKS' | 'DAY_SPAN_LIMIT'
     | 'DAY_SPAN_LIMIT_AT_RISK' | 'DEADLINE_MISSED' | 'HOLIDAY_ENTRY_IMMUTABLE'
-    | 'NO_BUMP_CANDIDATE' | 'BUMP_FAILED' | 'DISPLACED_TASK_UNPLACEABLE' | 'INVALID_ENTRY_ORIGIN';
+    | 'NO_BUMP_CANDIDATE' | 'BUMP_FAILED' | 'DISPLACED_TASK_UNPLACEABLE' | 'INVALID_ENTRY_ORIGIN'
+    | 'VERSION_CONFLICT';
 
 export interface Issue {
     level: 'violation' | 'warning' | 'info';
@@ -214,12 +215,14 @@ export type Change =
     | (BaseChange & { type: 'move_block'; blockId: string; to: string })
     | (BaseChange & { type: 'resize_block'; blockId: string; to: string })
     | (BaseChange & { type: 'set_project_hours'; allocations: AllocationSummary[] })
-    | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number });
+    | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number })
+    | { type: 'replan'; window: Interval };
 
 
 export interface ValidateContext {
     previousWeek?: WeekContainer;
     bumpedEntityIds?: string[];
+    allowBump?: boolean;
     allocations?: AllocationSummary[];
 }
 

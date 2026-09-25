@@ -27,7 +27,7 @@ import { UseGuards } from '@nestjs/common/decorators/core/use-guards.decorator';
 @Controller('consultants')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ConsultantController {
-  constructor(private readonly consultantService: ConsultantService) {}
+  constructor(private readonly consultantService: ConsultantService) { }
 
   @Post('profile')
   @HttpCode(HttpStatus.CREATED)
@@ -55,10 +55,12 @@ export class ConsultantController {
     @Req() req: any,
   ) {
     const userRole = req.user?.role ?? 'PROJECT_MANAGER';
+    const managerUserId = req.user?.id;
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),
       userRole,
+      managerUserId,
     );
   }
 

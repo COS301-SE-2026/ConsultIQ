@@ -169,8 +169,8 @@ export class PlacerService {
         return Math.round((end - start) / 60000);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public makeSlot(task: Task, gap: FreeGap, minutes: number, _day: LocalDate): Slot {
-        void _day;
+    public makeSlot(task: Task, gap: FreeGap, minutes: number): Slot {
+
         const start = new Date(gap.start);
         const end = new Date(start.getTime() + minutes * 60000);
         return {
@@ -534,7 +534,7 @@ export class PlacerService {
 
             if (take < SCHEDULER_RULES.MIN_BLOCK_MINUTES) continue;
 
-            plan.push(this.makeSlot(task, gap, take, day));
+            plan.push(this.makeSlot(task, gap, take));
             daysUsed.add(day);
             remaining -= take;
         }

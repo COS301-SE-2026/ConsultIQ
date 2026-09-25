@@ -10,7 +10,7 @@ type Props = {
 export default function ProfileTabs({ activeTab, setActiveTab }: Props) {
   return (
     <div
-      className="relative border-b border-slate-200"
+      className="relative border-b border-slate-200 overflow-x-auto whitespace-nowrap"
       style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
     >
       <div className="flex items-center gap-12">

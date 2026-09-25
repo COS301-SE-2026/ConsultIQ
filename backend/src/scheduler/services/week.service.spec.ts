@@ -164,7 +164,7 @@ describe('WeekService', () => {
             const result = await service.commit(mockWeek, mockChange, mockCtx, 2);
 
             expect(result.ok).toBe(false);
-            expect(result.violations.length).toBe(1);
+            expect(result.violations).toHaveLength(1);
             expect(prisma.$transaction).not.toHaveBeenCalled();
         });
 

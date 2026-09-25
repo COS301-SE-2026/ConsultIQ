@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TimeService, LocalDate, Instant } from './time.service';
+import { TimeService, type LocalDate, type Instant } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
@@ -14,6 +14,7 @@ import {
     ProjectBlock,
     Interval,
     ValidateContext,
+    AllocationSummary,
 } from '../dto/scheduler.dto';
 
 
@@ -83,20 +84,20 @@ export class WeekService {
         return week;
     }
 
-    private async resolveBlocks(dbWeek: {
+    private resolveBlocks(dbWeek: {
         blocks: Array<{
             manuallyResized?: boolean;
             allocation?: unknown;
             [key: string]: unknown;
         }>;
-    }): Promise<ProjectBlock[]> {
+    }): ProjectBlock[] {
         return dbWeek.blocks.map((b) => {
             if (b.manuallyResized || b.allocation == null) {
                 return b as unknown as ProjectBlock;
             }
             return {
                 ...b,
-                allocatedMinutes: this.placerService.blockMinutes(b.allocation as any),
+                allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
             } as unknown as ProjectBlock;
         });
     }
@@ -186,7 +187,7 @@ export class WeekService {
 
 
     private cloneWeek(week: WeekContainer): WeekContainer {
-        return JSON.parse(JSON.stringify(week));
+        return structuredClone(week);
     }
 
 
@@ -251,7 +252,7 @@ export class WeekService {
             }
 
             for (const b of week.blocks) {
-                if ((b as any).manuallyResized) {
+                if ((b as unknown as { manuallyResized?: boolean }).manuallyResized) {
                     await tx.schedulerProjectBlock.update({
                         where: { id: b.id },
                         data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },

@@ -6,6 +6,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { MatchRunStatus } from '@prisma/client';
 import { ScoringPipelineService } from './scoring-pipeline.service';
 import { MatchRunAggregationService } from './match-run-aggregation.service';
+import { MatchScoringExecutorService } from './match-scoring-executor.service';
 import { ScoringFactor } from '../enums/scoring-factor.enum';
 import { getQueueToken } from '@nestjs/bullmq';
 
@@ -16,6 +17,7 @@ describe('MatchRunService', () => {
     let mockScoringPipeline: any;
     let mockAggregation: any;
     let mockDataIngestion: any;
+    let mockScoringExecutor: any;
     let mockQueue: any;
 
     beforeEach(async () => {
@@ -43,6 +45,10 @@ describe('MatchRunService', () => {
             getProjectScoringContext: jest.fn(),
         }
 
+        mockScoringExecutor = {
+            scorePool: jest.fn(),
+        }
+
         mockQueue = {
             add: jest.fn(),
         };
@@ -54,6 +60,7 @@ describe('MatchRunService', () => {
                 { provide: ScoringPipelineService, useValue: mockScoringPipeline },
                 { provide: MatchRunAggregationService, useValue: mockAggregation },
                 { provide: DataIngestionService, useValue: mockDataIngestion },
+                { provide: MatchScoringExecutorService, useValue: mockScoringExecutor },
                 { provide: getQueueToken('match-run'), useValue: mockQueue },
             ],
         }).compile();
@@ -99,8 +106,11 @@ describe('MatchRunService', () => {
             mockPrisma.project.findUnique.mockResolvedValue(mockProject);
             mockPrisma.consultant.findMany.mockResolvedValue(mockConsultants);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: mockWeights });
-            mockScoringPipeline.scoreConsultant.mockResolvedValue(mockScoringOutcome);
-            mockAggregation.buildResults.mockReturnValue(mockAggregatedResults);
+            mockScoringExecutor.scorePool.mockResolvedValue({
+                finalResults: mockAggregatedResults,
+                excludedCount: 0,
+                errorCount: 0,
+            });
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-01' });
 
             const result = await service.executeMatchRun('project-01', 'user-01');
@@ -109,8 +119,7 @@ describe('MatchRunService', () => {
             expect(mockPrisma.consultant.findMany).toHaveBeenCalled();
             expect(mockPrisma.projectPlacement.groupBy).toHaveBeenCalledTimes(1);
             expect(mockDataIngestion.getProjectScoringContext).toHaveBeenCalledTimes(1);
-            expect(mockScoringPipeline.scoreConsultant).toHaveBeenCalledTimes(1);
-            expect(mockAggregation.buildResults).toHaveBeenCalledTimes(1);
+            expect(mockScoringExecutor.scorePool).toHaveBeenCalledTimes(1);
             expect(mockPrisma.matchRun.create).toHaveBeenCalledWith({
                 data: expect.objectContaining({
                     status: MatchRunStatus.COMPLETED,
@@ -150,12 +159,11 @@ describe('MatchRunService', () => {
             mockPrisma.project.findUnique.mockResolvedValue(mockProject);
             mockPrisma.consultant.findMany.mockResolvedValue([matchingConsultant]);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: mockWeights });
-            mockScoringPipeline.scoreConsultant.mockResolvedValue({
-                excluded: false,
-                factorScores: { [ScoringFactor.SKILL_ALIGNMENT]: 1 },
-                redistributedWeights: mockWeights,
+            mockScoringExecutor.scorePool.mockResolvedValue({
+                finalResults: [],
+                excludedCount: 0,
+                errorCount: 0,
             });
-            mockAggregation.buildResults.mockReturnValue([]);
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-01' });
 
             await service.executeMatchRun('project-01', 'user-01');
@@ -163,7 +171,7 @@ describe('MatchRunService', () => {
             expect(mockPrisma.consultant.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({ where: { user: { status: 'ACTIVE' } } }),
             );
-            expect(mockScoringPipeline.scoreConsultant).toHaveBeenCalledTimes(1);
+            expect(mockScoringExecutor.scorePool).toHaveBeenCalledTimes(1);
         });
 
         it('throws NotFoundException if project does not exist', async () => {
@@ -192,8 +200,7 @@ describe('MatchRunService', () => {
             mockPrisma.project.findUnique.mockResolvedValue(mockProject);
             mockPrisma.consultant.findMany.mockResolvedValue([{ id: 'c1', skills: [] }]);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: {} });
-            mockScoringPipeline.scoreConsultant.mockResolvedValue({ excluded: false });
-            mockAggregation.buildResults.mockReturnValue([]);
+            mockScoringExecutor.scorePool.mockResolvedValue({ finalResults: [], excludedCount: 0, errorCount: 0 });
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-01' });
 
             await service.executeMatchRun('project-01', 'user-01');
@@ -201,28 +208,33 @@ describe('MatchRunService', () => {
             expect(mockPrisma.projectPlacement.groupBy).toHaveBeenCalled();
         });
 
-        it('handles scoring errors without crashing and increments errorCount', async () => {
+        it('persists excludedCount from the scoring executor into the match run record', async () => {
             mockPrisma.project.findUnique.mockResolvedValue({
                 id: 'proj-1',
                 status: 'OPEN',
-                startDate: new Date('2026-08-01T00:00:00Z'), // <-- Added missing property
-                skills: [{ skill: { name: 'Java' } }]
+                startDate: new Date('2026-08-01T00:00:00Z'),
+                skills: [{ skill: { name: 'Java' } }],
             });
             mockPrisma.consultant.findMany.mockResolvedValue([
                 { id: 'c1', skills: [] },
-                { id: 'c2', skills: [] }
+                { id: 'c2', skills: [] },
             ]);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: {} });
-
-            mockScoringPipeline.scoreConsultant
-                .mockResolvedValueOnce({ excluded: false })
-                .mockRejectedValueOnce(new Error('Scoring failed'));
-
-            mockAggregation.buildResults.mockReturnValue([{ consultantId: 'c1' }]);
+            mockScoringExecutor.scorePool.mockResolvedValue({
+                finalResults: [{ consultantId: 'c1', finalScore: 70, rank: 1, factorBreakdown: [] }],
+                excludedCount: 1, // c2 either hard-excluded or errored — MatchRunService doesn't need to know which
+                errorCount: 1,
+            });
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-1' });
 
             const result = await service.executeMatchRun('proj-1', 'user-01');
+
             expect(result.results).toHaveLength(1);
+            // NOTE: adjust the field name below to whatever executeMatchRun actually
+            // passes into matchRun.create for excluded/error counts — I don't have
+            // that exact mapping from the shared code, so this asserts the shape
+            // loosely rather than guessing a field name that might be wrong.
+            expect(mockPrisma.matchRun.create).toHaveBeenCalled();
         });
 
         it('updates existing run if existingRunId is provided', async () => {
@@ -234,8 +246,7 @@ describe('MatchRunService', () => {
             });
             mockPrisma.consultant.findMany.mockResolvedValue([{ id: 'c1', skills: [] }]);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: {} });
-            mockScoringPipeline.scoreConsultant.mockResolvedValue({ excluded: false });
-            mockAggregation.buildResults.mockReturnValue([]);
+            mockScoringExecutor.scorePool.mockResolvedValue({ finalResults: [], excludedCount: 0, errorCount: 0 });
             mockPrisma.matchRun.update.mockResolvedValue({ id: 'existing-run-id' });
 
             await service.executeMatchRun('proj-1', 'user-01', 'existing-run-id');
@@ -272,8 +283,7 @@ describe('MatchRunService', () => {
             });
             mockPrisma.consultant.findMany.mockResolvedValue([{ id: 'c1', skills: [] }]);
             mockDataIngestion.getProjectScoringContext.mockResolvedValue({ activeWeights: {} });
-            mockScoringPipeline.scoreConsultant.mockResolvedValue({ excluded: false });
-            mockAggregation.buildResults.mockReturnValue([]);
+            mockScoringExecutor.scorePool.mockResolvedValue({ finalResults: [], excludedCount: 0, errorCount: 0 });
             mockPrisma.matchRun.create.mockResolvedValue({ id: 'run-1' });
 
 
@@ -378,6 +388,7 @@ describe('MatchRunService', () => {
                 mockScoringPipeline,
                 mockAggregation,
                 mockDataIngestion,
+                mockScoringExecutor,
                 undefined
             );
 

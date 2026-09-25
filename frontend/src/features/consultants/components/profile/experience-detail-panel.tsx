@@ -166,7 +166,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
         </div>
 
          <div className="flex flex-col gap-1">
-            <label htmlFor="form-job=title">Job title</label>
+            <label htmlFor="form-job-title">Job title</label>
             <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value) } />
              {jobTitleError && <span className="text-red-500 text-xs">{jobTitleError}</span>}
          </div>
@@ -176,7 +176,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
              <select
               value= {jobType}
               onChange={(e)=> setJobType(e.target.value)}
-              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
              >
                 <option value="FULL_TIME">Full-time</option>
                 <option value="PART_TIME">Part-time</option>
@@ -191,7 +191,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
              <select
               value= {workModel}
               onChange={(e)=> setWorkModel(e.target.value)}
-              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
              >
 
                <option value="ONSITE">On-site</option>
@@ -224,7 +224,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
             {roleDescError && <span className="text-red-500 text-xs">{roleDescError}</span>}
          </div>
 
-        <div className="flex items-center gap-2 shrink-0 ml-4">
+        <div className="flex items-center gap-2 pt-2">
           <Button
             variant="default"
             onClick={handleSave}

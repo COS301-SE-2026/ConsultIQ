@@ -99,15 +99,15 @@ export default function ReviewTab({ onEdit, onSave, isSaving }: Props) {
         {profileData.experiences.length === 0 ? (
           <p className="text-slate-400 text-sm">No experience added.</p>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col  gap-4">
             {profileData.experiences.map((exp, i) => (
               <div key={exp.id ?? i} className="border rounded-xl" style={{ borderColor: "var(--color-border)", padding: "28px" }}>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
                   <div>
                     <p className="font-bold text-base" style={{ color: "var(--color-primary)" }}>{exp.companyName}</p>
                     <p className="font-medium text-slate-600" style={{ marginTop: "4px" }}>{exp.jobTitle}</p>
                   </div>
-                  <div className="flex items-center" style={{ gap: "20px" }}>
+                  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-[20px]" >
                     <span className="inline-flex items-center justify-center text-xs h-6 w-20 rounded-full font-medium text-white" style={{ backgroundColor: "var(--color-primary)" }}>
                       {jobTypeLabel[exp.jobType] ?? exp.jobType}
                     </span>

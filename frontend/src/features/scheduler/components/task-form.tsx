@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X, Plus, AlertOctagon, AlertTriangle} from 'lucide-react'; 
@@ -69,10 +70,74 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
   const [complexity, setComplexity] = useState<Complexity>(2);
   const [urgency, setUrgency] = useState<Urgency>(2);
   const [deadline, setDeadline] = useState("");
-  const [subtasks, _setSubtasks] = useState<SubtaskDraft[]>([]);
-  const [dependsOn, _setDependsOn] = useState<string[]>([]);
-//   const [saving, setSaving] = useState(false);
-//   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [subtasks, setSubtasks] = useState<SubtaskDraft[]>([]);
+  const [dependsOn, setDependsOn] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if(!open)  return;
+    
+    setTitle(initialTask?.title ?? "");
+    setProjectId(initialTask?.projectId ?? projects[0]?.id ?? "");
+    setMinHours(initialTask ? initialTask.tMin / 60 : 1);
+    setMaxHours(initialTask ? initialTask.tMax / 60 : 2);
+    setComplexity(initialTask?.complexity ?? 2);
+    setUrgency(initialTask?.urgency ?? 2);
+    setDeadline(toDateInput(initialTask?.deadline));
+    setDependsOn(initialTask?.dependsOn ?? []);
+    setSubmitError(null);
+
+    setSubtasks(
+        initialTask?.subtasks.map((subtask) => ({
+            id: subtask.id,
+            title: subtask.title,
+            estimate: subtask.estimate === undefined ? "" : String(subtask.estimate),
+        })) ?? []
+    );
+
+  }, [open, initialTask, projects]);
+
+  const tMin= Math.round(minHours * 60);
+  const tMax= Math.round(maxHours * 60);
+
+  const localIssues = useMemo<Issue[]>(() => {
+    if(!containerContext || !Number.isFinite(tMax)) return [];
+    
+    const nextIssues: Issue[] = [];
+    
+    if(tMax > containerContext.availableMinutes) {
+        nextIssues.push({
+            level: "violation",
+            code: ReasonCode.TASK_LARGER_THAN_CONTAINER,
+            message: `The maximum estimate exceeds the ${Math.max(containerContext.availableMinutes, 0)} minutes remaining in this project allocation.`,
+        });
+    }
+
+    const dailyAvailable = Math.max(containerContext.dailyAvailableMinutes, 1);
+    const estimatedDaySpan = Math.ceil(tMax / dailyAvailable);
+
+    if(estimatedDaySpan >= SCHEDULER_RULES.maxDaysSpanned && tMax <= containerContext.availableMinutes) {
+        nextIssues.push({
+            level: "warning",
+            code: ReasonCode.DAY_SPAN_LIMIT_AT_RISK,
+            message: `This estimate may span ${estimatedDaySpan} working days and approach the ${SCHEDULER_RULES.maxDaysSpanned}-day limit.`,
+        });
+    }
+    return nextIssues;
+    }, [containerContext, tMax]);
+
+    const issues = [...localIssues, ...serverIssues];
+
+    const hasBlockingIssue = issues.some((issue) => issue.code === ReasonCode.TASK_LARGER_THAN_CONTAINER || issue.level === "violation");
+
+    const isBatched = Number.isFinite(tMax) && tMax > 0 && tMax < SCHEDULER_RULES.minBlockDuration;
+
+    const hasValidEstimate = Number.isFinite(minHours) && Number.isFinite(maxHours) && minHours > 0 && maxHours >= minHours;
+
+    const canSave = title.trim().length > 0 && projectId.length > 0 && hasValidEstimate && !hasBlockingIssue && !saving;
+
+    const activeProject = projects.find((project) => project.id === projectId);
 
 
   return (
@@ -216,13 +281,19 @@ export default function TaskForm({ mode, initialTask, projects, expectedVersion,
                         </section>
                     )}
 
-                    // issues
+                    {issues.length > 0 && (
+                        <div className= "space-y-2">
+                            {issues.map((issue, index) =>(
+                                <IssueBanner key={`${issue.code}-${index}`} issue={issue}/>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* {submitError && (
+                    {submitError && (
                         <p className="text-sm text-red-600" role="alert">
                             {submitError}
                         </p>
-                    )} */}
+                    )}
                     </div>
                     <footer className= "flex justify-end gap-2 border-t bg-slate-50 px-6 py-4">
                         <button type="button" className= "rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200">
@@ -256,3 +327,20 @@ function ToggleGroup<T extends number>({ label, options, value, labels, onChange
             </div>
         );
     }
+
+function IssueBanner({ issue }: { issue: Issue }) {
+    const blocking = issue.level === "violation";
+
+    return (
+        <div className = {`flex items-start gap-2 rounded-md border px-3 py-2 text-xs 
+            ${blocking ? "border-red-200 bg-red-50 text-red-700" : "border-amber-200 bg-amber-50 text-amber-700"}`} 
+        >
+            {blocking ? (
+                <AlertOctagon size={16} className="mt-0.5 shrink-0" />
+            ) : (
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            )}
+            <span>{issue.message}</span>
+        </div>
+    );
+}

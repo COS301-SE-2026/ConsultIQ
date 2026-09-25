@@ -77,7 +77,7 @@ import { APP_GUARD } from '@nestjs/core';
     EncryptionModule,
     AnalyticsModule,
     SkillGapModule,
-    FeasibilityModule
+    FeasibilityModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: CsrfGuard },],

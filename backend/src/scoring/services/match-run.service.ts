@@ -366,6 +366,7 @@ export class MatchRunService {
       startDate: project.startDate.toISOString(),
       endDate: project.endDate?.toISOString(),
       requiredAllocationPercentage: project.allocation,
+      workModel: project.workModel,
     };
   }
 

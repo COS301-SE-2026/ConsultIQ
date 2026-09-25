@@ -1,6 +1,9 @@
 import { RawConsultantDto } from "../../dto/raw-consultant.dto";
 import { RawProjectDto } from "../../dto/raw-project.dto";
 import { AvailabilityFitScorer } from "./availability-fit.scorer";
+import { PrismaService } from '../../../prisma/prisma.service';
+import { FactorScoreResult } from "../interfaces/factor-score-result.interface";
+import { WorkModel } from "@prisma/client";
 
 function consultant(): RawConsultantDto {
     return {
@@ -25,6 +28,7 @@ function project(requiredAllocationPercentage: number): RawProjectDto {
         endDate: '2026-06-30',
         requiredAllocationPercentage,
         teamSize: 1,
+        workModel,
 
     } as RawProjectDto;
 }

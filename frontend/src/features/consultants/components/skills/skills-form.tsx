@@ -129,12 +129,12 @@ export default function SkillsForm() {
             {skills.map((skill, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between rounded-lg border"
-                style={{ borderColor: "var(--color-border)", padding: "24px" }}
+                className="flex items-start justify-between gap-4  rounded-lg border p-4 sm:p-6 shadown-sm"
+                style={{ borderColor: "var(--color-border)" }}
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex-1 flex flex-col gap-1">
                   <span className="text-sm font-medium ">{skill.skillName}</span>
-                  <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500" style={{ color: "var(--color-text-secondary)" }}>
                     {normalizeCompetency(skill.competencyLevel)} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
                   </span>
                 </div>

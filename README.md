@@ -49,6 +49,20 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
 ## Documentation
 
+
+<details open>
+<summary><strong>Demo 3</strong></summary>
+
+<br>
+
+| Resource |
+|:---|
+| [System Requirements Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/SRS_V3.pdf) |
+| [System Architecture Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/SAS_V2.pdf) |
+| [User Manual](https://github.com/COS301-SE-2026/ConsultIQ/blob/main/Documents/Demo%203/User%20manual_V2.pdf) |
+
+
+</details>
 <details open>
 <summary><strong>Demo 2</strong></summary>
 

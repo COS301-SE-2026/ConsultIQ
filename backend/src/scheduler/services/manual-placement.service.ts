@@ -64,19 +64,7 @@ export class ManualPlacementService {
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const dbBlock = await this.prisma.schedulerProjectBlock.findUnique({
-            where: { id: blockId },
-            include: { week: true },
-        });
-
-        if (!dbBlock) {
-            throw new NotFoundException(`Project block ${blockId} not found`);
-        }
-
-        const consultantId = dbBlock.week.consultantId;
-        const weekStart = dbBlock.week.weekStart.toISOString().split('T')[0] as LocalDate;
-
-        const week = await this.weekService.getWeek(consultantId, weekStart);
+        const { week } = await this.loadBlockContext(blockId);
         const window = this.dayWindow(to.start, week.timezone);
 
         const change: Change = {
@@ -86,9 +74,9 @@ export class ManualPlacementService {
             origin: 'user',
             window,
             confirmedOverride,
-        } as Change;
-        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
+        };
 
+        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
@@ -102,19 +90,7 @@ export class ManualPlacementService {
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const dbBlock = await this.prisma.schedulerProjectBlock.findUnique({
-            where: { id: blockId },
-            include: { week: true },
-        });
-
-        if (!dbBlock) {
-            throw new NotFoundException(`Project block ${blockId} not found`);
-        }
-
-        const consultantId = dbBlock.week.consultantId;
-        const weekStart = dbBlock.week.weekStart.toISOString().split('T')[0] as LocalDate;
-
-        const week = await this.weekService.getWeek(consultantId, weekStart);
+        const { week } = await this.loadBlockContext(blockId);
         const window = this.dayWindow(to.start, week.timezone);
 
         const change: Change = {
@@ -124,10 +100,9 @@ export class ManualPlacementService {
             origin: 'user',
             window,
             confirmedOverride,
-        } as Change;
+        };
 
         const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
-
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
@@ -140,20 +115,7 @@ export class ManualPlacementService {
         pinned: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const dbBlock = await this.prisma.schedulerProjectBlock.findUnique({
-            where: { id: blockId },
-            include: { week: true },
-        });
-
-        if (!dbBlock) {
-            throw new NotFoundException(`Project block ${blockId} not found`);
-        }
-
-        const consultantId = dbBlock.week.consultantId;
-        const weekStart = dbBlock.week.weekStart.toISOString().split('T')[0] as LocalDate;
-
-        const week = await this.weekService.getWeek(consultantId, weekStart);
-
+        const { dbBlock, week } = await this.loadBlockContext(blockId);
         const window = this.dayWindow(dbBlock.start.toISOString(), week.timezone);
 
         const change: Change = {
@@ -162,11 +124,31 @@ export class ManualPlacementService {
             pinned,
             origin: 'user',
             window,
-        } as Change;
+        };
 
         const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
-
         return this.weekService.commit(week, change, ctx, expectedVersion);
+    }
+
+    // -----------------------------------------------------------------
+    // Private helpers
+    // -----------------------------------------------------------------
+
+    private async loadBlockContext(blockId: string) {
+        const dbBlock = await this.prisma.schedulerProjectBlock.findUnique({
+            where: { id: blockId },
+            include: { week: true },
+        });
+
+        if (!dbBlock) {
+            throw new NotFoundException('Project block ' + blockId + ' not found');
+        }
+
+        const consultantId = dbBlock.week.consultantId;
+        const weekStart = dbBlock.week.weekStart.toISOString().split('T')[0] as LocalDate;
+        const week = await this.weekService.getWeek(consultantId, weekStart);
+
+        return { dbBlock, week };
     }
 
     private resolveOverrideTags(

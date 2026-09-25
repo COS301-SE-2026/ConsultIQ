@@ -204,7 +204,7 @@ export class WeekService {
 
             case 'move_slot': {
                 const slot = week.slots.find((s) => s.id === change.slotId);
-                if (!slot) throw new NotFoundException(`Task slot \({change.slotId} not found in week\){week.id}`);
+                if (!slot) throw new NotFoundException('Task slot ' + change.slotId + ' not found in week ' + week.id);
 
                 slot.start = change.to.start;
                 slot.end = change.to.end;
@@ -217,7 +217,7 @@ export class WeekService {
 
             case 'move_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
-                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+                if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
 
                 block.start = change.to.start;
                 block.end = change.to.end;
@@ -227,7 +227,7 @@ export class WeekService {
 
             case 'resize_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
-                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+                if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
 
                 block.start = change.to.start;
                 block.end = change.to.end;
@@ -239,7 +239,7 @@ export class WeekService {
 
             case 'pin_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
-                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+                if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
 
                 block.mobility = change.pinned ? 'pinned' : 'fluid';
 

@@ -13,6 +13,7 @@ export interface WeightedFactorBreakdown {
   details?: string;
 }
 
+export type AvailabilityStatus = 'AVAILABLE' | 'UNAVAILABLE';
 export interface ConsultantMatchResult {
   consultantId: string;
   consultantName: string;
@@ -21,6 +22,7 @@ export interface ConsultantMatchResult {
   rank: number;
   factorBreakdown: WeightedFactorBreakdown[];
   isPlaced: boolean;
+  availabilityStatus: AvailabilityStatus;
 }
 
 export interface MatchRunStats {
@@ -28,4 +30,18 @@ export interface MatchRunStats {
   totalExcluded: number;
   totalMatched: number;
   totalPlaced: number;
+}
+
+export function deriveAvailabilityStatus(
+  factorBreakdown: WeightedFactorBreakdown[],
+): AvailabilityStatus {
+  const  availabilityEntry = factorBreakdown.find(
+    (f) => f.factor === ScoringFactor.AVAILABILITY,
+  );
+
+  if(!availabilityEntry) {
+    return 'AVAILABLE';
+  }
+
+  return availabilityEntry.rawScore >= 1 ? 'AVAILABLE' : 'UNAVAILABLE'
 }

@@ -15,6 +15,7 @@ import {
 import { DataIngestionService } from './data-normalization/data-ingestion.service';
 import {
   ConsultantMatchResult,
+  deriveAvailabilityStatus,
   WeightedFactorBreakdown,
 } from './interfaces/match-result.interface';
 import { RawProjectDto } from '../dto/raw-project.dto';
@@ -465,15 +466,19 @@ export class MatchRunService {
       );
     }
 
-    return matchRun.results.map((r) => ({
-      consultantId: r.consultantId,
-      consultantName: r.consultant?.user?.fullName || 'Unknown',
-      consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com',
-      finalScore: r.totalScore,
-      rank: r.rank,
-      factorBreakdown: r.factorScores as unknown as WeightedFactorBreakdown[],
-      isPlaced: r.isPlaced,
-    }));
+    return matchRun.results.map((r) => {
+      const factorBreakdown = r.factorScores as unknown as WeightedFactorBreakdown[];
+      return {
+        consultantId: r.consultantId,
+        consultantName: r.consultant?.user?.fullName || 'Unknown',
+        consultantEmail: r.consultant?.user?.email || 'consultIq@consultant.com',
+        finalScore: r.totalScore,
+        rank: r.rank,
+        factorBreakdown,
+        isPlaced: r.isPlaced,
+        availabilityStatus: deriveAvailabilityStatus(factorBreakdown),
+      };
+    });
   }
 
   async getMatchRunStats(

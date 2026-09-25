@@ -131,7 +131,7 @@ describe('PlacerService', () => {
         describe('5. makeSlot', () => {
             it('should construct a valid Slot object', () => {
                 const gap: FreeGap = { start: '2026-09-21T08:00:00Z', end: '2026-09-21T12:00:00Z', blockId: 'b1' };
-                const slot = service.makeSlot({ id: 't1', weekId: 'w1' } as Task, gap, 90, '2026-09-21' as LocalDate);
+                const slot = service.makeSlot({ id: 't1', weekId: 'w1' } as Task, gap, 90);
                 expect(slot.end).toBe('2026-09-21T09:30:00Z');
                 expect(slot.taskIds).toEqual(['t1']);
             });

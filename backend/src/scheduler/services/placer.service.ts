@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 import { Task, Slot, Interval, AllocationSummary, WeekContainer, UnplacedReason, PlaceTaskResult, UnplacedTaskSummary, PlaceReport } from '../dto/scheduler.dto';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
-import { TimeService, Instant, LocalDate } from './time.service';
+import { TimeService, Instant } from './time.service';
 
 
 export interface FreeGap extends Interval {

@@ -64,7 +64,7 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
 
   return (
     <div
-      className="bg-white rounded-2xl w-full flex-col mb-4 p-5 sm:p-7"
+      className="bg-white rounded-2xl w-full  mb-4 p-4 sm:p-7"
       style={{
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
       }}
@@ -93,10 +93,10 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
             <button
               type="button"
               onClick={handleRemovePhoto}
-              className="absolute -bottom-1 -right-3 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center"
+              className="absolute -bottom-1 -right-1 sm:-right-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white shadow-md flex items-center justify-center"
               aria-label="remove photo"
             >
-              <Trash2 className="w-6 h-6 text-gray-700" />
+              <Trash2 className="w-4 h-4 sm:w-6 sm:h-6 text-gray-700" />
             </button>
           )}
           </div>
@@ -104,10 +104,10 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
 
 
           {/* Name + badge */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col min-w-0 gap-2 sm:ml-5" style={{ marginLeft: "20px", gap: "8px" }}>
             <p
-              className="font-bold"
-              style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1.25" }}
+              className="font-bold text-lg sm:text-[22px] leading-tight break-words"
+              style={{ color: "var(--color-primary)" }}
             >
               {fullName}
             </p>
@@ -150,13 +150,16 @@ function ProfileHeroCard({ fullName, status, pictureUrl, canEdit, onSave }: Prof
         </div>
 
         {canEdit && (
-          <EditControls
+          <div className="shrink-0">
+             <EditControls
             isEditing={isEditing}
             isSaving={isSaving}
             onEdit={handleEditClick}
             onSave={handleSave}
             onCancel={handleCancel}
           />
+          </div>
+         
         )}
       </div>
 

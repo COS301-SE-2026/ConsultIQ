@@ -65,6 +65,10 @@ function CreateProfileContent() {
       city: profileData.city,
       province: profileData.province,
       postalCode:profileData.postalCode || undefined,
+      latitude: profileData.latitude || undefined,
+      longitude: profileData.longitude || undefined,
+      placeId: profileData.placeId,
+      formattedAddress: profileData.formattedAddress,
       costToCompany: profileData.costToCompany,
       availability: profileData.availability,
       skills: profileData.skills,
@@ -106,46 +110,46 @@ function CreateProfileContent() {
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantManagerSidebarItems}  notificationCount={unreadCount}/>
 
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
         <header
-          className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="shrink-0 z-30 bg-white border-b h-[90px] flex items-center justify-between w-full pl-20 pr-4 md:px-20"
+          style={{ borderColor: "var(--color-border)"}}
         >
           <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
             Create Profile
           </h1>
 
-          <div className="flex gap-6">
+          
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center justify-center h-8 w-30 px-6 text-lg rounded-xl font-semibold transition hover:opacity-70"
+              className="flex items-center shrink-0 font-semibold  pr-5 transition hover:opacity-70"
               style={{ color: "var(--color-primary)",
                  fontSize: "16px",
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  padding: 0,
+                  
                }}
             >
-              <ArrowLeft size={20} className="mr-2" />
+              <ArrowLeft size={20} className="mr-2 " />
               Back
             </button>
-          </div>
+          
         </header>
 
         <main className="flex-1 overflow-y-auto relative">
           <div
-            className="sticky top-0 w-full"
-            style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
+            className="sticky top-0 w-full z-20"
+            style={{ backgroundColor: "var(--color-surface, #ffffff)" }}
           >
-            <div className="max-w-400 mx-auto w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+            <div className="max-w-400 mx-auto w-full px-4 md:px-20  " style={{ paddingLeft: "80px", paddingRight: "80px" }}>
               <div className="h-6" />
               <ProfileTabs activeTab={activeTab} setActiveTab={setActiveTab} />
               <div className="h-4" />
             </div>
           </div>
 
-          <div className="max-w-400 mx-auto w-full pb-8 mt-6" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+          <div className="max-w-400 mx-auto w-full pb-8 mt-6 px-4 md:px-20" >
             {activeTab === "personal" && (
               <PersonalTab onComplete={() => setActiveTab("experience")} />
             )}

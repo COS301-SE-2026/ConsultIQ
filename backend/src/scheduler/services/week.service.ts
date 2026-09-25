@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { TimeService, type LocalDate, type Instant } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
@@ -56,8 +57,8 @@ export class WeekService {
             throw new NotFoundException(`Week starting ${weekStart} not found for consultant ${consultantId}`);
         }
 
-        const holidays = await this.holidayService.getForWeek(weekStart);
-        const blocks = await this.resolveBlocks(dbWeek);
+        const holidays = this.holidayService.getForWeek(weekStart);
+        const blocks = this.resolveBlocks(dbWeek);
 
         const week: WeekContainer = {
             id: dbWeek.id,

@@ -1,3 +1,5 @@
+import { apiClient } from '../lib/api-client';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export interface RegisterUserPayload {
@@ -22,15 +24,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export async function registerUser(payload: RegisterUserPayload): Promise<{ message: string; userId: string }> {
-  const res = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    credentials: 'include',
-    body: JSON.stringify(payload),
-  });
-  return handleResponse(res);
+  return apiClient.post<{ message: string; userId: string }>('/auth/register', payload);
 }
 
 export async function activateAccount(payload: ActivateAccountPayload): Promise<{ message: string }> {

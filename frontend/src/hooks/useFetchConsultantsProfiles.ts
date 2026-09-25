@@ -52,6 +52,10 @@ export interface ConsultantProfileDto {
   city: string;
   province: string;
   postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
   pictureUrl?: string | null;
   experience?: ExperienceDto[];
   education?: EducationDto[];
@@ -65,8 +69,8 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 
   return {
     id: data.id,
-    fullName:data.fullName,
-   status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
+    fullName: data.fullName,
+    status: (data.availability === "AVAILABLE" ? "Available" : "Unavailable") as "Available" | "Unavailable",
     email: data.email,
     phone: data.phoneNumber || "",
     idNumber: data.idNumber || "",
@@ -75,9 +79,13 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     addressLine1: data.addressLine1,
     addressLine2: data.addressLine2 || "",
     suburb: data.suburb || "",
-    city:  data.city,
+    city: data.city,
     province: data.province,
     postalCode: data.postalCode || "",
+    latitude: data.latitude ??  undefined,
+    longitude: data.longitude ?? undefined,
+    placeId: data.placeId ||  "",
+    formattedAddress: data.formattedAddress || "",
     pictureUrl: data.pictureUrl ?? null,
 
     experience: (data.experience || []).map((exp, index: number) => ({
@@ -85,15 +93,15 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       company: exp.companyname,
       jobTitle: exp.jobTitle,
       jobType: exp.jobType,
-      startDate: new Date(exp.startDate).toLocaleDateString("en-ZA", { 
-        month: "long", 
-        year: "numeric" 
+      startDate: new Date(exp.startDate).toLocaleDateString("en-ZA", {
+        month: "long",
+        year: "numeric"
       }),
-      endDate: exp.endDate 
-        ? new Date(exp.endDate).toLocaleDateString("en-ZA", { 
-            month: "long", 
-            year: "numeric" 
-          }) 
+      endDate: exp.endDate
+        ? new Date(exp.endDate).toLocaleDateString("en-ZA", {
+          month: "long",
+          year: "numeric"
+        })
         : "Present",
       roleDescription: exp.roleDescription || "No description provided.",
       workModel: exp.workModel || "ONSITE",
@@ -110,10 +118,10 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
       id: edu.id || `edu-${index}`,
       institution: edu.institution || "",
       qualification: edu.qualification || "",
-      startDate: edu.startDate 
+      startDate: edu.startDate
         ? new Date(edu.startDate).toISOString().split("T")[0]
         : '',
-      endDate: edu.endDate 
+      endDate: edu.endDate
         ? new Date(edu.endDate).toISOString().split("T")[0]
         : '',
     })),
@@ -123,62 +131,62 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
 export type MappedConsultantProfile = ReturnType<typeof mapDtoToProfile>;
 
 export function useFetchConsultantProfile(
-  targetConsultantId: string | undefined, 
+  targetConsultantId: string | undefined,
   loggedInUserId: string | undefined
 ) {
   // Use the inferred map type instead of "any"
   const [profile, setProfile] = useState<MappedConsultantProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | string | null>(null);
-  const [notFound,setNotFound]= useState(false);
+  const [notFound, setNotFound] = useState(false);
   const hasParams = Boolean(targetConsultantId || loggedInUserId);
 
-  
-    const fetchProfile = useCallback(async () => {
-      if(!hasParams){
-        return;
+
+  const fetchProfile = useCallback(async () => {
+    if (!hasParams) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      let rawData: ConsultantProfileDto | null = null;
+
+      if (targetConsultantId) {
+        rawData = await getConsultantProfileById(targetConsultantId);
+      } else if (loggedInUserId) {
+        rawData = await getConsultantProfileByUserId(loggedInUserId);
       }
 
-      try {
-        setIsLoading(true);
-      
-        let rawData: ConsultantProfileDto | null = null;
-
-        if (targetConsultantId) {
-          rawData = await getConsultantProfileById(targetConsultantId);
-        } else if (loggedInUserId) {
-          rawData = await getConsultantProfileByUserId(loggedInUserId);
-        } 
-
-        if (rawData) {
-          setProfile(mapDtoToProfile(rawData));
-          setError(null);
-          setNotFound(false);
-        }
-        
-      } catch (err) {
-        console.error("Profile Fetch Hook Error:", err);
-        
-        if(err instanceof ApiError && err.status === 404){
-          setProfile(null);
-          setError(null);
-          setNotFound(true);
-        }else{
-          const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
-          setError(errorMessage);
-          setNotFound(false);
-        }
-        
-      } finally {
-        setIsLoading(false);
+      if (rawData) {
+        setProfile(mapDtoToProfile(rawData));
+        setError(null);
+        setNotFound(false);
       }
-    }, [targetConsultantId, loggedInUserId,hasParams]);
 
-    useEffect(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      fetchProfile();
-    }, [fetchProfile]);
-    
+    } catch (err) {
+      console.error("Profile Fetch Hook Error:", err);
 
-  return { profile, isLoading, error, notFound, refetch:fetchProfile };
+      if (err instanceof ApiError && err.status === 404) {
+        setProfile(null);
+        setError(null);
+        setNotFound(true);
+      } else {
+        const errorMessage = err instanceof Error ? err.message : "Could not load profile details.";
+        setError(errorMessage);
+        setNotFound(false);
+      }
+
+    } finally {
+      setIsLoading(false);
+    }
+  }, [targetConsultantId, loggedInUserId, hasParams]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchProfile();
+  }, [fetchProfile]);
+
+
+  return { profile, isLoading, error, notFound, refetch: fetchProfile };
 }

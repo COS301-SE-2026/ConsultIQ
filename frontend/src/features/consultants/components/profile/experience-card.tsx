@@ -27,7 +27,7 @@ function formatDateRange(startDate: string, endDate: string) {
 
 function ExperienceInfo({exp}:{readonly exp: Experience}){
   return(
-        <div className="flex items-start justify-between gap-6 w-full">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-6 w-full">
                       <div className="flex flex-col" style={{ gap: "8px" }}>
                         <p
                           className="font-bold"
@@ -156,11 +156,9 @@ const handleSave = async () => {
   return (
     <>
       <div
-        className="bg-white rounded-2xl w-full flex flex-col"
+        className="bg-white rounded-2xl w-full flex flex-col p-4 sm:p-7 gap-5 sm:gap-7"
         style={{
-          padding: "28px 28px 28px 28px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          gap: "28px",
         }}
       >
 
@@ -173,13 +171,16 @@ const handleSave = async () => {
             </h2>
 
             {canEdit && (
-                <EditControls
+                <div className="shrink-0">
+                   <EditControls
                   isEditing={isEditing}
                   isSaving={isSaving}
                   onEdit={handleEditClick}
                   onSave={handleSave}
                   onCancel={handleCancel}
                 />
+                </div>
+               
           )}
        </div>
         <hr style={{ borderColor: "var(--color-border)" }} />
@@ -196,12 +197,15 @@ const handleSave = async () => {
                 />
               )}
 
-              <div className="flex items-start justify-between gap-6 w-full">
+              <div className="flex items-start sm:flex-row sm:items-start justify-between gap-6 w-full">
                 {isEditing ? (
                   <>
-                    <ExperienceInfo exp={exp}/>
+                    <div className="flex-1 min-w-0">
+                      <ExperienceInfo exp={exp}/>
+                    </div>
+                    
 
-                    <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <div className="flex items-center gap-2 shrink-0 sm:ml-4 ">
                        <Button
                          variant= "ghost"
                          onClick={()=> setSelected({exp,index})}

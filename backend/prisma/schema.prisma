@@ -383,6 +383,7 @@ model Project {
   teamSize         Int
   allocation       Int // Renamed from requiredAllocationPercentage
   budget           Float // Renamed from clientBillingBudget
+  workModel        WorkModel                @default(ONSITE)
   status           ProjectStatus            @default(OPEN)
   tenantId         String?
   createdAt        DateTime                 @default(now())

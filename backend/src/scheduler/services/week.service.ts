@@ -1,8 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { TimeService, type LocalDate, type Instant } from './time.service';
+import { TimeService, type LocalDate } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
@@ -67,10 +66,10 @@ export class WeekService {
             weekStart: DateTime.fromJSDate(dbWeek.weekStart, { zone: 'utc' }).toFormat('yyyy-MM-dd') as LocalDate,
             version: dbWeek.version,
 
-            lastCommittedAt: (dbWeek.lastCommittedAt ? dbWeek.lastCommittedAt.toISOString() : dbWeek.createdAt.toISOString()) as Instant,
+            lastCommittedAt: (dbWeek.lastCommittedAt ? dbWeek.lastCommittedAt.toISOString() : dbWeek.createdAt.toISOString()) as WeekContainer['lastCommittedAt'],
             sourceOfLastChange: dbWeek.sourceOfLastChange ?? 'system',
-            createdAt: dbWeek.createdAt.toISOString() as Instant,
-            updatedAt: dbWeek.updatedAt.toISOString() as Instant,
+            createdAt: dbWeek.createdAt.toISOString() as WeekContainer['createdAt'],
+            updatedAt: dbWeek.updatedAt.toISOString() as WeekContainer['updatedAt'],
 
             blocks,
             tasks: dbWeek.tasks as unknown as Task[],

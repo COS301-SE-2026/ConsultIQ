@@ -119,10 +119,11 @@ export class WeekService {
         const placeWindow = this.applyChange(clone, change);
 
         if (placeWindow) {
-            this.placerService.place(clone, { window: placeWindow, allowBump: ctx.allowBump ?? false });
+            this.placerService.place(clone, { window: placeWindow, allowBump: true });
         }
 
-        const validation = this.validatorService.validate(clone, ctx);
+        const fullCtx: ValidateContext = { ...ctx, previousWeek: week };
+        const validation = this.validatorService.validate(clone, fullCtx);
         const safeIssues = validation.issues ?? [];
 
         const violations = safeIssues.filter((i) => i.level === 'violation');
@@ -201,7 +202,51 @@ export class WeekService {
                 // it if it should be placed immediately.
                 return undefined;
 
+            case 'move_slot': {
+                const slot = week.slots.find((s) => s.id === change.slotId);
+                if (!slot) throw new NotFoundException(`Task slot \({change.slotId} not found in week\){week.id}`);
+
+                slot.start = change.to.start;
+                slot.end = change.to.end;
+
+                slot.locked = true;
+                if (change.tags) slot.tags = change.tags;
+
+                return change.window;
+            }
+
+            case 'move_block': {
+                const block = week.blocks.find((b) => b.id === change.blockId);
+                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+
+                block.start = change.to.start;
+                block.end = change.to.end;
+
+                return change.window;
+            }
+
+            case 'resize_block': {
+                const block = week.blocks.find((b) => b.id === change.blockId);
+                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+
+                block.start = change.to.start;
+                block.end = change.to.end;
+
+                (block as ProjectBlock & { userSized?: boolean }).userSized = true;
+
+                return change.window;
+            }
+
+            case 'pin_block': {
+                const block = week.blocks.find((b) => b.id === change.blockId);
+                if (!block) throw new NotFoundException(`Project block \({change.blockId} not found in week\){week.id}`);
+
+                block.mobility = change.pinned ? 'pinned' : 'fluid';
+
+                return change.window;
+            }
             default:
+
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
     }
@@ -219,29 +264,17 @@ export class WeekService {
                 data: { version: { increment: 1 }, lastCommittedAt: new Date() },
             });
 
-
             await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
-
-            if (week.tasks.length > 0) {
-                await Promise.all(week.tasks.map(t =>
-                    tx.schedulerTask.update({
-                        where: { id: t.id },
-                        data: { placement: t.placement, unplacedReason: t.unplacedReason, status: t.status },
-                    })
-                ));
-            }
-
-
-            const manualBlocks = week.blocks.filter(b =>
-                (b as unknown as { manuallyResized?: boolean;[key: string]: unknown }).manuallyResized
-            );
-            if (manualBlocks.length > 0) {
-                await Promise.all(manualBlocks.map(b =>
-                    tx.schedulerProjectBlock.update({
-                        where: { id: b.id },
-                        data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                    })
-                ));
+            if (week.slots.length > 0) {
+                await tx.schedulerSlot.createMany({
+                    data: week.slots.map((s) => ({
+                        ...s,
+                        weekId: week.id,
+                        daySpan: s.daySpan ?? 1,
+                        subtaskIds: s.subtaskIds ?? [],
+                        tags: s.tags ?? [],
+                    })),
+                });
             }
 
             for (const t of week.tasks) {

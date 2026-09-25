@@ -170,8 +170,8 @@ export class PlacerService {
         const end = new Date(interval.end).getTime();
         return Math.round((end - start) / 60000);
     }
-
-    public makeSlot(task: Task, gap: FreeGap, minutes: number, day: LocalDate): Slot {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public makeSlot(task: Task, gap: FreeGap, minutes: number, _day: LocalDate): Slot {
         const start = new Date(gap.start);
         const end = new Date(start.getTime() + minutes * 60000);
         return {

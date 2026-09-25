@@ -309,6 +309,7 @@ describe('MatchRunService', () => {
                 finalScore: 90,
                 rank: 1,
                 factorBreakdown: [],
+                availabilityStatus: "AVAILABLE",
             }]);
         });
     })

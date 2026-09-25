@@ -105,7 +105,7 @@ describe('MatchRunAggregationService', () => {
                 finalScore: 80,
                 rank: 1,
                 factorBreakdown: [],
-
+                availabilityStatus: 'AVAILABLE'
             }];
 
         mockWeightAggregator.aggregate.mockReturnValue(mockResult);

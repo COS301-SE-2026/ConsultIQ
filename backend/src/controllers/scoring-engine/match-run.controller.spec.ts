@@ -78,7 +78,7 @@ describe('MatchRunController', () => {
             const runId = 'run-01';;
 
             const mockResult: ConsultantMatchResult[] = [
-                { consultantId: 'consultant-01', consultantName: 'Benji', consultantEmail: 'Benji@gmail.com', finalScore: 90, rank: 1, isPlaced: false, factorBreakdown: [] },
+                { consultantId: 'consultant-01', consultantName: 'Benji', consultantEmail: 'Benji@gmail.com', finalScore: 90, rank: 1, isPlaced: false, factorBreakdown: [], availabilityStatus: 'AVAILABLE' },
             ];
             mockMatchRunService.getMatchRun.mockResolvedValue(mockResult);
             const result = await controller.getMatchRun(projectId, runId);

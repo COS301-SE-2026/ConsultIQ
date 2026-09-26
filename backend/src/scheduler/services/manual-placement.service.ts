@@ -64,20 +64,7 @@ export class ManualPlacementService {
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { week } = await this.loadBlockContext(blockId);
-        const window = this.dayWindow(to.start, week.timezone);
-
-        const change: Change = {
-            type: 'move_block',
-            blockId,
-            to,
-            origin: 'user',
-            window,
-            confirmedOverride,
-        };
-
-        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
-        return this.weekService.commit(week, change, ctx, expectedVersion);
+        return this.executeBlockIntervalChange('move_block', blockId, to, confirmedOverride, expectedVersion);
     }
 
     // -----------------------------------------------------------------
@@ -90,11 +77,21 @@ export class ManualPlacementService {
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
+        return this.executeBlockIntervalChange('resize_block', blockId, to, confirmedOverride, expectedVersion);
+    }
+
+    private async executeBlockIntervalChange(
+        type: 'move_block' | 'resize_block',
+        blockId: string,
+        to: Interval,
+        confirmedOverride?: boolean,
+        expectedVersion?: number,
+    ): Promise<CommitResult> {
         const { week } = await this.loadBlockContext(blockId);
         const window = this.dayWindow(to.start, week.timezone);
 
         const change: Change = {
-            type: 'resize_block',
+            type,
             blockId,
             to,
             origin: 'user',

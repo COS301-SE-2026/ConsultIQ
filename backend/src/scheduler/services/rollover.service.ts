@@ -131,7 +131,7 @@ export class RolloverService {
                     },
                 });
 
-                await tx.schedulerSlot.deleteMany({ where: { weekId: fromWeekId, taskIds: { has: task.id } } });
+                //await tx.schedulerSlot.deleteMany({ where: { weekId: fromWeekId, taskIds: { has: task.id } } });
             }
 
             await tx.schedulerWeek.updateMany({
@@ -173,7 +173,9 @@ export class RolloverService {
         try {
 
             await this.prisma.schedulerIdempotencyKey.deleteMany({ where: { key } });
-        } catch {
+        }
+        // eslint-disable-next-line no-empty
+        catch {
 
         }
     }

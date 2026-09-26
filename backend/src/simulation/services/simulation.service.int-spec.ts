@@ -197,7 +197,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
     });
   });
 
-  describe('AC #4 — simulation determinism against a real match run', () => {
+  describe('simulation determinism against a real match run', () => {
     it('produces a baselineScore identical to a real match run score, for the same consultant/project, when the candidate skill is one the consultant already has', async () => {
       const adminUser = await createAdmin(prisma);
       const { backendSkill, consultant } = await createTestConsultant(prisma);

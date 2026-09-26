@@ -1,10 +1,11 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
+import WeekCalendar from "../components/week/week-calendar";
 
 
 export default function SchedulerPage() {
     return (
-        <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
 
             <div className="flex-1 flex flex-col min-w-0">
@@ -23,7 +24,7 @@ export default function SchedulerPage() {
                     {/*Week calendar*/}
                     <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
                         <div className="flex-1 overflow-auto p-4">
-                            {/* WeekContainer Stub  */}
+                            <WeekCalendar/>
                         </div>
 
                         <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">

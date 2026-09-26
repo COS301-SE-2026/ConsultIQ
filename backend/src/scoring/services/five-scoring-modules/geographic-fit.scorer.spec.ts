@@ -4,6 +4,7 @@ import { RawProjectDto } from '../../dto/raw-project.dto';
 import { GeographicFitScorer } from './geographic-fit.scorer';
 import { LocationService } from '../../../location/services/location.service';
 import { Logger } from '@nestjs/common';
+import { WorkModel } from '@prisma/client';
 
 function consultant(city: string, province: string, latitude?: number, longitude?: number): RawConsultantDto {
     return {
@@ -17,7 +18,14 @@ function consultant(city: string, province: string, latitude?: number, longitude
     } as RawConsultantDto;
 }
 
-function project(city: string, province: string, isRemote = false, latitude?: number, longitude?: number): RawProjectDto {
+function project(
+    city: string,
+    province: string,
+    workModel: WorkModel = 'ONSITE',
+    latitude?: number,
+    longitude?: number,
+    
+    ): RawProjectDto {
     return {
         projectId: 'project-01',
         requiredSkills: [],
@@ -27,7 +35,7 @@ function project(city: string, province: string, isRemote = false, latitude?: nu
         startDate: '2026-01-01',
         endDate: '2026-06-30',
         requiredAllocationPercentage: 50,
-        workModel: 'ONSITE',
+        workModel,
         // isRemote,
         latitude,
         longitude,
@@ -62,24 +70,24 @@ describe('GeographicFitScorer', () => {
         jest.clearAllMocks();
     });
 
-    // describe('Remote Short-Circuit', () => {
-    //     it('scores 1.0 immediately if the project is remote', async () => {
-    //         const cons = consultant('Cape Town', 'Western Cape');
-    //         const proj = project('Johannesburg', 'Gauteng', true);
+    describe('Remote Short-Circuit', () => {
+        it('scores 1.0 immediately if the project is remote', async () => {
+            const cons = consultant('Cape Town', 'Western Cape');
+            const proj = project('Johannesburg', 'Gauteng', 'REMOTE');
 
-    //         const result = await scorer.score(cons, proj);
+            const result = await scorer.score(cons, proj);
 
-    //         expect(result.score).toBe(1.0);
-    //         expect(result.dataSource).toBe('remote');
-    //         expect(result.details).toBe('Project is fully remote. Geographic fit is bypassed.');
-    //         expect(locationService.calculateTravelMetrics).not.toHaveBeenCalled();
-    //     });
-    // });
+            expect(result.score).toBe(1.0);
+            expect(result.dataSource).toBe('remote');
+            expect(result.details).toBe('Project is Remote — no location requirement.');
+            expect(locationService.calculateTravelMetrics).not.toHaveBeenCalled();
+        });
+    });
 
     describe('API Distance/Duration Scoring', () => {
         it('scores using continuous decay based on travel duration', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
-            const proj = project('Midrand', 'Gauteng', false, -25.9988, 28.1283);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.9988, 28.1283);
 
             locationService.calculateTravelMetrics.mockResolvedValueOnce({
                 distanceMeters: 30000,
@@ -97,7 +105,7 @@ describe('GeographicFitScorer', () => {
 
         it('falls back to distance decay if duration is 0', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
-            const proj = project('Midrand', 'Gauteng', false, -25.9988, 28.1283);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.9988, 28.1283);
 
             locationService.calculateTravelMetrics.mockResolvedValueOnce({
                 distanceMeters: 40000,
@@ -152,7 +160,7 @@ describe('GeographicFitScorer', () => {
 
         it('falls back to string matching if API returns null/fails', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.7479, 28.2293);
-            const proj = project('Johannesburg', 'Gauteng', false, -26.2041, 28.0473);
+            const proj = project('Johannesburg', 'Gauteng', 'ONSITE', -26.2041, 28.0473);
 
 
             locationService.calculateTravelMetrics.mockResolvedValueOnce(null);
@@ -168,7 +176,7 @@ describe('GeographicFitScorer', () => {
     describe('Caching and Concurrency (Stampede Protection)', () => {
         it('returns cached metrics on subsequent calls without hitting the API again', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
-            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.99, 28.12);
 
             locationService.calculateTravelMetrics.mockResolvedValueOnce({
                 distanceMeters: 30000,
@@ -187,7 +195,7 @@ describe('GeographicFitScorer', () => {
 
         it('batches concurrent requests for the same coordinates into a single API call', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
-            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.99, 28.12);
 
             locationService.calculateTravelMetrics.mockImplementation(async () => {
                 await new Promise(resolve => setTimeout(resolve, 50));
@@ -218,7 +226,7 @@ describe('GeographicFitScorer', () => {
         it('deletes the cache entry if it has expired', async () => {
             jest.useFakeTimers();
             const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
-            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.99, 28.12);
 
             locationService.calculateTravelMetrics.mockResolvedValueOnce({
                 distanceMeters: 30000,
@@ -247,7 +255,7 @@ describe('GeographicFitScorer', () => {
 
         it('handles API rejection (catch block) and falls back to string match', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
-            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.99, 28.12);
 
             locationService.calculateTravelMetrics.mockRejectedValueOnce(new Error('Google Maps API Down'));
 
@@ -264,7 +272,7 @@ describe('GeographicFitScorer', () => {
 
         it('evicts the oldest cache entry when MAX_CACHE_SIZE is exceeded', async () => {
             const cons = consultant('Pretoria', 'Gauteng', -25.74, 28.22);
-            const proj = project('Midrand', 'Gauteng', false, -25.99, 28.12);
+            const proj = project('Midrand', 'Gauteng', 'ONSITE', -25.99, 28.12);
 
             const cache = (scorer as any).distanceCache;
 

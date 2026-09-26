@@ -3,7 +3,7 @@ import { ScoringFactor } from '../../enums/scoring-factor.enum';
 import {
   WeightedFactorBreakdown,
   ConsultantMatchResult,
-  deriveAvailabilityStatus,
+  deriveProjectAvailabilityStatus,
 } from '../interfaces/match-result.interface';
 
 export interface ScoredConsultant {
@@ -86,7 +86,7 @@ export class WeightedAggregator {
       finalScore: round(sum * 100, FINAL_SCORE_DECIMAL_PLACES),
       factorBreakdown,
       isPlaced: consultant.isPlaced,
-      availabilityStatus: deriveAvailabilityStatus(factorBreakdown),
+      projectAvailabilityStatus: deriveProjectAvailabilityStatus(factorBreakdown),
     };
   }
 }

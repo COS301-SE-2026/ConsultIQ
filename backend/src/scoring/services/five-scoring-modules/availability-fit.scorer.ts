@@ -6,6 +6,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { WorkModel } from "@prisma/client";
 
 
+
 //Remaining Capacity = 100% - (Sum of allocation_percentages of all projects the consultant is currently allocated to)
 //Across all projects where the start and end dates overlap
 @Injectable()
@@ -20,15 +21,6 @@ export class AvailabilityFitScorer {
     project: RawProjectDto,
     preloadedAllocation?: number,
   ): Promise<FactorScoreResult> {
-
-    if(project.workModel === WorkModel.REMOTE) {
-      return {
-        score: 1,
-        triggerHardExclusion: false,
-        details: 'Project is Remote',
-      };
-    }
-
 
     let totalAllocation = preloadedAllocation;
 
@@ -95,13 +87,13 @@ export class AvailabilityFitScorer {
     }
 
     const score = remainingCapacity / reqAlloc;
-    // const shortfallPercent = Math.round(
-    //    ((reqAlloc - remainingCapacity) / reqAlloc) * 100,
-    // );
+    const shortfallPercent = Math.round(
+       ((reqAlloc - remainingCapacity) / reqAlloc) * 100,
+    );
     return {
       score,
       triggerHardExclusion: false,
-      details: detailString,
+      details: `Consultant's remaining capacity is ${shortfallPercent}% lower than the required capacity.`
     };
   }
 }

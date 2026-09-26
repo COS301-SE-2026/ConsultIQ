@@ -124,4 +124,10 @@ export class TimeService {
 
         return this.isInCoreHours(start, timezone) && this.isInCoreHours(end, timezone);
     }
+
+    /** WeekService to build a week-wide window. */
+    localDateToInstant(date: string | LocalDate, timezone: string): Instant {
+        return this.atLocal(date, '00:00', timezone);
+    }
+
 }

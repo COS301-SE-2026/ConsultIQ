@@ -55,6 +55,16 @@ export class SimulationService {
             },
         ];
 
+        const projectedPool: ConsultantPoolEntry[] = [
+            {
+                consultantId,
+                consultantName: consultantRow.user?.fullName || 'Unknown',
+                consultantEmail: consultantRow.user?.email || 'Unknown',
+                isPlaced,
+                consultant: projectConsultantDto,
+            },
+        ];
+
         const [baselineExecution, projectedExecution] = await Promise.all([
             this.scoringExecutor.scorePool(
                 projectDto,
@@ -64,7 +74,7 @@ export class SimulationService {
             ),
             this.scoringExecutor.scorePool(
                 projectDto,
-                baselinePool,
+                projectedPool,
                 scoringContext,
                 allocationsByConsultant,
             ),
@@ -94,7 +104,7 @@ export class SimulationService {
             candidateSkillName: candidateSkill.skillName,
             baselineScore: baselineResult.finalScore,
             projectedScore: projectedResult.finalScore,
-            scoreDelta: projectedResult.finalScore = baselineResult.finalScore,
+            scoreDelta: projectedResult.finalScore - baselineResult.finalScore,
             excluded: false,
         };
     }
@@ -111,7 +121,7 @@ export class SimulationService {
                 longitude: true,
                 skills: {
                     select: {
-                        CompetencyLevel: true,
+                        competencyLevel: true,
                         skill: { select: { name: true } },
                     },
                 },
@@ -124,7 +134,7 @@ export class SimulationService {
 
         if (!consultant) {
             throw new NotFoundException(
-                `Consultant with IF ${consultantId} not found.`,
+                `Consultant with ID ${consultantId} not found.`,
             );
         }
 

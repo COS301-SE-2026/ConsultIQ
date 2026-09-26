@@ -184,7 +184,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
     });
 
     it('throws NotFoundException when the project does not exist', async () => {
-      const { backendSkill, consultant } = await createTestConsultant(prisma);
+      const { consultant } = await createTestConsultant(prisma);
 
       const testUUID = '00000000-0000-0000-0000-000000000000';
 

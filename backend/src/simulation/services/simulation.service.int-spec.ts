@@ -30,18 +30,20 @@ async function createBackendSkill(prisma: PrismaService) {
 
 async function createConsultant(
   prisma: PrismaService,
-  email: string,
-  costToCompany: number,
-  city: string,
-  province: string,
-  skillId: string,
-  competencyLevel: CompetencyLevel,
-  yearsExperience: number,
-  confidenceLevel: number,
+  data: {
+    email: string;
+    costToCompany: number;
+    city: string;
+    province: string;
+    skillId: string;
+    competencyLevel: CompetencyLevel;
+    yearsExperience: number;
+    confidenceLevel: number;
+  },
 ) {
   const user = await prisma.user.create({
     data: {
-      email,
+      email: data.email,
       fullName: 'IQ Consultant',
       status: 'ACTIVE',
       role: 'CONSULTANT',
@@ -51,17 +53,17 @@ async function createConsultant(
   return prisma.consultant.create({
     data: {
       userId: user.id,
-      costToCompany,
+      costToCompany: data.costToCompany,
       addressLine1: '123 Main street',
-      city,
-      province,
+      city: data.city,
+      province: data.province,
       skills: {
         create: [
           {
-            skillId,
-            competencyLevel,
-            yearsExperience,
-            confidenceLevel,
+            skillId: data.skillId,
+            competencyLevel: data.competencyLevel,
+            yearsExperience: data.yearsExperience,
+            confidenceLevel: data.confidenceLevel,
           },
         ],
       },
@@ -167,17 +169,16 @@ describe('SimulationService - Integration-e2e-tests', () => {
     it('throws NotFoundException when the project does not exist', async () => {
       const backendSkill = await createBackendSkill(prisma);
 
-      const consultant = await createConsultant(
-        prisma,
-        'consultant@consultiq.com',
-        400,
-        'Pretoria',
-        'State',
-        backendSkill.id,
-        CompetencyLevel.EXPERT,
-        5,
-        90,
-      );
+      const consultant = await createConsultant(prisma, {
+        email: 'consultant@consultiq.com',
+        costToCompany: 400,
+        city: 'Pretoria',
+        province: 'State',
+        skillId: backendSkill.id,
+        competencyLevel: CompetencyLevel.EXPERT,
+        yearsExperience: 5,
+        confidenceLevel: 90,
+    });
 
       const testUUID = '00000000-0000-0000-0000-000000000000';
 
@@ -195,17 +196,16 @@ describe('SimulationService - Integration-e2e-tests', () => {
       const adminUser = await createAdmin(prisma);
       const backendSkill = await createBackendSkill(prisma);
 
-      const consultant = await createConsultant(
-        prisma,
-        'consultant@consultiq.com',
-        400,
-        'Pretoria',
-        'State',
-        backendSkill.id,
-        CompetencyLevel.EXPERT,
-        5,
-        90,
-      );
+      const consultant = await createConsultant(prisma, {
+        email: 'consultant@consultiq.com',
+        costToCompany: 400,
+        city: 'Pretoria',
+        province: 'State',
+        skillId: backendSkill.id,
+        competencyLevel: CompetencyLevel.EXPERT,
+        yearsExperience: 5,
+        confidenceLevel: 90,
+    });
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
@@ -235,17 +235,16 @@ describe('SimulationService - Integration-e2e-tests', () => {
     it('returns an identical result when run twice with unchanged inputs (determinism)', async () => {
       const backendSkill = await createBackendSkill(prisma);
 
-      const consultant = await createConsultant(
-        prisma,
-        'consultant@consultiq.com',
-        400,
-        'Pretoria',
-        'State',
-        backendSkill.id,
-        CompetencyLevel.EXPERT,
-        5,
-        90,
-      );
+        const consultant = await createConsultant(prisma, {
+            email: 'consultant@consultiq.com',
+            costToCompany: 400,
+            city: 'Pretoria',
+            province: 'State',
+            skillId: backendSkill.id,
+            competencyLevel: CompetencyLevel.EXPERT,
+            yearsExperience: 5,
+            confidenceLevel: 90,
+        });
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
@@ -275,17 +274,16 @@ describe('SimulationService - Integration-e2e-tests', () => {
     it('does not write anything to the consultant record', async () => {
       const backendSkill = await createBackendSkill(prisma);
 
-      const consultant = await createConsultant(
-        prisma,
-        'consultant@consultiq.com',
-        400,
-        'Pretoria',
-        'State',
-        backendSkill.id,
-        CompetencyLevel.EXPERT,
-        5,
-        90,
-      );
+        const consultant = await createConsultant(prisma, {
+            email: 'consultant@consultiq.com',
+            costToCompany: 400,
+            city: 'Pretoria',
+            province: 'State',
+            skillId: backendSkill.id,
+            competencyLevel: CompetencyLevel.EXPERT,
+            yearsExperience: 5,
+            confidenceLevel: 90,
+        });
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, []);
 
@@ -308,17 +306,16 @@ describe('SimulationService - Integration-e2e-tests', () => {
         data: { name: 'AWS', category: 'Cloud' },
       });
 
-      const consultant = await createConsultant(
-        prisma,
-        'consultant@consultiq.com',
-        400,
-        'Pretoria',
-        'State',
-        backendSkill.id,
-        CompetencyLevel.EXPERT,
-        5,
-        90,
-      );
+        const consultant = await createConsultant(prisma, {
+        email: 'consultant@consultiq.com',
+        costToCompany: 400,
+        city: 'Pretoria',
+        province: 'State',
+        skillId: backendSkill.id,
+        competencyLevel: CompetencyLevel.EXPERT,
+        yearsExperience: 5,
+        confidenceLevel: 90,
+        });
 
       // -----Project requires BOTH Java and AWS as mandatory skills---------
       const startDate = new Date();

@@ -18,7 +18,13 @@ export class SimulationService {
         private readonly dataIngestion: DataIngestionService,
         private readonly scoringExecutor: MatchScoringExecutorService,
     ) {}
-
+    
+    /**
+   * Re-scores a consultant against a project with one hypothetical skill
+   * added in-memory. Never writes to the consultant record. Deterministic:
+   * calling this twice with unchanged underlying data returns identical
+   * results, since it performs only reads plus pure in-memory computation.
+   */
     async simulate (
         consultantId: string,
         projectId: string,
@@ -83,6 +89,9 @@ export class SimulationService {
         const baselineResult = baselineExecution.finalResults[0];
         const projectedResult = projectedExecution.finalResults[0];
 
+        // Excluded (e.g. hard-exclusion on skill alignment or availability) —
+        // finalResults will be empty for that pool; report as excluded rather
+        // than throwing, since "not viable" is a valid simulation outcome.
         if(!baselineResult || !projectedResult) {
             return {
                 consultantId,

@@ -7,8 +7,8 @@ export interface HypotheticalSkillInput {
 
 export interface SimulationResult {
     consultantId: string;
-    projectSkillName: string;
-    candidateSkillNmae: string;
+    projectId: string;
+    candidateSkillName: string;
     baselineScore: number;
     projectedScore: number;
     scoreDelta: number;

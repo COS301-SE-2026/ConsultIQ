@@ -1,6 +1,13 @@
 import { RawConsultantDto } from "../../scoring/dto/raw-consultant.dto";
 import { HypotheticalSkillInput } from "../interfaces/simulation-result.interface";
 
+
+/**
+ * Returns a NEW RawConsultantDto with the hypothetical skill added,
+ * replacing any existing entry for the same skill name (case-insensitive).
+ * Never mutates the input — the real consultant's in-memory representation
+ * is left untouched, and nothing here ever touches the database.
+ */
 export function injectHypotheticalSkill(
  consultant: RawConsultantDto,
  candidateSkill: HypotheticalSkillInput,

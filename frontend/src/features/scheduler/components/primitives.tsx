@@ -1,4 +1,4 @@
-import type { Complexity, Task, TaskStatus } from "../types/scheduler.types";   
+import type { Task, TaskStatus } from "../types/scheduler.types";   
 
 
 export const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -53,4 +53,8 @@ export function ComplexityBars({ level }: { level: Task["complexity"] }) {
             ))}
         </span>
     );
+}
+
+export function formatEstimateRange ( tMin: number, tMax: number): string {
+    return `${formatDuration(tMin)}\u2013${formatDuration(tMax)}`;
 }

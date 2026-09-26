@@ -11,7 +11,6 @@ function consultant(): RawConsultantDto {
         city: 'Johannesburg',
         province: 'Gauteng',
 
-
     } as RawConsultantDto;
 }
 
@@ -49,46 +48,9 @@ describe('AvailabilityFitScorer', () => {
         scorer = new AvailabilityFitScorer(prisma as any);
     })
 
+    describe('Capacity-based calculation (identical capacity-based calculation)', () => {
 
-    describe('Remote projects', () => {
-        it('scores 1.0 and skips capacity lookup entirely for a Remote project', async () => {
-            const result = await scorer.score(
-                consultant(),
-                project(100, WorkModel.REMOTE),
-            );
-
-            expect(result.score).toBe(1.0);
-            expect(result.triggerHardExclusion).toBe(false);
-            expect(result.details).toBe('Project is Remote');
-            expect(prisma.projectPlacement.findMany).not.toHaveBeenCalled();
-        });
-
-        it('scores 1.0 for a Remote project even when a preloaded allocation would otherwise exceed the capacity', async () => {
-            const result = await scorer.score(
-                consultant(),
-                project(100, WorkModel.REMOTE),
-                150,
-            );
-
-            expect(result.score).toBe(1.0);
-            expect(result.triggerHardExclusion).toBe(false);
-            expect(result.details).toBe('Project is Remote');
-        });
-
-        it('scores 1.0 for a Remote project regardless of required allocation percentage', async () => {
-            const result = await scorer.score(
-                consultant(),
-                project(0, WorkModel.REMOTE),
-            );
-
-            expect(result.score).toBe(1.0);
-            expect(result.details).toBe('Project is Remote');
-        });
-    });
-
-    describe('Onsite and Hybrid projects (identical capacity-based calculation)', () => {
-
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE])(
             'scores 1.0 when the project requires 0% allocation', async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([]);
             const result = await scorer.score(consultant(), project(0))
@@ -98,7 +60,7 @@ describe('AvailabilityFitScorer', () => {
             expect(result.details).toBe('Project requires 0% allocation.');
         })
 
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE])(
             'scores 1.0 when a consultant has no overlapping placements with the project',
             async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([]);
@@ -110,7 +72,7 @@ describe('AvailabilityFitScorer', () => {
             expect(result.details).toBe('Requires 100% capacity | Has 100% remaining');
         });
 
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE, WorkModel.REMOTE])(
             'scores 1.0 when a consultant has overlapping placements, with enough remaining availability',
             async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([{ allocation: 20 }, { allocation: 20 }]);
@@ -122,7 +84,7 @@ describe('AvailabilityFitScorer', () => {
             expect(result.details).toBe('Requires 50% capacity | Has 60% remaining');
         });
 
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE])(
             'scores 0.0 when a consultant has overlapping placements, with insufficient remaining availability',
             async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([{ allocation: 30 }, { allocation: 70 }]);
@@ -133,7 +95,7 @@ describe('AvailabilityFitScorer', () => {
         });
 
 
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE])(
             'score proportionally', async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([{ allocation: 10 }, { allocation: 50 }]);
             const result = await scorer.score(consultant(), project(50, workModel));

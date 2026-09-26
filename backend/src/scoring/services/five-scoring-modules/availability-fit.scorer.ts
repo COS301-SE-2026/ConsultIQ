@@ -21,15 +21,6 @@ export class AvailabilityFitScorer {
     preloadedAllocation?: number,
   ): Promise<FactorScoreResult> {
 
-    if(project.workModel === WorkModel.REMOTE) {
-      return {
-        score: 1,
-        triggerHardExclusion: false,
-        details: 'Project is Remote',
-      };
-    }
-
-
     let totalAllocation = preloadedAllocation;
 
     if (totalAllocation === undefined) {

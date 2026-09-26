@@ -3,7 +3,7 @@ import { ScoringFactor } from '../../enums/scoring-factor.enum';
 import {
   WeightedFactorBreakdown,
   ConsultantMatchResult,
-  deriveAvailabilityStatus,
+  deriveProjectAvailabilityStatus,
 } from '../interfaces/match-result.interface';
 
 export interface ScoredConsultant {

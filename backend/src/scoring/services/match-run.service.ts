@@ -14,7 +14,7 @@ import {
 import { DataIngestionService } from './data-normalization/data-ingestion.service';
 import {
   ConsultantMatchResult,
-  deriveAvailabilityStatus,
+  deriveProjectAvailabilityStatus,
   WeightedFactorBreakdown,
 } from './interfaces/match-result.interface';
 import { RawProjectDto } from '../dto/raw-project.dto';

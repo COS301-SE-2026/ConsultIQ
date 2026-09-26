@@ -45,14 +45,14 @@ export class GeographicFitScorer {
     project: RawProjectDto,
   ): Promise<FactorScoreResult> {
     // const isRemote = project.workModel?.toUpperCase() === 'REMOTE' || project.isRemote;
-    // if (isRemote) {
-    //   return {
-    //     score: 1.0,
-    //     triggerHardExclusion: false,
-    //     details: 'Project is fully remote. Geographic fit is bypassed.',
-    //     dataSource: 'remote',
-    //   };
-    // }
+    if (project.workModel === 'REMOTE') {
+      return {
+        score: 1.0,
+        triggerHardExclusion: false,
+        details: 'Project is fully remote. Geographic fit is bypassed.',
+        dataSource: 'remote',
+      };
+    }
 
     const hasConsultantCoords = consultant.latitude && consultant.longitude;
     const hasProjectCoords = project.latitude && project.longitude;

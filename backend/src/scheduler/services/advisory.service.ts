@@ -129,7 +129,7 @@ export class AdvisoryService {
     // POST /scheduler/weeks/:weekStart/issues/:code/dismiss
     // -----------------------------------------------------------------
 
-    public async dismiss(weekId: string, code: ReasonCode | string): Promise<void> {
+    public async dismiss(weekId: string, code: string): Promise<void> {
         await this.prisma.schedulerIssueDismissal.upsert({
             where: { weekId_code: { weekId, code } },
             update: { dismissedAt: new Date() },

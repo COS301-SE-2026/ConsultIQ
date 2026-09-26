@@ -62,8 +62,51 @@ function DeadlineLabel({ deadline, now } : { deadline?: string; now : number }) 
     )
 }
 
+const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
+  [Reason.CONTAINER_FULL]: "No room left in this project's allocation this week.",
+  [Reason.DAY_SPAN_LIMIT]: "Would need to spread across too many days to fit.",
+  [Reason.DEADLINE_INFEASIBLE]: "Can't finish before its deadline with the time left.",
+};
+
+function UnplacedReason({ task, summary, onResolveDeadline, onDeferToNextWeek, expectedVersion } :{
+    task: Task;
+    summary: UnplacedTaskSummary; 
+    onResolveDeadline : (task: Task) => void;
+    onDeferToNextWeek : (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
+    expectedVersion: number;
+}){
+    
+    const isDeadlineIssue = summary.reason === Reason.DEADLINE_INFEASIBLE;
+    const message = REASON_MESSAGE[summary.reason] ?? summary.reason;
+
+    return (
+        <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+            <p className="flex items-start gap-1.5 text-xs text-amber-800">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0"/>
+                {message}
+            </p>
+            <p className="mt-1 text-xs text-amber-700">
+                Needs {formatDuration(summary.neededMinutes)}, only{" "} {formatDuration(summary.availableMinutes)} available.
+            </p>
+            <button type="button"
+                className="mt-2 rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                onClick={() => isDeadlineIssue ? onResolveDeadline(task) : void onDeferToNextWeek(task.id, {taskIds: [task.id], expectedVersion}) }
+            >
+                {isDeadlineIssue ? "Resolve deadline" : "Push to next week"}
+            </button>
+        </div>
+    )
+}
+
 export default function BacklogTaskCard({task, projectLabel, projectColor, unplacedSummary, now,
   expectedVersion, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart}: BacklogTaskCardProps) {
+
+    function stopAndRun(action: () => void) {
+        return (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        action();
+        };
+    }
 
     return (
         <article className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm" style={{borderLeftWidth: 4, borderLeftColor: projectColor}}>
@@ -88,6 +131,15 @@ export default function BacklogTaskCard({task, projectLabel, projectColor, unpla
             <div className="mt-1.5">
                 <DeadlineLabel deadline={task.deadline} now={now} />
             </div>
+            {unplacedSummary && (
+                <UnplacedReason 
+                    task={task}
+                    summary={unplacedSummary}
+                    onResolveDeadline={onResolveDeadline}
+                    onDeferToNextWeek={onDeferToNextWeek}
+                    expectedVersion={expectedVersion}
+                />
+            )}
 
             <div className="mt-3 flex items-center gap-2">
                 <button type="button" aria-label="Drag to calendar" title="Drag to calendar"
@@ -101,12 +153,14 @@ export default function BacklogTaskCard({task, projectLabel, projectColor, unpla
 
                 <button type="button"
                     className="flex-1 rounded px-3 py-2 text-sm font-semibold text-white" style={{ backgroundColor: projectColor }}
+                    onClick={stopAndRun(() => void onSchedule(task.id))}
                 >
                     &rarr; Schedule
                 </button>
 
                 <button type="button" aria-label="Dismiss" title="Dismiss"
                     className="shrink-0 text-slate-400 hover:text-red-600"
+                    onClick={stopAndRun(() => void onDismiss(task.id))}
                 >
                     <X size={18} />
                 </button>

@@ -92,6 +92,22 @@ export interface Task {
     subtasks?: { id: string; done: boolean; durationMinutes?: number }[];
 }
 
+export interface NewTask {
+    projectId: string;
+    title: string;
+    tMin: number;
+    tMax: number;
+    deadline?: string;
+    urgency: number;
+    complexity: number;
+    subtasks: Array<{
+        id: string;
+        title: string;
+        estimate?: number;
+        done: boolean;
+    }>;
+    dependsOn: string[];
+}
 export interface Slot {
     id: string;
     weekId: string;

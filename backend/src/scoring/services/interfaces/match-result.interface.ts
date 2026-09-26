@@ -22,7 +22,7 @@ export interface ConsultantMatchResult {
   rank: number;
   factorBreakdown: WeightedFactorBreakdown[];
   isPlaced: boolean;
-  availabilityStatus: AvailabilityStatus;
+  projectAvailabilityStatus: ProjectAvailabilityStatus;
 }
 
 export interface MatchRunStats {

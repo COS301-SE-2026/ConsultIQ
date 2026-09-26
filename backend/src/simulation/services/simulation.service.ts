@@ -188,11 +188,7 @@ export class SimulationService {
     private mapProjectToDto(project: any): RawProjectDto {
         return {
             projectId: project.id,
-            requiredSkills: project.skills.map((a: any) => ({
-                skillName: a.skill.name,
-                minimumCompetencyLevel: a.competency,
-                isMandatory: a.mandatory,
-            })),
+            requiredSkills: this.mapRequiredSkills(project.skills),
             billingBudgetPerHour: project.budget,
             teamSize: project.teamSize || 1,
             city: project.city,
@@ -209,15 +205,27 @@ export class SimulationService {
     private mapConsultantToDto(consultant: any): RawConsultantDto {
         return {
         consultantId: consultant.id,
-        skills: consultant.skills.map((a: any) => ({
-            skillName: a.skill.name,
-            competencyLevel: a.competencyLevel,
-        })),
+        skills: this.mapConsultantSkills(consultant.skills),
         costToCompany: consultant.costToCompany,
         city: consultant.city,
         province: consultant.province,
         latitude: consultant.latitude,
         longitude: consultant.longitude,
         };
+    }
+
+    private mapRequiredSkills(skills: any[]): RawProjectDto['requiredSkills'] {
+        return skills.map((skill) => ({
+            skillName: skill.skill.name,
+            minimumCompetencyLevel: skill.competency,
+            isMandatory: skill.mandatory,
+        }));
+    }
+
+    private mapConsultantSkills(skills: any[]): RawConsultantDto['skills'] {
+        return skills.map((skill) => ({
+            skillName: skill.skill.name,
+            competencyLevel: skill.competencyLevel,
+        }));
     }
 }

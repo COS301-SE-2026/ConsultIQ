@@ -49,7 +49,7 @@ export class GeographicFitScorer {
       return {
         score: 1.0,
         triggerHardExclusion: false,
-        details: 'Project is fully remote. Geographic fit is bypassed.',
+        details: 'Project is Remote — no location requirement.',
         dataSource: 'remote',
       };
     }

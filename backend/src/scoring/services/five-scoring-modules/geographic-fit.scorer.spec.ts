@@ -79,7 +79,7 @@ describe('GeographicFitScorer', () => {
 
             expect(result.score).toBe(1.0);
             expect(result.dataSource).toBe('remote');
-            expect(result.details).toBe('Project is fully remote. Geographic fit is bypassed.');
+            expect(result.details).toBe('Project is Remote — no location requirement.');
             expect(locationService.calculateTravelMetrics).not.toHaveBeenCalled();
         });
     });

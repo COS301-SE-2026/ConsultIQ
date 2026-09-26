@@ -114,6 +114,23 @@ export class TimeService {
         return timeInMinutes >= coreStartInMinutes && timeInMinutes <= coreEndInMinutes;
     }
 
+    /** Convenience wrapper: midnight instant for a given local date. Used by WeekService to build a week-wide window. */
+    localDateToInstant(date: string | LocalDate, timezone: string): Instant {
+        return this.atLocal(date, '00:00', timezone);
+    }
+
+    restOfDayWindow(instant: string | Instant, timezone: string): Interval {
+        const day = this.localDate(instant, timezone);
+        const dt = DateTime.fromISO(day as string, { zone: timezone });
+        const weekStart = dt.startOf('week');
+        const weekEnd = weekStart.plus({ days: 7 });
+
+        return {
+            start: instant as string,
+            end: this.toIso(weekEnd),
+        };
+    }
+
     isRangeInCoreHours(start: string | Instant, end: string | Instant, timezone: string): boolean {
         const s = this.parse(start, timezone);
         const e = this.parse(end, timezone);

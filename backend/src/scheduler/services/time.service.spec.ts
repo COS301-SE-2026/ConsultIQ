@@ -174,4 +174,20 @@ describe('TimeService', () => {
             expect(result.end).toBe('2026-09-28T00:00:00Z');
         });
     });
+
+    describe('localDateToInstant', () => {
+        it('calls atLocal with 00:00 to generate a midnight instant', () => {
+            const atLocalSpy = jest.spyOn(service, 'atLocal');
+            const date = '2026-09-21';
+            const timezone = 'Africa/Johannesburg';
+
+            service.localDateToInstant(date, timezone);
+
+            expect(atLocalSpy).toHaveBeenCalledWith(date, '00:00', timezone);
+        });
+        it('returns the generated Instant successfully', () => {
+            const result = service.localDateToInstant('2026-09-21', 'UTC');
+            expect(result).toBe('2026-09-21T00:00:00Z');
+        });
+    });
 });

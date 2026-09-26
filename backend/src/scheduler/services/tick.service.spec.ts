@@ -220,4 +220,80 @@ describe('TickService', () => {
             );
         });
     });
+
+    describe('Warning Loggers and NotFoundException catching', () => {
+        let loggerWarnSpy: jest.SpyInstance;
+
+        beforeEach(() => {
+            loggerWarnSpy = jest.spyOn(service['logger'], 'warn').mockImplementation();
+        });
+
+        it('logs a warning if rolloverService.markIncomplete returns ok: false', async () => {
+            jest.spyOn(service as any, 'acquireIdempotency').mockResolvedValue(true);
+            rolloverService.markIncomplete.mockResolvedValue({ ok: false, message: 'Lock error' } as any);
+            weekService.commit.mockResolvedValue({ ok: true } as any);
+
+            await service['dailyTick']('cons-1', 'UTC', '2026-09-26' as any);
+
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('markIncomplete failed for cons-1')
+            );
+        });
+
+        it('logs a warning if a daily/weekly replan commit is rejected (ok: false)', async () => {
+            jest.spyOn(service as any, 'acquireIdempotency').mockResolvedValue(true);
+            rolloverService.markIncomplete.mockResolvedValue({ ok: true } as any);
+            weekService.commit.mockResolvedValue({
+                ok: false,
+                violations: [{ code: 'HARD_CAP_BREACH' }]
+            } as any);
+
+            await service['dailyTick']('cons-1', 'UTC', '2026-09-26' as any);
+
+            expect(loggerWarnSpy).toHaveBeenCalledWith(
+                expect.stringContaining('was rejected: HARD_CAP_BREACH')
+            );
+        });
+
+        it('silently catches NotFoundException and returns', async () => {
+            jest.spyOn(service as any, 'acquireIdempotency').mockResolvedValue(true);
+
+            const { NotFoundException } = require('@nestjs/common');
+            weekService.getWeek.mockRejectedValue(new NotFoundException('Week missing'));
+            await expect(service['dailyTick']('cons-1', 'UTC', '2026-09-26' as any)).resolves.toBeUndefined();
+        });
+    });
+
+    describe('Idempotency Management', () => {
+        it('acquireIdempotency returns false if Prisma throws a P2002 (duplicate lock) error', async () => {
+            prisma.schedulerIdempotencyKey.create.mockRejectedValue({ code: 'P2002' });
+            const result = await service['acquireIdempotency']('test-key', 'weekly_tick');
+            expect(result).toBe(false);
+        });
+
+        it('acquireIdempotency re-throws non-P2002 errors', async () => {
+            const unknownError = new Error('Database down');
+            prisma.schedulerIdempotencyKey.create.mockRejectedValue(unknownError);
+
+            await expect(service['acquireIdempotency']('test-key', 'weekly_tick')).rejects.toThrow('Database down');
+        });
+
+        it('releaseIdempotency silently catches and swallows errors', async () => {
+            prisma.schedulerIdempotencyKey.deleteMany.mockRejectedValue(new Error('Delete failed'));
+
+            await expect(service['releaseIdempotency']('test-key', 'weekly_tick')).resolves.toBeUndefined();
+        });
+    });
+
+    describe('tryRunWeeklyTick error handling', () => {
+        it('releases the idempotency lock and re-throws if weeklyTick fails', async () => {
+            const acquireSpy = jest.spyOn(service as any, 'acquireIdempotency').mockResolvedValue(true);
+            const releaseSpy = jest.spyOn(service as any, 'releaseIdempotency').mockResolvedValue(undefined);
+            jest.spyOn(service as any, 'weeklyTick').mockRejectedValue(new Error('Crash during tick'));
+
+            await expect(service['tryRunWeeklyTick']('cons-1', 'UTC', '2026-09-26' as any))
+                .rejects.toThrow('Crash during tick');
+            expect(releaseSpy).toHaveBeenCalledWith('tick:weekly:cons-1:2026-09-26', 'weekly_tick');
+        });
+    });
 });

@@ -5,7 +5,7 @@ import { WeekService, CommitResult } from './week.service';
 import { PlacerService } from './placer.service';
 import { TimeService, LocalDate, Instant } from './time.service';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
-import { WeekContainer, Change, ReasonCode, Interval, Task, ValidateContext } from '../dto/scheduler.dto';
+import { WeekContainer, Change, Interval, Task, ValidateContext } from '../dto/scheduler.dto';
 
 export interface Suggestion {
     code: string;

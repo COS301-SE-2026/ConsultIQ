@@ -85,7 +85,33 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
                     <p className="mt-2 text-sm font-medium text-red-600"> Overdue </p>
                 )}
 
-                //section for subtasks
+                {task.subtasks.length > 0 && (
+                    <section className="mt-3 border-t border-slate-100 pt-3"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <button type="button" aria-expanded={subtasksExpanded}
+                            className="text-sm text-slate-600 hover:text-slate-900"
+                        >
+                            {subtasksExpanded ? "Hide subtasks" : "Show subtasks"}
+                        </button>
+
+                        {subtasksExpanded && (
+                            <div className="mt-2 space-y-2">
+                                {task.subtasks.map((subtask) => (
+                                    <label key={subtask.id}
+                                        className="flex items-center gap-2 text-sm text-slate-700"
+                                    >
+                                        <input type="checkbox" 
+                                            checked={subtask.done}
+                                            onChange={() => void onToggleSubtask(task.id, subtask.id, { expectedVersion })}
+                                        />
+                                        <span className={subtask.done ? "text-slate-400 line-through" : ""} > {subtask.title} </span>
+                                    </label>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+                )}
                 </div>
 
                 <button type="button" aria-label="Delete task" title="Delete task"

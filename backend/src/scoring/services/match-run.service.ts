@@ -438,7 +438,7 @@ export class MatchRunService {
         rank: r.rank,
         factorBreakdown,
         isPlaced: r.isPlaced,
-        availabilityStatus: deriveAvailabilityStatus(factorBreakdown),
+        projectAvailabilityStatus: deriveProjectAvailabilityStatus(factorBreakdown),
       };
     });
   }

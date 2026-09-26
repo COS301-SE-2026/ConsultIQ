@@ -174,9 +174,9 @@ export class RolloverService {
 
             await this.prisma.schedulerIdempotencyKey.deleteMany({ where: { key } });
         }
-        // eslint-disable-next-line no-empty
-        catch {
 
+        catch {
+            // eslint-disable-next-line no-empty
         }
     }
 }

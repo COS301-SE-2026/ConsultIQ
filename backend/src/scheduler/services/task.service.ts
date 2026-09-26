@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
 import { TimeService, LocalDate } from './time.service';
-import { WeekContainer, Change, Interval, Task, ValidateContext, NewTask, ReasonCode } from '../dto/scheduler.dto';
+import { WeekContainer, Change, Interval, Task, ValidateContext, NewTask, Issue } from '../dto/scheduler.dto';
 
 @Injectable()
 export class TaskService {
@@ -190,12 +190,13 @@ export class TaskService {
         const nextWeekStartDt = DateTime.fromISO(nextWeekStart, { zone: 'utc' });
         const deadlineWarnings = tasks
             .filter((t) => t.deadline && DateTime.fromJSDate(t.deadline, { zone: 'utc' }) < nextWeekStartDt)
-            .map((t) => ({
+            .map((t): Issue => ({
                 level: 'warning' as const,
-                code: 'DEADLINE_INFEASIBLE' as ReasonCode,
+                code: 'DEADLINE_INFEASIBLE',
                 message: `Task ${t.id}'s deadline falls before the week it's being deferred into.`,
                 entityIds: [t.id],
             }));
+
 
         await this.prisma.$transaction(async (tx) => {
             let nextWeek = await tx.schedulerWeek.findUnique({

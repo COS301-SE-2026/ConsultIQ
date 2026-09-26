@@ -88,6 +88,8 @@ export interface Task {
     priorityScore?: number;
     createdAt: string;
     updatedAt: string;
+    deadlineMissAccepted?: boolean;
+    subtasks?: { id: string; done: boolean; durationMinutes?: number }[];
 }
 
 export interface Slot {
@@ -222,9 +224,14 @@ export interface BaseChange {
 
 
 export type Change =
-    | (BaseChange & { type: 'create_task'; payload: Partial<Task> })
-    | (BaseChange & { type: 'update_task'; taskId: string; payload: Partial<Task> })
-    | (BaseChange & { type: 'split_task'; taskId: string; atMinutes: number })
+    | (BaseChange & { type: 'create_task'; task: Partial<Task>; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'update_task'; taskId: string; patch: Partial<Task>; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'delete_task'; taskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'set_status'; taskId: string; status: string; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'toggle_subtask'; taskId: string; subtaskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'split_task'; taskId: string; atMinutes: number; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'accept_deadline_miss'; taskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'place_unplaced'; taskIds: string[]; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'move_slot'; slotId: string; to: Interval; tags?: string[]; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'move_block'; blockId: string; to: Interval; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'resize_block'; blockId: string; to: Interval; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })

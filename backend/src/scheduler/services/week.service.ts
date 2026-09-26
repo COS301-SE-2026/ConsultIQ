@@ -197,10 +197,75 @@ export class WeekService {
             case 'replan':
                 return change.window;
 
-            case 'create_task':
-                // TODO(TaskService): push the new task onto week.tasks, return a window covering
-                // it if it should be placed immediately.
-                return undefined;
+            case 'create_task': {
+                week.tasks.push(change.task as Task);
+                return change.window;
+            }
+            case 'update_task': {
+                const idx = week.tasks.findIndex(t => t.id === change.taskId);
+                if (idx > -1) week.tasks[idx] = { ...week.tasks[idx], ...change.patch } as Task;
+                return change.window;
+            }
+            case 'delete_task': {
+                week.tasks = week.tasks.filter(t => t.id !== change.taskId);
+                week.slots = week.slots.map(s => ({
+                    ...s,
+                    taskIds: s.taskIds.filter(id => id !== change.taskId)
+                })).filter(s => s.taskIds.length > 0);
+                return change.window;
+            }
+            case 'set_status': {
+                const task = week.tasks.find(t => t.id === change.taskId);
+
+                if (task) task.status = change.status as Task['status'];
+                return change.window;
+            }
+            case 'toggle_subtask': {
+                const task = week.tasks.find(t => t.id === change.taskId);
+                if (task && task.subtasks) {
+                    const sub = task.subtasks.find(s => s.id === change.subtaskId);
+                    if (sub) sub.done = !sub.done;
+
+                    if (task.subtasks.every(s => s.done)) {
+                        task.status = 'Done';
+                    }
+                }
+                return change.window;
+            }
+            case 'split_task': {
+                const orig = week.tasks.find(t => t.id === change.taskId);
+                if (!orig) return change.window;
+
+                const originalTMax = orig.tMax;
+                const originalTMin = orig.tMin;
+                const splitRatio = change.atMinutes / originalTMax;
+
+                orig.tMax = change.atMinutes;
+                orig.tMin = Math.round(originalTMin * splitRatio);
+
+                const secondHalf: Task = {
+                    ...orig,
+                    id: 'split-' + orig.id + '-' + Date.now(),
+                    tMax: originalTMax - change.atMinutes,
+                    tMin: Math.round(originalTMin * (1 - splitRatio)),
+                    status: 'Ready',
+                    placement: 'unplaced'
+                };
+
+                week.tasks.push(secondHalf);
+                return change.window;
+            }
+            case 'accept_deadline_miss': {
+                const task = week.tasks.find(t => t.id === change.taskId);
+                if (task) {
+                    task.unplacedReason = undefined;
+                    task.deadlineMissAccepted = true;
+                }
+                return change.window;
+            }
+            case 'place_unplaced': {
+                return change.window;
+            }
 
             case 'move_slot': {
                 const slot = week.slots.find((s) => s.id === change.slotId);
@@ -208,23 +273,19 @@ export class WeekService {
 
                 slot.start = change.to.start;
                 slot.end = change.to.end;
-
                 slot.locked = true;
                 if (change.tags) slot.tags = change.tags;
 
                 return change.window;
             }
-
             case 'move_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
                 if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
 
                 block.start = change.to.start;
                 block.end = change.to.end;
-
                 return change.window;
             }
-
             case 'resize_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
                 if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
@@ -233,24 +294,19 @@ export class WeekService {
                 block.end = change.to.end;
 
                 (block as ProjectBlock & { userSized?: boolean }).userSized = true;
-
                 return change.window;
             }
-
             case 'pin_block': {
                 const block = week.blocks.find((b) => b.id === change.blockId);
                 if (!block) throw new NotFoundException('Project block ' + change.blockId + ' not found in week ' + week.id);
 
                 block.mobility = change.pinned ? 'pinned' : 'fluid';
-
                 return change.window;
             }
             default:
-
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
     }
-
 
     private async persistWeek(week: WeekContainer, expectedVersion?: number): Promise<void> {
         const whereClause = expectedVersion !== undefined

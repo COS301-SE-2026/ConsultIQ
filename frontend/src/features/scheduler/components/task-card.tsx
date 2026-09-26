@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from "react";
 import { ArrowRight, GripVertical, X } from "lucide-react";
 import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto } from "../types/scheduler.types";
+import { ComplexityBars, STATUS_LABELS, formatDuration, getStartTime } from "./primitives";
 
 interface TaskCardProps {
     task: Task;
@@ -9,54 +10,13 @@ interface TaskCardProps {
     subtaskProgress : { completed: number, total : number };
     nextStatus? : { status : TaskStatus, label : string }
     timeZone?: string;
-    onEdit: (task: Task) => string;
+    onEdit: (task: Task) => void;
     onSetStatus: (taskId : string, dto : SetTaskStatusDto) => void | Promise<void>;
     onToggleSubtask: (taskId: string, subtaskId : string, dto: ToggleSubtaskDto) => void | Promise<void>;
     onSendToBacklog: (taskId: string) => void | Promise<void>;
     onDelete: (taskId: string) => void | Promise<void>;
     onSplit: (task: Task) => void;
     onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;  
-}
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-    Ready: "Ready",
-    InProgress: "In Progress",
-    Done: "Done"
-};
-
-function formatDuration(minutes: number) : string {
-    if (minutes < 60) return `${minutes}m`;
-
-    const hours = minutes / 60;
-    return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
-}
-
-function getStartTime(task: Task, timeZone?: string) : string | null {
-    const firstSlot = [...task.slots].sort((left, right) => Date.parse(left.start) - Date.parse(right.start))[0];
-
-    if(!firstSlot) return null;
-
-    return new Intl.DateTimeFormat(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-        timeZone
-    }).format(new Date(firstSlot.start));
-}
-
-function ComplexityBars({ level }: { level: Task["complexity"] }) {
-    return (
-        <span className="inline-flex h-4 items-end gap-0.5"
-        role="img"
-        aria-label={`Complexity level ${level} of 3`}
-        >
-            {[1, 2, 3].map((bar) => (
-                <span key={bar} 
-                    className= {`w-1.5 rounded-sm ${bar <= level ? "bg-amber-500" : "bg-slate-200"}`}
-                    style={{ height: `${bar * 4 + 4}px` }}
-                />
-            ))}
-        </span>
-    );
 }
 
 

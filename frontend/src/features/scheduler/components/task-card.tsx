@@ -1,17 +1,16 @@
-/* eslint-disable react-hooks/purity */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, type DragEvent } from "react";
 import { ArrowRight, GripVertical, X } from "lucide-react";
 import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto } from "../types/scheduler.types";
 
 interface TaskCardProps {
     task: Task;
+    now : number;
     expectedVersion: number;
     subtaskProgress : { completed: number, total : number };
     nextStatus? : { status : TaskStatus, label : string }
     timeZone?: string;
     onEdit: (task: Task) => string;
-    onSetStatus: (taskId : string, dto : ToggleSubtaskDto) => void | Promise<void>;
+    onSetStatus: (taskId : string, dto : SetTaskStatusDto) => void | Promise<void>;
     onToggleSubtask: (taskId: string, subtaskId : string, dto: ToggleSubtaskDto) => void | Promise<void>;
     onSendToBacklog: (taskId: string) => void | Promise<void>;
     onDelete: (taskId: string) => void | Promise<void>;
@@ -25,13 +24,49 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
     Done: "Done"
 };
 
-export default function TaskCard({ task, expectedVersion, subtaskProgress, nextStatus, timeZone,
+function formatDuration(minutes: number) : string {
+    if (minutes < 60) return `${minutes}m`;
+
+    const hours = minutes / 60;
+    return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
+}
+
+function getStartTime(task: Task, timeZone?: string) : string | null {
+    const firstSlot = [...task.slots].sort((left, right) => Date.parse(left.start) - Date.parse(right.start))[0];
+
+    if(!firstSlot) return null;
+
+    return new Intl.DateTimeFormat(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone
+    }).format(new Date(firstSlot.start));
+}
+
+function ComplexityBars({ level }: { level: Task["complexity"] }) {
+    return (
+        <span className="inline-flex h-4 items-end gap-0.5"
+        role="img"
+        aria-label={`Complexity level ${level} of 3`}
+        >
+            {[1, 2, 3].map((bar) => (
+                <span key={bar} 
+                    className= {`w-1.5 rounded-sm ${bar <= level ? "bg-amber-500" : "bg-slate-200"}`}
+                    style={{ height: `${bar * 4 + 4}px` }}
+                />
+            ))}
+        </span>
+    );
+}
+
+
+export default function TaskCard({ task, now, expectedVersion, subtaskProgress, nextStatus, timeZone,
   onEdit, onSetStatus, onToggleSubtask, onSendToBacklog, onDelete, onSplit, onDragStart, } : TaskCardProps){
 
   const [subtasksExpanded, setSubtasksExpanded] = useState(false);
-  //const startTime = getStartTime(task, timeZone);
+  const startTime = getStartTime(task, timeZone);
 
-    const overdue = task.status !== "Done" && Boolean(task.deadline) && Date.parse(task.deadline ?? "") < Date.now();
+    const overdue = task.status !== "Done" && Boolean(task.deadline) && Date.parse(task.deadline ?? "") < now;
 
   function stopAndRun(action: () => void) {
     return (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -64,9 +99,9 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
                         {STATUS_LABELS[task.status]}
                     </span>
 
-                    {/* {startTime && (
+                    {startTime && (
                         <span className="text-xs text-slate-500">from {startTime} </span>
-                    )} */}
+                    )}
                 </div>
 
                 <button type="button" className="mt-2 block text-left font-semibold text-slate-900 hover:text-indigo-700"
@@ -76,8 +111,11 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
                 </button>
 
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                    <span className="inline-flex items-center gap-2"> Level {task.complexity} </span>
-                    <span></span>
+                    <span className="inline-flex items-center gap-2">
+                         Level {task.complexity}
+                         <ComplexityBars level={task.complexity}/>
+                    </span>
+                    <span>{formatDuration(task.tMin)}–{formatDuration(task.tMax)}</span>
                     <span>{subtaskProgress.completed}/{subtaskProgress.total}</span>
                 </div>
 
@@ -91,6 +129,7 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
                     >
                         <button type="button" aria-expanded={subtasksExpanded}
                             className="text-sm text-slate-600 hover:text-slate-900"
+                            onClick={() => setSubtasksExpanded((expanded) => !expanded)}
                         >
                             {subtasksExpanded ? "Hide subtasks" : "Show subtasks"}
                         </button>
@@ -128,7 +167,7 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
                 {nextStatus && (
                     <button type="button" 
                         className="inline-flex items-center gap-1 rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-                        //onClick={() => void onSetStatus(task.id, { status : nextStatus.status, expectedVersion })}
+                        onClick={() => void onSetStatus(task.id, { status : nextStatus.status, expectedVersion })}
                         >
                         <ArrowRight size={14} />
                         {nextStatus.label}
@@ -137,12 +176,14 @@ export default function TaskCard({ task, expectedVersion, subtaskProgress, nextS
 
                 <button type="button"
                     className="rounded border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    onClick={() => void onSendToBacklog(task.id)}
                 >
-                    BL
+                    ↓ BL
                 </button>
 
                 <button type="button"
                     className="rounded border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    onClick={() => onSplit(task)}                
                 >
                     Split
                 </button>

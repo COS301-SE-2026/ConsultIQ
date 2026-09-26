@@ -4,6 +4,7 @@ import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+
 //Remaining Capacity = 100% - (Sum of allocation_percentages of all projects the consultant is currently allocated to)
 //Across all projects where the start and end dates overlap
 @Injectable()
@@ -18,6 +19,7 @@ export class AvailabilityFitScorer {
     project: RawProjectDto,
     preloadedAllocation?: number,
   ): Promise<FactorScoreResult> {
+
     let totalAllocation = preloadedAllocation;
 
     if (totalAllocation === undefined) {
@@ -83,11 +85,13 @@ export class AvailabilityFitScorer {
     }
 
     const score = remainingCapacity / reqAlloc;
+    const shortfallPercent = Math.round(
+       ((reqAlloc - remainingCapacity) / reqAlloc) * 100,
+    );
     return {
       score,
       triggerHardExclusion: false,
-
-      details: detailString,
+      details: `Consultant's remaining capacity is ${shortfallPercent}% lower than the required capacity.`
     };
   }
 }

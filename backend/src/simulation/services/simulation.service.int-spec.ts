@@ -83,15 +83,19 @@ async function createProject(
   const endDate = new Date(startDate);
   endDate.setMonth(startDate.getMonth() + 6);
 
-  const project = await prisma.project.create({
+  const projectIdentity = {
+    status: 'OPEN',
+    projectName: 'Consultants Project',
+    clientName: 'BBD',
+    addressLine1: '122 Business Street',
+    province: 'Gauteng',
+    city: 'Pretoria',
+    postalCode: '1234',
+  };
+
+  return prisma.project.create({
     data: {
-      status: 'OPEN',
-      projectName: 'Consultants Project',
-      clientName: 'BBD',
-      addressLine1: '122 Business Street',
-      province: 'Gauteng',
-      city: 'Pretoria',
-      postalCode: '1234',
+      ...projectIdentity,
       teamSize,
       budget,
       startDate,
@@ -108,20 +112,16 @@ async function createProject(
           },
         ],
       },
+      ...(overrides.length > 0 && {
+        scoringOverrides: {
+          create: overrides.map(({ factorName, overrideWeight }) => ({
+            factorName,
+            overrideWeight,
+          })),
+        },
+      }),
     },
   });
-
-  if (overrides.length > 0) {
-    await prisma.projectScoringOverride.createMany({
-      data: overrides.map((o) => ({
-        projectId: project.id,
-        factorName: o.factorName,
-        overrideWeight: o.overrideWeight,
-      })),
-    });
-  }
-
-  return project;
 }
 
 async function createTestConsultant(prisma: PrismaService) {

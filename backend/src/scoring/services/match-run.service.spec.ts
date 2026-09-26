@@ -304,7 +304,7 @@ describe('MatchRunService', () => {
                 id: 'run-01',
                 projectId: 'project-01',
                 results: [
-                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [], consultant: { user: { fullName: 'Benji', email: 'Benji@gmail.com' } } },
+                    { consultantId: 'consultant-01', totalScore: 90, rank: 1, factorScores: [], isPlaced: false, consultant: { user: { fullName: 'Benji', email: 'Benji@gmail.com' } } },
                 ],
             };
 
@@ -319,6 +319,7 @@ describe('MatchRunService', () => {
                 finalScore: 90,
                 rank: 1,
                 factorBreakdown: [],
+                isPlaced: false,
                 projectAvailabilityStatus: "AVAILABLE",
             }]);
         });

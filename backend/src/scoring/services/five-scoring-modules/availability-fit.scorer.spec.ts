@@ -72,7 +72,7 @@ describe('AvailabilityFitScorer', () => {
             expect(result.details).toBe('Requires 100% capacity | Has 100% remaining');
         });
 
-        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE, WorkModel.REMOTE])(
+        it.each([WorkModel.ONSITE, WorkModel.HYBRID, WorkModel.REMOTE])(
             'scores 1.0 when a consultant has overlapping placements, with enough remaining availability',
             async (workModel) => {
             prisma.projectPlacement.findMany.mockResolvedValueOnce([{ allocation: 20 }, { allocation: 20 }]);

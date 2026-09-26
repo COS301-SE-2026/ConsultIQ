@@ -3,7 +3,6 @@ import { RawConsultantDto } from '../../dto/raw-consultant.dto';
 import { RawProjectDto } from '../../dto/raw-project.dto';
 import { FactorScoreResult } from '../interfaces/factor-score-result.interface';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WorkModel } from "@prisma/client";
 
 
 //Remaining Capacity = 100% - (Sum of allocation_percentages of all projects the consultant is currently allocated to)

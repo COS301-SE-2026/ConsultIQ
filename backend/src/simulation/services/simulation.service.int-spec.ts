@@ -124,6 +124,23 @@ async function createProject(
   return project;
 }
 
+async function createTestConsultant(prisma: PrismaService) {
+  const backendSkill = await createBackendSkill(prisma);
+
+  const consultant = await createConsultant(prisma, {
+    email: 'consultant@consultiq.com',
+    costToCompany: 400,
+    city: 'Pretoria',
+    province: 'State',
+    skillId: backendSkill.id,
+    competencyLevel: CompetencyLevel.EXPERT,
+    yearsExperience: 5,
+    confidenceLevel: 90,
+  });
+
+  return { backendSkill, consultant };
+}
+
 describe('SimulationService - Integration-e2e-tests', () => {
   let moduleRef: TestingModule;
   let matchRunService: MatchRunService;
@@ -167,18 +184,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
     });
 
     it('throws NotFoundException when the project does not exist', async () => {
-      const backendSkill = await createBackendSkill(prisma);
-
-      const consultant = await createConsultant(prisma, {
-        email: 'consultant@consultiq.com',
-        costToCompany: 400,
-        city: 'Pretoria',
-        province: 'State',
-        skillId: backendSkill.id,
-        competencyLevel: CompetencyLevel.EXPERT,
-        yearsExperience: 5,
-        confidenceLevel: 90,
-    });
+      const { backendSkill, consultant } = await createTestConsultant(prisma);
 
       const testUUID = '00000000-0000-0000-0000-000000000000';
 
@@ -194,18 +200,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
   describe('AC #4 — simulation determinism against a real match run', () => {
     it('produces a baselineScore identical to a real match run score, for the same consultant/project, when the candidate skill is one the consultant already has', async () => {
       const adminUser = await createAdmin(prisma);
-      const backendSkill = await createBackendSkill(prisma);
-
-      const consultant = await createConsultant(prisma, {
-        email: 'consultant@consultiq.com',
-        costToCompany: 400,
-        city: 'Pretoria',
-        province: 'State',
-        skillId: backendSkill.id,
-        competencyLevel: CompetencyLevel.EXPERT,
-        yearsExperience: 5,
-        confidenceLevel: 90,
-    });
+      const { backendSkill, consultant } = await createTestConsultant(prisma);
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
@@ -233,18 +228,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
     });
 
     it('returns an identical result when run twice with unchanged inputs (determinism)', async () => {
-      const backendSkill = await createBackendSkill(prisma);
-
-        const consultant = await createConsultant(prisma, {
-            email: 'consultant@consultiq.com',
-            costToCompany: 400,
-            city: 'Pretoria',
-            province: 'State',
-            skillId: backendSkill.id,
-            competencyLevel: CompetencyLevel.EXPERT,
-            yearsExperience: 5,
-            confidenceLevel: 90,
-        });
+      const { backendSkill, consultant } = await createTestConsultant(prisma);
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, [
         { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
@@ -272,18 +256,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
     });
 
     it('does not write anything to the consultant record', async () => {
-      const backendSkill = await createBackendSkill(prisma);
-
-        const consultant = await createConsultant(prisma, {
-            email: 'consultant@consultiq.com',
-            costToCompany: 400,
-            city: 'Pretoria',
-            province: 'State',
-            skillId: backendSkill.id,
-            competencyLevel: CompetencyLevel.EXPERT,
-            yearsExperience: 5,
-            confidenceLevel: 90,
-        });
+      const { backendSkill, consultant } = await createTestConsultant(prisma);
 
       const project = await createProject(prisma, 600, 5, backendSkill.id, []);
 

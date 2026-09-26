@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { X, Plus, AlertOctagon, AlertTriangle} from 'lucide-react'; 
 import  { COMPLEXITY_LABELS, ReasonCode, SCHEDULER_RULES, URGENCY_LABELS,
     type Complexity, type CreateTaskDto, type Issue, type Subtask, type Task,
@@ -61,42 +61,32 @@ function toInstant(value: string): string | undefined {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 }
 
-export default function TaskForm({ mode, initialTask, projects, expectedVersion, containerContext, dependencyOptions=[], serverIssues = [], open, onCancel, onSubmit }: TaskFormProps) {
-  const [title, setTitle] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [minHours, setMinHours] = useState(1);
-  const [maxHours, setMaxHours] = useState(2);
-  const [complexity, setComplexity] = useState<Complexity>(2);
-  const [urgency, setUrgency] = useState<Urgency>(2);
-  const [deadline, setDeadline] = useState("");
-  const [subtasks, setSubtasks] = useState<SubtaskDraft[]>([]);
-  const [dependsOn, setDependsOn] = useState<string[]>([]);
+export default function TaskForm(props: TaskFormProps) {
+  if (!props.open) return null;
+
+  const key = `${props.mode}:${props.initialTask?.id ?? "new"}`;
+  return <TaskFormContent key={key} {...props} />;
+}
+
+function TaskFormContent({ mode, initialTask, projects, expectedVersion, containerContext, dependencyOptions=[], serverIssues = [], open, onCancel, onSubmit }: TaskFormProps) {
+  const [title, setTitle] = useState(initialTask?.title ?? "");
+  const [projectId, setProjectId] = useState(initialTask?.projectId ?? projects[0]?.id ?? "");
+  const [minHours, setMinHours] = useState( initialTask ? initialTask.tMin / 60 : 1);
+  const [maxHours, setMaxHours] = useState(initialTask ? initialTask.tMax / 60 : 2);
+  const [complexity, setComplexity] = useState<Complexity>(initialTask?.complexity ?? 2);
+  const [urgency, setUrgency] = useState<Urgency>(initialTask?.urgency ?? 2);
+  const [deadline, setDeadline] = useState(toDateInput(initialTask?.deadline));
+  const [subtasks, setSubtasks] = useState<SubtaskDraft[]>(initialTask?.subtasks.map((subtask) => ({
+      id: subtask.id,
+      title: subtask.title,
+      estimate:
+        subtask.estimate === undefined ? "" : String(subtask.estimate),
+    })) ?? []);
+  const [dependsOn, setDependsOn] = useState<string[]>( initialTask?.dependsOn ?? []);
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if(!open)  return;
-    
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTitle(initialTask?.title ?? "");
-    setProjectId(initialTask?.projectId ?? projects[0]?.id ?? "");
-    setMinHours(initialTask ? initialTask.tMin / 60 : 1);
-    setMaxHours(initialTask ? initialTask.tMax / 60 : 2);
-    setComplexity(initialTask?.complexity ?? 2);
-    setUrgency(initialTask?.urgency ?? 2);
-    setDeadline(toDateInput(initialTask?.deadline));
-    setDependsOn(initialTask?.dependsOn ?? []);
-    setSubmitError(null);
 
-    setSubtasks(
-        initialTask?.subtasks.map((subtask) => ({
-            id: subtask.id,
-            title: subtask.title,
-            estimate: subtask.estimate === undefined ? "" : String(subtask.estimate),
-        })) ?? []
-    );
-
-  }, [open, initialTask, projects]);
 
   const tMin= Math.round(minHours * 60);
   const tMax= Math.round(maxHours * 60);

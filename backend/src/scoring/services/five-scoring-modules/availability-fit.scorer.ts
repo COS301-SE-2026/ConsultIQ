@@ -95,9 +95,9 @@ export class AvailabilityFitScorer {
     }
 
     const score = remainingCapacity / reqAlloc;
-    const shortfallPercent = Math.round(
-       ((reqAlloc - remainingCapacity) / reqAlloc) * 100,
-    );
+    // const shortfallPercent = Math.round(
+    //    ((reqAlloc - remainingCapacity) / reqAlloc) * 100,
+    // );
     return {
       score,
       triggerHardExclusion: false,

@@ -171,12 +171,10 @@ export class RolloverService {
 
     private async releaseIdempotency(key: string): Promise<void> {
         try {
-
             await this.prisma.schedulerIdempotencyKey.deleteMany({ where: { key } });
-        }
+        } catch {
 
-        catch {
-            // eslint-disable-next-line no-empty
+            return;
         }
     }
 }

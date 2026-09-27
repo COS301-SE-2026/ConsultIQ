@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { ManualPlacementService } from './manual-placement.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
@@ -62,7 +62,15 @@ describe('ManualPlacementService', () => {
     describe('moveSlot', () => {
         it('throws NotFoundException if slot does not exist', async () => {
             prisma.schedulerSlot.findUnique.mockResolvedValue(null);
-            await expect(service.moveSlot('bad-id', targetInterval)).rejects.toThrow(NotFoundException);
+            await expect(service.moveSlot('cons-1', 'bad-id', targetInterval)).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws ForbiddenException if consultantId does not match slot ownership', async () => {
+            prisma.schedulerSlot.findUnique.mockResolvedValue({
+                id: 'slot-1',
+                week: { consultantId: 'DIFFERENT_OWNER', weekStart: new Date('2026-09-28T00:00:00Z') },
+            });
+            await expect(service.moveSlot('cons-1', 'slot-1', targetInterval)).rejects.toThrow(ForbiddenException);
         });
 
         it('dispatches move_slot change with correct context and window', async () => {
@@ -71,7 +79,7 @@ describe('ManualPlacementService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-28T00:00:00Z') },
             });
 
-            await service.moveSlot('slot-1', targetInterval, false, 42);
+            await service.moveSlot('cons-1', 'slot-1', targetInterval, false, 42);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -96,7 +104,7 @@ describe('ManualPlacementService', () => {
 
             timeService.isRangeInCoreHours.mockReturnValue(false);
 
-            await service.moveSlot('slot-1', targetInterval, true);
+            await service.moveSlot('cons-1', 'slot-1', targetInterval, true);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -112,7 +120,15 @@ describe('ManualPlacementService', () => {
     describe('moveBlock', () => {
         it('throws NotFoundException if block does not exist', async () => {
             prisma.schedulerProjectBlock.findUnique.mockResolvedValue(null);
-            await expect(service.moveBlock('bad-id', targetInterval)).rejects.toThrow(NotFoundException);
+            await expect(service.moveBlock('cons-1', 'bad-id', targetInterval)).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws ForbiddenException if consultantId does not match block ownership', async () => {
+            prisma.schedulerProjectBlock.findUnique.mockResolvedValue({
+                id: 'block-1',
+                week: { consultantId: 'DIFFERENT_OWNER', weekStart: new Date('2026-09-28T00:00:00Z') },
+            });
+            await expect(service.moveBlock('cons-1', 'block-1', targetInterval)).rejects.toThrow(ForbiddenException);
         });
 
         it('dispatches move_block change successfully', async () => {
@@ -121,7 +137,7 @@ describe('ManualPlacementService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-28T00:00:00Z') },
             });
 
-            await service.moveBlock('block-1', targetInterval, true, 10);
+            await service.moveBlock('cons-1', 'block-1', targetInterval, true, 10);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -139,7 +155,7 @@ describe('ManualPlacementService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-28T00:00:00Z') },
             });
 
-            await service.resizeBlock('block-2', targetInterval);
+            await service.resizeBlock('cons-1', 'block-2', targetInterval);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -160,7 +176,7 @@ describe('ManualPlacementService', () => {
 
             timeService.localDate.mockReturnValue('2026-09-29' as LocalDate);
 
-            await service.pinBlock('block-3', true);
+            await service.pinBlock('cons-1', 'block-3', true);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,

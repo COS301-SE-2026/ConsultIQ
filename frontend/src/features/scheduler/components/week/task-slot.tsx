@@ -2,12 +2,12 @@ import type {Slot, Task, TaskStatus} from "../../types/scheduler.types"
 import { instantToLocalTime } from "../../utils/scheduler.utils"
 
 export interface TaskSlotProps{
-    slot: Slot;
-    task: Task;
-    timezone: string;
-    color: string;
-    selected?: boolean;
-    onSetStatus?: (taskId: string, status: TaskStatus) => void;
+    readonly slot: Slot;
+    readonly task: Task;
+    readonly timezone: string;
+    readonly color: string;
+    readonly selected?: boolean;
+    readonly onSetStatus?: (taskId: string, status: TaskStatus) => void;
 
 }
 

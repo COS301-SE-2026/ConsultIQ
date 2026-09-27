@@ -2,9 +2,9 @@ import {blockTop, blockHeight, minutesToTime} from "../../utils/scheduler.utils"
 
 
 interface DropGhostProps{
-    startMin: number;
-    durationMin: number;
-    colour: string;
+    readonly startMin: number;
+    readonly durationMin: number;
+    readonly colour: string;
 }
 
 export default function DropGhost({startMin, durationMin, colour}:DropGhostProps){

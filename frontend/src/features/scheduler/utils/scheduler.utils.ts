@@ -1,7 +1,7 @@
 import type {Interval, Task} from "../types/scheduler.types";
 
-export type LocalDate = string;
-export type LocalTime = string;
+export type LocalDate = string; // nosonar
+export type LocalTime = string; // nosonar
 
 export const DAY_START_HOUR=0;
 export const DAY_END_HOUR=24;

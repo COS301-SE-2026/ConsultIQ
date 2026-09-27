@@ -20,9 +20,9 @@ const TAG_LABELS: Record<CalendarTag, string> = {
 };
 
 export interface CalendarEntryProps{
-    entry: CalendarEntryData;
-    timezone: string;
-    onClick?: () => void;
+    readonly entry: CalendarEntryData;
+    readonly timezone: string;
+    readonly onClick?: () => void;
 }
 
 export default function CalendarEntry({entry, timezone, onClick}:CalendarEntryProps){

@@ -1,12 +1,12 @@
 
 
 export interface DayHeaderProps {
-    dayOfWeek: string;
-    date: string;
-    isToday?: boolean;
-    isHoliday?: boolean;
-    holidayName?: string;
-    totalHours?: number;
+    readonly dayOfWeek: string;
+    readonly date: string;
+    readonly isToday?: boolean;
+    readonly isHoliday?: boolean;
+    readonly holidayName?: string;
+    readonly totalHours?: number;
 }
 
 export default function Dayheader({

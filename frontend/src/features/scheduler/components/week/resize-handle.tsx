@@ -1,8 +1,8 @@
 import React from "react";
 
 interface ResizeHandleProps{
-    edge: "top" | "bottom";
-    onPointerDown: (e: React.PointerEvent) => void;
+    readonly edge: "top" | "bottom";
+    readonly onPointerDown: (e: React.PointerEvent) => void;
 }
 
 export default function ResizeHandle({edge, onPointerDown}: ResizeHandleProps){

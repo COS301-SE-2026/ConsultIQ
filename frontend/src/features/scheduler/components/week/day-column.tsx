@@ -3,10 +3,10 @@ import { useDroppable } from "@dnd-kit/core";
 import { blockTop } from "../../utils/scheduler.utils";
 
 interface DayColumnProps {
-    date: string;
-    isHoliday: boolean;
-    children: ReactNode;
-    isWeekend?: boolean;
+    readonly date: string;
+    readonly isHoliday: boolean;
+    readonly children: ReactNode;
+    readonly isWeekend?: boolean;
 }
 
 export default function DayColumn({ date, isHoliday, children, isWeekend = false }: DayColumnProps) {

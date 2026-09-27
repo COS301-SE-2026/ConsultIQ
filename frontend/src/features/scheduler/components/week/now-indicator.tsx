@@ -2,8 +2,8 @@ import {useSyncExternalStore} from "react"
 import { blockTop,instantToLocalDate,instantToLocalTime } from "../../utils/scheduler.utils"
 
 interface NowIndicatorProps{
-    date: string;
-    timezone: string;
+    readonly date: string;
+    readonly timezone: string;
 }
 
 function subscribe(onChange: () => void){

@@ -6,28 +6,17 @@ import ResizeHandle from "./resize-handle";
 import BatchSlot from "./batch-slot";
 import TaskSlot from "./task-slot";
 import {useDraggable} from "@dnd-kit/core"
-
-const PROJECT_COLOURS: Record<string, { color: string; lightColor: string }> = {
-    "proj-digital": { color: "#2563EB", lightColor: "#EFF6FF" },
-    "proj-cloud": { color: "#0D9488", lightColor: "#F0FDFA" },
-    "proj-data": { color: "#7C3AED", lightColor: "#F5F3FF" },
-};
-
-const FALLBACK = { color: "#64748B", lightColor: "#F8FAFC" };
-
-export function getProjectColour(projectId: string) {
-    return PROJECT_COLOURS[projectId] ?? FALLBACK;
-}
+import { getProjectColour } from "./project-colour";
 
 export interface ProjectBlockProps {
-    block: ProjectBlockType;
-    tasks: Task[];
-    project: ProjectSummary;
-    timezone: string;
-    selected?: boolean;
-    onResize?: (blockId: string, to: Interval) => void;
-    onClick?: () => void;
-    onSetStatus?: (taskId: string, status: TaskStatus) => void;
+    readonly block: ProjectBlockType;
+    readonly tasks: Task[];
+    readonly project: ProjectSummary;
+    readonly timezone: string;
+    readonly selected?: boolean;
+    readonly onResize?: (blockId: string, to: Interval) => void;
+    readonly onClick?: () => void;
+    readonly onSetStatus?: (taskId: string, status: TaskStatus) => void;
 }
 
 export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize,onSetStatus }: ProjectBlockProps) {

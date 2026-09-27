@@ -42,14 +42,14 @@ const inputClass =
     "w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#002D72]/20";
 
 export interface CalendarEntryFormProps {
-    entry?: CalendarEntry,
-    timezone: string;
-    version: number,
-    defaultDate: string;
-    issues?: Issue[],
-    onSave: (dto: CalendarEntryDto) => void;
-    onDelete?: (entryId: string) => void;
-    onClose: () => void;
+    readonly entry?: CalendarEntry,
+    readonly timezone: string;
+    readonly version: number,
+    readonly defaultDate: string;
+    readonly issues?: Issue[],
+    readonly onSave: (dto: CalendarEntryDto) => void;
+    readonly onDelete?: (entryId: string) => void;
+    readonly onClose: () => void;
 }
 
 export default function CalendarEntryForm({
@@ -108,7 +108,6 @@ export default function CalendarEntryForm({
         else save(false);
     }
 
-    const inputClass = "w-full border border-slate-300 rounded px-2 py-1 text-sm";
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>

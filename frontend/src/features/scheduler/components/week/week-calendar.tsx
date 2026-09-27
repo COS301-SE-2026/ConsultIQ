@@ -23,7 +23,8 @@ import {
     isWeekendInstant
 
 } from "../../utils/scheduler.utils"
-import ProjectBlock, { getProjectColour } from "./project-block";
+import ProjectBlock from "./project-block";
+import { getProjectColour } from "./project-colour";
 import { useState } from "react";
 import CalendarEntry from "./calendar-entry"
 import { fromZonedTime } from "date-fns-tz"
@@ -66,7 +67,7 @@ interface AwaitingConfirmation {
 
 
 export interface WeekCalendarProps {
-    weekData?: WeekContainer;
+   readonly weekData?: WeekContainer;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {

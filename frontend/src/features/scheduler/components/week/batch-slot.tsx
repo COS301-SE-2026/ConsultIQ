@@ -1,10 +1,10 @@
 import  { type Slot, type Task, SCHEDULER_RULES  } from "../../types/scheduler.types"
 
 export interface BatchSlotProps{
-    slot: Slot;
-    tasks: Task[];
-    color: string;
-    selected?: boolean;
+    readonly slot: Slot;
+    readonly tasks: Task[];
+    readonly color: string;
+    readonly selected?: boolean;
 }
 
 export default function BatchSlot({slot, tasks, color, selected= false}:BatchSlotProps){

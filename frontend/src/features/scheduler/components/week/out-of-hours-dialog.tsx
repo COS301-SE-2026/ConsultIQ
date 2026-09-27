@@ -1,7 +1,7 @@
 interface OutOfHoursDialogProps{
-    isWeekend?: boolean;
-    onConfirm: () => void;
-    onCancel: () => void;
+    readonly isWeekend?: boolean;
+    readonly onConfirm: () => void;
+    readonly onCancel: () => void;
 }
 
 export default function OutOfHoursConfirmDialog({isWeekend =false, onConfirm,onCancel}:OutOfHoursDialogProps){

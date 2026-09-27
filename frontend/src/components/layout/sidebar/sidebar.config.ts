@@ -1,6 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { ShieldAlert } from "lucide-react";
-import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie,Calendar } from "lucide-react";
+import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie,Calendar,ShieldAlert } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",

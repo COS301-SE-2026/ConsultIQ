@@ -80,7 +80,6 @@ describe('AvailabilityFitScorer', () => {
             expect(result.score).toBe(1.0);
             expect(result.triggerHardExclusion).toBe(false);
 
-
             expect(result.details).toBe('Requires 50% capacity | Has 60% remaining');
         });
 

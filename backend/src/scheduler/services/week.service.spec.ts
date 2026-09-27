@@ -6,7 +6,7 @@ import { TimeService, LocalDate, Instant } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
-import { WeekContainer, Change, Task, ProjectBlock, Slot, ValidateContext } from '../dto/scheduler.dto';
+import { WeekContainer, Change, Task, ProjectBlock, Slot, ValidateContext, Interval } from '../dto/scheduler.dto';
 
 describe('WeekService', () => {
     let service: WeekService;
@@ -15,6 +15,7 @@ describe('WeekService', () => {
     let holidayService: HolidayService;
     let placerService: PlacerService;
     let validatorService: ValidatorService;
+    const mockWindow: Interval = { start: '2026-09-28T00:00:00Z', end: '2026-09-29T00:00:00Z' };
 
     const mockDate = new Date('2026-09-25T00:00:00Z');
 
@@ -266,6 +267,121 @@ describe('WeekService', () => {
             mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce(null);
 
             await expect(service.replan('INVALID_ID')).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('move_slot', () => {
+        it('throws NotFoundException if slot does not exist', () => {
+            const week = { id: 'week-1', slots: [] } as Partial<WeekContainer> as WeekContainer;
+            const change: Change = { type: 'move_slot', slotId: 'bad-id', to: mockWindow, origin: 'user', window: mockWindow };
+
+            expect(() => service['applyChange'](week, change)).toThrow(NotFoundException);
+        });
+
+        it('moves the slot, locks it, and applies tags', () => {
+            const week = {
+                id: 'week-1',
+                slots: [{ id: 'slot-1', start: '09:00', end: '10:00', locked: false, tags: [] } as Partial<Slot> as Slot],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'move_slot',
+                slotId: 'slot-1',
+                to: { start: '12:00', end: '13:00' },
+                tags: ['extended-hours'],
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            const resultWindow = service['applyChange'](week, change);
+
+            expect(resultWindow).toEqual(mockWindow);
+            expect(week.slots[0].start).toBe('12:00');
+            expect(week.slots[0].end).toBe('13:00');
+            expect(week.slots[0].locked).toBe(true);
+            expect(week.slots[0].tags).toEqual(['extended-hours']);
+        });
+    });
+
+    describe('move_block', () => {
+        it('throws NotFoundException if block does not exist', () => {
+            const week = { id: 'week-1', blocks: [] } as Partial<WeekContainer> as WeekContainer;
+            const change: Change = { type: 'move_block', blockId: 'bad-id', to: mockWindow, origin: 'user', window: mockWindow };
+
+            expect(() => service['applyChange'](week, change)).toThrow(NotFoundException);
+        });
+
+        it('updates block boundaries without altering mobility', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', start: '09:00', end: '10:00', mobility: 'fluid' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'move_block',
+                blockId: 'block-1',
+                to: { start: '12:00', end: '13:00' },
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].start).toBe('12:00');
+            expect(week.blocks[0].end).toBe('13:00');
+            expect(week.blocks[0].mobility).toBe('fluid');
+        });
+    });
+
+    describe('resize_block', () => {
+        it('updates boundaries and marks the block as userSized', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', start: '09:00', end: '10:00' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'resize_block',
+                blockId: 'block-1',
+                to: { start: '09:00', end: '15:00' },
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].start).toBe('09:00');
+            expect(week.blocks[0].end).toBe('15:00');
+
+            expect((week.blocks[0] as ProjectBlock & { userSized?: boolean }).userSized).toBe(true);
+        });
+    });
+
+    describe('pin_block', () => {
+        it('toggles mobility to pinned when pinned is true', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', mobility: 'fluid' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = { type: 'pin_block', blockId: 'block-1', pinned: true, origin: 'user', window: mockWindow };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].mobility).toBe('pinned');
+        });
+
+        it('toggles mobility to fluid when pinned is false', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', mobility: 'pinned' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = { type: 'pin_block', blockId: 'block-1', pinned: false, origin: 'user', window: mockWindow };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].mobility).toBe('fluid');
         });
     });
 });

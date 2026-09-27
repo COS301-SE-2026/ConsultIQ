@@ -89,7 +89,18 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
                             void onReduceEstimate(task.id, {tMax: newMaxMinutes, tMin: Math.min(task.tMin, newMaxMinutes), expectedVersion});
                         }}
                     />
+
+                    <AcceptMissOption onAccept={() => void onAcceptMiss(task.id, { expectedVersion })} />
                 </div>
+
+                    <footer className="flex justify-end border-t bg-slate-50 px-6 py-4">
+                        <button type="button"
+                            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                            onClick={onCancel}
+                        >
+                            Cancel
+                        </button>
+                    </footer>
             </section>
         </div>
     )
@@ -125,6 +136,21 @@ function ReduceEstimateOption({  maxHours, maxAllowedMinutes, canApply, onMaxHou
                     Apply
                 </button>
             </div>
+        </section>
+    );
+}
+
+function AcceptMissOption({ onAccept }: { onAccept: () => void }){
+    return (
+        <section className="rounded-md border border-slate-200 p-3">
+            <h3 className="text-sm font-medium text-slate-800"> Accept the miss </h3>
+            <p className="mt-1 text-xs text-slate-500">Keep the task as-is and acknowledge it will miss its deadline.</p>
+            <button type="button"
+                className="mt-3 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                onClick={onAccept}
+            >
+                Accept deadline miss
+            </button>
         </section>
     );
 }

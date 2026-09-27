@@ -166,7 +166,7 @@ export default function CalendarEntryForm({
                 {(timeError || issues.length > 0) && (
                     <ul className="flex flex-col gap-1">
                         {timeError && <li className="text-xs text-red-700">{timeError}</li>}
-                        {issues.map((issue, i) => (
+                        {issues.map((issue) => (
                             <li key={`${issue.code}-${issue.message}`} className={`text-xs ${issue.level === "violation" ? "text-red-700" : "text-amber-700"}`}>
                                 {issue.message}
                             </li>

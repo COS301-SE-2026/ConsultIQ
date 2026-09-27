@@ -111,17 +111,28 @@ export default function CalendarEntryForm({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
-            <Card className="w-[28rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-xl " onClick={(e) => e.stopPropagation()}>
+            <button 
+                type="button"
+                aria-label="Close"
+                className="absolute inset-0 bg-black/30 cursor-default"
+                onClick={onClose}
+            />
+            <Card 
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="entry-form-title"
+                className="relative w-[28rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl shadow-xl "
+            >
 
                 <div className="px-6 py-5" style={{backgroundColor: "#002D62"}}>
-                    <h2 className="text-base font-bold " style={{ color: "#fff" }}>{isEdit ? "Edit event" : "New event"}</h2>
+                    <h2 id="entry-form-title" className="text-base font-bold " style={{ color: "#fff" }}>{isEdit ? "Edit event" : "New event"}</h2>
                     <p className="text-xs  text-white/70 mt-1">Meetings, training, travel, leave and other commitments</p>
                 </div>
 
                 
                 <div className="px-6 py-5 flex flex-col gap-4">
-                <label  className="text-xs text-slate-600 flex flex-col gap-1">
-                    Type
+                <label  className="flex flex-col gap-1.5">
+                    <span className={labelClass}>Type</span>
                     <select className={inputClass} value={type} onChange={(e) => setType(e.target.value as CalendarEntryType)}>
                         {TYPE_OPTIONS.map((o) => (
                             <option key={o.value} value={o.value}>{o.label}</option>
@@ -156,7 +167,7 @@ export default function CalendarEntryForm({
                     <ul className="flex flex-col gap-1">
                         {timeError && <li className="text-xs text-red-700">{timeError}</li>}
                         {issues.map((issue, i) => (
-                            <li key={i} className={`text-xs ${issue.level === "violation" ? "text-red-700" : "text-amber-700"}`}>
+                            <li key={`${issue.code}-${issue.message}`} className={`text-xs ${issue.level === "violation" ? "text-red-700" : "text-amber-700"}`}>
                                 {issue.message}
                             </li>
                         ))}

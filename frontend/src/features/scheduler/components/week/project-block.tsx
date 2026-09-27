@@ -119,7 +119,18 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
             ref={setNodeRef}
             {...listeners}
             {...attributes}
-            onClick={onClick}
+            role="button"
+            tabIndex={0}
+            aria-pressed={selected}
+            onKeyDown={(e) =>{
+                if(e.target !== e.currentTarget) return;
+                listeners?.onKeyDown?.apply(e);
+                if(e.key === "Enter") onClick?.();
+            }}
+            onClick={(e) => {
+                if((e.target as HTMLElement).dataset.ResizeHandle !== undefined) return;
+                onClick?.();
+            }}
             className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none "
             style={{
                 top: displayTop,

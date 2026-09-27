@@ -86,7 +86,7 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, distance: 5 } }),
-        useSensor(KeyboardSensor),
+        useSensor(KeyboardSensor, {keyboardCodes: {start: ["Space"], cancel: ["Escape"], end:["Space", "Enter"]},}),
     )
 
     function handleResize(blockId: string, to: Interval) {

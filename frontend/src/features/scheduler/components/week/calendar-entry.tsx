@@ -36,8 +36,10 @@ export default function CalendarEntry({entry, timezone, onClick}:CalendarEntryPr
     const editable = entry.origin !== "public-holiday";
 
     return(
-        <div
-            onClick= {editable ? onClick : undefined}
+        <button
+            type="button"
+            disabled={!editable}
+            onClick= {onClick}
             className={`absolute left-0.5 right-0.5 rounded overflow-hidden select-none ${editable ? "cursor-pointer" : "cursor-default"}`}
             style={{
                 top,
@@ -69,7 +71,7 @@ export default function CalendarEntry({entry, timezone, onClick}:CalendarEntryPr
                     </div>
                 )}
             </div>
-        </div>
+        </button>
     );
 
 }

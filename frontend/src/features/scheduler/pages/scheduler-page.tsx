@@ -3,7 +3,7 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
 import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
-//import BlockDetailPanel from "../components/block-detail-panel";    
+import BlockDetailPanel from "../components/block-detail-panel";    
 import { designWeek, FIXTURE_NOW, FIXTURE_PROJECTS } from "../types/scheduler.fixtures";
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
@@ -19,8 +19,19 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
 
 export default function SchedulerPage() {
     const [backlogCollapsed, setBacklogCollapsed] = useState(false);
-    //const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null );
-    //const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null );
+    const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
+
+    const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
+
+    function selectNextBlock() {
+        if(designWeek.blocks.length === 0) return;
+
+        const currentIndex = designWeek.blocks.findIndex((block) => block.id === selectedBlockId);
+        const nextIndex = (currentIndex + 1) % designWeek.blocks.length;
+
+        setSelectedBlockId(designWeek.blocks[nextIndex].id); 
+    }
 
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -64,9 +75,25 @@ export default function SchedulerPage() {
                     </main>
 
                     {/* BlockDetail panel */}
-                    <aside className="w-80 flex-none border-l border-slate-200 bg-slate-50 flex flex-col">
-                        {/* BlockDetailPanel Stub  */}
-                    </aside>
+                    <BlockDetailPanel 
+                        block={selectedBlock}
+                        projectLabel={projects.find((project) => project.id === selectedBlock?.projectId)?.label ?? "Select a project block"}
+                        clientName={projects.find((project) => project.id === selectedBlock?.projectId)?.clientName ?? "" }
+                        tasks={blockTasks}
+                        now={Date.parse(FIXTURE_NOW)}
+                        expectedVersion={designWeek.version}
+                        onExpand={() => setSelectedBlockId(designWeek.blocks[0]?.id ?? null)}
+                        onClose={() => setSelectedBlockId(null)}
+                        onNextBlock={selectNextBlock}
+                        onAddTask={() => {}}
+                        onAutoRollover={() => {}}
+                        onEditTask={() => {}}
+                        onSetStatus={() => {}}
+                        onToggleSubtask={() => {}}
+                        onSendToBacklog={() => {}}
+                        onDeleteTask={() => {}}
+                        onSplitTask={() => {}}
+                    />
 
                 </div>
 

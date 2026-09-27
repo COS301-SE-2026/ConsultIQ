@@ -399,11 +399,14 @@ describe('ConsultantService', () => {
       },
     ];
 
+    // Define a reusable manager ID for these tests
+    const managerId = 'mock-manager-id';
+
     it('should include costToCompanyRate for CONSULTANT_MANAGER', async () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants[0].costToCompanyRate).toBe(650);
     });
 
@@ -411,7 +414,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'PROJECT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'PROJECT_MANAGER', managerId);
       expect(result.consultants[0].costToCompanyRate).toBeUndefined();
     });
 
@@ -419,7 +422,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants[0].primarySkills).toEqual(['TypeScript']);
     });
 
@@ -427,7 +430,8 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      // Added managerId as 4th argument
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants).toHaveLength(0);
       expect(result.total).toBe(0);
     });
@@ -436,46 +440,45 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
-      const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.page).toBe(3);
     });
 
     it('should return cached data and not call the database (Cache Hit)', async () => {
+      const expectedCacheKey = `cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER:manager:${managerId}`;
 
       const mockCachedData = { page: 1, limit: 10, total: 5, consultants: [] };
       mockCacheManager.get.mockResolvedValue(mockCachedData);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
 
-      expect(mockCacheManager.get).toHaveBeenCalledWith('cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER');
+      expect(mockCacheManager.get).toHaveBeenCalledWith(expectedCacheKey);
       expect(result).toEqual(mockCachedData);
       expect(mockPrismaService.consultant.findMany).not.toHaveBeenCalled();
       expect(mockPrismaService.consultant.count).not.toHaveBeenCalled();
     });
 
     it('should fetch from database and save to cache when cache is empty (Cache Miss)', async () => {
+      const expectedCacheKey = `cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER:manager:${managerId}`;
 
       mockCacheManager.get.mockResolvedValue(null);
-
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
-
-      expect(mockCacheManager.get).toHaveBeenCalled();
+      expect(mockCacheManager.get).toHaveBeenCalledWith(expectedCacheKey);
       expect(mockPrismaService.consultant.findMany).toHaveBeenCalled();
       expect(mockPrismaService.consultant.count).toHaveBeenCalled();
 
       expect(mockCacheManager.set).toHaveBeenCalledWith(
-        'cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER',
+        expectedCacheKey,
         { page: 1, limit: 10, total: 0, consultants: [] },
         300000
       );
     });
 
     it('should invalidate the cache when a consultant profile is updated', async () => {
-
       const invalidateSpy = jest.spyOn(service, 'invalidateConsultantCache').mockResolvedValue(undefined);
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -484,8 +487,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.update.mockResolvedValue({ id: '123' });
       mockPrismaService.$transaction.mockImplementation(async (callback) => callback(mockPrismaService));
 
-      await service.updateConsultantProfile('123', {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1');;
-
+      await service.updateConsultantProfile('123', {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
 
       expect(invalidateSpy).toHaveBeenCalled();
     });

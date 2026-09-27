@@ -81,14 +81,14 @@ echo " [Setup] Clean build of backend..."
 rm -rf dist
 npm run build
 
-DATABASE_URL="$TEST_DB_URL" npx --no-install prisma db push --accept-data-loss
-DATABASE_URL="$TEST_DB_URL" npx --no-install ts-node prisma/seed-test.ts
+NODE_ENV=test BCRYPT_ROUNDS=4 DATABASE_URL="$TEST_DB_URL" npx --no-install prisma db push --accept-data-loss
+NODE_ENV=test BCRYPT_ROUNDS=4 DATABASE_URL="$TEST_DB_URL" npx --no-install ts-node prisma/seed-test.ts
 
 # ==========================================
 # 3. Start the Backend Server
 # ==========================================
 echo "[Setup] Starting the backend server..."
-DATABASE_URL="$TEST_DB_URL" setsid node dist/main.js &
+NODE_ENV=test BCRYPT_ROUNDS=4 DATABASE_URL="$TEST_DB_URL" setsid node dist/main.js &
 SERVER_PID=$!
 cd "$ROOT_DIR"
 

@@ -13,7 +13,7 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ProjectStatus } from '@prisma/client';
+import { ProjectStatus, WorkModel } from '@prisma/client';
 
 export class UpdateProjectSkillDto {
   @IsOptional()
@@ -125,4 +125,10 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsEnum(ProjectStatus)
   status?: ProjectStatus;
+
+  @IsOptional()
+  @IsEnum(WorkModel, {
+    message: 'Work model must be one of: ONSITE, REMOTE, HYBRID.'
+  })
+  workModel?: WorkModel;
 }

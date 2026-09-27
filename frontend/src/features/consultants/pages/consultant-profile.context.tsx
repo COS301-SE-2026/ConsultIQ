@@ -28,6 +28,10 @@ export interface ProfileState {
   city: string;
   province: string;
   postalCode: string;
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  formattedAddress?: string;
   availability: "AVAILABLE" | "UNAVAILABLE" | "ON_LEAVE";
   costToCompany: number;
   skills: CreateConsultantSkillPayload[];
@@ -46,11 +50,15 @@ const defaultState: ProfileState = {
   phone: "",
   nationality: "",
   addressLine1: "",
-  addressLine2:"",
+  addressLine2: "",
   suburb: "",
   city: "",
-  province:"",
-  postalCode:"",
+  province: "",
+  postalCode: "",
+  latitude: undefined,
+  longitude: undefined,
+  placeId: "",
+  formattedAddress: "",
   availability: "AVAILABLE",
   costToCompany: 0,
   skills: [],

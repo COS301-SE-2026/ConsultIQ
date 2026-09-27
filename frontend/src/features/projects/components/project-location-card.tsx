@@ -27,6 +27,10 @@ export default function ProjectLocationCard({ data, errors = {}, onChange }: Pro
       onChange("city", parsed.city ?? "");
       onChange("province",parsed.province);
       onChange("postalCode",(parsed.postalCode ?? "").replace(/\D/g, ""));
+      onChange("latitude",parsed.latitude ?? undefined);
+      onChange("longitude",parsed.longitude ?? undefined);
+      onChange("placeId",parsed.placeId ?? "");
+      onChange("formattedAddress",parsed.formattedAddress ?? "");
     },
   });
 

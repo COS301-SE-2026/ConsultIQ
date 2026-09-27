@@ -3,6 +3,7 @@ import { Card } from "../../../components/ui/card";
 import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 import { toast } from "sonner";
+import { normalizeCompetency } from "../../consultants/types/consultant.types";
 
 interface ProjectSkillsCardProps {
   readonly skills: ProjectSkillData[];
@@ -111,9 +112,9 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
               onChange={(e) => setCompetency(e.target.value)}
               className="h-14 rounded border px-4 outline-none"
             >
-              <option>BEGINNER</option>
-              <option>INTERMEDIATE</option>
-              <option>EXPERT</option>
+              <option value="BEGINNER">{normalizeCompetency("BEGINNER")}</option>
+              <option value="INTERMEDIATE">{normalizeCompetency("INTERMEDIATE")}</option>
+              <option value="EXPERT">{normalizeCompetency("EXPERT")}</option>
             </select>
           </div>
 

@@ -17,6 +17,7 @@ import { MatchRunService } from './services/match-run.service';
 import { BullModule } from '@nestjs/bullmq';
 import { MatchRunProcessor } from './queues/match-run.processor';
 import { LocationModule } from '../location/location.module';
+import { MatchScoringExecutorService } from './services/match-scoring-executor.service';
 
 @Module({
   imports: [
@@ -50,7 +51,12 @@ import { LocationModule } from '../location/location.module';
     MatchRunAggregationService,
     WeightedAggregator,
     MatchRunProcessor,
+    MatchScoringExecutorService,
   ],
-  exports: [ScoringPipelineService],
+  exports: [
+    ScoringPipelineService,
+    DataIngestionService,
+    MatchScoringExecutorService,
+  ],
 })
 export class ScoringModule {}

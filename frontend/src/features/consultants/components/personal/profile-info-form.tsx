@@ -268,7 +268,7 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
               }
             </span>
             
-            <div className="relative">
+            <div className="relative mb-4">
               <span
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-semibold select-none z-10"
                 style={{ color: "var(--color-primary)" }}

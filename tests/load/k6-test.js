@@ -2,6 +2,7 @@ import http from 'k6/http';
 import { check, sleep, group } from 'k6';
 import { SharedArray } from 'k6/data';
 import { Counter, Rate, Trend } from 'k6/metrics';
+import { login, withCsrfHeader, syncCsrfFromResponse } from './k6-helper.js';
 
 const users = new SharedArray('users', function () {
     return JSON.parse(open('./test-users.json'));
@@ -247,20 +248,73 @@ function pickConsultantManager() {
     return consultantManagerUsers[Math.floor(Math.random() * consultantManagerUsers.length)]; // NOSONAR
 }
 
-function login(baseUrl, user) {
-    const res = http.post(`${baseUrl}/auth/login`, JSON.stringify({
-        email: user.email,
-        password: user.password,
-    }), {
-        headers: { 'Content-Type': 'application/json' },
-        tags: { endpoint: 'auth_login' },
-    });
-    check(res, {
-        'login successful': (r) => r.status === 200 || r.status === 201,
-        'has auth cookie': (r) => r.cookies['your_cookie_name'] !== undefined || r.headers['Set-Cookie'] !== undefined,
-    });
-    return res;
-}
+// let currentCsrfToken = null;
+
+// function syncCsrfFromResponse(res) {
+//     if (!res || !res.cookies || !res.cookies['XSRF-TOKEN']) return null;
+
+//     const csrfCookie = res.cookies['XSRF-TOKEN'];
+//     const token = Array.isArray(csrfCookie) ? csrfCookie[0]?.value : csrfCookie.value;
+
+//     if (token) {
+//         currentCsrfToken = token;
+//     }
+
+//     return token || null;
+// }
+
+// function getCsrfToken() {
+//     if (currentCsrfToken) return currentCsrfToken;
+
+//     const cookies = http.cookieJar().cookiesForURL(__ENV.TARGET_URL || 'http://localhost:3000');
+//     const jarEntries = Array.isArray(cookies) ? cookies : Object.values(cookies || {});
+
+//     for (let i = 0; i < jarEntries.length; i++) {
+//         const cookie = jarEntries[i];
+//         const name = cookie && (cookie.name || cookie.key || cookie[0]?.name);
+//         if (name === 'XSRF-TOKEN') {
+//             const value = cookie && (cookie.value || cookie[0]?.value);
+//             if (value) {
+//                 currentCsrfToken = value;
+//                 return value;
+//             }
+//         }
+//     }
+
+//     return null;
+// }
+
+// function withCsrfHeader(baseUrl, options = {}) {
+//     const requestOptions = { ...options };
+//     const headers = { ...(requestOptions.headers || {}) };
+//     const csrfToken = getCsrfToken();
+
+//     if (csrfToken && !headers['X-CSRF-Token'] && !headers['x-csrf-token']) {
+//         headers['X-CSRF-Token'] = csrfToken;
+//     }
+
+//     requestOptions.headers = headers;
+//     return requestOptions;
+// }
+
+// function login(baseUrl, user) {
+//     const res = http.post(`${baseUrl}/auth/login`, JSON.stringify({
+//         email: user.email,
+//         password: user.password,
+//     }), {
+//         headers: { 'Content-Type': 'application/json' },
+//         tags: { endpoint: 'auth_login' },
+//     });
+
+//     syncCsrfFromResponse(res);
+
+//     check(res, {
+//         'login successful': (r) => r.status === 200 || r.status === 201,
+//         'has auth cookie': (r) => r.cookies['your_cookie_name'] !== undefined || r.headers['Set-Cookie'] !== undefined,
+//         'csrf cookie established': () => !!getCsrfToken(),
+//     });
+//     return res;
+// }
 
 function getProjectId(response) {
     if (response.status !== 200) {
@@ -278,18 +332,18 @@ function getProjectId(response) {
     return undefined;
 }
 
-function getConsultantId(response) {
-    try {
-        const body = response.json();
-        const consultants = Array.isArray(body) ? body : body.consultants;
-        if (Array.isArray(consultants) && consultants.length > 0) {
-            return consultants[Math.floor(Math.random() * consultants.length)].id; // NOSONAR
-        }
-    } catch (error) {
-        console.log(`Failed to parse consultants: ${error.message}`);
-    }
-    return undefined;
-}
+// function getConsultantId(response) {
+//     try {
+//         const body = response.json();
+//         const consultants = Array.isArray(body) ? body : body.consultants;
+//         if (Array.isArray(consultants) && consultants.length > 0) {
+//             return consultants[Math.floor(Math.random() * consultants.length)].id; // NOSONAR
+//         }
+//     } catch (error) {
+//         console.log(`Failed to parse consultants: ${error.message}`);
+//     }
+//     return undefined;
+// }
 
 function randomWeights() {
     const raw = Array.from({ length: 5 }, () => Math.random()); // NOSONAR
@@ -403,9 +457,9 @@ export function readHeavyJourney(data) {
             });
             check(projectRes, { 'project details loaded': (r) => r.status === 200 });
 
-            const matchRunRes = http.post(`${data.baseUrl}/projects/${projectId}/match-run`, null, {
+            const matchRunRes = http.post(`${data.baseUrl}/projects/${projectId}/match-run`, null, withCsrfHeader(data.baseUrl, {
                 tags: { endpoint: 'match_run_enqueue' },
-            });
+            }));
 
             matchRunEnqueueDuration.add(matchRunRes.timings.duration);
 
@@ -512,10 +566,10 @@ export function writeProjectJourney(data) {
         const payload = JSON.stringify({
             description: `Load test update ${Date.now()}`,
         });
-        const res = http.patch(`${data.baseUrl}/projects/${projectId}`, payload, {
+        const res = http.patch(`${data.baseUrl}/projects/${projectId}`, payload, withCsrfHeader(data.baseUrl, {
             headers: { 'Content-Type': 'application/json' },
             tags: { endpoint: 'project_update' },
-        });
+        }));
 
         if (res.status !== 200) {
             console.log(`[WP03] Project Update Failed | User: ${JSON.stringify(sanitizeUser(user))} | ProjectId: ${projectId} | ProjectDetails: ${JSON.stringify(projectDetails)} | Status: ${res.status} | Body: ${res.body}`);
@@ -539,10 +593,10 @@ export function writeProjectJourney(data) {
                 { factorName: 'AVAILABILITY', overrideWeight: availability, active: true, hardExclusionEnabled: false },
             ],
         });
-        const res = http.put(`${data.baseUrl}/config/scoring/${projectId}/scoring-override`, payload, {
+        const res = http.put(`${data.baseUrl}/config/scoring/${projectId}/scoring-override`, payload, withCsrfHeader(data.baseUrl, {
             headers: { 'Content-Type': 'application/json' },
             tags: { endpoint: 'scoring_override' },
-        });
+        }));
 
         if (res.status !== 200 && res.status !== 201) {
             console.log(`[WP04] Scoring Override Failed | Status: ${res.status} | Body: ${res.body}`);
@@ -569,8 +623,19 @@ export function writeConsultantJourney(data) {
     });
 
     group('WC02_Load_Consultants', function () {
-        const res = http.get(`${data.baseUrl}/consultants`, { tags: { endpoint: 'consultants_list' } });
-        consultantId = getConsultantId(res);
+        const res = http.get(`${data.baseUrl}/consultants`, {
+            tags: { endpoint: 'consultants_list' },
+        });
+
+        if (res.status === 200) {
+            try {
+                const body = res.json();
+                const candidates = Array.isArray(body) ? body : (Array.isArray(body.consultants) ? body.consultants : []); // NOSONAR
+                consultantId = candidates.length > 0 ? candidates[0].id : null;
+            } catch (error) {
+                console.log(`[WC02] Failed to parse consultant list: ${error.message}`);
+            }
+        }
     });
 
     sleep(Math.random() * 1 + 0.5); // NOSONAR
@@ -587,10 +652,10 @@ export function writeConsultantJourney(data) {
         const payload = JSON.stringify({
             availability: availabilityOptions[Math.floor(Math.random() * availabilityOptions.length)], // NOSONAR
         });
-        const res = http.patch(`${data.baseUrl}/consultants/${consultantId}`, payload, {
+        const res = http.patch(`${data.baseUrl}/consultants/${consultantId}`, payload, withCsrfHeader(data.baseUrl, {
             headers: { 'Content-Type': 'application/json' },
             tags: { endpoint: 'consultant_update' },
-        });
+        }));
 
         if (res.status !== 200) {
             console.log(`[WC03] Consultant Update Failed | Status: ${res.status} | Body: ${res.body}`);
@@ -620,9 +685,13 @@ export function authHeavyJourney(data) {
     group('A02_Concurrent_Refresh', function () {
 
         const batchRequests = Array.from({ length: concurrentRefreshCalls }, () => (
-            ['POST', `${data.baseUrl}/auth/refresh`, null, { tags: { endpoint: 'auth_refresh' } }]
+            ['POST', `${data.baseUrl}/auth/refresh`, null, withCsrfHeader(data.baseUrl, { tags: { endpoint: 'auth_refresh' } })]
         ));
         const responses = http.batch(batchRequests);
+        const refreshSuccessResponse = responses.find((r) => (r.status === 200 || r.status === 201) && r.cookies && r.cookies['XSRF-TOKEN']); // NOSONAR
+        if (refreshSuccessResponse) {
+            syncCsrfFromResponse(refreshSuccessResponse);
+        }
 
         const successCount = responses.filter((r) => r.status === 200 || r.status === 201).length;
         const rejectedCount = responses.filter((r) => r.status === 401 || r.status === 403).length;
@@ -645,9 +714,9 @@ export function authHeavyJourney(data) {
     sleep(Math.random() * 1 + 0.5); // NOSONAR
 
     group('A03_Logout', function () {
-        const res = http.post(`${data.baseUrl}/auth/logout`, null, {
+        const res = http.post(`${data.baseUrl}/auth/logout`, null, withCsrfHeader(data.baseUrl, {
             tags: { endpoint: 'auth_logout' },
-        });
+        }));
         logoutDuration.add(res.timings.duration);
         logoutSuccess.add(check(res, {
             'logout successful': (r) => r.status === 200 || r.status === 201 || r.status === 204,

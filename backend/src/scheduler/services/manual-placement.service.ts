@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
@@ -18,6 +18,7 @@ export class ManualPlacementService {
     // -----------------------------------------------------------------
 
     public async moveSlot(
+        consultantId: string,
         slotId: string,
         to: Interval,
         confirmedOverride?: boolean,
@@ -32,9 +33,11 @@ export class ManualPlacementService {
             throw new NotFoundException(`Task slot ${slotId} not found`);
         }
 
-        const consultantId = dbSlot.week.consultantId;
-        const weekStart = dbSlot.week.weekStart.toISOString().split('T')[0] as LocalDate;
+        if (dbSlot.week.consultantId !== consultantId) {
+            throw new ForbiddenException('You do not have permission to modify this slot.');
+        }
 
+        const weekStart = dbSlot.week.weekStart.toISOString().split('T')[0] as LocalDate;
         const week = await this.weekService.getWeek(consultantId, weekStart);
         const window = this.dayWindow(to.start, week.timezone);
 
@@ -50,60 +53,55 @@ export class ManualPlacementService {
         } as Change;
 
         const ctx: ValidateContext = { bumpedEntityIds: [slotId], allocations: [] };
-
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
     // -----------------------------------------------------------------
-    // PATCH /scheduler/blocks/:blockId/move
+    // PATCH /scheduler/blocks/:blockId/move & resize
     // -----------------------------------------------------------------
+
+    private async applyBlockChange(
+        consultantId: string,
+        blockId: string,
+        type: 'move_block' | 'resize_block',
+        to: Interval,
+        confirmedOverride?: boolean,
+        expectedVersion?: number,
+    ): Promise<CommitResult> {
+        const { week } = await this.loadBlockContext(consultantId, blockId);
+        const window = this.dayWindow(to.start, week.timezone);
+
+        const change: Change = {
+            type,
+            blockId,
+            to,
+            origin: 'user',
+            window,
+            confirmedOverride,
+        } as Change;
+
+        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
+        return this.weekService.commit(week, change, ctx, expectedVersion);
+    }
 
     public async moveBlock(
+        consultantId: string,
         blockId: string,
         to: Interval,
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { week } = await this.loadBlockContext(blockId);
-        const window = this.dayWindow(to.start, week.timezone);
-
-        const change: Change = {
-            type: 'move_block',
-            blockId,
-            to,
-            origin: 'user',
-            window,
-            confirmedOverride,
-        };
-
-        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
-        return this.weekService.commit(week, change, ctx, expectedVersion);
+        return this.applyBlockChange(consultantId, blockId, 'move_block', to, confirmedOverride, expectedVersion);
     }
 
-    // -----------------------------------------------------------------
-    // PATCH /scheduler/blocks/:blockId/resize
-    // -----------------------------------------------------------------
-
     public async resizeBlock(
+        consultantId: string,
         blockId: string,
         to: Interval,
         confirmedOverride?: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { week } = await this.loadBlockContext(blockId);
-        const window = this.dayWindow(to.start, week.timezone);
-
-        const change: Change = {
-            type: 'resize_block',
-            blockId,
-            to,
-            origin: 'user',
-            window,
-            confirmedOverride,
-        };
-
-        const ctx: ValidateContext = { bumpedEntityIds: [blockId], allocations: [] };
-        return this.weekService.commit(week, change, ctx, expectedVersion);
+        return this.applyBlockChange(consultantId, blockId, 'resize_block', to, confirmedOverride, expectedVersion);
     }
 
     // -----------------------------------------------------------------
@@ -111,11 +109,12 @@ export class ManualPlacementService {
     // -----------------------------------------------------------------
 
     public async pinBlock(
+        consultantId: string,
         blockId: string,
         pinned: boolean,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { dbBlock, week } = await this.loadBlockContext(blockId);
+        const { dbBlock, week } = await this.loadBlockContext(consultantId, blockId);
         const window = this.dayWindow(dbBlock.start.toISOString(), week.timezone);
 
         const change: Change = {
@@ -134,7 +133,7 @@ export class ManualPlacementService {
     // Private helpers
     // -----------------------------------------------------------------
 
-    private async loadBlockContext(blockId: string) {
+    private async loadBlockContext(consultantId: string, blockId: string) {
         const dbBlock = await this.prisma.schedulerProjectBlock.findUnique({
             where: { id: blockId },
             include: { week: true },
@@ -144,7 +143,10 @@ export class ManualPlacementService {
             throw new NotFoundException('Project block ' + blockId + ' not found');
         }
 
-        const consultantId = dbBlock.week.consultantId;
+        if (dbBlock.week.consultantId !== consultantId) {
+            throw new ForbiddenException('You do not have permission to modify this project block.');
+        }
+
         const weekStart = dbBlock.week.weekStart.toISOString().split('T')[0] as LocalDate;
         const week = await this.weekService.getWeek(consultantId, weekStart);
 

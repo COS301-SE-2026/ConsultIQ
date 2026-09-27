@@ -85,6 +85,7 @@ export interface Task {
     carriedOver: boolean;
     placement: 'placed' | 'unplaced';
     unplacedReason?: UnplacedReason;
+    priorityScore?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -123,6 +124,19 @@ export interface CalendarEntry {
     end: string;
     tags: string[];
     origin: 'user' | 'feed' | 'system' | 'public-holiday';
+}
+export interface CalendarEntryDto {
+    id?: string;
+    weekId?: string;
+
+    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc';
+    start: string;
+    end: string;
+    tags: string[];
+    origin: 'user' | 'feed' | 'system' | 'public-holiday';
+
+    confirmedOverride?: boolean;
+    expectedVersion?: number;
 }
 
 export interface PublicHoliday {
@@ -216,6 +230,8 @@ export type Change =
     | (BaseChange & { type: 'resize_block'; blockId: string; to: string })
     | (BaseChange & { type: 'set_project_hours'; allocations: AllocationSummary[] })
     | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number })
+    | (BaseChange & { type: 'calendar_upsert'; entry: CalendarEntryDto; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'calendar_remove'; entryId: string; origin: 'user' | 'system'; window: Interval })
     | { type: 'replan'; window: Interval };
 
 

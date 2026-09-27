@@ -1,7 +1,7 @@
 import { useState, type DragEvent } from "react";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import type { ProjectBlock, Task, SetTaskStatusDto, ToggleSubtaskDto } from "../types/scheduler.types";
-import  { getNextStatus , isOverdue} from "./primitives";
+import  { getNextStatus , isOverdue} from "./scheduler-utils";
 import TaskCard from "./task-card";
 
 interface BlockDetailPanelProps {

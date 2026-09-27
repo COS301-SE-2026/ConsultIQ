@@ -1,7 +1,8 @@
 import { useState, type DragEvent } from "react";
 import { ArrowRight, GripVertical, X } from "lucide-react";
 import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto } from "../types/scheduler.types";
-import { ComplexityBars, STATUS_LABELS, formatDuration, getStartTime } from "./primitives";
+import { ComplexityBars } from "./primitives";
+import {STATUS_LABELS, formatDuration, getStartTime } from "./scheduler-utils";
 
 interface TaskCardProps {
     task: Task;

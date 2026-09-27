@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TimeService } from './time.service';
 import { BadRequestException } from '@nestjs/common';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
+import { Instant } from './time.service';
 
 jest.mock('./scheduler-rules.constant', () => ({
     SCHEDULER_RULES: {
@@ -140,6 +141,35 @@ describe('TimeService', () => {
             ['the range spills outside of core hours', '2026-09-21T14:00:00Z', '2026-09-21T16:00:00Z']
         ])('should return false if %s', (_, start, end) => {
             expect(service.isRangeInCoreHours(start, end, 'Africa/Johannesburg')).toBe(false);
+        });
+    });
+
+    describe('restOfDayWindow', () => {
+        it.each([
+            ['mid-week SAST to Sunday midnight', '2026-09-23T12:00:00Z', 'Africa/Johannesburg', '2026-09-27T22:00:00Z'],
+            ['weekend rollover (Sunday morning to Sunday midnight)', '2026-09-27T08:00:00Z', 'Africa/Johannesburg', '2026-09-27T22:00:00Z'],
+            ['maintains strict timezone boundaries (UTC)', '2026-09-23T12:00:00Z', 'UTC', '2026-09-28T00:00:00Z']
+        ])('calculates %s', (_, instant, timezone, expectedEnd) => {
+            const result = service.restOfDayWindow(instant as Instant, timezone);
+
+            expect(result.start).toBe(instant);
+            expect(result.end).toBe(expectedEnd);
+        });
+    });
+
+    describe('localDateToInstant', () => {
+        it('calls atLocal with 00:00 to generate a midnight instant', () => {
+            const atLocalSpy = jest.spyOn(service, 'atLocal');
+            const date = '2026-09-21';
+            const timezone = 'Africa/Johannesburg';
+
+            service.localDateToInstant(date, timezone);
+
+            expect(atLocalSpy).toHaveBeenCalledWith(date, '00:00', timezone);
+        });
+        it('returns the generated Instant successfully', () => {
+            const result = service.localDateToInstant('2026-09-21', 'UTC');
+            expect(result).toBe('2026-09-21T00:00:00Z');
         });
     });
 });

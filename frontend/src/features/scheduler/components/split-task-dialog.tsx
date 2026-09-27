@@ -54,6 +54,9 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
     const tooSmall = atMinutes < MIN_HALF_MINUTES ||total - atMinutes < MIN_HALF_MINUTES;
     const invalid = tooSmall || Boolean(straddledSubtask);
 
+    const firstHalf = spans.filter((span) => span.start < atMinutes).map((span) => span.subtask);
+    const secondHalf = spans.filter((span) => span.start >= atMinutes).map((span) => span.subtask);
+
     return(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
             role="presentation"
@@ -103,6 +106,19 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                                 : `Each part needs at least ${formatDuration(MIN_HALF_MINUTES)}.`}
                             </p>
                         )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <SplitPreview 
+                                label="Part 1"
+                                minutes={atMinutes}
+                                subtasks={firstHalf}
+                            />
+                            <SplitPreview 
+                                label="Part 2"
+                                minutes={total - atMinutes}
+                                subtasks={secondHalf}
+                            />
+                        </div>
                         </>
                     )}
                 </div>
@@ -124,6 +140,31 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                     </button>
                 </footer>
             </section>
+        </div>
+    );
+}
+
+function SplitPreview ({label, minutes, subtasks} :{
+    label: string;
+    minutes: number;
+    subtasks: Subtask[];
+}){
+    return (
+        <div className="rounded-md border border-slate-200 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+            <p className="mt-0.5 text-sm font-medium text-slate-900">{formatDuration(minutes)}</p>
+        
+            {subtasks.length > 0 ? (
+                <ul className="mt-2 space-y-1">
+                    {subtasks.map((subtask) => (
+                        <li key={subtask.id} className="text-xs text-slate-600">
+                            {subtask.title}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="mt-2 text-xs text-slate-400"> No subtasks </p>
+            )}
         </div>
     );
 }

@@ -41,10 +41,10 @@ function sortTasks(tasks: Task[], mode: SortMode): Task[] {
 
 
 
-export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, collapsed, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
+export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
 
     const [activeProject, setActiveProject] = useState<string | "all">("all");
-    const [sortMode, setSortMode] = useState<SortMode>("priority");
+    const [sortMode, _setSortMode] = useState<SortMode>("priority");
 
     const  summaryByTaskId = useMemo(() => {
         const map = new Map<string, UnplacedTaskSummary>();
@@ -61,7 +61,9 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
     const filtered = activeProject === "all" ? tasks : tasks.filter((t) => t.projectId === activeProject);
     
     const unplacedTasks = sortTasks(filtered.filter((t) => summaryByTaskId.has(t.id)), sortMode);
-    const normalTasks = sortTasks(filtered.filter((t) => !summaryByTaskId.has(t.id)), sortMode);
+    // const normalTasks = sortTasks(filtered.filter((t) => !summaryByTaskId.has(t.id)), sortMode);
+
+    const countFor = (projectId: string | "all") => projectId === "all" ? tasks.length : tasks.filter((t) => t.projectId === projectId).length;
 
     return (
         <aside className="flex h-full w-[280px] flex-col border-r border-slate-200 bg-white">
@@ -97,6 +99,20 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                 </div>
             </div>
 
+            <div className="flex flex-wrap gap-1.5 border-b border-slate-200 px-3 py-2">
+                <FilterChip label="All" count={countFor("all")} active={activeProject === "all"} onClick={() => setActiveProject("all")} />
+                {projects.map((p) => (
+                    <FilterChip 
+                        key={p.id}
+                        label={p.label}
+                        count={countFor(p.id)}
+                        color={p.color}
+                        active={activeProject === p.id}
+                        onClick={() => setActiveProject(p.id)}
+                    />
+                ))}
+            </div>
+
             <div className="flex-1 space-y-4 overflow-y-auto p-3">
                 {tasks.length === 0 && <p className="pt-6 text-center text-sm text-slate-400">Backlog is empty.</p>}
 
@@ -128,4 +144,23 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
         </aside>
     )
 
+}
+
+function FilterChip ({ label, count, active, color, onClick }: {
+    label: string;
+    count: number;
+    active: boolean;
+    color?: string;
+    onClick: () => void;
+}){ 
+    return (
+        <button type="button"
+            onClick={onClick}
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${
+            active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+        >
+            {color && !active && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />}
+            {label} {count}
+        </button>
+    );
 }

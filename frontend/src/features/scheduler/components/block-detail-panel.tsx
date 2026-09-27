@@ -2,7 +2,7 @@ import { useState, type DragEvent } from "react";
 import { ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import type { ProjectBlock, Task, SetTaskStatusDto, ToggleSubtaskDto } from "../types/scheduler.types";
 import  { getNextStatus , isOverdue} from "./primitives";
-//import TaskCard from "./task-card";
+import TaskCard from "./task-card";
 
 interface BlockDetailPanelProps {
     block?: ProjectBlock;
@@ -27,13 +27,23 @@ interface BlockDetailPanelProps {
 
 type Tab = "all" | "open" | "done";
 
+function formatTimeRange(start: string, end: string):string {
+    const fmt = (iso: string) => new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(iso));
+  return `${fmt(start)} \u2013 ${fmt(end)}`
+}
+
+function formatHours(start: string, end: string): string {
+    const hours = (Date.parse(end) - Date.parse(start)) / 3_600_000;
+    return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(2).replace(/0$/, "")}h`;
+}
 
 export default function BlockDetailPanel({ block, projectLabel, clientName, tasks, now, expectedVersion, onExpand, onClose, onNextBlock, onAddTask, onAutoRollover, onEditTask, onSetStatus, onToggleSubtask, onSendToBacklog, onDeleteTask, onSplitTask, onDragStart }: BlockDetailPanelProps) {
-    const [tab, seTab] = useState<Tab>("all");
+    const [tab, setTab] = useState<Tab>("all");
 
     if(!block){
         return (
             <button type="button" aria-label="Expand block detail panel"
+                onClick={onExpand}
                 className="flex h-full w-8 items-center justify-center border-l border-slate-200 bg-slate-50 hover:bg-slate-100"
             >
                 <ChevronLeft size={16} className="text-slate-400" />
@@ -66,13 +76,14 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                         </button> 
 
                         <button type="button" aria-label="Next block"
-                            onClick={onAddTask}
+                            onClick={onNextBlock}
                             className="rounded p-1 hover:bg-white/10"
                         >
                             <ChevronRight size={18} />
                         </button>
 
                         <button type="button" aria-label="Close panel"
+                            onClick={onClose}
                             className="rounded p-1 hover:bg-white/10"
                         >
                             <X size={18} />
@@ -81,6 +92,8 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-sm text-slate-200">
+                    <span>{formatTimeRange(block.start, block.end)}</span>
+                    <span>{formatHours(block.start, block.end)}</span>
                 </div>
 
                 <div className="mt-3">
@@ -107,6 +120,47 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                     </button>
                 </div>
             </div>
+
+            <div className="flex border-b border-slate-200">
+                {([
+                    ["all", "All", tasks.length],
+                    ["open", "Open", openTasks.length],
+                    ["done", "Done", doneTasks.length]
+                ] as const).map(([key, Label, count]) => (
+                    <button key={key} type="button" onClick={() => setTab(key)} >
+                        {Label} ({count})
+                    </button>
+                ))}
+            </div>
+            
+            <div className="flex-1 space-y-3 overflow-y-auto p-3">
+                {visibleTasks.length ===0 && (
+                    <p className="pt-6 text-center text-sm text-slate-400"> Nothing here.</p>
+                )}
+                {visibleTasks.map((task) => {
+                    const completed = task.subtasks.filter((s) => s.done).length;
+                    return (
+                        <TaskCard 
+                            key={task.id}
+                            task={task}
+                            now={now}
+                            expectedVersion={expectedVersion}
+                            subtaskProgress={{ completed, total: task.subtasks.length }}
+                            nextStatus={getNextStatus(task.status) ?? undefined}
+                            onEdit={onEditTask}
+                            onSetStatus={onSetStatus}
+                            onToggleSubtask={onToggleSubtask}
+                            onSendToBacklog={onSendToBacklog}
+                            onDelete={onDeleteTask}
+                            onSplit={onSplitTask}
+                            onDragStart={onDragStart}
+                        />
+                    )
+                })
+
+                }
+            </div>
+
         </aside>
     )
 }

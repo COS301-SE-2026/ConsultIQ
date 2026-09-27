@@ -28,7 +28,7 @@ export default function Dayheader({
 
     return (
         <div
-            className="flex-1 border-l py-2 px-1 flex flex-col items-center gap-0.5 select-none"
+            className="flex-1 border-l min-w-0 py-2 px-1 flex flex-col items-center gap-0.5 select-none"
             style={{
                 borderColor: '#E2E8F0',
                 backgroundColor: getBgColour(),

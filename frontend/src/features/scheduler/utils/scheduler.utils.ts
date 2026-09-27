@@ -1,4 +1,4 @@
-import type {Task} from "../types/scheduler.types";
+import type {Interval, Task} from "../types/scheduler.types";
 
 export type LocalDate = string;
 export type LocalTime = string;
@@ -65,7 +65,7 @@ export function isOutOfHours(start: LocalTime, end: LocalTime): boolean{
 }
 
 export function blockTop(start: LocalTime): number{
-    return ((timeToMinutes(start)-CORE_START_HOUR * 60)/ 60) * ROW_HEIGHT_PX;
+    return ((timeToMinutes(start)-DAY_START_HOUR * 60)/ 60) * ROW_HEIGHT_PX;
 }
 
 export function blockHeight(start: LocalTime, end: LocalTime): number{
@@ -77,4 +77,15 @@ export function priorityScore(task: Task, now = Date.now()): number {
         ? (Date.parse(task.deadline) - now) / 3_600_000 : Infinity;
     
     return task.urgency + task.complexity + 1  / Math.max(hoursToDeadline, 1);
+}
+
+export function isIntervalOutOfHours(interval: Interval, timeZone: string): boolean{
+    const startMin = timeToMinutes(instantToLocalTime(interval.start, timeZone));
+    const endMin = startMin + (Date.parse(interval.end) - Date.parse(interval.start)) / 60_000;
+    return startMin < CORE_START_HOUR * 60 || endMin > CORE_END_HOUR * 60;
+}
+
+export function isWeekendInstant(instant: string, timeZone: string): boolean{
+    const day = new Date(instantToLocalDate(instant, timeZone) + "T00:00:00Z").getUTCDay();
+    return day === 0 || day === 6;
 }

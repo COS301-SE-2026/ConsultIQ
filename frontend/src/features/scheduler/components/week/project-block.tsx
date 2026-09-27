@@ -1,10 +1,11 @@
 import type { Interval, ProjectBlock as ProjectBlockType, Task, TaskStatus } from "../../types/scheduler.types";
 import type { ProjectSummary } from "../../types/scheduler.fixtures";
-import { blockTop, blockHeight, instantToLocalTime, priorityScore, ROW_HEIGHT_PX } from "../../utils/scheduler.utils";
-import { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { blockTop, blockHeight, instantToLocalTime, priorityScore, ROW_HEIGHT_PX , timeToMinutes,DAY_START_HOUR,DAY_END_HOUR} from "../../utils/scheduler.utils";
+import { useState, type PointerEvent as ReactPointerEvent, } from "react";
 import ResizeHandle from "./resize-handle";
 import BatchSlot from "./batch-slot";
 import TaskSlot from "./task-slot";
+import {useDraggable} from "@dnd-kit/core"
 
 const PROJECT_COLOURS: Record<string, { color: string; lightColor: string }> = {
     "proj-digital": { color: "#2563EB", lightColor: "#EFF6FF" },
@@ -31,6 +32,7 @@ export interface ProjectBlockProps {
 
 export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize,onSetStatus }: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
+    const {attributes,listeners, setNodeRef, isDragging}= useDraggable({id:block.id});
 
     const start = instantToLocalTime(block.start, timezone);
     const end = instantToLocalTime(block.end, timezone);
@@ -42,23 +44,26 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
     const durationMin = hours * 60;
     const MIN_MIN = 60;
 
+    const startMin= timeToMinutes(start);
+    const endMin= timeToMinutes(end);
+
     function deltaMinutes(fromY: number, toY: number) {
         return Math.round((((toY - fromY) / ROW_HEIGHT_PX) * 60) / 15) * 15;
     }
 
     function clamp(edge: "top" | "bottom", mins: number) {
         return edge === "top"
-            ? Math.min(mins, durationMin - MIN_MIN)
-            : Math.max(mins, -(durationMin - MIN_MIN));
+            ? Math.max(DAY_START_HOUR * 60 - startMin, Math.min(mins, durationMin - MIN_MIN))
+            : Math.min(DAY_END_HOUR * 60 - endMin, Math.max(mins, -(durationMin - MIN_MIN)));
     }
 
-    function startResize(e: React.PointerEvent, edge: "top" | "bottom") {
+    function startResize(e: ReactPointerEvent, edge: "top" | "bottom") {
         e.stopPropagation();
         const startY = e.clientY;
 
         const move = (ev: PointerEvent) => {
             const mins = clamp(edge, deltaMinutes(startY, ev.clientY));
-            setPreview(edge === "top" ? { top: mins, bottom: 0 } : { top: 0, bottom: 0 });
+            setPreview(edge === "top" ? { top: mins, bottom: 0 } : { top: 0, bottom: mins });
         };
 
         const up = (ev: PointerEvent) => {
@@ -122,8 +127,11 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
 
     return (
         <div
+            ref={setNodeRef}
+            {...listeners}
+            {...attributes}
             onClick={onClick}
-            className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none cursor-pointer"
+            className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none "
             style={{
                 top: displayTop,
                 height: Math.max(displayHeight, 18),
@@ -131,7 +139,9 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                 borderLeft: `3px solid ${color}`,
                 boxShadow: selected ? `0 2px 12px ${color}50` : "0 1px 3px rgba(0,0,0,0.05)",
                 zIndex: selected ? 5 : 2,
-                transition: "box-shadow 0.15s",
+                transition: "opacity 0.15s, box-shadow 0.15s",
+                opacity: isDragging ? 0.35 : 1,
+                cursor: isDragging ? "grabbing" : "grab",
             }}
         >
             {small ? (

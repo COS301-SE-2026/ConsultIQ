@@ -28,7 +28,7 @@ export default function SchedulerPage() {
                         </div>
 
                         <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
-                            <div className="pointer-events-auto bg-amber-500 text-white p-3 rounded-lg shadow-lg">
+                            <div className="pointer-events-auto z-90 bg-amber-500 text-white p-3 rounded-lg shadow-lg">
                                 Alert Banner
                             </div>
                         </div>

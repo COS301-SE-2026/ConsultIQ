@@ -79,10 +79,52 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
                             Extend
                         </button>
                     </section>
-
+                    
+                    <ReduceEstimateOption 
+                        maxHours={newMaxHours}
+                        maxAllowedMinutes={Math.min(task.tMax, summary.availableMinutes)}
+                        canApply={canReduceEstimate}
+                        onMaxHoursChange={setNewMaxHours}
+                        onApply={() => {
+                            void onReduceEstimate(task.id, {tMax: newMaxMinutes, tMin: Math.min(task.tMin, newMaxMinutes), expectedVersion});
+                        }}
+                    />
                 </div>
             </section>
         </div>
     )
 }
 
+function ReduceEstimateOption({  maxHours, maxAllowedMinutes, canApply, onMaxHoursChange, onApply}: {
+  maxHours: number;
+  maxAllowedMinutes: number;
+  canApply: boolean;
+  onMaxHoursChange: (value: number) => void;
+  onApply: () => void;
+}){
+    return (
+        <section className="space-y-2 rounded-md border border-slate-200 p-3">
+            <h3 className="text-sm font-medium text-slate-800">
+                Reduce the estimate
+            </h3>
+            <div className="flex items-center gap-2">
+                <label className="min-w-0 flex-1">
+                    <span className="sr-only"> New maximum estimate in hours </span>
+                    <input type="number" min={0.25} step={0.25} max={maxAllowedMinutes/60}
+                        value={maxHours}
+                        onChange={(e) => onMaxHoursChange(Number(e.target.value))}
+                        className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+                    />
+                </label>
+                <span className="text-sm text-slate-500">hours max</span>
+                <button type="button" 
+                    disabled={!canApply}
+                    onClick={onApply}
+                    className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                    Apply
+                </button>
+            </div>
+        </section>
+    );
+}

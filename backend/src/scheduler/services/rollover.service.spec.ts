@@ -82,6 +82,26 @@ describe('RolloverService', () => {
     });
 
     describe('rollover', () => {
+
+        it('throws original error if idempotency creation fails with a non-P2002 error', async () => {
+            const dbError = new Error('Database connection lost');
+            prisma.schedulerIdempotencyKey.create.mockRejectedValueOnce(dbError);
+
+            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow('Database connection lost');
+            expect(weekService.commit).not.toHaveBeenCalled();
+        });
+
+        it('swallows errors silently if releaseIdempotency fails during rollback', async () => {
+            prisma.schedulerSlot.findUnique.mockResolvedValueOnce({
+                id: 'slot-1',
+                start: new Date('2026-09-25T14:00:00Z'),
+                week: { consultantId: 'cons-1', weekStart: new Date('2026-09-21T00:00:00Z') },
+            });
+            weekService.commit.mockRejectedValueOnce(new Error('Commit failed'));
+
+            prisma.schedulerIdempotencyKey.deleteMany.mockRejectedValueOnce(new Error('DeleteMany failed'));
+            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow('Commit failed');
+        });
         it('throws ConflictException if operation is already processed (P2002)', async () => {
 
             const p2002Error = new Error('Unique constraint failed');
@@ -182,6 +202,30 @@ describe('RolloverService', () => {
             expect(prisma.schedulerIdempotencyKey.deleteMany).toHaveBeenCalledWith({
                 where: { key: 'mark_incomplete:cons-1:2026-09-25' },
             });
+        });
+        it('throws ConflictException if operation is already processed (P2002)', async () => {
+            const p2002Error = new Error('Unique constraint failed');
+            (p2002Error as any).code = 'P2002';
+            prisma.schedulerIdempotencyKey.create.mockRejectedValueOnce(p2002Error);
+
+            await expect(service.markIncomplete('cons-1', '2026-09-25' as LocalDate))
+                .rejects.toThrow(ConflictException);
+        });
+
+        it('throws original error if idempotency creation fails with a non-P2002 error', async () => {
+            const dbError = new Error('Database connection lost');
+            prisma.schedulerIdempotencyKey.create.mockRejectedValueOnce(dbError);
+
+            await expect(service.markIncomplete('cons-1', '2026-09-25' as LocalDate))
+                .rejects.toThrow('Database connection lost');
+        });
+
+        it('swallows errors silently if releaseIdempotency fails during rollback (ok: false)', async () => {
+            weekService.commit.mockResolvedValueOnce({ ...mockCommitResult, ok: false });
+            prisma.schedulerIdempotencyKey.deleteMany.mockRejectedValueOnce(new Error('DeleteMany failed'));
+
+            const result = await service.markIncomplete('cons-1', '2026-09-25' as LocalDate);
+            expect(result.ok).toBe(false);
         });
     });
 

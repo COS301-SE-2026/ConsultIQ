@@ -87,6 +87,7 @@ export class FeasibilityService {
       startDate: spec.startDate,
       endDate: spec.endDate,
       requiredAllocationPercentage: spec.allocation,
+      workModel: spec.workModel,
     };
   }
 

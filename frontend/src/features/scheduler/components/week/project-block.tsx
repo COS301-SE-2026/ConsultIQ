@@ -1,11 +1,11 @@
 import type { Interval, ProjectBlock as ProjectBlockType, Task, TaskStatus } from "../../types/scheduler.types";
 import type { ProjectSummary } from "../../types/scheduler.fixtures";
-import { blockTop, blockHeight, instantToLocalTime, priorityScore, ROW_HEIGHT_PX , timeToMinutes,DAY_START_HOUR,DAY_END_HOUR} from "../../utils/scheduler.utils";
+import { blockTop, blockHeight, instantToLocalTime, priorityScore, ROW_HEIGHT_PX, timeToMinutes, DAY_START_HOUR, DAY_END_HOUR } from "../../utils/scheduler.utils";
 import { useState, type PointerEvent as ReactPointerEvent, } from "react";
 import ResizeHandle from "./resize-handle";
 import BatchSlot from "./batch-slot";
 import TaskSlot from "./task-slot";
-import {useDraggable} from "@dnd-kit/core"
+import { useDraggable } from "@dnd-kit/core"
 import { getProjectColour } from "./project-colour";
 
 export interface ProjectBlockProps {
@@ -19,9 +19,9 @@ export interface ProjectBlockProps {
     readonly onSetStatus?: (taskId: string, status: TaskStatus) => void;
 }
 
-export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize,onSetStatus }: ProjectBlockProps) {
+export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize, onSetStatus }: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
-    const {attributes,listeners, setNodeRef, isDragging}= useDraggable({id:block.id});
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: block.id });
 
     const start = instantToLocalTime(block.start, timezone);
     const end = instantToLocalTime(block.end, timezone);
@@ -33,8 +33,8 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
     const durationMin = hours * 60;
     const MIN_MIN = 60;
 
-    const startMin= timeToMinutes(start);
-    const endMin= timeToMinutes(end);
+    const startMin = timeToMinutes(start);
+    const endMin = timeToMinutes(end);
 
     function deltaMinutes(fromY: number, toY: number) {
         return Math.round((((toY - fromY) / ROW_HEIGHT_PX) * 60) / 15) * 15;
@@ -117,20 +117,6 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
     return (
         <div
             ref={setNodeRef}
-            {...listeners}
-            {...attributes}
-            role="button"
-            tabIndex={0}
-            aria-pressed={selected}
-            onKeyDown={(e) =>{
-                if(e.target !== e.currentTarget) return;
-                listeners?.onKeyDown?.apply(e);
-                if(e.key === "Enter") onClick?.();
-            }}
-            onClick={(e) => {
-                if((e.target as HTMLElement).dataset.ResizeHandle !== undefined) return;
-                onClick?.();
-            }}
             className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none "
             style={{
                 top: displayTop,
@@ -141,68 +127,82 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                 zIndex: selected ? 5 : 2,
                 transition: "opacity 0.15s, box-shadow 0.15s",
                 opacity: isDragging ? 0.35 : 1,
-                cursor: isDragging ? "grabbing" : "grab",
             }}
         >
-            {small ? (
-                <div className="px-1.5 flex items-center h-full gap-1 overflow-hidden">
-                    <span className="text-[10px] font-bold truncate" style={{ color: titleColour }} >{project.name}</span>
-                    {indicators}
-                </div>
-            ) : medium ? (
-                <div className="px-2 py-1 flex flex-col justify-between h-full">
-                    <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-bold truncate" style={{ color: titleColour }}>{project.name}</span>
+            <button
+                ref={setActivatorNodeRef}
+                {...listeners}
+                {...attributes}
+                type="button"
+                aria-pressed={selected}
+                aria-label={`${project.name}, ${start} to ${end}`}
+                onClick={onClick}
+                className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#002D62]"
+                style={{ cursor: isDragging ? "grabbing" : "grab" }}
+            />
+
+            <div className="realtive h-full pointer-events-none">
+                {small ? (
+                    <div className="px-1.5 flex items-center h-full gap-1 overflow-hidden">
+                        <span className="text-[10px] font-bold truncate" style={{ color: titleColour }} >{project.name}</span>
                         {indicators}
                     </div>
-                    {blockTasks[0] && (
-                        <span className="text-[9px] truncate" style={{ color: mutedColour }}>{'\u25B6'} {blockTasks[0].title}</span>
-                    )}
-                </div>
-            ) : (
-
-                <div className="px-2 py-1.5 flex flex-col gap-1 h-full">
-                    <div className="flex items-start justify-between gap-1">
-                        <div className="min-w-0">
-                            <span className="text-[11px] font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
-                            <span className="text-[9px] block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
+                ) : medium ? (
+                    <div className="px-2 py-1 flex flex-col justify-between h-full">
+                        <div className="flex items-center justify-between gap-1">
+                            <span className="text-[10px] font-bold truncate" style={{ color: titleColour }}>{project.name}</span>
+                            {indicators}
                         </div>
-                        {indicators}
+                        {blockTasks[0] && (
+                            <span className="text-[9px] truncate" style={{ color: mutedColour }}>{'\u25B6'} {blockTasks[0].title}</span>
+                        )}
+                    </div>
+                ) : (
+
+                    <div className="px-2 py-1.5 flex flex-col gap-1 h-full">
+                        <div className="flex items-start justify-between gap-1">
+                            <div className="min-w-0">
+                                <span className="text-[11px] font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
+                                <span className="text-[9px] block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
+                            </div>
+                            {indicators}
+                        </div>
+
+
+                        {blockSlots.slice(0, 3).map((s) =>
+                            s.kind === "batch" ? (
+                                <BatchSlot
+                                    key={s.id}
+                                    slot={s}
+                                    tasks={tasks}
+                                    color={color}
+                                    selected={selected}
+                                />
+                            ) : (
+                                <TaskSlot
+                                    key={s.id}
+                                    slot={s}
+                                    task={tasks.find((t) => t.id === s.taskIds[0])!}
+                                    timezone={timezone}
+                                    color={color}
+                                    selected={selected}
+                                    onSetStatus={onSetStatus}
+                                />
+                            ),
+                        )}
+
+
+
+                        {displayHeight >= 120 && (
+                            <div className="mt-auto">
+                                <span className="text-[9px]" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
+                            </div>
+                        )}
                     </div>
 
+                )}
+            </div>
 
-                    {blockSlots.slice(0, 3).map((s) =>
-                        s.kind === "batch" ? (
-                            <BatchSlot
-                                key={s.id}
-                                slot={s}
-                                tasks={tasks}
-                                color={color}
-                                selected={selected}
-                            />
-                        ) : (
-                            <TaskSlot
-                                key={s.id}
-                                slot={s}
-                                task={tasks.find((t) => t.id === s.taskIds[0])!}
-                                timezone={timezone}
-                                color={color}
-                                selected={selected}
-                                onSetStatus={onSetStatus}
-                            />
-                        ),
-                    )}
-
-
-
-                    {displayHeight >= 120 && (
-                        <div className="mt-auto">
-                            <span className="text-[9px]" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
-                        </div>
-                    )}
-                </div>
-
-            )}
             <ResizeHandle edge="top" onPointerDown={(e) => startResize(e, "top")} />
             <ResizeHandle edge="bottom" onPointerDown={(e) => startResize(e, "bottom")} />
         </div>

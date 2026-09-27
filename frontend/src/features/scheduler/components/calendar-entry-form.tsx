@@ -110,7 +110,7 @@ export default function CalendarEntryForm({
 
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={onClose}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" >
             <button 
                 type="button"
                 aria-label="Close"

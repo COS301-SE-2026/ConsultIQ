@@ -51,11 +51,11 @@ export default function TaskSlot({slot, task, timezone, color,selected=false, on
                 ):(
                     <>
                         {task.status === "Ready" && (
-                            <button onClick={(e) => setStatus(e, "InProgress")} title="Start" style={{ color: textColour }}>{"\u25B6"}</button>
+                            <button className="pointer-events-auto" onClick={(e) => setStatus(e, "InProgress")} title="Start" style={{ color: textColour }}>{"\u25B6"}</button>
                         )}
 
                         {task.status === "InProgress" && (
-                            <button onClick={(e) => setStatus(e, "Done")} title="Complete" style={{ color: textColour }}>{"\u2713"}</button>
+                            <button className="pointer-events-auto" onClick={(e) => setStatus(e, "Done")} title="Complete" style={{ color: textColour }}>{"\u2713"}</button>
                         )}
                     </>
                 )}

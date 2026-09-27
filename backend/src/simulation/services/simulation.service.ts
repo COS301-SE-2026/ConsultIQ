@@ -6,6 +6,7 @@ import { RawConsultantDto } from '../../scoring/dto/raw-consultant.dto';
 import { RawProjectDto } from '../../scoring/dto/raw-project.dto';
 import { ConsultantPoolEntry } from '../../scoring/services/interfaces/consultant-pool-entry.interface';
 import { injectHypotheticalSkill } from './inject-hypothetical-skill';
+import { ProjectStatus, WorkModel } from '@prisma/client';
 import {
   HypotheticalSkillInput,
   SimulationResult,
@@ -227,5 +228,12 @@ export class SimulationService {
             skillName: skill.skill.name,
             competencyLevel: skill.competencyLevel,
         }));
+    }
+
+    private async fetchPipelineProjects() {
+        return this.prisma.project.findMany({
+            where: { status: { in: [ProjectStatus.OPEN, ProjectStatus.IN_PROGRESS] } },
+            include: { skills: { include: { skill: true } } },
+        });
     }
 }

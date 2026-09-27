@@ -43,7 +43,7 @@ function WeekNavigator({ weekStart, onPrevWeek, onNextWeek }: WeekNavigatorProps
     );
 }
 
-function HoursSummary({ metadata }: { metadata: WeekMetadata }) {
+function HoursSummary({ metadata }: { readonly metadata: WeekMetadata }) {
     const { scheduledMinutes, contractedMinutes, availableMinutes, allocatedMinutes, bufferMinutes } = metadata;
     const hardCap = SCHEDULER_RULES.hardCapMinutes;
 
@@ -60,26 +60,37 @@ function HoursSummary({ metadata }: { metadata: WeekMetadata }) {
     ];
 
     return (
-        <div className="relative group flex flex-col gap-1.5 w-52 outline-none" tabIndex={0}>
-            <div className="flex items-baseline gap-3 justify-between text-xs">
-                <span className="text-slate-500">Scheduled</span>
-                <span className={`font-semibold ${over ? "text-red-600" : "text-slate-800"}`}>
-                    {hours(scheduledMinutes)}h / {hours(contractedMinutes)}h  ({percentOfContract}%)
+        <div className="relative group w-52">
+            <button
+                type="button"
+                aria-labelledby="capacity-breakdown"
+                className="w-full flex flex-col gap-1.5 text-left rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#002D62]"
+            >
+                <span className="w-full flex items-baseline gap-3 justify-between text-xs">
+                    <span className="text-slate-500">Scheduled</span>
+                    <span className={`font-semibold ${over ? "text-red-600" : "text-slate-800"}`}>
+                        {hours(scheduledMinutes)}h / {hours(contractedMinutes)}h  ({percentOfContract}%)
+                    </span>
                 </span>
-            </div>
 
-            <div className="relative h-2 rounded-full bg-slate-100">
-                <div
-                    className="absolute inset-y-0 left-0 rounded-full"
-                    style={{ width: pct(scheduledMinutes), backgroundColor: over ? "#DC2626" : "#002D62" }}
-                />
+                <span className="relative block h-2 rounded-full bg-slate-100">
+                    <span
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{ width: pct(scheduledMinutes), backgroundColor: over ? "#DC2626" : "#002D62" }}
+                    />
 
-                <div className="absolute -top-1 -bottom-1 w-px bg-slate-400" style={{ left: pct(contractedMinutes) }} />
-                <div className="absolute -top-1.5 -bottom-1.5 w-0.5 bg-red-700" style={{ left: pct(hardCap) }} />
+                    <span className="absolute -top-1 -bottom-1 w-px bg-slate-400" style={{ left: pct(contractedMinutes) }} />
+                    <span className="absolute -top-1.5 -bottom-1.5 w-0.5 bg-red-700" style={{ left: pct(hardCap) }} />
 
-            </div>
+                </span>
+            </button>
 
-            <div className="absolute top-full left-0 mt-2 z-20 hidden group-hover:block group-focus:block w-56 rounded-lg bg-white border border-slate-200 shadow-lg p-3">
+
+            <div 
+                id="capacity-breakdown"
+                role="tooltip"
+                className="absolute top-full left-0 mt-2 z-20 hidden group-hover:block group-focus:block w-56 rounded-lg bg-white border border-slate-200 shadow-lg p-3"
+            >
                 {rows.map(([label, minutes]) => (
                     <div key={label} className="flex justify-between text-xs py-0.5" >
                         <span className="text-slate-500">{label}</span>
@@ -147,10 +158,10 @@ export default function SchedulerHeader({
     return (
         <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-4">
 
-             <div className="justify-self-start">
+            <div className="justify-self-start">
                 <WeekNavigator weekStart={week.weekStart} onPrevWeek={onPrevWeek} onNextWeek={onNextWeek} />
-             </div>
-            
+            </div>
+
 
             <div className="flex flex-col items-center gap-2 min-w-0">
                 <HoursSummary metadata={week.metadata} />
@@ -174,11 +185,11 @@ export default function SchedulerHeader({
                     )}
                 </Button>
 
-                <Button 
-                    className="px-4 py-2 rounded-lg whitespace-nowrap border-slate-200 " 
+                <Button
+                    className="px-4 py-2 rounded-lg whitespace-nowrap border-slate-200 "
                     onClick={onAddEvent}
                 >
-                        + Event
+                    + Event
                 </Button>
             </div>
 

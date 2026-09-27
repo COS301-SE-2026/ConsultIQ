@@ -68,8 +68,8 @@ interface AwaitingConfirmation {
 
 export interface WeekCalendarProps {
    readonly weekData?: WeekContainer;
-   createEntryRequested?: boolean;
-   onCreateEntryDone?: () => void;
+   readonly createEntryRequested?: boolean;
+   readonly onCreateEntryDone?: () => void;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {

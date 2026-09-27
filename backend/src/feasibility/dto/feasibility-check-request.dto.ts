@@ -18,4 +18,5 @@ export class FeasibilityCheckRequestDto extends PickType(CreateProjectDto, [
   'longitude',
   'city',
   'province',
+  'workModel',
 ] as const) {}

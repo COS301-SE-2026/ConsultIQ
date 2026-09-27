@@ -64,7 +64,7 @@ function HoursSummary({ metadata }: { metadata: WeekMetadata }) {
             <div className="flex items-baseline gap-3 justify-between text-xs">
                 <span className="text-slate-500">Scheduled</span>
                 <span className={`font-semibold ${over ? "text-red-600" : "text-slate-800"}`}>
-                    {hours(scheduledMinutes)}h / {hours(contractedMinutes)}h
+                    {hours(scheduledMinutes)}h / {hours(contractedMinutes)}h  ({percentOfContract}%)
                 </span>
             </div>
 

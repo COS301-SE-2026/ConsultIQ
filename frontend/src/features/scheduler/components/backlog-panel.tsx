@@ -41,10 +41,10 @@ function sortTasks(tasks: Task[], mode: SortMode): Task[] {
 
 
 
-export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
+export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, collapsed, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
 
     const [activeProject, setActiveProject] = useState<string | "all">("all");
-    const [sortMode, _setSortMode] = useState<SortMode>("priority");
+    const [sortMode, setSortMode] = useState<SortMode>("priority");
 
     const  summaryByTaskId = useMemo(() => {
         const map = new Map<string, UnplacedTaskSummary>();
@@ -61,9 +61,20 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
     const filtered = activeProject === "all" ? tasks : tasks.filter((t) => t.projectId === activeProject);
     
     const unplacedTasks = sortTasks(filtered.filter((t) => summaryByTaskId.has(t.id)), sortMode);
-    // const normalTasks = sortTasks(filtered.filter((t) => !summaryByTaskId.has(t.id)), sortMode);
+    const normalTasks = sortTasks(filtered.filter((t) => !summaryByTaskId.has(t.id)), sortMode);
 
     const countFor = (projectId: string | "all") => projectId === "all" ? tasks.length : tasks.filter((t) => t.projectId === projectId).length;
+
+    if(collapsed){
+        return (
+            <button type="button" aria-label="Expand backlog"
+                onClick={onToggleCollapse}
+                className="flex h-full w-8 items-center justify-center border-r border-slate-200 bg-slate-50 hover:bg-slate-100"
+            >
+                <ChevronLeft size={16} className="rotate-180 text-slate-400" />
+            </button>
+        );
+    }
 
     return (
         <aside className="flex h-full w-[280px] flex-col border-r border-slate-200 bg-white">
@@ -89,10 +100,16 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                     </button>
 
                     <div className="ml-1 flex overflow-hidden rounded border border-slate-200">
-                        <button  type="button" aria-label="Sort by priority">
+                        <button  type="button" aria-label="Sort by priority"
+                            onClick={() => setSortMode("priority")}
+                            className = {`p-1.5 ${sortMode === "priority" ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                        >
                             <Star size={14} />
                         </button>
-                        <button type="button" aria-label="Sort by deadline">
+                        <button type="button" aria-label="Sort by deadline"
+                            onClick={() => setSortMode("deadline")}
+                            className = {`p-1.5 ${sortMode === "deadline" ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                        >
                             <Calendar size={14} />
                         </button>
                     </div>
@@ -140,10 +157,32 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                         })}
                     </section>
                 )}
+
+                {normalTasks.length > 0 && (
+                    <section>
+                        {normalTasks.map((task) => {
+                            const project = projectById.get(task.projectId);
+                            return (
+                                <BacklogTaskCard
+                                    key={task.id} 
+                                    task={task}
+                                    projectLabel={project?.label ?? task.projectId}
+                                    projectColor={project?.color ?? "#64748b"}
+                                    now={now}
+                                    expectedVersion={expectedVersion}
+                                    onSchedule={onSchedule}
+                                    onResolveDeadline={onResolveDeadline}
+                                    onDeferToNextWeek={onDeferToNextWeek}
+                                    onDismiss={onDismiss}
+                                    onDragStart={onDragStart}
+                                />
+                            );
+                        })}
+                    </section>
+                )}
             </div>
         </aside>
-    )
-
+    );
 }
 
 function FilterChip ({ label, count, active, color, onClick }: {

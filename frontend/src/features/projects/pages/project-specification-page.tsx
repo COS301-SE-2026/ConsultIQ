@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 import FeasibilityPreviewPanel from "../components/feasibility-preview-panel";
 import { useFeasibilityCheck } from "../hooks/use-feasibility-check";
-import type { FeasibilityCompetency, FeasibilityRequestDto } from "../types/feasibility.types";
+import type { FeasibilityCompetency, FeasibilityRequestDto, FeasibilityWorkModel } from "../types/feasibility.types";
 import axios from 'axios';
 
 
@@ -39,6 +39,9 @@ export interface ProjectFormData {
   teamSize: number;
   allocation: number;
   budget: number;
+  latitude?: number;
+  longitude?: number;
+  workModel: FeasibilityWorkModel | "";
   skills: ProjectSkillData[];
 }
 
@@ -61,6 +64,9 @@ function ProjectSpecificationPage() {
     teamSize: 1,
     allocation: 100,
     budget: 0,
+    latitude: undefined,
+    longitude: undefined,
+    workModel: "",
     skills: [],
   });
 
@@ -121,22 +127,22 @@ function ProjectSpecificationPage() {
     }
   };
 
-  const feasibilityRequest : FeasibilityRequestDto | null =
-    isFeasibilityOpen ? {
-      projectName: formData.projectName,
-      clientName: formData.clientName,
-      description: formData.description,
-      addressLine1: formData.addressLine1,
-      addressLine2: formData.addressLine1,
-      suburb: formData.suburb,
-      city: formData.city,
-      province: formData.province,
-      postalCode: formData.postalCode,
+  const canCheckFeasibility = Boolean(formData.startDate && formData.endDate && formData.city.trim() && formData.province && formData.workModel,
+    ) &&
+    Number.isInteger(formData.teamSize) && formData.teamSize > 0 && Number.isInteger(formData.allocation) && formData.allocation >= 10 && formData.allocation <= 100 && Number.isFinite(formData.budget) && formData.budget >= 0;
+  
+    const feasibilityRequest : FeasibilityRequestDto | null =
+    isFeasibilityOpen && canCheckFeasibility ? {
       startDate: formData.startDate,
       endDate: formData.endDate,
       teamSize: formData.teamSize,
       allocation: formData.allocation,
       budget: formData.budget,
+      city: formData.city,
+      province: formData.province,
+      workModel: formData.workModel as FeasibilityWorkModel,
+      ...(formData.latitude !== undefined && { latitude: formData.latitude }),
+      ...(formData.longitude !== undefined && { longitude: formData.longitude }),
       skills :formData.skills.map((skill) => ({
         name: skill.name,
         competency: skill.competency as FeasibilityCompetency,

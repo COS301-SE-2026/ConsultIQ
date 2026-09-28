@@ -22,6 +22,7 @@ import { SkillGapModule } from './skill-gap-analysis/skill-gap.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { FeasibilityModule } from './feasibility/feasibility.module';
+import { SimulationModule } from './simulation/simulation.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { CsrfGuard } from './common/guards/csrf.guard';
@@ -78,6 +79,7 @@ import { APP_GUARD } from '@nestjs/core';
     AnalyticsModule,
     SkillGapModule,
     FeasibilityModule,
+    SimulationModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: CsrfGuard },],

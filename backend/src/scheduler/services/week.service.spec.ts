@@ -36,6 +36,7 @@ describe('WeekService', () => {
             findUnique: jest.fn(),
             update: jest.fn(),
             create: jest.fn(),
+            upsert: jest.fn(),
         },
         schedulerProjectBlock: {
             update: jest.fn(),
@@ -178,9 +179,6 @@ describe('WeekService', () => {
         });
 
         it('successfully persists, hitting all branches in persistWeek (creates, updates, enums mappings)', async () => {
-
-            mockPrisma.schedulerTask.findUnique.mockResolvedValueOnce({ id: 'T1' }).mockResolvedValueOnce(null);
-
             const result = await service.commit(mockWeek, mockChange, mockCtx, 2);
 
             expect(result.ok).toBe(true);
@@ -197,11 +195,9 @@ describe('WeekService', () => {
                 ])
             });
 
-            expect(mockPrisma.schedulerTask.update).toHaveBeenCalled();
-            expect(mockPrisma.schedulerTask.create).toHaveBeenCalled();
-
-            expect(mockPrisma.schedulerProjectBlock.update).toHaveBeenCalledTimes(1);
-            expect(mockPrisma.schedulerSlotTask.createMany).toHaveBeenCalledTimes(1);
+            expect(mockPrisma.schedulerTask.upsert).toHaveBeenCalled();
+            expect(mockPrisma.schedulerProjectBlock.update).toHaveBeenCalledTimes(2);
+            expect(mockPrisma.schedulerSlotTask.createMany).toHaveBeenCalledTimes(2);
         });
 
         it('persists safely if calendar entries or slots are empty (omitting version fallback)', async () => {
@@ -309,13 +305,48 @@ describe('WeekService', () => {
             expect(mockWeek.tasks).toHaveLength(2);
         });
 
-        it('handles rollover and mark_incomplete as no-ops', () => {
-            const res1 = service['applyChange'](mockWeek, { type: 'rollover', taskId: 't', fromSlotId: 's', origin: 'system', window: mockWindow });
-            const res2 = service['applyChange'](mockWeek, { type: 'mark_incomplete', date: '2026-09-25' as LocalDate, origin: 'system', window: mockWindow });
-
-
+        it('handles rollover action correctly', () => {
+            const res1 = service['applyChange'](mockWeek, {
+                type: 'rollover',
+                taskId: 'task-1',
+                fromSlotId: 's',
+                origin: 'system',
+                window: mockWindow
+            });
             expect(res1).toEqual(mockWindow);
-            expect(res2).toEqual(mockWindow);
+            expect(mockWeek.tasks[0].placement).toBe('unplaced');
+            expect(mockWeek.tasks[0].carriedOver).toBe(true);
+        });
+
+        it('handles mark_incomplete (reverts status and last completed subtask)', () => {
+            // Set task to Done and sub-2 to done
+            mockWeek.tasks[0].status = 'Done';
+            (mockWeek.tasks[0] as any).subtasks[1].done = true;
+
+            const res = service['applyChange'](mockWeek, {
+                type: 'mark_incomplete',
+                taskId: 'task-1',
+                origin: 'system',
+                window: mockWindow
+            });
+
+            expect(res).toEqual(mockWindow);
+            expect(mockWeek.tasks[0].status).toBe('InProgress');
+            expect((mockWeek.tasks[0] as any).subtasks[1].done).toBe(false);
+        });
+
+
+        it('handles rollover action correctly', () => {
+            const res1 = service['applyChange'](mockWeek, {
+                type: 'rollover',
+                taskId: 'task-1',
+                fromSlotId: 'slot-1',
+                origin: 'system',
+                window: mockWindow
+            });
+            expect(res1).toEqual(mockWindow);
+            expect(mockWeek.tasks[0].placement).toBe('unplaced');
+            expect(mockWeek.tasks[0].carriedOver).toBe(true);
         });
 
         it('handles create_task', () => {

@@ -16,7 +16,8 @@ import {
     ValidateContext,
     AllocationSummary,
     CalendarEntry,
-
+    PrismaSlotWithTasks,
+    PrismaBlock,
 } from '../dto/scheduler.dto';
 
 export interface CommitResult {
@@ -44,9 +45,9 @@ export class WeekService {
     public async getWeek(consultantId: string, weekStart: LocalDate): Promise<WeekContainer> {
         const weekIncludes = {
             blocks: true,
-            tasks: true,
+            tasks: { include: { subtasks: true } },
             calendarEntries: true,
-            slots: true
+            slots: { include: { slotTasks: true } }
         };
 
         const existingWeek = await this.prisma.schedulerWeek.findUnique({
@@ -74,6 +75,11 @@ export class WeekService {
         const holidays = (await this.holidayService.getForWeek(weekStart)) || [];
         const blocks = this.resolveBlocks(dbWeek);
 
+        const slots = dbWeek.slots.map((s: PrismaSlotWithTasks) => ({
+            ...s,
+            taskIds: s.slotTasks ? s.slotTasks.map((st) => st.taskId) : [],
+        })) as unknown as Slot[];
+
         const week: WeekContainer = {
             id: dbWeek.id,
             consultantId: dbWeek.consultantId,
@@ -89,21 +95,16 @@ export class WeekService {
             tasks: dbWeek.tasks as unknown as Task[],
             calendarEntries: dbWeek.calendarEntries as unknown as WeekContainer['calendarEntries'],
             holidays,
-            slots: dbWeek.slots as unknown as Slot[],
+            slots,
             metadata: {} as WeekContainer['metadata'],
         };
 
         week.metadata = this.validatorService.summarize(week);
-
         return week;
     }
 
     private resolveBlocks(dbWeek: {
-        blocks: Array<{
-            userSized?: boolean;
-            allocation?: unknown;
-            [key: string]: unknown;
-        }>;
+        blocks: PrismaBlock[];
     }): ProjectBlock[] {
         return dbWeek.blocks.map((b) => {
             if (b.userSized || b.allocation == null) {
@@ -133,6 +134,15 @@ export class WeekService {
 
         if (placeWindow) {
             this.placerService.place(clone, { window: placeWindow, allowBump: true });
+        }
+
+        if (change.type === 'place_unplaced') {
+            for (const t of clone.tasks) {
+                if ((t as any)._tempBlinded) {
+                    t.placement = 'unplaced';
+                    delete (t as any)._tempBlinded;
+                }
+            }
         }
 
         const fullCtx: ValidateContext = { ...ctx, previousWeek: week };
@@ -179,10 +189,8 @@ export class WeekService {
                 week.timezone,
             ),
         };
-
         const change: Change = { type: 'replan', window };
         const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
-
         return this.commit(week, change, ctx, expectedVersion);
     }
 
@@ -203,7 +211,14 @@ export class WeekService {
     private applyChange(week: WeekContainer, change: Change): Interval | undefined {
         switch (change.type) {
             case 'replan':
+                break;
             case 'place_unplaced':
+                for (const t of week.tasks) {
+                    if (t.placement === 'unplaced' && !change.taskIds.includes(t.id)) {
+                        t.placement = 'placed';
+                        (t as Task & { _tempBlinded?: boolean })._tempBlinded = true;
+                    }
+                }
                 break;
             case 'create_task':
                 week.tasks.push(change.task as Task);
@@ -220,7 +235,6 @@ export class WeekService {
             case 'toggle_subtask':
                 this.applyToggleSubtask(week, change.taskId, change.subtaskId);
                 break;
-
             case 'split_task':
                 this.applySplitTask(week, change.taskId, change.atMinutes);
                 break;
@@ -248,7 +262,6 @@ export class WeekService {
                 block.mobility = change.pinned ? 'pinned' : 'fluid';
                 break;
             }
-
             case 'calendar_upsert': {
                 const dto = change.entry;
                 const existingIdx = week.calendarEntries.findIndex(e => e.id === dto.id);
@@ -260,23 +273,42 @@ export class WeekService {
                 break;
             }
             case 'calendar_remove': {
-                const entryId = change.entryId;
-                week.calendarEntries = week.calendarEntries.filter(e => e.id !== entryId);
+                week.calendarEntries = week.calendarEntries.filter(e => e.id !== change.entryId);
                 break;
             }
             case 'pull_forward': {
-                const tasks = change.tasks;
-                if (tasks) week.tasks.push(...tasks);
+                if (change.tasks) week.tasks.push(...change.tasks);
                 break;
             }
-            case 'rollover':
-            case 'mark_incomplete':
-
+            case 'rollover': {
+                const rTask = week.tasks.find((t) => t.id === change.taskId);
+                const rSlot = week.slots.find((s) => s.id === change.fromSlotId);
+                if (rTask) {
+                    rTask.placement = 'unplaced';
+                    rTask.carriedOver = true;
+                }
+                if (rSlot) {
+                    rSlot.taskIds = rSlot.taskIds.filter((id) => id !== change.taskId);
+                }
                 break;
+            }
+            case 'mark_incomplete': {
+                const taskToRevert = week.tasks.find(t => t.id === change.taskId);
+                if (taskToRevert) {
+                    taskToRevert.status = taskToRevert.status === 'Done' ? 'InProgress' : 'Ready';
+
+                    if (taskToRevert.subtasks && taskToRevert.subtasks.length > 0) {
+                        const lastDone = [...taskToRevert.subtasks].reverse().find(s => s.done);
+                        if (lastDone) {
+                            lastDone.done = false;
+                        }
+                    }
+                }
+                break;
+            }
             default:
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
-
         return change.window;
     }
 
@@ -301,13 +333,8 @@ export class WeekService {
     private applyToggleSubtask(week: WeekContainer, taskId: string, subtaskId: string): void {
         const task = week.tasks.find(t => t.id === taskId);
         const sub = task?.subtasks?.find(s => s.id === subtaskId);
-        if (sub) {
-            sub.done = !sub.done;
-        }
-
-        if (task?.subtasks?.every(s => s.done)) {
-            task.status = 'Done';
-        }
+        if (sub) sub.done = !sub.done;
+        if (task?.subtasks?.every(s => s.done)) task.status = 'Done';
     }
 
     private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number): void {
@@ -343,10 +370,7 @@ export class WeekService {
 
     private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
         const slot = week.slots.find((s) => s.id === slotId);
-        if (!slot) {
-            throw new NotFoundException('Task slot ' + slotId + ' not found in week ' + week.id);
-        }
-
+        if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
         slot.start = to.start;
         slot.end = to.end;
         slot.locked = true;
@@ -355,9 +379,7 @@ export class WeekService {
 
     private getBlock(week: WeekContainer, blockId: string) {
         const block = week.blocks.find((b) => b.id === blockId);
-        if (!block) {
-            throw new NotFoundException('Project block ' + blockId + ' not found in week ' + week.id);
-        }
+        if (!block) throw new NotFoundException('Project block ' + blockId + ' not found');
         return block;
     }
 
@@ -371,7 +393,6 @@ export class WeekService {
                 where: whereClause,
                 data: { version: { increment: 1 }, lastCommittedAt: new Date() },
             });
-
 
             await tx.schedulerCalendarEntry.deleteMany({ where: { weekId: week.id } });
             if (week.calendarEntries && week.calendarEntries.length > 0) {
@@ -406,6 +427,7 @@ export class WeekService {
 
             for (const t of week.tasks) {
                 const taskData = {
+                    weekId: week.id,
                     projectId: t.projectId,
                     title: t.title,
                     tMin: t.tMin,
@@ -419,49 +441,64 @@ export class WeekService {
                     deadlineMissAccepted: t.deadlineMissAccepted ?? false,
                 };
 
-                const exists = await tx.schedulerTask.findUnique({ where: { id: t.id } });
-                if (exists) {
-                    await tx.schedulerTask.update({ where: { id: t.id }, data: taskData });
-                } else {
-                    await tx.schedulerTask.create({ data: { id: t.id, weekId: week.id, ...taskData } });
-                }
-            }
-
-            for (const b of week.blocks) {
-                if (b.userSized) {
-                    await tx.schedulerProjectBlock.update({
-                        where: { id: b.id },
-                        data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                    });
-                }
-            }
-
-            await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
-            await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
-
-            for (const s of week.slots) {
-                await tx.schedulerSlot.create({
-                    data: {
-                        id: s.id,
-                        weekId: week.id,
-                        kind: s.kind,
-                        blockId: s.blockId,
-                        start: s.start,
-                        end: s.end,
-                        locked: s.locked,
-                        daySpan: s.daySpan ?? 1,
-                        tags: s.tags ?? [],
+                await tx.schedulerTask.upsert({
+                    where: { id: t.id },
+                    update: taskData,
+                    create: {
+                        id: t.id,
+                        ...taskData
                     }
                 });
 
-                if (s.taskIds && s.taskIds.length > 0) {
-                    await tx.schedulerSlotTask.createMany({
-                        data: s.taskIds.map(taskId => ({
-                            slotId: s.id,
-                            taskId: taskId
+                if (t.subtasks && t.subtasks.length > 0) {
+                    await tx.schedulerSubtask.deleteMany({ where: { taskId: t.id } });
+                    await tx.schedulerSubtask.createMany({
+                        data: t.subtasks.map((sub: any) => ({
+                            id: sub.id,
+                            taskId: t.id,
+                            title: sub.title ?? 'Subtask',
+                            done: sub.done ?? false,
+                            estimate: sub.durationMinutes ?? 0
                         }))
                     });
                 }
+
+                for (const b of week.blocks) {
+                    if (b.userSized) {
+                        await tx.schedulerProjectBlock.update({
+                            where: { id: b.id },
+                            data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
+                        });
+                    }
+                }
+
+                await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
+                await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
+
+                for (const s of week.slots) {
+                    await tx.schedulerSlot.create({
+                        data: {
+                            id: s.id,
+                            weekId: week.id,
+                            kind: s.kind,
+                            blockId: s.blockId,
+                            start: s.start,
+                            end: s.end,
+                            locked: s.locked,
+                            daySpan: s.daySpan ?? 1,
+                        }
+                    });
+
+                    if (s.taskIds && s.taskIds.length > 0) {
+                        await tx.schedulerSlotTask.createMany({
+                            data: s.taskIds.map(taskId => ({
+                                slotId: s.id,
+                                taskId: taskId
+                            }))
+                        });
+                    }
+                }
+
             }
         });
     }
@@ -470,7 +507,6 @@ export class WeekService {
         const dbWeek = await this.prisma.schedulerWeek.findUnique({ where: { id: weekId } });
         if (!dbWeek) throw new NotFoundException(`Week ${weekId} not found`);
         const weekStartStr = DateTime.fromJSDate(dbWeek.weekStart, { zone: 'utc' }).toFormat('yyyy-MM-dd') as LocalDate;
-
         return this.getWeek(dbWeek.consultantId, weekStartStr);
     }
 

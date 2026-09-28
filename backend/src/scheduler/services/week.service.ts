@@ -412,113 +412,116 @@ export class WeekService {
                 data: { version: { increment: 1 }, lastCommittedAt: new Date() },
             });
 
-            await tx.schedulerCalendarEntry.deleteMany({ where: { weekId: week.id } });
-            if (week.calendarEntries && week.calendarEntries.length > 0) {
-                await tx.schedulerCalendarEntry.createMany({
-                    data: week.calendarEntries.map(e => {
+            await this.persistCalendarEntries(tx, week);
+            await this.persistTasksAndSubtasks(tx, week);
+            await this.persistSlots(tx, week);
+        });
+    }
 
-                        const dbType = (e.type === 'ad-hoc' ? 'ad_hoc' : e.type) as unknown as
-                            'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad_hoc';
+    private async persistCalendarEntries(tx: any, week: WeekContainer): Promise<void> {
+        await tx.schedulerCalendarEntry.deleteMany({ where: { weekId: week.id } });
+        if (!week.calendarEntries || week.calendarEntries.length === 0) return;
 
+        await tx.schedulerCalendarEntry.createMany({
+            data: week.calendarEntries.map(e => {
+                const dbType = (e.type === 'ad-hoc' ? 'ad_hoc' : e.type) as unknown as
+                    'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad_hoc';
+                const dbOrigin = (
+                    e.origin === 'public-holiday' ? 'public_holiday' : e.origin
+                ) as unknown as 'user' | 'feed' | 'system' | 'public_holiday';
 
-                        const dbOrigin = (
-                            e.origin === 'public-holiday' ? 'public_holiday' : e.origin
-                        ) as unknown as 'user' | 'feed' | 'system' | 'public_holiday';
+                return {
+                    id: e.id,
+                    weekId: week.id,
+                    type: dbType,
+                    start: new Date(e.start),
+                    end: new Date(e.end),
+                    origin: dbOrigin,
+                    tags: e.tags ?? [],
+                };
+            })
+        });
+    }
 
-                        return {
-                            id: e.id,
-                            weekId: week.id,
-                            type: dbType,
-                            start: new Date(e.start),
-                            end: new Date(e.end),
-                            origin: dbOrigin,
-                            tags: e.tags ?? []
-                        };
-                    })
-                });
-            }
+    private async persistTasksAndSubtasks(tx: any, week: WeekContainer): Promise<void> {
+        const memoryTaskIds = week.tasks.map(t => t.id);
+        await tx.schedulerTask.deleteMany({
+            where: { weekId: week.id, id: { notIn: memoryTaskIds } }
+        });
 
-            const memoryTaskIds = week.tasks.map(t => t.id);
-            await tx.schedulerTask.deleteMany({
-                where: { weekId: week.id, id: { notIn: memoryTaskIds } }
+        for (const t of week.tasks) {
+            const taskData = {
+                weekId: week.id,
+                projectId: t.projectId,
+                title: t.title,
+                tMin: t.tMin,
+                tMax: t.tMax,
+                urgency: t.urgency,
+                complexity: t.complexity,
+                status: t.status,
+                placement: t.placement,
+                unplacedReason: t.unplacedReason,
+                carriedOver: t.carriedOver,
+                deadlineMissAccepted: t.deadlineMissAccepted ?? false,
+            };
+
+            await tx.schedulerTask.upsert({
+                where: { id: t.id },
+                update: taskData,
+                create: { id: t.id, ...taskData }
             });
 
-            for (const t of week.tasks) {
-                const taskData = {
-                    weekId: week.id,
-                    projectId: t.projectId,
-                    title: t.title,
-                    tMin: t.tMin,
-                    tMax: t.tMax,
-                    urgency: t.urgency,
-                    complexity: t.complexity,
-                    status: t.status,
-                    placement: t.placement,
-                    unplacedReason: t.unplacedReason,
-                    carriedOver: t.carriedOver,
-                    deadlineMissAccepted: t.deadlineMissAccepted ?? false,
-                };
-
-                await tx.schedulerTask.upsert({
-                    where: { id: t.id },
-                    update: taskData,
-                    create: {
-                        id: t.id,
-                        ...taskData
-                    }
+            if (t.subtasks && t.subtasks.length > 0) {
+                await tx.schedulerSubtask.deleteMany({ where: { taskId: t.id } });
+                await tx.schedulerSubtask.createMany({
+                    data: t.subtasks.map((sub: any) => ({
+                        id: sub.id,
+                        taskId: t.id,
+                        title: sub.title ?? 'Subtask',
+                        done: sub.done ?? false,
+                        estimate: sub.durationMinutes ?? 0
+                    }))
                 });
-
-                if (t.subtasks && t.subtasks.length > 0) {
-                    await tx.schedulerSubtask.deleteMany({ where: { taskId: t.id } });
-                    await tx.schedulerSubtask.createMany({
-                        data: t.subtasks.map((sub: any) => ({
-                            id: sub.id,
-                            taskId: t.id,
-                            title: sub.title ?? 'Subtask',
-                            done: sub.done ?? false,
-                            estimate: sub.durationMinutes ?? 0
-                        }))
-                    });
-                }
-
-                for (const b of week.blocks) {
-                    if (b.userSized) {
-                        await tx.schedulerProjectBlock.update({
-                            where: { id: b.id },
-                            data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                        });
-                    }
-                }
-
-                await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
-                await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
-
-                for (const s of week.slots) {
-                    await tx.schedulerSlot.create({
-                        data: {
-                            id: s.id,
-                            weekId: week.id,
-                            kind: s.kind,
-                            blockId: s.blockId,
-                            start: s.start,
-                            end: s.end,
-                            locked: s.locked,
-                            daySpan: s.daySpan ?? 1,
-                        }
-                    });
-
-                    if (s.taskIds && s.taskIds.length > 0) {
-                        await tx.schedulerSlotTask.createMany({
-                            data: s.taskIds.map(taskId => ({
-                                slotId: s.id,
-                                taskId: taskId
-                            }))
-                        });
-                    }
-                }
-
             }
-        });
+        }
+
+        for (const b of week.blocks) {
+            if (b.userSized) {
+                await tx.schedulerProjectBlock.update({
+                    where: { id: b.id },
+                    data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
+                });
+            }
+        }
+    }
+
+    private async persistSlots(tx: any, week: WeekContainer): Promise<void> {
+        await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
+        await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
+
+        for (const s of week.slots) {
+            await tx.schedulerSlot.create({
+                data: {
+                    id: s.id,
+                    weekId: week.id,
+                    kind: s.kind,
+                    blockId: s.blockId,
+                    start: s.start,
+                    end: s.end,
+                    locked: s.locked,
+                    daySpan: s.daySpan ?? 1,
+                }
+            });
+
+            if (s.taskIds && s.taskIds.length > 0) {
+                await tx.schedulerSlotTask.createMany({
+                    data: s.taskIds.map(taskId => ({
+                        slotId: s.id,
+                        taskId: taskId
+                    }))
+                });
+            }
+        }
     }
 
     private async getWeekById(weekId: string): Promise<WeekContainer> {

@@ -200,8 +200,8 @@ describe('WeekService', () => {
             });
 
             expect(mockPrisma.schedulerTask.upsert).toHaveBeenCalled();
-            expect(mockPrisma.schedulerProjectBlock.update).toHaveBeenCalledTimes(2);
-            expect(mockPrisma.schedulerSlotTask.createMany).toHaveBeenCalledTimes(2);
+            expect(mockPrisma.schedulerProjectBlock.update).toHaveBeenCalledTimes(1);
+            expect(mockPrisma.schedulerSlotTask.createMany).toHaveBeenCalledTimes(1);
         });
 
         it('persists safely if calendar entries or slots are empty (omitting version fallback)', async () => {
@@ -362,6 +362,61 @@ describe('WeekService', () => {
 
 
             expect(res).toEqual(mockWindow);
+        });
+
+        it('handles move_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', start: 'A', end: 'B' } as any];
+            service['applyChange'](mockWeek, {
+                type: 'move_block',
+                blockId: 'block-1',
+                to: { start: 'C', end: 'D' },
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].start).toBe('C');
+            expect(mockWeek.blocks[0].end).toBe('D');
+        });
+
+        it('handles resize_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', start: 'A', end: 'B', userSized: false } as any];
+            service['applyChange'](mockWeek, {
+                type: 'resize_block',
+                blockId: 'block-1',
+                to: { start: 'C', end: 'D' },
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].start).toBe('C');
+            expect((mockWeek.blocks[0] as any).userSized).toBe(true);
+        });
+
+        it('handles pin_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', mobility: 'fluid' } as any];
+            service['applyChange'](mockWeek, {
+                type: 'pin_block',
+                blockId: 'block-1',
+                pinned: true,
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].mobility).toBe('pinned');
+        });
+
+        it('handles place_unplaced helper branch', () => {
+            mockWeek.tasks = [
+                { id: 'task-1', placement: 'placed' },
+                { id: 'task-2', placement: 'unplaced' },
+                { id: 'task-3', placement: 'unplaced' }
+            ] as any;
+
+            service['applyChange'](mockWeek, {
+                type: 'place_unplaced',
+                taskIds: ['task-2'],
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.tasks[2].placement).toBe('placed');
+            expect((mockWeek.tasks[2] as any)._tempBlinded).toBe(true);
         });
     });
 

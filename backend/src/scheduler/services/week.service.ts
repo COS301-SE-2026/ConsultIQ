@@ -119,10 +119,11 @@ export class WeekService {
         const placeWindow = this.applyChange(clone, change);
 
         if (placeWindow) {
-            this.placerService.place(clone, { window: placeWindow, allowBump: ctx.allowBump ?? false });
+            this.placerService.place(clone, { window: placeWindow, allowBump: true });
         }
 
-        const validation = this.validatorService.validate(clone, ctx);
+        const fullCtx: ValidateContext = { ...ctx, previousWeek: week };
+        const validation = this.validatorService.validate(clone, fullCtx);
         const safeIssues = validation.issues ?? [];
 
         const violations = safeIssues.filter((i) => i.level === 'violation');
@@ -194,18 +195,146 @@ export class WeekService {
     private applyChange(week: WeekContainer, change: Change): Interval | undefined {
         switch (change.type) {
             case 'replan':
-                return change.window;
+            case 'place_unplaced':
+                break;
 
             case 'create_task':
-                // TODO(TaskService): push the new task onto week.tasks, return a window covering
-                // it if it should be placed immediately.
-                return undefined;
+                week.tasks.push(change.task as Task);
+                break;
 
+            case 'update_task':
+                this.applyUpdateTask(week, change.taskId, change.patch);
+                break;
+
+            case 'delete_task':
+                this.applyDeleteTask(week, change.taskId);
+                break;
+
+            case 'set_status':
+                this.applySetStatus(week, change.taskId, change.status as Task['status']);
+                break;
+
+            case 'toggle_subtask':
+                this.applyToggleSubtask(week, change.taskId, change.subtaskId);
+                break;
+
+            case 'split_task':
+                this.applySplitTask(week, change.taskId, change.atMinutes);
+                break;
+
+            case 'accept_deadline_miss':
+                this.applyAcceptDeadlineMiss(week, change.taskId);
+                break;
+
+            case 'move_slot':
+                this.applyMoveSlot(week, change.slotId, change.to, change.tags);
+                break;
+
+            case 'move_block': {
+                const block = this.getBlock(week, change.blockId);
+                block.start = change.to.start;
+                block.end = change.to.end;
+                break;
+            }
+            case 'resize_block': {
+                const block = this.getBlock(week, change.blockId);
+                block.start = change.to.start;
+                block.end = change.to.end;
+                (block as ProjectBlock & { userSized?: boolean }).userSized = true;
+                break;
+            }
+            case 'pin_block': {
+                const block = this.getBlock(week, change.blockId);
+                block.mobility = change.pinned ? 'pinned' : 'fluid';
+                break;
+            }
             default:
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
+
+        return change.window;
     }
 
+    private applyUpdateTask(week: WeekContainer, taskId: string, patch: Partial<Task>): void {
+        const idx = week.tasks.findIndex(t => t.id === taskId);
+        if (idx > -1) week.tasks[idx] = { ...week.tasks[idx], ...patch } as Task;
+    }
+
+    private applyDeleteTask(week: WeekContainer, taskId: string): void {
+        week.tasks = week.tasks.filter(t => t.id !== taskId);
+        week.slots = week.slots.map(s => ({
+            ...s,
+            taskIds: s.taskIds.filter(id => id !== taskId)
+        })).filter(s => s.taskIds.length > 0);
+    }
+
+    private applySetStatus(week: WeekContainer, taskId: string, status: Task['status']): void {
+        const task = week.tasks.find(t => t.id === taskId);
+        if (task) task.status = status;
+    }
+
+    private applyToggleSubtask(week: WeekContainer, taskId: string, subtaskId: string): void {
+        const task = week.tasks.find(t => t.id === taskId);
+        const sub = task?.subtasks?.find(s => s.id === subtaskId);
+        if (sub) {
+            sub.done = !sub.done;
+        }
+
+        if (task?.subtasks?.every(s => s.done)) {
+            task.status = 'Done';
+        }
+    }
+
+    private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number): void {
+        const orig = week.tasks.find(t => t.id === taskId);
+        if (!orig) return;
+
+        const originalTMax = orig.tMax;
+        const originalTMin = orig.tMin;
+        const splitRatio = atMinutes / originalTMax;
+
+        orig.tMax = atMinutes;
+        orig.tMin = Math.round(originalTMin * splitRatio);
+
+        const secondHalf: Task = {
+            ...orig,
+            id: 'split-' + orig.id + '-' + Date.now(),
+            tMax: originalTMax - atMinutes,
+            tMin: Math.round(originalTMin * (1 - splitRatio)),
+            status: 'Ready',
+            placement: 'unplaced'
+        };
+
+        week.tasks.push(secondHalf);
+    }
+
+    private applyAcceptDeadlineMiss(week: WeekContainer, taskId: string): void {
+        const task = week.tasks.find(t => t.id === taskId);
+        if (task) {
+            task.unplacedReason = undefined;
+            task.deadlineMissAccepted = true;
+        }
+    }
+
+    private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
+        const slot = week.slots.find((s) => s.id === slotId);
+        if (!slot) {
+            throw new NotFoundException('Task slot ' + slotId + ' not found in week ' + week.id);
+        }
+
+        slot.start = to.start;
+        slot.end = to.end;
+        slot.locked = true;
+        if (tags) slot.tags = tags;
+    }
+
+    private getBlock(week: WeekContainer, blockId: string) {
+        const block = week.blocks.find((b) => b.id === blockId);
+        if (!block) {
+            throw new NotFoundException('Project block ' + blockId + ' not found in week ' + week.id);
+        }
+        return block;
+    }
 
     private async persistWeek(week: WeekContainer, expectedVersion?: number): Promise<void> {
         const whereClause = expectedVersion !== undefined
@@ -219,29 +348,17 @@ export class WeekService {
                 data: { version: { increment: 1 }, lastCommittedAt: new Date() },
             });
 
-
             await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
-
-            if (week.tasks.length > 0) {
-                await Promise.all(week.tasks.map(t =>
-                    tx.schedulerTask.update({
-                        where: { id: t.id },
-                        data: { placement: t.placement, unplacedReason: t.unplacedReason, status: t.status },
-                    })
-                ));
-            }
-
-
-            const manualBlocks = week.blocks.filter(b =>
-                (b as unknown as { manuallyResized?: boolean;[key: string]: unknown }).manuallyResized
-            );
-            if (manualBlocks.length > 0) {
-                await Promise.all(manualBlocks.map(b =>
-                    tx.schedulerProjectBlock.update({
-                        where: { id: b.id },
-                        data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                    })
-                ));
+            if (week.slots.length > 0) {
+                await tx.schedulerSlot.createMany({
+                    data: week.slots.map((s) => ({
+                        ...s,
+                        weekId: week.id,
+                        daySpan: s.daySpan ?? 1,
+                        subtaskIds: s.subtaskIds ?? [],
+                        tags: s.tags ?? [],
+                    })),
+                });
             }
 
             for (const t of week.tasks) {

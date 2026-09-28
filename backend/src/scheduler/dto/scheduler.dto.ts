@@ -1,4 +1,4 @@
-
+import { LocalDate } from '../services/time.service'
 export interface Interval {
     start: string;
     end: string;
@@ -88,8 +88,26 @@ export interface Task {
     priorityScore?: number;
     createdAt: string;
     updatedAt: string;
+    deadlineMissAccepted?: boolean;
+    subtasks?: { id: string; done: boolean; durationMinutes?: number }[];
 }
 
+export interface NewTask {
+    projectId: string;
+    title: string;
+    tMin: number;
+    tMax: number;
+    deadline?: string;
+    urgency: number;
+    complexity: number;
+    subtasks: Array<{
+        id: string;
+        title: string;
+        estimate?: number;
+        done: boolean;
+    }>;
+    dependsOn: string[];
+}
 export interface Slot {
     id: string;
     weekId: string;
@@ -222,16 +240,25 @@ export interface BaseChange {
 
 
 export type Change =
-    | (BaseChange & { type: 'create_task'; payload: Partial<Task> })
-    | (BaseChange & { type: 'update_task'; taskId: string; payload: Partial<Task> })
-    | (BaseChange & { type: 'split_task'; taskId: string; atMinutes: number })
-    | (BaseChange & { type: 'move_slot'; slotId: string; to: string })
-    | (BaseChange & { type: 'move_block'; blockId: string; to: string })
-    | (BaseChange & { type: 'resize_block'; blockId: string; to: string })
+    | (BaseChange & { type: 'create_task'; task: Partial<Task>; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'update_task'; taskId: string; patch: Partial<Task>; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'delete_task'; taskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'set_status'; taskId: string; status: string; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'toggle_subtask'; taskId: string; subtaskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'split_task'; taskId: string; atMinutes: number; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'accept_deadline_miss'; taskId: string; origin: 'user'; window: Interval })
+    | (BaseChange & { type: 'place_unplaced'; taskIds: string[]; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'move_slot'; slotId: string; to: Interval; tags?: string[]; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'move_block'; blockId: string; to: Interval; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'resize_block'; blockId: string; to: Interval; confirmedOverride?: boolean; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'pin_block'; blockId: string; pinned: boolean; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'set_project_hours'; allocations: AllocationSummary[] })
     | (BaseChange & { type: 'borrow_hours'; fromProjectId: string; toProjectId: string; minutes: number })
     | (BaseChange & { type: 'calendar_upsert'; entry: CalendarEntryDto; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'calendar_remove'; entryId: string; origin: 'user' | 'system'; window: Interval })
+    | (BaseChange & { type: 'rollover'; taskId: string; fromSlotId: string; origin: 'system'; window: Interval })
+    | (BaseChange & { type: 'mark_incomplete'; date: LocalDate; origin: 'system'; window?: Interval })
+    | (BaseChange & { type: 'pull_forward'; taskIds: string[]; tasks: Task[]; origin: 'user' | 'system'; window: Interval })
     | { type: 'replan'; window: Interval };
 
 

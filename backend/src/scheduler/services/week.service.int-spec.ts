@@ -69,7 +69,7 @@ async function createSchedulerWeek(
                     {
                         projectId: project.id,
                         allocatedMinutes: 120,
-                        mobility: 'pinned',
+                        mobility: 'fluid',
                         start: new Date(`${weekStartStr}T09:00:00Z`),
                         end: new Date(`${weekStartStr}T11:00:00Z`),
                     },

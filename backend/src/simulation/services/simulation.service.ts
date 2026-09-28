@@ -6,11 +6,15 @@ import { RawConsultantDto } from '../../scoring/dto/raw-consultant.dto';
 import { RawProjectDto } from '../../scoring/dto/raw-project.dto';
 import { ConsultantPoolEntry } from '../../scoring/services/interfaces/consultant-pool-entry.interface';
 import { injectHypotheticalSkill } from './inject-hypothetical-skill';
-import { ProjectStatus, WorkModel } from '@prisma/client';
+import { deriveCandidateSkills } from './derive-candidate-skills';
+import { ProjectStatus } from '@prisma/client';
+import { ProjectScoringContext } from '../interfaces/project-scoring-context.interface';
+import { ConsultantScoreOutcome } from '../interfaces/consultant-score-outcome.interface';
 import {
   HypotheticalSkillInput,
   SimulationResult,
 } from '../interfaces/simulation-result.interface';
+import { PipelineProject } from '../interfaces/candidates-skills.interface';
 
 @Injectable()
 export class SimulationService {
@@ -26,97 +30,205 @@ export class SimulationService {
    * calling this twice with unchanged underlying data returns identical
    * results, since it performs only reads plus pure in-memory computation.
    */
-    async simulate (
-        consultantId: string,
-        projectId: string,
-        candidateSkill: HypotheticalSkillInput,
-    ): Promise<SimulationResult> {
-        const [consultantRow, projectRow] =  await Promise.all([
-            this.fetchConsultantRow(consultantId),
-            this.fetchProjectRow(projectId),
-        ]);
+    async simulate(
+    consultantId: string,
+    projectId: string,
+    candidateSkill: HypotheticalSkillInput,
+  ): Promise<SimulationResult> {
+    const [consultantRow, projectRow] = await Promise.all([
+      this.fetchConsultantRow(consultantId),
+      this.fetchProjectRow(projectId),
+    ]);
 
-        const projectDto = this.mapProjectToDto(projectRow);
-        const scoringContext = await this.dataIngestion.getProjectScoringContext(projectId);
+    const projectContext = await this.resolveProjectScoringContext(
+      consultantId,
+      projectId,
+      projectRow,
+    );
 
-        const allocationsByConsultant = await this.fetchAllocation(
+    const baselineConsultantDto = this.mapConsultantToDto(consultantRow);
+    const projectedConsultantDto = injectHypotheticalSkill(
+      baselineConsultantDto,
+      candidateSkill,
+    );
+
+    const isPlaced = consultantRow.placements && consultantRow.placements.length > 0;
+
+    const [baselineOutcome, projectedOutcome] = await Promise.all([
+      this.scoreConsultantOnProject(
+        consultantRow, projectContext, baselineConsultantDto, isPlaced,
+      ),
+      this.scoreConsultantOnProject(
+        consultantRow, projectContext, projectedConsultantDto, isPlaced,
+      ),
+    ]);
+
+    return this.buildSimulationResult(
+      consultantId, projectId, candidateSkill.skillName,
+      baselineOutcome, projectedOutcome,
+    );
+    }
+
+    /**
+     * For one consultant, tests every skill missing from the active
+     * pipeline's mandatory requirements, and returns the raw scoring
+     * comparison for each (project, candidate skill) pair where that
+     * skill is actually relevant to the project. Does not rank or
+     * summarize — see the aggregator for turning this into a ranked
+     * recommendation.
+     *
+     * Baseline scores are computed ONCE per pipeline project and reused
+     * across every candidate skill — not recomputed per skill, since the
+     * baseline (no hypothetical change) never varies by candidate.
+     */
+    async recommendSkillGrowth(consultantId: string): Promise<SimulationResult[]> {
+    const [consultantRow, pipelineProjects] = await Promise.all([
+        this.fetchConsultantRow(consultantId),
+        this.fetchPipelineProjects(),
+    ]);
+
+    const baselineConsultantDto = this.mapConsultantToDto(consultantRow);
+    const candidateSkills = deriveCandidateSkills(
+        baselineConsultantDto.skills,
+        pipelineProjects,
+    );
+
+    if (candidateSkills.length === 0) {
+        return []; // consultant already has every mandatory skill the pipeline needs
+    }
+
+    const isPlaced = consultantRow.placements && consultantRow.placements.length > 0;
+
+    // Resolve each project's context + baseline ONCE, up front.
+    const perProjectData = await Promise.all(
+        pipelineProjects.map(async (projectRow) => {
+        const projectContext = await this.resolveProjectScoringContext(
             consultantId,
+            projectRow.id,
             projectRow,
         );
-
-        const baselineConsultantDto = this.mapConsultantToDto(consultantRow);
-        const projectConsultantDto = injectHypotheticalSkill(
+        const baselineOutcome = await this.scoreConsultantOnProject(
+            consultantRow,
+            projectContext,
             baselineConsultantDto,
-            candidateSkill,
+            isPlaced,
+        );
+        return { projectRow, projectContext, baselineOutcome };
+        }),
+    );
+
+    const results: SimulationResult[] = [];
+
+    for (const candidateSkill of candidateSkills) {
+        const relevantProjects = perProjectData.filter(({ projectRow }) =>
+        this.projectRequiresSkill(projectRow, candidateSkill.skillName),
         );
 
-        const isPlaced = consultantRow.placements && consultantRow.placements.length > 0;
+        const projectedOutcomes = await Promise.all(
+        relevantProjects.map(({ projectContext }) => {
+            const projectedConsultantDto = injectHypotheticalSkill(
+            baselineConsultantDto,
+            candidateSkill,
+            );
+            return this.scoreConsultantOnProject(
+            consultantRow,
+            projectContext,
+            projectedConsultantDto,
+            isPlaced,
+            );
+        }),
+        );
 
-        const baselinePool: ConsultantPoolEntry[] = [
-            {
-                consultantId,
-                consultantName: consultantRow.user?.fullName || 'Unknown',
-                consultantEmail: consultantRow.user?.email || 'Unknown',
-                isPlaced,
-                consultant: baselineConsultantDto,
-            },
-        ];
-
-        const projectedPool: ConsultantPoolEntry[] = [
-            {
-                consultantId,
-                consultantName: consultantRow.user?.fullName || 'Unknown',
-                consultantEmail: consultantRow.user?.email || 'Unknown',
-                isPlaced,
-                consultant: projectConsultantDto,
-            },
-        ];
-
-        const [baselineExecution, projectedExecution] = await Promise.all([
-            this.scoringExecutor.scorePool(
-                projectDto,
-                baselinePool,
-                scoringContext,
-                allocationsByConsultant,
+        relevantProjects.forEach(({ projectRow, baselineOutcome }, index) => {
+        results.push(
+            this.buildSimulationResult(
+            consultantId,
+            projectRow.id,
+            candidateSkill.skillName,
+            baselineOutcome,
+            projectedOutcomes[index],
             ),
-            this.scoringExecutor.scorePool(
-                projectDto,
-                projectedPool,
-                scoringContext,
-                allocationsByConsultant,
-            ),
+        );
+        });
+    }
+
+    return results;
+    }
+
+
+    private async resolveProjectScoringContext(
+        consultantId: string,
+        projectId: string,
+        projectRow: Awaited<ReturnType<SimulationService['fetchProjectRow']>>,
+    ): Promise<ProjectScoringContext> {
+        const [scoringContext, allocationsByConsultant] = await Promise.all([
+        this.dataIngestion.getProjectScoringContext(projectId),
+        this.fetchAllocation(consultantId, projectRow),
         ]);
 
-        const baselineResult = baselineExecution.finalResults[0];
-        const projectedResult = projectedExecution.finalResults[0];
-
-        // Excluded (e.g. hard-exclusion on skill alignment or availability) —
-        // finalResults will be empty for that pool; report as excluded rather
-        // than throwing, since "not viable" is a valid simulation outcome.
-        if(!baselineResult || !projectedResult) {
-            return {
-                consultantId,
-                projectId,
-                candidateSkillName: candidateSkill.skillName,
-                baselineScore: baselineResult?.finalScore ?? 0,
-                projectedScore: projectedResult?.finalScore ?? 0,
-                scoreDelta: 0,
-                excluded: true,
-                excludedReason: !baselineResult
-                    ?   'Consultant excluded from baseline scoring.'
-                    :   'Consultant excluded from projected scoring.',
-            };
-        }
-
         return {
-            consultantId,
-            projectId,
-            candidateSkillName: candidateSkill.skillName,
-            baselineScore: baselineResult.finalScore,
-            projectedScore: projectedResult.finalScore,
-            scoreDelta: projectedResult.finalScore - baselineResult.finalScore,
-            excluded: false,
+        projectDto: this.mapProjectToDto(projectRow),
+        scoringContext,
+        allocationsByConsultant,
         };
+    }
+
+    private async scoreConsultantOnProject(
+        consultantRow: Awaited<ReturnType<SimulationService['fetchConsultantRow']>>,
+        projectContext: ProjectScoringContext,
+        consultantDto: RawConsultantDto,
+        isPlaced: boolean,
+    ): Promise<ConsultantScoreOutcome> {
+        const pool: ConsultantPoolEntry[] = [
+        {
+            consultantId: consultantRow.id,
+            consultantName: consultantRow.user?.fullName || 'Unknown',
+            consultantEmail: consultantRow.user?.email || 'Unknown',
+            isPlaced,
+            consultant: consultantDto,
+        },
+        ];
+
+        const { finalResults } = await this.scoringExecutor.scorePool(
+        projectContext.projectDto,
+        pool,
+        projectContext.scoringContext,
+        projectContext.allocationsByConsultant,
+        );
+
+        const result = finalResults[0];
+        return result
+        ? { score: result.finalScore, excluded: false }
+        : { score: 0, excluded: true };
+    }
+
+    private buildSimulationResult(
+    consultantId: string,
+    projectId: string,
+    candidateSkillName: string,
+    baseline: ConsultantScoreOutcome,
+    projected: ConsultantScoreOutcome,
+    ): SimulationResult {
+    return {
+        consultantId,
+        projectId,
+        candidateSkillName,
+        baselineScore: baseline.score,
+        projectedScore: projected.score,
+        scoreDelta: baseline.excluded || projected.excluded ? 0 : projected.score - baseline.score,
+        baselineExcluded: baseline.excluded,
+        projectedExcluded: projected.excluded,
+    };
+    }
+
+    private projectRequiresSkill(
+    projectRow: PipelineProject,
+    skillName: string,
+    ): boolean {
+    const normalised = skillName.trim().toLowerCase();
+    return projectRow.skills.some(
+        (s) => s.skill.name.trim().toLowerCase() === normalised,
+    );
     }
 
     private async fetchConsultantRow(consultantId: string) {

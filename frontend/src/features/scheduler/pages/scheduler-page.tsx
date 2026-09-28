@@ -15,24 +15,12 @@ import {
     underusedWeek
 
 } from "../types/scheduler.fixtures";
-
-const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];import SchedulerHeader from "../components/scheduler-header/scheduler-header";
-import {
-    FIXTURE_PROJECTS,
-    designWeek,
-    FIXTURE_NOW,
-    holidayWeek,
-    leaveWeek,
-    batchWeek,
-    emptyWeek,
-    underusedWeek
-
-} from "../types/scheduler.fixtures";
 import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
 import BlockDetailPanel from "../components/block-detail-panel";    
 import TaskForm, { type TaskSubmission} from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
+import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
@@ -119,11 +107,9 @@ export default function SchedulerPage() {
         setTaskForm(null);
     }
 
-    const [weekIndex, setWeekIndex] = useState(0);
-    const [backlogOpen, setBacklogOpen] = useState(true);
     const [creatingEntry, setCreatingEntry] = useState(false);
 
-    const week = FIXTURE_WEEKS[weekIndex];
+
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
@@ -133,10 +119,8 @@ export default function SchedulerPage() {
                     <SchedulerHeader
                         week={week}
                         projects={FIXTURE_PROJECTS}
-                        backlogOpen={backlogOpen}
                         onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
                         onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
-                        onToggleBacklog={() => setBacklogOpen((o) => !o)}
                         onAddEvent={() => setCreatingEntry(true)}
                     />
                 </header>

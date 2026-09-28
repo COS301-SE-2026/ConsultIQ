@@ -61,14 +61,10 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
         <dialog 
             open
             aria-labelledby="split-task-title"
+            onCancel={onCancel}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            onMouseDown={(e) => {
-                if(e.target === e.currentTarget) onCancel();
-            }}
         >
-            <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl"
-                aria-labelledby="split-task-title"
-            >
+            <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl">
                 <header className="bg-slate-900 px-6 py-4 text-white">
                     <h2 id="split-task-title" className="text-base font-semibold">
                         Split task

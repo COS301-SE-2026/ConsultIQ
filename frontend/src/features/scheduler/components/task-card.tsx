@@ -36,9 +36,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
     const overdue = task.status !== "Done" && Boolean(task.deadline) && Date.parse(task.deadline ?? "") < now;
 
   return (
-    <article className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300"
-    onClick={() => onEdit(task)}
-    >
+    <article className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300">
         <div className="flex items-start gap-3">
             <button type="button" aria-label="Drag task" title="Drag task"
                 draggable={Boolean(onDragStart)}

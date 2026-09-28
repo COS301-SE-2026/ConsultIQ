@@ -37,14 +37,10 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
         <dialog 
             open
             aria-labelledby="deadline-resolution-title"
+            onCancel={onCancel}
             className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center border-0 bg-black/40 p-4"
-            onMouseDown={(event) => {
-                if(event.target === event.currentTarget) onCancel();
-            }}
         >
-            <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl"
-                aria-labelledby="deadline-resolution-title"
-            >
+            <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl">
                 <header className="bg-slate-900 px-6 py-4 text-white">
                     <h2 id="deadline-resolution-title" className="text-base font-semibold">
                         Deadline at risk

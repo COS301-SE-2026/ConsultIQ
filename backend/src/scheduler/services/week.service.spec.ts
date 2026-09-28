@@ -36,9 +36,14 @@ describe('WeekService', () => {
             findUnique: jest.fn(),
             update: jest.fn(),
             create: jest.fn(),
+            upsert: jest.fn(),
         },
         schedulerProjectBlock: {
             update: jest.fn(),
+        },
+        schedulerSubtask: {
+            deleteMany: jest.fn(),
+            createMany: jest.fn(),
         },
         schedulerCalendarEntry: {
             deleteMany: jest.fn(),
@@ -178,9 +183,6 @@ describe('WeekService', () => {
         });
 
         it('successfully persists, hitting all branches in persistWeek (creates, updates, enums mappings)', async () => {
-
-            mockPrisma.schedulerTask.findUnique.mockResolvedValueOnce({ id: 'T1' }).mockResolvedValueOnce(null);
-
             const result = await service.commit(mockWeek, mockChange, mockCtx, 2);
 
             expect(result.ok).toBe(true);
@@ -197,9 +199,7 @@ describe('WeekService', () => {
                 ])
             });
 
-            expect(mockPrisma.schedulerTask.update).toHaveBeenCalled();
-            expect(mockPrisma.schedulerTask.create).toHaveBeenCalled();
-
+            expect(mockPrisma.schedulerTask.upsert).toHaveBeenCalled();
             expect(mockPrisma.schedulerProjectBlock.update).toHaveBeenCalledTimes(1);
             expect(mockPrisma.schedulerSlotTask.createMany).toHaveBeenCalledTimes(1);
         });
@@ -309,13 +309,36 @@ describe('WeekService', () => {
             expect(mockWeek.tasks).toHaveLength(2);
         });
 
-        it('handles rollover and mark_incomplete as no-ops', () => {
-            const res1 = service['applyChange'](mockWeek, { type: 'rollover', taskId: 't', fromSlotId: 's', origin: 'system', window: mockWindow });
-            const res2 = service['applyChange'](mockWeek, { type: 'mark_incomplete', date: '2026-09-25' as LocalDate, origin: 'system', window: mockWindow });
+
+        it('handles mark_incomplete (reverts status and last completed subtask)', () => {
+            // Set task to Done and sub-2 to done
+            mockWeek.tasks[0].status = 'Done';
+            (mockWeek.tasks[0] as any).subtasks[1].done = true;
+
+            const res = service['applyChange'](mockWeek, {
+                type: 'mark_incomplete',
+                taskId: 'task-1',
+                origin: 'system',
+                window: mockWindow
+            });
+
+            expect(res).toEqual(mockWindow);
+            expect(mockWeek.tasks[0].status).toBe('InProgress');
+            expect((mockWeek.tasks[0] as any).subtasks[1].done).toBe(false);
+        });
 
 
+        it('handles rollover action correctly', () => {
+            const res1 = service['applyChange'](mockWeek, {
+                type: 'rollover',
+                taskId: 'task-1',
+                fromSlotId: 'slot-1',
+                origin: 'system',
+                window: mockWindow
+            });
             expect(res1).toEqual(mockWindow);
-            expect(res2).toEqual(mockWindow);
+            expect(mockWeek.tasks[0].placement).toBe('unplaced');
+            expect(mockWeek.tasks[0].carriedOver).toBe(true);
         });
 
         it('handles create_task', () => {
@@ -340,6 +363,61 @@ describe('WeekService', () => {
 
             expect(res).toEqual(mockWindow);
         });
+
+        it('handles move_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', start: 'A', end: 'B' } as any];
+            service['applyChange'](mockWeek, {
+                type: 'move_block',
+                blockId: 'block-1',
+                to: { start: 'C', end: 'D' },
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].start).toBe('C');
+            expect(mockWeek.blocks[0].end).toBe('D');
+        });
+
+        it('handles resize_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', start: 'A', end: 'B', userSized: false } as any];
+            service['applyChange'](mockWeek, {
+                type: 'resize_block',
+                blockId: 'block-1',
+                to: { start: 'C', end: 'D' },
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].start).toBe('C');
+            expect((mockWeek.blocks[0] as any).userSized).toBe(true);
+        });
+
+        it('handles pin_block', () => {
+            mockWeek.blocks = [{ id: 'block-1', mobility: 'fluid' } as any];
+            service['applyChange'](mockWeek, {
+                type: 'pin_block',
+                blockId: 'block-1',
+                pinned: true,
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.blocks[0].mobility).toBe('pinned');
+        });
+
+        it('handles place_unplaced helper branch', () => {
+            mockWeek.tasks = [
+                { id: 'task-1', placement: 'placed' },
+                { id: 'task-2', placement: 'unplaced' },
+                { id: 'task-3', placement: 'unplaced' }
+            ] as any;
+
+            service['applyChange'](mockWeek, {
+                type: 'place_unplaced',
+                taskIds: ['task-2'],
+                origin: 'user',
+                window: mockWindow
+            });
+            expect(mockWeek.tasks[2].placement).toBe('placed');
+            expect((mockWeek.tasks[2] as any)._tempBlinded).toBe(true);
+        });
     });
 
     describe('Endpoints (replan & dryRun)', () => {
@@ -360,6 +438,90 @@ describe('WeekService', () => {
         it('throws NotFoundException if getWeekById cannot find week', async () => {
             mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce(null);
             await expect(service.replan('INVALID_ID')).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('Coverage Gap Fillers', () => {
+
+        const createMockWeek = (): WeekContainer => ({
+            id: 'W1',
+            consultantId: 'C1',
+            weekStart: '2026-09-25' as LocalDate,
+            version: 2,
+            timezone: 'UTC',
+            tasks: [{ id: 'T1', status: 'Ready' } as Task],
+            blocks: [{ id: 'B1', userSized: true } as unknown as ProjectBlock],
+            slots: [{ id: 'S1', taskIds: ['T1'] } as unknown as Slot],
+            calendarEntries: [{ id: 'CE1', type: 'meeting', origin: 'user', start: '2026-09-25T00:00:00Z', end: '2026-09-25T01:00:00Z' } as any],
+            holidays: [],
+            metadata: {} as any,
+            createdAt: mockDate.toISOString() as Instant,
+            updatedAt: mockDate.toISOString() as Instant,
+            lastCommittedAt: mockDate.toISOString() as Instant,
+            sourceOfLastChange: 'system',
+        });
+
+        it('unblinds temporary blinded tasks after place_unplaced commit', async () => {
+            const testWeek = createMockWeek();
+            testWeek.version = 1;
+            const taskToBlind = { id: 'tb-1', placement: 'unplaced', _tempBlinded: true } as any;
+            testWeek.tasks = [taskToBlind];
+
+            const change: Change = {
+                type: 'place_unplaced',
+                taskIds: [],
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            mockValidatorService.validate.mockReturnValueOnce({ issues: [] });
+
+            const result = await service.commit(testWeek, change, { bumpedEntityIds: [], allocations: [] }, 1, { dryRun: true });
+
+            expect(result.ok).toBe(true);
+            const unblindedTask = result.value.tasks.find(t => t.id === 'tb-1');
+            expect((unblindedTask as any)._tempBlinded).toBeUndefined();
+        });
+
+        it('persists subtasks with durationMinutes mapping correctly', async () => {
+            const testWeek = {
+                ...createMockWeek(),
+                tasks: [{
+                    id: 'T-SUB',
+                    projectId: 'P1',
+                    title: 'Task with subtasks',
+                    tMin: 30,
+                    tMax: 60,
+                    status: 'Ready',
+                    placement: 'placed',
+                    subtasks: [{ id: 'sub-1', title: 'Sub 1', done: false, durationMinutes: 30 }]
+                } as any],
+                slots: [],
+                calendarEntries: []
+            };
+
+            const change = { type: 'replan', window: mockWindow } as Change;
+            const ctx = { bumpedEntityIds: [], allocations: [] };
+
+            const result = await service.commit(testWeek, change, ctx, 2);
+            expect(result.ok).toBe(true);
+            expect(mockPrisma.schedulerSubtask.createMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.arrayContaining([
+                        expect.objectContaining({ estimate: 30 })
+                    ])
+                })
+            );
+        });
+
+        it('throws NotFoundException when block is missing in getBlock', () => {
+            const badWeek = { blocks: [] } as any;
+            expect(() => service['getBlock'](badWeek, 'non-existent-block')).toThrow(NotFoundException);
+        });
+
+        it('throws NotFoundException when slot is missing in applyMoveSlot', () => {
+            const badWeek = { slots: [] } as any;
+            expect(() => service['applyMoveSlot'](badWeek, 'non-existent-slot', mockWindow)).toThrow(NotFoundException);
         });
     });
 });

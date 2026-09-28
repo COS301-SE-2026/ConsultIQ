@@ -257,7 +257,7 @@ export type Change =
     | (BaseChange & { type: 'calendar_upsert'; entry: CalendarEntryDto; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'calendar_remove'; entryId: string; origin: 'user' | 'system'; window: Interval })
     | (BaseChange & { type: 'rollover'; taskId: string; fromSlotId: string; origin: 'system'; window: Interval })
-    | (BaseChange & { type: 'mark_incomplete'; date: LocalDate; origin: 'system'; window?: Interval })
+    | (BaseChange & { type: 'mark_incomplete'; date?: LocalDate; taskId: string; origin: 'system'; window?: Interval })
     | (BaseChange & { type: 'pull_forward'; taskIds: string[]; tasks: Task[]; origin: 'user' | 'system'; window: Interval })
     | { type: 'replan'; window: Interval };
 
@@ -282,3 +282,15 @@ export interface Issue {
 export type PlaceTaskResult =
     | { ok: true; data: Slot[] }
     | { ok: false; summary: UnplacedTaskSummary; code?: string };
+
+
+export type PrismaSlotWithTasks = {
+    slotTasks?: Array<{ taskId: string }>;
+    [key: string]: unknown;
+};
+
+export type PrismaBlock = {
+    userSized?: boolean;
+    allocation?: unknown;
+    [key: string]: unknown;
+};

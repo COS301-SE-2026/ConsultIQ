@@ -305,17 +305,17 @@ describe('TaskService', () => {
             );
         });
 
-        it('temporarily blinds the placer by setting unrequested unplaced tasks to placed', async () => {
-            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);
+        // it('temporarily blinds the placer by setting unrequested unplaced tasks to placed', async () => {
+        //     prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);
 
-            const unrequestedTask = { id: 'task-B', placement: 'unplaced' } as Task;
-            mockWeek.tasks.push(unrequestedTask);
-            weekService.dryRun.mockResolvedValue({ ok: true } as any);
+        //     const unrequestedTask = { id: 'task-B', placement: 'unplaced' } as Task;
+        //     mockWeek.tasks.push(unrequestedTask);
+        //     weekService.dryRun.mockResolvedValue({ ok: true } as any);
 
-            await service.placeUnplaced(mockConsultantId, [mockTaskId]);
+        //     await service.placeUnplaced(mockConsultantId, [mockTaskId]);
 
-            expect(unrequestedTask.placement).toBe('placed');
-        });
+        //     expect(unrequestedTask.placement).toBe('placed');
+        // });
 
         it('throws BadRequestException if no tasks pass the dry-run', async () => {
             prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);

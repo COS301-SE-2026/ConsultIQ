@@ -1,11 +1,6 @@
 export type FeasibilityCompetency = "BEGINNER" | "INTERMEDIATE" | "EXPERT" ;
 
-export interface FeasibilityRange {
-    min: number;
-    max: number;
-}
-
-export type FeasibilityValue = number | FeasibilityRange;
+export type FeasibilityWorkModel = "ONSITE" | "REMOTE" | "HYBRID";
 
 export interface FeasibilitySkillDto {
     name: string;
@@ -15,34 +10,29 @@ export interface FeasibilitySkillDto {
 }
 
 export interface FeasibilityRequestDto {
-    projectName?: string;
-    clientName?: string;
-    description?: string;
-    addressLine1?: string;
-    addressLine2?: string;
-    suburb?: string;
-    city?: string;
-    province?: string;
-    postalCode?: string;
     startDate: string;
     endDate: string;
     teamSize: number;
     allocation: number;
     budget: number;
     skills: FeasibilitySkillDto[];
+    city: string;
+    province: string;
+    workModel: FeasibilityWorkModel;
+    latitude?: number;
+    longitude?: number;
 }
 
-export interface FeasibilitySummaryDto {
-  eligibleCount: FeasibilityValue;
-  topScore: FeasibilityValue | null;
+
+export interface FeasibilityResultDto {
+  eligibleCount: number;
+  topScore: number;
 }
 
-export interface FeasibilityVariantDto {
+export interface FeasibilityVariantDto extends FeasibilityResultDto {
   label: string;
-  result: FeasibilitySummaryDto;
 }
 
-export interface FeasibilityResponseDto {
-  base: FeasibilitySummaryDto;
+export interface FeasibilityResponseDto extends FeasibilityResultDto {
   variants: FeasibilityVariantDto[];
 }

@@ -1,6 +1,6 @@
 import { Card } from "../../../components/ui/card";
 import type { ProjectFormData } from "../pages/project-specification-page";
-
+import type { FeasibilityWorkModel } from "../types/feasibility.types";
 interface ProjectBasicInfoCardProps {
   data: ProjectFormData;
   errors?: Partial<Record<keyof ProjectFormData, string>>;
@@ -191,8 +191,8 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               <select
                 id="work-model"
                 className={`flex h-14 w-full rounded-md border bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400 ${errors.workModel ? "border-red-500" : "border-slate-200"}`}
-                //value={workModel}
-                //onChange={(e) => { setWorkModel(e.target.value); if (errors.workModel) setErrors((p) => ({ ...p, workModel: "" })); }}
+                value={data.workModel}
+                onChange={(event) => onChange("workModel", event.target.value as FeasibilityWorkModel | "")}
               >
                 <option value="" disabled>Select work model</option>
                 <option value="ONSITE">On-site</option>

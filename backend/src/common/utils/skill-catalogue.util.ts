@@ -38,16 +38,22 @@ export async function upsertSkillCatalogueEntry(
     },
   });
 
+  if (!skill.name) {
+    return skill;
+  }
+
   const currentDisplayName = skill.displayName ?? skill.name;
 
   const isCurrentlyLowercase = currentDisplayName === skill.name;
   const incomingHasCasing = displayName !== name;
 
   if (isCurrentlyLowercase && incomingHasCasing) {
-    return client.skill.update({
+    const updatedSkill = await client.skill.update({
       where: { id: skill.id },
       data: { displayName },
     });
+
+    return updatedSkill ?? { ...skill, displayName };
   }
 
   return skill;

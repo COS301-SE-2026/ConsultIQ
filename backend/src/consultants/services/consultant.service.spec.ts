@@ -35,6 +35,7 @@ const mockPrismaService = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   consultantSkill: {
     create: jest.fn(),
@@ -130,7 +131,18 @@ describe('ConsultantService', () => {
           findFirst: jest.fn().mockResolvedValue(null),
         },
         consultantManager: { create: jest.fn().mockResolvedValue({}) },
-        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        skill: {
+          upsert: jest.fn().mockResolvedValue({
+            id: 'skill-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'skill-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+        },
         consultantSkill: { create: jest.fn().mockResolvedValue({}) },
         consultantExperience: { create: jest.fn().mockResolvedValue({}) },
         ...overrideTx,
@@ -945,7 +957,16 @@ describe('ConsultantService', () => {
           create: jest.fn().mockResolvedValue({}),
         },
         skill: {
-          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
+          upsert: jest.fn().mockResolvedValue({
+            id: 'skill-uuid-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'skill-uuid-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
         },
         consultantExperience: {
           deleteMany: jest.fn().mockResolvedValue({}),

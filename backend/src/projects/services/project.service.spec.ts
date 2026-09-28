@@ -18,6 +18,7 @@ const mockTx = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   projectSkill: {
     create: jest.fn(),
@@ -39,6 +40,7 @@ const mockPrismaService = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   projectSkill: {
     create: jest.fn(),
@@ -692,7 +694,11 @@ describe('ProjectService', () => {
       expect(mockTx.skill.upsert).toHaveBeenCalledWith({
         where: { name: 'docker' },
         update: {},
-        create: { name: 'docker', category: 'General' },
+        create: {
+          name: 'docker',
+          displayName: 'Docker',
+          category: 'General',
+        },
       });
       expect(mockTx.projectSkill.create).toHaveBeenCalledWith({
         data: {

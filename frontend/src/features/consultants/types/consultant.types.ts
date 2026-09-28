@@ -1,37 +1,69 @@
- const competencyMap: Record<string, string> = {
-    "BEGINNER": "Beginner",
-    "INTERMEDIATE": "Intermediate",
-    "EXPERT": "Expert"
-  };
+const competencyMap: Record<string, string> = {
+  "BEGINNER": "Beginner",
+  "INTERMEDIATE": "Intermediate",
+  "EXPERT": "Expert"
+};
 
-  export const  normalizeCompetency = (text: string) : string => {
-    return  competencyMap[text] || text;
+export const normalizeCompetency = (text: string): string => {
+  return competencyMap[text] || text;
 
-  };
+};
 
-  export const  normalizeJobType= (text: string) : string => {
-    return  jobTypeMap[text] || text;
+export const normalizeJobType = (text: string): string => {
+  return jobTypeMap[text] || text;
 
-  };
+};
 
-  export const  normalizeWorkModel= (text: string) : string => {
-    return  workModelMap[text] || text;
+export const normalizeWorkModel = (text: string): string => {
+  return workModelMap[text] || text;
 
-  };
+};
 
-  const jobTypeMap: Record<string, string> = {
-    "FULL_TIME": "Full time",
-    "PART_TIME": "Part time",
-    "CONTRACT": "Contract",
-    "INTERNSHIP": "Internship",
-    "FREELANCE": "Freelance"
-  };
+const jobTypeMap: Record<string, string> = {
+  "FULL_TIME": "Full time",
+  "PART_TIME": "Part time",
+  "CONTRACT": "Contract",
+  "INTERNSHIP": "Internship",
+  "FREELANCE": "Freelance"
+};
 
-  const workModelMap: Record<string, string> = {
-    "ONSITE": "Onsite",
-    "REMOTE": "Remote",
-    "HYBRID": "Hybrid",
-  };
+const workModelMap: Record<string, string> = {
+  "ONSITE": "Onsite",
+  "REMOTE": "Remote",
+  "HYBRID": "Hybrid",
+};
 
+export interface SkillRecommendation {
+  skillName: string;
 
- 
+  newlyEligibleProjectCount: number;
+
+  totalScoreDelta: number;
+
+  projectsTested: number;
+}
+
+export interface SkillGrowthResponse {
+  recommendations: SkillRecommendation[];
+}
+
+export const fallbackRecommendations: SkillRecommendation[] = [
+  {
+    skillName: "Azure AI Fundamentals",
+    newlyEligibleProjectCount: 8,
+    totalScoreDelta: 12,
+    projectsTested: 24,
+  },
+  {
+    skillName: "Data Engineering",
+    newlyEligibleProjectCount: 6,
+    totalScoreDelta: 9,
+    projectsTested: 24,
+  },
+  {
+    skillName: "Power BI",
+    newlyEligibleProjectCount: 4,
+    totalScoreDelta: 7,
+    projectsTested: 24,
+  },
+];

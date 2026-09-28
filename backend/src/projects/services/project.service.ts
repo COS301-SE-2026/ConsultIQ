@@ -20,6 +20,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { upsertSkillCatalogueEntry } from '../../common/utils/skill-catalogue.util';
 
 @Injectable()
 export class ProjectService {
@@ -235,12 +236,10 @@ export class ProjectService {
 
 
       for(const skill of dto.skills) {
-        const normalizedSkillName = skill.name.trim().toLowerCase();
-        const skillRecord = await tx.skill.upsert({
-          where: { name: normalizedSkillName },
-          update: {},
-          create: { name: normalizedSkillName, category: 'General' },
-        });
+        const skillRecord = await upsertSkillCatalogueEntry(
+          tx,
+          skill.name,
+        );
 
         const existingProjectSkill = await tx.projectSkill.findFirst({
           where: { projectId: project.id, skillId: skillRecord.id },
@@ -464,7 +463,7 @@ export class ProjectService {
     if (!skills || skills.length === 0) return;
 
     for (const skillInput of skills) {
-      const skillRecord = await this.upsertSkillCatalogEntry(
+      const skillRecord = await upsertSkillCatalogueEntry(
         tx,
         skillInput.name,
       );
@@ -498,17 +497,5 @@ export class ProjectService {
         });
       }
     }
-  }
-
-  private async upsertSkillCatalogEntry(
-    tx: Prisma.TransactionClient,
-    name: string,
-  ) {
-    const normalizedSkillName = name.trim().toLowerCase();
-    return tx.skill.upsert({
-      where: { name: normalizedSkillName },
-      update: {},
-      create: { name: normalizedSkillName, category: 'General' },
-    });
   }
 }

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CalendarService } from './calendar.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
@@ -173,7 +173,18 @@ describe('CalendarService', () => {
         it('throws NotFoundException if entry does not exist', async () => {
             prisma.schedulerCalendarEntry.findUnique.mockResolvedValue(null);
 
-            await expect(service.remove('bad-id')).rejects.toThrow(NotFoundException);
+            await expect(service.remove('cons-1', 'bad-id')).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws ForbiddenException if consultantId does not match entry ownership', async () => {
+            prisma.schedulerCalendarEntry.findUnique.mockResolvedValueOnce({
+                id: 'entry-1',
+                origin: 'user',
+                week: { consultantId: 'DIFFERENT_OWNER' }
+            });
+
+            await expect(service.remove('cons-1', 'entry-1')).rejects.toThrow(ForbiddenException);
+            expect(weekService.commit).not.toHaveBeenCalled();
         });
 
         it('rejects public holiday deletions gracefully', async () => {
@@ -183,7 +194,7 @@ describe('CalendarService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-28T00:00:00Z') }
             });
 
-            const result = await service.remove('hol-1');
+            const result = await service.remove('cons-1', 'hol-1');
 
             expect(result.ok).toBe(false);
             expect(result.violations[0].code).toBe('HOLIDAY_ENTRY_IMMUTABLE' as ReasonCode);
@@ -198,7 +209,7 @@ describe('CalendarService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-28T00:00:00Z') }
             });
 
-            await service.remove('entry-1', 42);
+            await service.remove('cons-1', 'entry-1', 42);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,

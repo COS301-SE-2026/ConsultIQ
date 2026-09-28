@@ -6,7 +6,7 @@ on:
 
 jobs:
   verify-frontend-accessibility:
-    name: Frontend Accessibility (NFR)
+    name: Frontend Accessibility
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -28,7 +28,7 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Run accessibility audit (Lighthouse CI)
+      - name: Run accessibility audit 
         working-directory: frontend
         run: npx --no-install lhci autorun --config=lighthouserc.public.cjs
 
@@ -44,6 +44,11 @@ jobs:
         if: failure()
         working-directory: frontend
         run: npm install --no-save puppeteer
+
+      - name: Install Chrome for puppeteer
+        if: failure()
+        working-directory: frontend
+        run: npx --yes puppeteer browsers install chrome
 
       - name: Capture debug screenshot + console output
         if: failure()

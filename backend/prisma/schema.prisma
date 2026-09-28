@@ -649,6 +649,8 @@ enum CalendarEntryOrigin {
 enum IdempotencyKeyType {
   daily_rollover @map("daily-rollover")
   slot_rollover  @map("slot-rollover")
+  daily_tick     @map("daily-tick")
+  weekly_tick    @map("weekly-tick")
 }
 
 model SchedulerWeek {

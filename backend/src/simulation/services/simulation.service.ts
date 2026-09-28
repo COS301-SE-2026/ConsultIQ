@@ -15,6 +15,9 @@ import {
   SimulationResult,
 } from '../interfaces/simulation-result.interface';
 import { PipelineProject } from '../interfaces/candidates-skills.interface';
+import { aggregateSkillRecommendations } from './aggregate-skill-recommendations';
+import { selectTopSkillRecommendations } from './select-top-skill-recommendations';
+import { SkillGrowthResponse } from '../interfaces/skill-growth-response.interface';
 
 @Injectable()
 export class SimulationService {
@@ -155,7 +158,6 @@ export class SimulationService {
     return results;
     }
 
-
     private async resolveProjectScoringContext(
         consultantId: string,
         projectId: string,
@@ -200,6 +202,30 @@ export class SimulationService {
         return result
         ? { score: result.finalScore, excluded: false }
         : { score: 0, excluded: true };
+    }
+
+    async getSkillRecommendationsForUser(userId: string): Promise<SkillGrowthResponse> {
+        const consultantId = await this.resolveConsultantIdForUser(userId);
+        const results = await this.recommendSkillGrowth(consultantId);
+
+        return {
+            recommendations: selectTopSkillRecommendations(
+            aggregateSkillRecommendations(results),
+            ),
+        };
+    }
+
+    private async resolveConsultantIdForUser(userId: string): Promise<string> {
+        const consultant = await this.prisma.consultant.findUnique({
+            where: { userId },
+            select: { id: true },
+        });
+
+        if (!consultant) {
+            throw new NotFoundException('No consultant profile found for the authenticated user.');
+        }
+
+        return consultant.id;
     }
 
     private buildSimulationResult(

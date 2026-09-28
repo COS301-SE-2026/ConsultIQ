@@ -38,3 +38,44 @@ jobs:
         with:
           name: a11y-report-public
           path: frontend/lhci-reports/public
+
+      # Debug Section
+      - name: Install puppeteer for debug capture
+        if: failure()
+        working-directory: frontend
+        run: npm install --no-save puppeteer
+
+      - name: Capture debug screenshot + console output
+        if: failure()
+        working-directory: frontend
+        run: |
+          node - <<'EOF'
+          const puppeteer = require('puppeteer');
+          const { spawn } = require('child_process');
+          (async () => {
+            const server = spawn('npm', ['run', 'preview', '--', '--port', '4173']);
+            await new Promise(r => setTimeout(r, 3000));
+            const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
+            const page = await browser.newPage();
+            const logs = [];
+            page.on('console', msg => logs.push(`PAGE LOG: ${msg.text()}`));
+            page.on('pageerror', err => logs.push(`PAGE ERROR: ${err.message}`));
+            page.on('requestfailed', req => logs.push(`REQUEST FAILED: ${req.url()} ${req.failure()?.errorText}`));
+            await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0', timeout: 20000 }).catch(e => logs.push(`GOTO ERROR: ${e.message}`));
+            await page.screenshot({ path: 'debug-screenshot.png', fullPage: true });
+            require('fs').writeFileSync('debug-dom.html', await page.content());
+            require('fs').writeFileSync('debug-console.log', logs.join('\n'));
+            await browser.close();
+            server.kill();
+          })();
+          EOF
+
+      - name: Upload debug artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a11y-debug-capture
+          path: |
+            frontend/debug-screenshot.png
+            frontend/debug-dom.html
+            frontend/debug-console.log

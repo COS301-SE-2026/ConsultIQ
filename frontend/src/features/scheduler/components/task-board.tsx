@@ -21,7 +21,7 @@ interface TaskBoardProps {
   readonly onEditTask: (task: Task) => void;
   readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
   readonly onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
-  readonly onSchedule: (taskId: string) => void | Promise<void>;
+  //readonly onSchedule: (taskId: string) => void | Promise<void>;
   readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
   readonly onDelete: (taskId: string) => void | Promise<void>;
   readonly onSplit: (task: Task) => void;
@@ -31,12 +31,29 @@ function columnFor(task: Task) : BoardColumn{
     return task.placement === "unplaced" ? "Backlog" : task.status;
 }
 
-export default function TaskBoard({ tasks, now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask, onSchedule, onSendToBacklog, onDelete, onSplit }: TaskBoardProps) {
+export default function TaskBoard({ tasks, now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask, onSendToBacklog, onDelete, onSplit }: TaskBoardProps) {
     
     const [dragOverColumn, setDragOverColumn] = useState<BoardColumn | null>(null);
     const byColumn = new Map<BoardColumn, Task[]>(COLUMNS.map((c) => [c.key, []]));
     tasks.forEach((task) => byColumn.get(columnFor(task))?.push(task));
     
+    function handleDrop(target: BoardColumn, event: DragEvent<HTMLDivElement>) {
+        event.preventDefault();
+        setDragOverColumn(null);
+        const taskId = event.dataTransfer.getData("text/plain");
+        const task = tasks.find((t) => t.id === taskId);
+        if (!task) return;
+
+        const from = columnFor(task);
+        if(from === target) return;
+
+        if(target === "Backlog"){
+            void onSendToBacklog(taskId);
+        } else {
+            void onSetStatus(taskId,  { status: target as TaskStatus, expectedVersion })
+        }
+    }
+
     return (
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
             <div className="flex h-full gap-4">
@@ -44,7 +61,12 @@ export default function TaskBoard({ tasks, now, expectedVersion, subtaskProgress
                     const columnTasks = byColumn.get(key) ?? [];
                     return (
                         <div key={key}
-                            onDragOver={(e) => {e.preventDefault();}}
+                            onDragOver={(e) => {
+                                e.preventDefault();
+                                setDragOverColumn(key);
+                            }}
+                            onDragLeave={() => setDragOverColumn((c) => (c === key ? null : c))}
+                            onDrop={(e) => handleDrop(key, e)}
                             className = {`flex w-72 flex-none flex-col rounded-lg border bg-slate-50 ${
                             dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
                         >

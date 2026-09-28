@@ -137,23 +137,19 @@ function ProjectLegend({ blocks, projects, contractedMinutes }: ProjectLegendpro
 export interface SchedulerHeaderProps {
     readonly week: WeekContainer;
     readonly projects: ProjectSummary[];
-    readonly backlogOpen: boolean;
     readonly onPrevWeek?: () => void;
     readonly onNextWeek?: () => void;
-    readonly onToggleBacklog: () => void;
     readonly onAddEvent: () => void;
 }
 
 export default function SchedulerHeader({
     week,
     projects,
-    backlogOpen,
     onPrevWeek,
     onNextWeek,
-    onToggleBacklog,
     onAddEvent
 }: SchedulerHeaderProps) {
-    const backlogCount = week.tasks.filter((t) => t.placement === "unplaced").length;
+    
 
     return (
         <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-4">

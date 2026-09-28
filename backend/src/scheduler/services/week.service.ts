@@ -18,6 +18,7 @@ import {
     CalendarEntry,
     PrismaSlotWithTasks,
     PrismaBlock,
+    CalendarEntryDto,
 } from '../dto/scheduler.dto';
 
 export interface CommitResult {
@@ -213,12 +214,7 @@ export class WeekService {
             case 'replan':
                 break;
             case 'place_unplaced':
-                for (const t of week.tasks) {
-                    if (t.placement === 'unplaced' && !change.taskIds.includes(t.id)) {
-                        t.placement = 'placed';
-                        (t as Task & { _tempBlinded?: boolean })._tempBlinded = true;
-                    }
-                }
+                this.applyPlaceUnplacedChange(week, change.taskIds);
                 break;
             case 'create_task':
                 week.tasks.push(change.task as Task);
@@ -244,68 +240,30 @@ export class WeekService {
             case 'move_slot':
                 this.applyMoveSlot(week, change.slotId, change.to, change.tags);
                 break;
-            case 'move_block': {
-                const block = this.getBlock(week, change.blockId);
-                block.start = change.to.start;
-                block.end = change.to.end;
+            case 'move_block':
+                this.applyMoveBlock(week, change.blockId, change.to);
                 break;
-            }
-            case 'resize_block': {
-                const block = this.getBlock(week, change.blockId);
-                block.start = change.to.start;
-                block.end = change.to.end;
-                (block as ProjectBlock & { userSized?: boolean }).userSized = true;
+            case 'resize_block':
+                this.applyResizeBlock(week, change.blockId, change.to);
                 break;
-            }
-            case 'pin_block': {
-                const block = this.getBlock(week, change.blockId);
-                block.mobility = change.pinned ? 'pinned' : 'fluid';
+            case 'pin_block':
+                this.applyPinBlock(week, change.blockId, change.pinned);
                 break;
-            }
-            case 'calendar_upsert': {
-                const dto = change.entry;
-                const existingIdx = week.calendarEntries.findIndex(e => e.id === dto.id);
-                if (existingIdx > -1) {
-                    week.calendarEntries[existingIdx] = { ...week.calendarEntries[existingIdx], ...dto } as CalendarEntry;
-                } else {
-                    week.calendarEntries.push(dto as CalendarEntry);
-                }
+            case 'calendar_upsert':
+                this.applyCalendarUpsert(week, change.entry);
                 break;
-            }
-            case 'calendar_remove': {
+            case 'calendar_remove':
                 week.calendarEntries = week.calendarEntries.filter(e => e.id !== change.entryId);
                 break;
-            }
-            case 'pull_forward': {
+            case 'pull_forward':
                 if (change.tasks) week.tasks.push(...change.tasks);
                 break;
-            }
-            case 'rollover': {
-                const rTask = week.tasks.find((t) => t.id === change.taskId);
-                const rSlot = week.slots.find((s) => s.id === change.fromSlotId);
-                if (rTask) {
-                    rTask.placement = 'unplaced';
-                    rTask.carriedOver = true;
-                }
-                if (rSlot) {
-                    rSlot.taskIds = rSlot.taskIds.filter((id) => id !== change.taskId);
-                }
+            case 'rollover':
+                this.applyRollover(week, change.taskId, change.fromSlotId);
                 break;
-            }
-            case 'mark_incomplete': {
-                const taskToRevert = week.tasks.find(t => t.id === change.taskId);
-                if (taskToRevert) {
-                    taskToRevert.status = taskToRevert.status === 'Done' ? 'InProgress' : 'Ready';
-
-                    if (taskToRevert.subtasks && taskToRevert.subtasks.length > 0) {
-                        const lastDone = [...taskToRevert.subtasks].reverse().find(s => s.done);
-                        if (lastDone) {
-                            lastDone.done = false;
-                        }
-                    }
-                }
+            case 'mark_incomplete':
+                this.applyMarkIncomplete(week, change.taskId);
                 break;
-            }
             default:
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
@@ -375,6 +333,66 @@ export class WeekService {
         slot.end = to.end;
         slot.locked = true;
         if (tags) slot.tags = tags;
+    }
+    private applyPlaceUnplacedChange(week: WeekContainer, taskIds: string[]): void {
+        for (const t of week.tasks) {
+            if (t.placement === 'unplaced' && !taskIds.includes(t.id)) {
+                t.placement = 'placed';
+                (t as Task & { _tempBlinded?: boolean })._tempBlinded = true;
+            }
+        }
+    }
+
+    private applyMoveBlock(week: WeekContainer, blockId: string, to: Interval): void {
+        const block = this.getBlock(week, blockId);
+        block.start = to.start;
+        block.end = to.end;
+    }
+
+    private applyResizeBlock(week: WeekContainer, blockId: string, to: Interval): void {
+        const block = this.getBlock(week, blockId);
+        block.start = to.start;
+        block.end = to.end;
+        (block as ProjectBlock & { userSized?: boolean }).userSized = true;
+    }
+
+    private applyPinBlock(week: WeekContainer, blockId: string, pinned: boolean): void {
+        const block = this.getBlock(week, blockId);
+        block.mobility = pinned ? 'pinned' : 'fluid';
+    }
+
+    private applyCalendarUpsert(week: WeekContainer, dto: CalendarEntryDto): void {
+        const existingIdx = week.calendarEntries.findIndex(e => e.id === dto.id);
+        if (existingIdx > -1) {
+            week.calendarEntries[existingIdx] = { ...week.calendarEntries[existingIdx], ...dto } as CalendarEntry;
+        } else {
+            week.calendarEntries.push(dto as CalendarEntry);
+        }
+    }
+
+    private applyRollover(week: WeekContainer, taskId: string, fromSlotId: string): void {
+        const rTask = week.tasks.find(t => t.id === taskId);
+        const rSlot = week.slots.find(s => s.id === fromSlotId);
+        if (rTask) {
+            rTask.placement = 'unplaced';
+            rTask.carriedOver = true;
+        }
+        if (rSlot) {
+            rSlot.taskIds = rSlot.taskIds.filter(id => id !== taskId);
+        }
+    }
+
+    private applyMarkIncomplete(week: WeekContainer, taskId: string): void {
+        const taskToRevert = week.tasks.find(t => t.id === taskId);
+        if (taskToRevert) {
+            taskToRevert.status = taskToRevert.status === 'Done' ? 'InProgress' : 'Ready';
+            if (taskToRevert.subtasks && taskToRevert.subtasks.length > 0) {
+                const lastDone = [...taskToRevert.subtasks].reverse().find(s => s.done);
+                if (lastDone) {
+                    lastDone.done = false;
+                }
+            }
+        }
     }
 
     private getBlock(week: WeekContainer, blockId: string) {

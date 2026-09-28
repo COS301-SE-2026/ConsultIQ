@@ -6,7 +6,7 @@ import { TimeService, LocalDate, Instant } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
-import { WeekContainer, Change, Task, ProjectBlock, Slot, ValidateContext } from '../dto/scheduler.dto';
+import { WeekContainer, Change, Task, ProjectBlock, Slot, ValidateContext, Interval } from '../dto/scheduler.dto';
 
 describe('WeekService', () => {
     let service: WeekService;
@@ -15,6 +15,7 @@ describe('WeekService', () => {
     let holidayService: HolidayService;
     let placerService: PlacerService;
     let validatorService: ValidatorService;
+    const mockWindow: Interval = { start: '2026-09-28T00:00:00Z', end: '2026-09-29T00:00:00Z' };
 
     const mockDate = new Date('2026-09-25T00:00:00Z');
 
@@ -212,29 +213,106 @@ describe('WeekService', () => {
 
     describe('applyChange branches', () => {
         let mockWeek: WeekContainer;
+        const mockWindow = { start: '2026-09-21T00:00:00Z', end: '2026-09-22T00:00:00Z' } as Interval;
 
         beforeEach(() => {
-            mockWeek = { id: 'W1', tasks: [], blocks: [], slots: [] } as unknown as WeekContainer;
+
+            mockWeek = {
+                id: 'W1',
+                tasks: [
+                    { id: 'task-1', tMin: 60, tMax: 120, status: 'Ready', subtasks: [{ id: 'sub-1', done: false }] }
+                ],
+                blocks: [],
+                slots: [
+                    { id: 'slot-1', taskIds: ['task-1'] }
+                ]
+            } as unknown as WeekContainer;
         });
-        it('handles create_task safely returning undefined window', async () => {
 
-            const change: Change = { type: 'create_task', payload: {} as any };
-            mockValidatorService.validate.mockReturnValueOnce({ issues: [] });
+        it('handles create_task by pushing a new task and returning the window', () => {
+            const change: Change = { type: 'create_task', task: { id: 'new-task' } as any, origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
 
-            await service.commit(mockWeek, change, { bumpedEntityIds: [], allocations: [] });
-
-            expect(placerService.place).not.toHaveBeenCalled();
+            expect(mockWeek.tasks).toHaveLength(2);
+            expect(mockWeek.tasks[1].id).toBe('new-task');
+            expect(result).toEqual(mockWindow);
         });
 
-        it('throws an error on unrecognized change types', async () => {
+        it('handles update_task by applying patch to an existing task', () => {
+            const change: Change = { type: 'update_task', taskId: 'task-1', patch: { status: 'InProgress' } as any, origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(mockWeek.tasks[0].status).toBe('InProgress');
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles delete_task by removing the task and cleaning up its slots', () => {
+            const change: Change = { type: 'delete_task', taskId: 'task-1', origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(mockWeek.tasks).toHaveLength(0);
+            expect(mockWeek.slots).toHaveLength(0);
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles set_status by updating the task status', () => {
+            const change: Change = { type: 'set_status', taskId: 'task-1', status: 'Done', origin: 'system', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(mockWeek.tasks[0].status).toBe('Done');
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles toggle_subtask by flipping completion and auto-marking Done', () => {
+            const change: Change = { type: 'toggle_subtask', taskId: 'task-1', subtaskId: 'sub-1', origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect((mockWeek.tasks[0] as any).subtasks[0].done).toBe(true);
+            expect(mockWeek.tasks[0].status).toBe('Done');
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles split_task by distributing tMax/tMin and creating the second half', () => {
+            const change: Change = { type: 'split_task', taskId: 'task-1', atMinutes: 90, origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(mockWeek.tasks).toHaveLength(2);
+
+            expect(mockWeek.tasks[0].tMax).toBe(90);
+            expect(mockWeek.tasks[0].tMin).toBe(45);
+
+            expect(mockWeek.tasks[1].tMax).toBe(30);
+            expect(mockWeek.tasks[1].tMin).toBe(15);
+            expect(mockWeek.tasks[1].status).toBe('Ready');
+            expect(mockWeek.tasks[1].placement).toBe('unplaced');
+
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles accept_deadline_miss by clearing unplacedReason and setting acknowledgement', () => {
+            mockWeek.tasks[0].unplacedReason = 'DEADLINE_INFEASIBLE' as any;
+
+            const change: Change = { type: 'accept_deadline_miss', taskId: 'task-1', origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(mockWeek.tasks[0].unplacedReason).toBeUndefined();
+            expect(mockWeek.tasks[0].deadlineMissAccepted).toBe(true);
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('handles place_unplaced by returning the window', () => {
+            const change: Change = { type: 'place_unplaced', taskIds: ['task-1'], origin: 'user', window: mockWindow };
+            const result = service['applyChange'](mockWeek, change);
+
+            expect(result).toEqual(mockWindow);
+        });
+
+        it('throws an error on unrecognized change types', () => {
             const change = { type: 'invalid_type' } as unknown as Change;
 
-            await expect(
-                service.commit(mockWeek, change, { bumpedEntityIds: [], allocations: [] })
-            ).rejects.toThrow('WeekService.applyChange: unhandled change type "invalid_type"');
+            expect(() => service['applyChange'](mockWeek, change)).toThrow('WeekService.applyChange: unhandled change type "invalid_type"');
         });
     });
-
     describe('Endpoints (replan & dryRun)', () => {
         const mockDbWeek = {
             id: 'W1', consultantId: 'C1', weekStart: mockDate,
@@ -266,6 +344,121 @@ describe('WeekService', () => {
             mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce(null);
 
             await expect(service.replan('INVALID_ID')).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe('move_slot', () => {
+        it('throws NotFoundException if slot does not exist', () => {
+            const week = { id: 'week-1', slots: [] } as Partial<WeekContainer> as WeekContainer;
+            const change: Change = { type: 'move_slot', slotId: 'bad-id', to: mockWindow, origin: 'user', window: mockWindow };
+
+            expect(() => service['applyChange'](week, change)).toThrow(NotFoundException);
+        });
+
+        it('moves the slot, locks it, and applies tags', () => {
+            const week = {
+                id: 'week-1',
+                slots: [{ id: 'slot-1', start: '09:00', end: '10:00', locked: false, tags: [] } as Partial<Slot> as Slot],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'move_slot',
+                slotId: 'slot-1',
+                to: { start: '12:00', end: '13:00' },
+                tags: ['extended-hours'],
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            const resultWindow = service['applyChange'](week, change);
+
+            expect(resultWindow).toEqual(mockWindow);
+            expect(week.slots[0].start).toBe('12:00');
+            expect(week.slots[0].end).toBe('13:00');
+            expect(week.slots[0].locked).toBe(true);
+            expect(week.slots[0].tags).toEqual(['extended-hours']);
+        });
+    });
+
+    describe('move_block', () => {
+        it('throws NotFoundException if block does not exist', () => {
+            const week = { id: 'week-1', blocks: [] } as Partial<WeekContainer> as WeekContainer;
+            const change: Change = { type: 'move_block', blockId: 'bad-id', to: mockWindow, origin: 'user', window: mockWindow };
+
+            expect(() => service['applyChange'](week, change)).toThrow(NotFoundException);
+        });
+
+        it('updates block boundaries without altering mobility', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', start: '09:00', end: '10:00', mobility: 'fluid' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'move_block',
+                blockId: 'block-1',
+                to: { start: '12:00', end: '13:00' },
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].start).toBe('12:00');
+            expect(week.blocks[0].end).toBe('13:00');
+            expect(week.blocks[0].mobility).toBe('fluid');
+        });
+    });
+
+    describe('resize_block', () => {
+        it('updates boundaries and marks the block as userSized', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', start: '09:00', end: '10:00' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = {
+                type: 'resize_block',
+                blockId: 'block-1',
+                to: { start: '09:00', end: '15:00' },
+                origin: 'user',
+                window: mockWindow,
+            };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].start).toBe('09:00');
+            expect(week.blocks[0].end).toBe('15:00');
+
+            expect((week.blocks[0] as ProjectBlock & { userSized?: boolean }).userSized).toBe(true);
+        });
+    });
+
+    describe('pin_block', () => {
+        it('toggles mobility to pinned when pinned is true', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', mobility: 'fluid' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = { type: 'pin_block', blockId: 'block-1', pinned: true, origin: 'user', window: mockWindow };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].mobility).toBe('pinned');
+        });
+
+        it('toggles mobility to fluid when pinned is false', () => {
+            const week = {
+                id: 'week-1',
+                blocks: [{ id: 'block-1', mobility: 'pinned' } as Partial<ProjectBlock> as ProjectBlock],
+            } as Partial<WeekContainer> as WeekContainer;
+
+            const change: Change = { type: 'pin_block', blockId: 'block-1', pinned: false, origin: 'user', window: mockWindow };
+
+            service['applyChange'](week, change);
+
+            expect(week.blocks[0].mobility).toBe('fluid');
         });
     });
 });

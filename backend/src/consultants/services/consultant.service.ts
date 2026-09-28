@@ -161,12 +161,19 @@ export class ConsultantService {
           },
         });
 
-        // Create skills
+        // Create skills without duplicating normalized catalogue entries.
+        const createdSkillIds = new Set<string>();
         for (const skill of dto.skills) {
           const skillRecord = await upsertSkillCatalogueEntry(
             tx,
             skill.skillName,
           );
+
+          if (createdSkillIds.has(skillRecord.id)) {
+            continue;
+          }
+          createdSkillIds.add(skillRecord.id);
+
           await tx.consultantSkill.create({
             data: {
               consultantId: consultant.id,
@@ -366,8 +373,8 @@ export class ConsultantService {
         province: c.province,
         postalCode: c.postalCode,
         availabilityStatus: c.availability,
-        primarySkills: c.skills.map(
-          (cs) => cs.skill.displayName ?? cs.skill.name,
+        primarySkills: this.withDisplayNames(c).skills.map(
+          (cs) => cs.skill.name,
         ),
         phone: c.phone,
         idNumber: c.idNumber,
@@ -442,7 +449,11 @@ export class ConsultantService {
         consultant: {
           include: {
             user: { select: { fullName: true, email: true } },
-            skills: { include: { skill: { select: { name: true } } } },
+            skills: {
+              include: {
+                skill: { select: { name: true, displayName: true } },
+              },
+            },
           },
         },
       },
@@ -462,7 +473,9 @@ export class ConsultantService {
           email: c.user.email,
           phone: c.phone,
           city: c.city,
-          primarySkills: c.skills.map((cs) => cs.skill.name),
+          primarySkills: this.withDisplayNames(c).skills.map(
+            (cs) => cs.skill.name,
+          ),
 
           placementStatus: placement.status,
           allocation: placement.allocation,
@@ -598,11 +611,17 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
+        const createdSkillIds = new Set<string>();
         for (const skill of dto.skills) {
           const skillRecord = await upsertSkillCatalogueEntry(
             tx,
             skill.skillName,
           );
+
+          if (createdSkillIds.has(skillRecord.id)) {
+            continue;
+          }
+          createdSkillIds.add(skillRecord.id);
 
           // Recompute competency level server-side
           const competencyLevel = this.inferCompetencyLevel(
@@ -764,7 +783,7 @@ export class ConsultantService {
           competencyLevel: true,
           yearsExperience: true,
           confidenceLevel: true,
-          skill: { select: { name: true } },
+          skill: { select: { name: true, displayName: true } },
         },
       },
       certificates: {
@@ -824,7 +843,7 @@ export class ConsultantService {
       pictureUrl: consultant.pictureData
         ? `data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
         : null,
-      skills: consultant.skills.map((cs: any) => ({
+      skills: this.withDisplayNames(consultant).skills.map((cs: any) => ({
         id: cs.id,
         skillName: cs.skill.displayName ?? cs.skill.name,
         competencyLevel: cs.competencyLevel,
@@ -1069,5 +1088,31 @@ export class ConsultantService {
     const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
     return { pictureUrl, message: 'Profile picture uploaded successfully.' };
+  }
+
+  private withDisplayNames<
+    T extends {
+      skills?: {
+        skill: {
+          name: string;
+          displayName?: string | null;
+        };
+      }[];
+    },
+  >(project: T): T {
+    if (!project?.skills) {
+      return project;
+    }
+
+    return {
+      ...project,
+      skills: project.skills.map((ps) => ({
+        ...ps,
+        skill: {
+          ...ps.skill,
+          name: ps.skill.displayName ?? ps.skill.name,
+        },
+      })),
+    };
   }
 }

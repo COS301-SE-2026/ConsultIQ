@@ -311,7 +311,7 @@ export class ProjectService {
   }
 
   private async findProjectById(projectId: string) {
-    return this.prisma.project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: projectId, status: { not: ProjectStatus.ARCHIVED } },
       include: {
         skills: {
@@ -321,6 +321,7 @@ export class ProjectService {
         },
       },
     });
+    return project ? this.withDisplayNames(project) : null;
   }
 
   private async findProjectStatusById(projectId: string) {
@@ -497,5 +498,33 @@ export class ProjectService {
         });
       }
     }
+  }
+
+  private withDisplayNames<
+    T extends {
+      skills?: {
+        skill: {
+          name: string;
+          displayName?: string | null;
+        };
+      }[];
+    },
+  >(project: T): T {
+    if (!project?.skills) {
+      return project;
+    }
+
+    return {
+      ...project,
+      skills: project.skills.map((projectSkill) => ({
+        ...projectSkill,
+        skill: {
+          ...projectSkill.skill,
+          name:
+            projectSkill.skill.displayName ??
+            projectSkill.skill.name,
+        },
+      })),
+    };
   }
 }

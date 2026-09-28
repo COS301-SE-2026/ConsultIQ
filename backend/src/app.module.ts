@@ -22,6 +22,7 @@ import { SkillGapModule } from './skill-gap-analysis/skill-gap.module';
 import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { FeasibilityModule } from './feasibility/feasibility.module';
+import { SimulationModule } from './simulation/simulation.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
@@ -84,6 +85,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AnalyticsModule,
     SkillGapModule,
     FeasibilityModule,
+    SimulationModule,
     SchedulerModule,
   ],
   controllers: [AppController],

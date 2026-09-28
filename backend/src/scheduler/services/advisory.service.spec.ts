@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common'; // 👈 Added new exceptions
 import { AdvisoryService } from './advisory.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
@@ -92,19 +92,17 @@ describe('AdvisoryService', () => {
         jest.clearAllMocks();
     });
 
+    // ... buildSuggestions tests stay exactly the same ...
     describe('buildSuggestions', () => {
         it('returns nothing if gap is <= 0', async () => {
             baseWeek.metadata = { available: 1000, scheduled: 950 } as any;
-
             const suggestions = await service.buildSuggestions(baseWeek);
             expect(suggestions).toEqual([]);
         });
 
         it('suggests PLACE_UNPLACED if there are unplaced tasks and dryRun passes', async () => {
             baseWeek.tasks = [{ id: 'task-1', placement: 'unplaced' } as any];
-
             const suggestions = await service.buildSuggestions(baseWeek);
-
             expect(suggestions).toHaveLength(1);
             expect(suggestions[0].code).toBe('PLACE_UNPLACED');
             expect(weekService.dryRun).toHaveBeenCalledWith(
@@ -116,24 +114,18 @@ describe('AdvisoryService', () => {
         it('omits PLACE_UNPLACED if the dryRun fails (cannot actually place)', async () => {
             baseWeek.tasks = [{ id: 'task-1', placement: 'unplaced' } as any];
             weekService.dryRun.mockResolvedValueOnce({ ok: false } as any);
-
             const suggestions = await service.buildSuggestions(baseWeek);
-
             expect(suggestions).toHaveLength(1);
             expect(suggestions[0].code).toBe('REVIEW_CAPACITY');
         });
 
         it('suggests PULL_FORWARD if next week has ready tasks that fit', async () => {
-
             prisma.schedulerIssueDismissal.findMany.mockResolvedValue([{ code: 'PLACE_UNPLACED' }]);
-
             prisma.schedulerWeek.findUnique.mockResolvedValue({
                 id: 'week-2',
                 tasks: [{ id: 'task-2', status: 'Ready', tMax: 120 }],
             });
-
             const suggestions = await service.buildSuggestions(baseWeek);
-
             expect(suggestions).toHaveLength(1);
             expect(suggestions[0].code).toBe('PULL_FORWARD');
             expect(suggestions[0].action?.taskIds).toContain('task-2');
@@ -144,7 +136,6 @@ describe('AdvisoryService', () => {
                 { code: 'PLACE_UNPLACED' },
                 { code: 'PULL_FORWARD' }
             ]);
-
             baseWeek.blocks = [{
                 id: 'block-1',
                 projectId: 'proj-1',
@@ -152,11 +143,8 @@ describe('AdvisoryService', () => {
                 start: '2026-09-22T08:00:00Z',
                 end: '2026-09-22T17:00:00Z'
             } as any];
-
             baseWeek.tasks = [{ id: 'task-1', projectId: 'proj-1', status: 'Ready', placement: 'placed' } as any];
-
             const suggestions = await service.buildSuggestions(baseWeek);
-
             expect(suggestions).toHaveLength(1);
             expect(suggestions[0].code).toBe('EXTEND_BLOCK');
             expect(suggestions[0].action?.type).toBe('resize_block');
@@ -164,25 +152,25 @@ describe('AdvisoryService', () => {
 
         it('falls back to REVIEW_CAPACITY if no other suggestions match', async () => {
             const suggestions = await service.buildSuggestions(baseWeek);
-
             expect(suggestions).toHaveLength(1);
             expect(suggestions[0].code).toBe('REVIEW_CAPACITY');
-
             expect(suggestions[0].message).toContain('15h40m');
         });
 
         it('returns empty array if REVIEW_CAPACITY is dismissed and no other candidates exist', async () => {
             prisma.schedulerIssueDismissal.findMany.mockResolvedValue([{ code: 'REVIEW_CAPACITY' }]);
-
             const suggestions = await service.buildSuggestions(baseWeek);
             expect(suggestions).toHaveLength(0);
         });
     });
 
     describe('pullForward', () => {
+        it('throws BadRequestException if no taskIds are provided', async () => {
+            await expect(service.pullForward(mockWeekId, [])).rejects.toThrow(BadRequestException);
+        });
+
         it('throws NotFoundException if the week does not exist', async () => {
             prisma.schedulerWeek.findUnique.mockResolvedValue(null);
-
             await expect(service.pullForward('bad-id', ['task-1'])).rejects.toThrow(NotFoundException);
         });
 
@@ -191,10 +179,36 @@ describe('AdvisoryService', () => {
                 id: mockWeekId,
                 weekStart: new Date(mockWeekStart)
             });
-
             prisma.schedulerTask.findMany.mockResolvedValue([]);
-
             await expect(service.pullForward(mockWeekId, ['task-1'])).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws ForbiddenException if task belongs to a different consultant', async () => {
+            prisma.schedulerWeek.findUnique.mockResolvedValue({
+                id: mockWeekId,
+                consultantId: mockConsultantId,
+                weekStart: new Date(mockWeekStart)
+            });
+            prisma.schedulerTask.findMany.mockResolvedValue([{
+                id: 'task-1',
+                week: { consultantId: 'different-consultant', weekStart: new Date('2026-09-28') }
+            }]);
+
+            await expect(service.pullForward(mockWeekId, ['task-1'])).rejects.toThrow(ForbiddenException);
+        });
+
+        it('throws BadRequestException if task is not from a future week', async () => {
+            prisma.schedulerWeek.findUnique.mockResolvedValue({
+                id: mockWeekId,
+                consultantId: mockConsultantId,
+                weekStart: new Date(mockWeekStart)
+            });
+            prisma.schedulerTask.findMany.mockResolvedValue([{
+                id: 'task-1',
+                week: { consultantId: mockConsultantId, weekStart: new Date(mockWeekStart) }
+            }]);
+
+            await expect(service.pullForward(mockWeekId, ['task-1'])).rejects.toThrow(BadRequestException);
         });
 
         it('dispatches pull_forward change via weekService.commit', async () => {
@@ -203,7 +217,11 @@ describe('AdvisoryService', () => {
                 consultantId: mockConsultantId,
                 weekStart: new Date(mockWeekStart)
             });
-            prisma.schedulerTask.findMany.mockResolvedValue([{ id: 'task-1' }]);
+
+            prisma.schedulerTask.findMany.mockResolvedValue([{
+                id: 'task-1',
+                week: { consultantId: mockConsultantId, weekStart: new Date('2026-09-28') }
+            }]);
 
             const result = await service.pullForward(mockWeekId, ['task-1'], 2);
 
@@ -220,7 +238,6 @@ describe('AdvisoryService', () => {
     describe('dismiss', () => {
         it('upserts a dismissal record directly to the database', async () => {
             await service.dismiss(mockWeekId, 'REVIEW_CAPACITY');
-
             expect(prisma.schedulerIssueDismissal.upsert).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: { weekId_code: { weekId: mockWeekId, code: 'REVIEW_CAPACITY' } },

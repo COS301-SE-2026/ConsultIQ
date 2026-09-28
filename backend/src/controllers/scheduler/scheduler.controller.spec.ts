@@ -8,6 +8,7 @@ import { AdvisoryService } from '../../scheduler/services/advisory.service';
 import { RolloverService } from '../../scheduler/services/rollover.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('SchedulerController', () => {
     let controller: SchedulerController;
@@ -26,6 +27,14 @@ describe('SchedulerController', () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [SchedulerController],
             providers: [
+                {
+                    provide: PrismaService,
+                    useValue: {
+                        consultant: {
+                            findUnique: jest.fn().mockResolvedValue({ id: mockConsultantId }),
+                        },
+                    },
+                },
                 {
                     provide: WeekService,
                     useValue: {
@@ -78,6 +87,7 @@ describe('SchedulerController', () => {
                         rollover: jest.fn().mockResolvedValue({ ok: true }),
                     },
                 },
+
             ],
         })
             .overrideGuard(JwtAuthGuard).useValue({ canActivate: () => true })
@@ -117,10 +127,14 @@ describe('SchedulerController', () => {
 
     describe('Tasks', () => {
         it('should create a task with consultantId', async () => {
-            await controller.createTask(mockWeekStart, { title: 'New', expectedVersion: 1 }, mockReq);
-            expect(taskService.create).toHaveBeenCalledWith(mockConsultantId, mockWeekStart, { title: 'New' }, 1);
+            await controller.createTask('2026-09-28', { projectId: 'p-1', title: 'Test', expectedVersion: 1 }, mockReq);
+            expect(taskService.create).toHaveBeenCalledWith(
+                mockConsultantId,
+                mockWeekStart,
+                { projectId: 'p-1', title: 'Test', dependsOn: [] },
+                1
+            );
         });
-
         it('should update a task with consultantId', async () => {
             await controller.updateTask('task-1', { title: 'Updated', expectedVersion: 1 }, mockReq);
             expect(taskService.update).toHaveBeenCalledWith(mockConsultantId, 'task-1', { title: 'Updated' }, 1);

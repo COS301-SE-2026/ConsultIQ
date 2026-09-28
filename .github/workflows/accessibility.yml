@@ -53,6 +53,7 @@ jobs:
       - name: Capture debug screenshot + console output
         if: failure()
         working-directory: frontend
+        timeout-minutes: 2
         run: |
           node - <<'EOF'
           const puppeteer = require('puppeteer');
@@ -66,12 +67,15 @@ jobs:
             page.on('console', msg => logs.push(`PAGE LOG: ${msg.text()}`));
             page.on('pageerror', err => logs.push(`PAGE ERROR: ${err.message}`));
             page.on('requestfailed', req => logs.push(`REQUEST FAILED: ${req.url()} ${req.failure()?.errorText}`));
-            await page.goto('http://localhost:4173/', { waitUntil: 'networkidle0', timeout: 20000 }).catch(e => logs.push(`GOTO ERROR: ${e.message}`));
+            page.on('request', req => logs.push(`REQUEST: ${req.method()} ${req.url()}`));
+            await page.goto('http://localhost:4173/', { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(e => logs.push(`GOTO ERROR: ${e.message}`));
+            await new Promise(r => setTimeout(r, 5000)); // let it try to render/settle
             await page.screenshot({ path: 'debug-screenshot.png', fullPage: true });
             require('fs').writeFileSync('debug-dom.html', await page.content());
             require('fs').writeFileSync('debug-console.log', logs.join('\n'));
             await browser.close();
             server.kill();
+            process.exit(0);
           })();
           EOF
 

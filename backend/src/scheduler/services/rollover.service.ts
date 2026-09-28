@@ -1,10 +1,14 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+    Injectable,
+    ConflictException,
+    NotFoundException,
+    ForbiddenException
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
 import { TimeService, LocalDate } from './time.service';
 import { Change, ValidateContext } from '../dto/scheduler.dto';
 import { IdempotencyKeyType } from '@prisma/client';
-
 
 export interface VoidResult {
     ok: boolean;
@@ -19,8 +23,8 @@ export class RolloverService {
         private readonly timeService: TimeService,
     ) { }
 
-
     public async rollover(
+        consultantId: string,
         taskId: string,
         fromSlotId: string,
         expectedVersion?: number,
@@ -39,7 +43,10 @@ export class RolloverService {
                 throw new NotFoundException(`Slot ${fromSlotId} not found`);
             }
 
-            const consultantId = dbSlot.week.consultantId;
+            if (dbSlot.week.consultantId !== consultantId) {
+                throw new ForbiddenException('You do not have permission to modify this slot.');
+            }
+
             const weekStart = dbSlot.week.weekStart.toISOString().split('T')[0] as LocalDate;
 
             const week = await this.weekService.getWeek(consultantId, weekStart);
@@ -72,7 +79,6 @@ export class RolloverService {
     // -----------------------------------------------------------------
     // Daily tick: mark yesterday's unfinished tasks as carried over
     // -----------------------------------------------------------------
-
 
     public async markIncomplete(
         consultantId: string,
@@ -127,7 +133,6 @@ export class RolloverService {
                         weekId: toWeekId,
                         placement: 'unplaced',
                         unplacedReason: 'DEADLINE_INFEASIBLE',
-
                     },
                 });
 

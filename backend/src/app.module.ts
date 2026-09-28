@@ -23,13 +23,19 @@ import { BullModule } from '@nestjs/bullmq';
 import { EncryptionModule } from './common/encryption/encryption.module';
 import { FeasibilityModule } from './feasibility/feasibility.module';
 import { SimulationModule } from './simulation/simulation.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 import { RedisModule } from './common/redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { CsrfGuard } from './common/guards/csrf.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+
+    ScheduleModule.forRoot(),
+
     ThrottlerModule.forRoot([
       {
         name: 'default',
@@ -80,6 +86,7 @@ import { APP_GUARD } from '@nestjs/core';
     SkillGapModule,
     FeasibilityModule,
     SimulationModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: CsrfGuard },],

@@ -745,6 +745,7 @@ model SchedulerSlot {
   end     DateTime
   locked  Boolean  @default(false)
   daySpan Int      @map("day_span")
+  tags    Json     @default("[]")
 
   week         SchedulerWeek          @relation(fields: [weekId], references: [id], onDelete: Cascade)
   slotTasks    SchedulerSlotTask[]

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
@@ -95,6 +95,10 @@ export class AdvisoryService {
         taskIds: string[],
         expectedVersion?: number,
     ): Promise<CommitResult> {
+        if (!taskIds.length) {
+            throw new BadRequestException('No task IDs provided to pull forward.');
+        }
+
         const dbWeek = await this.prisma.schedulerWeek.findUnique({ where: { id: weekId } });
 
         if (!dbWeek) {
@@ -104,7 +108,10 @@ export class AdvisoryService {
         const formattedDate = dbWeek.weekStart.toISOString().split('T')[0] as LocalDate;
         const week = await this.weekService.getWeek(dbWeek.consultantId, formattedDate);
 
-        const tasks = await this.prisma.schedulerTask.findMany({ where: { id: { in: taskIds } } });
+        const tasks = await this.prisma.schedulerTask.findMany({
+            where: { id: { in: taskIds } },
+            include: { week: true }
+        });
 
         if (tasks.length !== taskIds.length) {
             const found = new Set(tasks.map((t) => t.id));
@@ -112,10 +119,26 @@ export class AdvisoryService {
             throw new NotFoundException(`Task(s) not found: ${missing.join(', ')}`);
         }
 
+        const currentWeekStart = dbWeek.weekStart.getTime();
+
+        for (const task of tasks) {
+            if (task.week.consultantId !== dbWeek.consultantId) {
+                throw new ForbiddenException(`You do not have permission to pull forward task ${task.id}`);
+            }
+            if (task.week.weekStart.getTime() <= currentWeekStart) {
+                throw new BadRequestException(`Task ${task.id} is not in a future week.`);
+            }
+        }
+
+        const mappedTasks = tasks.map(t => ({
+            ...t,
+            placement: 'unplaced',
+        })) as unknown as Task[];
+
         const change: Change = {
             type: 'pull_forward',
             taskIds,
-            tasks: tasks as unknown as Task[],
+            tasks: mappedTasks,
             origin: 'user',
             window: this.getWeekWindow(week),
         } as Change;

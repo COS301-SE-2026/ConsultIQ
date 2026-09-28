@@ -282,12 +282,13 @@ export class TaskService {
 
         const validIds: string[] = [];
         for (const id of taskIds) {
-            const dryRun = await this.weekService.dryRun(week.id, {
+            const dryRunChange: Change = {
                 type: 'place_unplaced',
                 taskIds: [id],
                 origin: 'system',
                 window,
-            } as Change);
+            };
+            const dryRun = await this.weekService.dryRun(week.id, dryRunChange);
             if (dryRun.ok) validIds.push(id);
         }
 
@@ -295,13 +296,7 @@ export class TaskService {
             throw new BadRequestException('No tasks could be placed during dry-run validation.');
         }
 
-        for (const task of week.tasks) {
-            if (task.placement === 'unplaced' && !validIds.includes(task.id)) {
-                task.placement = 'placed';
-            }
-        }
-
-        const change: Change = { type: 'place_unplaced', taskIds: validIds, origin: 'user', window } as Change;
+        const change: Change = { type: 'place_unplaced', taskIds: validIds, origin: 'user', window };
         const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
 
         return this.weekService.commit(week, change, ctx, expectedVersion);

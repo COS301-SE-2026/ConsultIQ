@@ -70,6 +70,29 @@ describe('ValidatorService', () => {
             context = createBaseContext(createBaseWeek());
         });
 
+        it('should raise OVERLAPPING_EVENTS violation if a slot overlaps a calendar entry', () => {
+            week.slots.push({ id: 's1', start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', taskIds: [] } as any);
+            week.calendarEntries.push({ id: 'ce1', start: '2026-09-21T09:00:00Z', end: '2026-09-21T11:00:00Z', type: 'meeting' } as any);
+
+            const result = validatorService.validate(week, context);
+            const issue = result.issues?.find(i => (i.code as string) === 'OVERLAPPING_EVENTS');
+
+            expect(issue).toBeDefined();
+            expect(issue?.level).toBe('violation');
+            expect(issue?.message).toContain('s1');
+            expect(issue?.message).toContain('ce1');
+        });
+
+        it('should not raise OVERLAPPING_EVENTS if events are exactly adjacent', () => {
+            week.slots.push({ id: 's1', start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', taskIds: [] } as any);
+            week.calendarEntries.push({ id: 'ce1', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z', type: 'meeting' } as any);
+
+            const result = validatorService.validate(week, context);
+            const issue = result.issues?.find(i => (i.code as string) === 'OVERLAPPING_EVENTS');
+
+            expect(issue).toBeUndefined();
+        });
+
         it('#3 - should raise SOFT_CAP_BREACH warning if scheduled > 2400', () => {
             week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T17:00:00Z', taskIds: [] } as any); // 2460 mins
             const result = validatorService.validate(week, context);

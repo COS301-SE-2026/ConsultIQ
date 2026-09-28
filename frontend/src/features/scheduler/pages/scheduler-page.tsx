@@ -2,12 +2,13 @@ import { useState } from "react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
-import SchedulerHeader from "../components/scheduler-header/scheduler-header";
+import UnderutilisationCard, { type ActionSuggestion } from "../components/underutilisation-card";
+import { ReasonCode } from "../types/scheduler.types";
 import {
     FIXTURE_PROJECTS,
     designWeek,
-    FIXTURE_NOW,
     holidayWeek,
+    FIXTURE_NOW,
     leaveWeek,
     batchWeek,
     emptyWeek,
@@ -15,10 +16,11 @@ import {
 
 } from "../types/scheduler.fixtures";
 import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
-import BlockDetailPanel from "../components/block-detail-panel";    
-import TaskForm, { type TaskSubmission} from "../components/task-form";
+import BlockDetailPanel from "../components/block-detail-panel";
+import TaskForm, { type TaskSubmission } from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
+import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
@@ -34,58 +36,82 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
 );
 
 export default function SchedulerPage() {
+    const [dismissed, setDismissed] = useState<string[]>([]);
+    const [weekIndex, setWeekIndex] = useState(0);
+    const week = FIXTURE_WEEKS[weekIndex];
+
+    const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
+        (i) => i.code === ReasonCode.UNDERUTILISED,
+    );
+
+    const dismissKey = `${week.id}:${ReasonCode.UNDERUTILISED}`;
+    const showUnderused = underused && !dismissed.includes(dismissKey);
+
+    function handleSuggestion(s: ActionSuggestion) {
+        switch (s.code) {
+            case "PLACE_UNPLACED":
+                // placeUnplaced.mutate({ taskIds: s.payload.taskIds, expectedVersion: week.version })
+                break;
+            case "PULL_FORWARD":
+                // pullForward.mutate({ taskIds: s.payload.taskIds, expectedVersion: week.version })
+                break;
+            case "EXTEND_BLOCK":
+                // Resize
+                break;
+        }
+    }
+
+
     const [backlogCollapsed, setBacklogCollapsed] = useState(false);
-    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null );
-    const [taskForm, setTaskForm] = useState<{mode: "create" | "edit"; task?: Task; projectId?: string;} | null>(null);
+    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null);
+    const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
     const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
     const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
 
     const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
-    const schedulerIssues = [ ...designWeek.metadata.alerts, ...designWeek.metadata.warnings ];
+    const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
 
     function selectNextBlock() {
-        if(designWeek.blocks.length === 0) return;
+        if (designWeek.blocks.length === 0) return;
 
         const currentIndex = designWeek.blocks.findIndex((block) => block.id === selectedBlockId);
         const nextIndex = (currentIndex + 1) % designWeek.blocks.length;
 
-        setSelectedBlockId(designWeek.blocks[nextIndex].id); 
+        setSelectedBlockId(designWeek.blocks[nextIndex].id);
     }
 
-    function OpenCreateTask(projectId?: string){
-        setTaskForm({mode: "create", projectId});
+    function OpenCreateTask(projectId?: string) {
+        setTaskForm({ mode: "create", projectId });
     }
 
     function openEditTask(task: Task) {
-        setTaskForm({mode: "edit", task, projectId: task.projectId});
+        setTaskForm({ mode: "edit", task, projectId: task.projectId });
     }
 
     function dismissAlert(key: string) {
-        setDismissedAlertKeys((current) =>{
+        setDismissedAlertKeys((current) => {
             const next = new Set(current);
             next.add(key);
             return next;
         });
     }
 
-    function handleAlertAction(){
+    function handleAlertAction() {
         console.log("Handle alert actins"); // still to be implemented
     }
 
     async function handleTaskSubmit(submission: TaskSubmission) {
-        if(submission.mode === "create"){
+        if (submission.mode === "create") {
             console.log("Create task", submission.dto);
-        } else{
+        } else {
             console.log("Update task", submission.taskId, submission.dto);
         }
         setTaskForm(null);
     }
 
-    const [weekIndex, setWeekIndex] = useState(0);
-    const [backlogOpen, setBacklogOpen] = useState(true);
     const [creatingEntry, setCreatingEntry] = useState(false);
 
-    const week = FIXTURE_WEEKS[weekIndex];
+
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
@@ -95,10 +121,8 @@ export default function SchedulerPage() {
                     <SchedulerHeader
                         week={week}
                         projects={FIXTURE_PROJECTS}
-                        backlogOpen={backlogOpen}
                         onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
                         onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
-                        onToggleBacklog={() => setBacklogOpen((o) => !o)}
                         onAddEvent={() => setCreatingEntry(true)}
                     />
                 </header>
@@ -107,7 +131,7 @@ export default function SchedulerPage() {
                 <div className="flex-1 flex min-h-0 overflow-hidden">
 
                     {/* Backlog panel */}
-                    <BacklogPanel 
+                    <BacklogPanel
                         tasks={designWeek.tasks.filter((task) => task.placement === "unplaced")}
                         unplacedSummaries={designWeek.metadata.unplaced}
                         projects={projects}
@@ -116,10 +140,10 @@ export default function SchedulerPage() {
                         collapsed={backlogCollapsed}
                         onToggleCollapse={() => setBacklogCollapsed((collapsed) => !collapsed)}
                         onAddTask={() => OpenCreateTask()}
-                        onSchedule={() => {}}
-                        onResolveDeadline={() => {}}
-                        onDeferToNextWeek={() => {}}
-                        onDismiss={() => {}}
+                        onSchedule={() => { }}
+                        onResolveDeadline={() => { }}
+                        onDeferToNextWeek={() => { }}
+                        onDismiss={() => { }}
                     />
 
                     {/*Week calendar*/}
@@ -132,10 +156,23 @@ export default function SchedulerPage() {
                                 onCreateEntryDone={() => setCreatingEntry(false)}
                             />
                         </div>
+                        {showUnderused && (
+                            <div className="flex-none">
+                                <UnderutilisationCard
+                                    issue={underused}
+                                    metadata={week.metadata}
+                                    weekStart={week.weekStart}
+                                    onSuggestion={handleSuggestion}
+                                    onDismiss={() => setDismissed((d) => [...d, dismissKey])}
+                                />
+
+                            </div>
+                        )}
+
 
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
                             <div className="pointer-events-auto z-9 text-white p-3 rounded-lg shadow-lg">
-                                <SchedulerAlertBanner 
+                                <SchedulerAlertBanner
                                     issues={schedulerIssues}
                                     dismissedKeys={dismissedAlertKeys}
                                     onDismiss={dismissAlert}
@@ -146,30 +183,30 @@ export default function SchedulerPage() {
                     </main>
 
                     {taskForm && (
-                        <TaskForm 
-                        open
-                        mode={taskForm.mode}
-                        initialTask={taskForm.task}
-                        initialProjectId={taskForm.projectId}
-                        projects={projects}
-                        expectedVersion={designWeek.version}
-                        dependencyOptions={designWeek.tasks.filter((task) => task.id !== taskForm.task?.id)
-                        .map((task) => ({
-                            id: task.id,
-                            title: task.title,
-                        }))}
-                        onCancel={() => setTaskForm(null)}
-                        onSubmit={handleTaskSubmit}
+                        <TaskForm
+                            open
+                            mode={taskForm.mode}
+                            initialTask={taskForm.task}
+                            initialProjectId={taskForm.projectId}
+                            projects={projects}
+                            expectedVersion={designWeek.version}
+                            dependencyOptions={designWeek.tasks.filter((task) => task.id !== taskForm.task?.id)
+                                .map((task) => ({
+                                    id: task.id,
+                                    title: task.title,
+                                }))}
+                            onCancel={() => setTaskForm(null)}
+                            onSubmit={handleTaskSubmit}
                         />
                     )
 
                     }
 
                     {/* BlockDetail panel */}
-                    <BlockDetailPanel 
+                    <BlockDetailPanel
                         block={selectedBlock}
                         projectLabel={projects.find((project) => project.id === selectedBlock?.projectId)?.label ?? "Select a project block"}
-                        clientName={projects.find((project) => project.id === selectedBlock?.projectId)?.clientName ?? "" }
+                        clientName={projects.find((project) => project.id === selectedBlock?.projectId)?.clientName ?? ""}
                         tasks={blockTasks}
                         now={Date.parse(FIXTURE_NOW)}
                         expectedVersion={designWeek.version}
@@ -177,13 +214,13 @@ export default function SchedulerPage() {
                         onClose={() => setSelectedBlockId(null)}
                         onNextBlock={selectNextBlock}
                         onAddTask={() => OpenCreateTask(selectedBlock?.projectId)}
-                        onAutoRollover={() => {}}
+                        onAutoRollover={() => { }}
                         onEditTask={openEditTask}
-                        onSetStatus={() => {}}
-                        onToggleSubtask={() => {}}
-                        onSendToBacklog={() => {}}
-                        onDeleteTask={() => {}}
-                        onSplitTask={() => {}}
+                        onSetStatus={() => { }}
+                        onToggleSubtask={() => { }}
+                        onSendToBacklog={() => { }}
+                        onDeleteTask={() => { }}
+                        onSplitTask={() => { }}
                     />
 
                 </div>

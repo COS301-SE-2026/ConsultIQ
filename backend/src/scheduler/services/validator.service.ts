@@ -43,6 +43,28 @@ export class ValidatorService {
             ...this.checkEntryOrigin(proposedWeek),                 // #14
         ];
 
+        const allEvents = [
+            ...proposedWeek.slots.map(s => ({ id: s.id, start: new Date(s.start).getTime(), end: new Date(s.end).getTime(), type: 'slot' })),
+            ...proposedWeek.calendarEntries.map(c => ({ id: c.id, start: new Date(c.start).getTime(), end: new Date(c.end).getTime(), type: 'calendar_entry' }))
+        ];
+
+        allEvents.sort((a, b) => a.start - b.start);
+
+        for (let i = 0; i < allEvents.length - 1; i++) {
+            const current = allEvents[i];
+            const next = allEvents[i + 1];
+
+            if (current.end > next.start) {
+                const overlapIssue = {
+                    level: 'violation',
+                    code: 'OVERLAPPING_EVENTS',
+                    message: 'Overlap detected between ' + current.type + ' ' + current.id + ' and ' + next.type + ' ' + next.id + '.'
+                } as unknown as Issue;
+
+                issues.push(overlapIssue);
+            }
+        }
+
         const hasViolations = issues.some(issue => issue.level === 'violation');
 
         if (hasViolations) {
@@ -52,6 +74,8 @@ export class ValidatorService {
 
         // Only mutate the proposed week on success.
         proposedWeek.metadata = metadata;
+
+
         return { ok: true, data: proposedWeek, issues };
     }
 

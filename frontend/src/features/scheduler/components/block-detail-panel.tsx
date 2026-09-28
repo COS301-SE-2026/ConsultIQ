@@ -61,11 +61,11 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
 
     return (
         <aside className="flex h-full w-[340px] flex-col border-l border-slate-200 bg-white">
-            <div className="bg-slate-900 px-4 py-4 text-white">
+            <div className="bg-primary px-4 py-4 text-white">
                 <div className="flex items-start justify-between">
                     <div>
                         <p className="text-xs uppercase tracking-wide text-slate-300">{clientName}</p>
-                        <h2 className="text-lg font-semibold">{projectLabel}</h2>
+                        <h2 className="!text-white text-lg font-semibold">{projectLabel}</h2>
                     </div>
                     <div className="flex items-center gap-1">
                         <button type="button" aria-label="Add task to this block"
@@ -102,7 +102,7 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                         <span>{percent}%</span>
                     </div>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
-                        <div className="h-full rounded-full bg-amber-400" style={{ width: `${percent}%` }} />
+                        <div className="h-full rounded-full bg-accent" style={{ width: `${percent}%` }} />
                     </div>
                 </div>
 
@@ -114,7 +114,7 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                     )}
                     <button type="button"
                         onClick={onAutoRollover}
-                        className="rounded bg-amber-400 px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-amber-300"
+                        className="rounded-full bg-accent px-2 py-1 text-xs font-semibold text-slate-900 hover:bg-accent/90"
                     >
                         Auto-rollover
                     </button>
@@ -127,7 +127,10 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                     ["open", "Open", openTasks.length],
                     ["done", "Done", doneTasks.length]
                 ] as const).map(([key, Label, count]) => (
-                    <button key={key} type="button" onClick={() => setTab(key)} >
+                    <button key={key} type="button" onClick={() => setTab(key)} 
+                        className={`flex-1 border-b-2 px-3 py-2 text-sm font-medium ${
+              tab === key ? "border-slate-900 text-slate-900" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                    >
                         {Label} ({count})
                     </button>
                 ))}

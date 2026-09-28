@@ -52,7 +52,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
 
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-slate-900 px-2 py-1 text-xs font-bold text-white">
+                    <span className="rounded bg-primary px-2 py-1 text-xs font-bold text-white">
                         P{task.urgency}
                     </span>
 
@@ -127,7 +127,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
             >
                 {nextStatus && (
                     <button type="button" 
-                        className="inline-flex items-center gap-1 rounded bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                        className="inline-flex items-center gap-1 rounded-2xl bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/80"
                         onClick={() => void onSetStatus(task.id, { status : nextStatus.status, expectedVersion })}
                         >
                         <ArrowRight size={14} />
@@ -136,14 +136,14 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                 )}
 
                 <button type="button"
-                    className="rounded border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="rounded-2xl border border-primary px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     onClick={() => void onSendToBacklog(task.id)}
                 >
                     ↓ BL
                 </button>
 
                 <button type="button"
-                    className="rounded border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="rounded-2xl border border-primary px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     onClick={() => onSplit(task)}                
                 >
                     Split

@@ -30,6 +30,7 @@ interface TaskFormProps {
     dependencyOptions?: Pick<Task, "id" | "title">[];
     serverIssues?: Issue[];
     open: boolean;
+    initialProjectId?: string;
     onCancel: () => void;
     onSubmit: (submission: TaskSubmission) => Promise<void> ;
 }
@@ -64,13 +65,13 @@ function toInstant(value: string): string | undefined {
 export default function TaskForm(props: TaskFormProps) {
   if (!props.open) return null;
 
-  const key = `${props.mode}:${props.initialTask?.id ?? "new"}`;
+  const key = `${props.mode}:${props.initialTask?.id ?? "new"}:${props.initialProjectId ?? ""}`;
   return <TaskFormContent key={key} {...props} />;
 }
 
-function TaskFormContent({ mode, initialTask, projects, expectedVersion, containerContext, dependencyOptions=[], serverIssues = [], open, onCancel, onSubmit }: TaskFormProps) {
-  const [title, setTitle] = useState(initialTask?.title ?? "");
-  const [projectId, setProjectId] = useState(initialTask?.projectId ?? projects[0]?.id ?? "");
+function TaskFormContent({ mode, initialProjectId, initialTask, projects, expectedVersion, containerContext, dependencyOptions=[], serverIssues = [], open, onCancel, onSubmit }: TaskFormProps) {
+  const [title, setTitle] = useState(initialTask?.title ?? ""); 
+  const [projectId, setProjectId] = useState(initialTask?.projectId ?? initialProjectId ?? projects[0]?.id ?? "");
   const [minHours, setMinHours] = useState( initialTask ? initialTask.tMin / 60 : 1);
   const [maxHours, setMaxHours] = useState(initialTask ? initialTask.tMax / 60 : 2);
   const [complexity, setComplexity] = useState<Complexity>(initialTask?.complexity ?? 2);
@@ -208,9 +209,9 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
             onSubmit = {handleSubmit}
             className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white shadow-xl"
         >
-            <header className="flex items-start justify-between bg-slate-900 px-6 py-4 text-white">
-                <div className= " flex items-start justify-between bg-slate-900 px-6 py-4 text-white">
-                    <h2 id="task-form-title" className="text-base font-semibold">
+            <header className="flex items-start justify-between bg-primary px-6 py-4 text-white">
+                <div>
+                    <h2 id="task-form-title" className="!text-white font-semibold">
                         {mode === "create" ? "Create Task" : "Edit Task"}
                     </h2>
                     {activeProject && (
@@ -236,11 +237,13 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
                     onChange={(e) => setTitle(e.target.value)} />
                 </label>
 
-                <label className= "block space-y-1.5">
+                <label className= "flex flex-col space-y-1.5">
                     <span className="text-sm font-medium text-slate-700">
                         Project
                     </span>
-                    <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+                    <select value={projectId} onChange={(e) => setProjectId(e.target.value)}
+                        className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm"    
+                    >
                         <option value="">Select a project</option>
                         {projects.map((project) => (
                             <option key={project.id} value={project.id}>
@@ -282,6 +285,7 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
                 options={complexityOptions}
                 value={complexity}
                 labels={COMPLEXITY_LABELS}
+                variant="complexity"
                 onChange={setComplexity}
                />
 
@@ -290,6 +294,7 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
                 options={urgencyOptions}
                 value={urgency}
                 labels={URGENCY_LABELS}
+                variant="urgency"
                 onChange={setUrgency}
                />
 
@@ -376,7 +381,7 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
                         <button type="button" className= "rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200">
                             Cancel
                         </button>
-                        <button type="submit" className= "rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800">
+                        <button type="submit" className= "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80">
                             {mode === "create" ? "Create Task" : "Save Changes"}
                         </button>
                     </footer>
@@ -384,17 +389,33 @@ function TaskFormContent({ mode, initialTask, projects, expectedVersion, contain
     </div>
   )}
 
-function ToggleGroup<T extends number>({ label, options, value, labels, onChange }:
-    { label: string; options: T[]; value: T; labels: Record<T, string>; onChange: (value: T) => void }) {
+function ToggleGroup<T extends number>({ label, options, value, labels,  variant, onChange }:
+    { label: string; options: T[]; value: T; labels: Record<T, string>; variant: "complexity" | "urgency"; onChange: (value: T) => void }) {
+        
+        const complexityColors: Record<number, string> = {
+        1: "border-emerald-600 bg-emerald-600/10 text-emerald-700",
+        2: "border-amber-500 bg-amber-500/10 text-amber-700",
+        3: "border-rose-600 bg-rose-600/10 text-rose-700",
+        };
+
+        const urgencyColors: Record<number, string> = {
+        1: "border-sky-600 bg-sky-600/10 text-sky-700",
+        2: "border-yellow-500 bg-yellow-500/10 text-yellow-700",
+        3: "border-orange-600 bg-orange-600/10 text-orange-700",
+        4: "border-red-700 bg-red-700/10 text-red-700",
+        };
+
+        const selectedColors = variant === "complexity" ? complexityColors : urgencyColors;
+
         return (
             <div className="space-y-1">
                 <span className="text-sm font-medium text-slate-700" >{label}</span>
-                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }} >
+                <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} >
                     {options.map((option) => (
                         <button key={option} type="button"
                          onClick={() => onChange(option)}
                          className = {`rounded-md border px-3 py-2 text-sm transition-colors 
-                            ${value === option ? "border-slate-900 bg-slate-900 text-white"
+                            ${value === option ? selectedColors[option]
                             : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"}`}
                             >
                             {labels[option]}

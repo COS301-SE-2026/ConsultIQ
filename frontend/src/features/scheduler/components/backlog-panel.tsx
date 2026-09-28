@@ -88,7 +88,7 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                     </button>
 
                     <h2 className="font-semibold text-slate-900">Backlog</h2>
-                    <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-semibold text-white">{tasks.length}</span>
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">{tasks.length}</span>
                 </div>
 
                 <div className="flex items-center gap-1">
@@ -102,13 +102,13 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                     <div className="ml-1 flex overflow-hidden rounded border border-slate-200">
                         <button  type="button" aria-label="Sort by priority"
                             onClick={() => setSortMode("priority")}
-                            className = {`p-1.5 ${sortMode === "priority" ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                            className = {`p-1.5 ${sortMode === "priority" ? "bg-primary text-white" : "text-slate-400 hover:bg-slate-50"}`}
                         >
                             <Star size={14} />
                         </button>
                         <button type="button" aria-label="Sort by deadline"
                             onClick={() => setSortMode("deadline")}
-                            className = {`p-1.5 ${sortMode === "deadline" ? "bg-slate-900 text-white" : "text-slate-400 hover:bg-slate-50"}`}
+                            className = {`p-1.5 ${sortMode === "deadline" ? "bg-primary text-white" : "text-slate-400 hover:bg-slate-50"}`}
                         >
                             <Calendar size={14} />
                         </button>
@@ -196,7 +196,7 @@ function FilterChip ({ label, count, active, color, onClick }: {
         <button type="button"
             onClick={onClick}
             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium ${
-            active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
+            active ? "border-slate-900 bg-primary text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}
         >
             {color && !active && <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />}
             {label} {count}

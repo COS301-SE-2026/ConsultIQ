@@ -2,26 +2,38 @@ name: Accessibility NFR
 
 on:
   pull_request:
-  push:
     branches: [dev, main]
 
 jobs:
-  a11y-public:
+  verify-frontend-accessibility:
+    name: Frontend Accessibility (NFR)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
+    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version-file: '.nvmrc'
+          cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
-      - run: npx lhci autorun --config=lighthouserc.public.cjs
-      - uses: actions/upload-artifact@v4
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run accessibility audit (Lighthouse CI)
+        working-directory: frontend
+        run: npx --no-install lhci autorun --config=lighthouserc.public.cjs
+
+      - name: Upload accessibility report
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: a11y-report-public

@@ -310,13 +310,36 @@ describe('WeekService', () => {
         });
 
         it('handles rollover and mark_incomplete as no-ops', () => {
-            service['applyChange'](mockWeek, { type: 'rollover', taskId: 't', fromSlotId: 's', origin: 'system', window: mockWindow });
-            service['applyChange'](mockWeek, { type: 'mark_incomplete', date: '2026-09-25' as LocalDate, origin: 'system', window: mockWindow });
+            const res1 = service['applyChange'](mockWeek, { type: 'rollover', taskId: 't', fromSlotId: 's', origin: 'system', window: mockWindow });
+            const res2 = service['applyChange'](mockWeek, { type: 'mark_incomplete', date: '2026-09-25' as LocalDate, origin: 'system', window: mockWindow });
+
+
+            expect(res1).toEqual(mockWindow);
+            expect(res2).toEqual(mockWindow);
         });
 
-        it('handles create_task', () => { service['applyChange'](mockWeek, { type: 'create_task', task: {} as any, origin: 'user', window: mockWindow }); });
-        it('handles delete_task', () => { service['applyChange'](mockWeek, { type: 'delete_task', taskId: 'task-1', origin: 'user', window: mockWindow }); });
-        it('handles place_unplaced', () => { service['applyChange'](mockWeek, { type: 'place_unplaced', taskIds: [], origin: 'user', window: mockWindow }); });
+        it('handles create_task', () => {
+            const initialLen = mockWeek.tasks.length;
+            service['applyChange'](mockWeek, { type: 'create_task', task: { id: 'new-t' } as any, origin: 'user', window: mockWindow });
+
+
+            expect(mockWeek.tasks.length).toBe(initialLen + 1);
+        });
+
+        it('handles delete_task', () => {
+            mockWeek.tasks = [{ id: 'task-1' } as any];
+            service['applyChange'](mockWeek, { type: 'delete_task', taskId: 'task-1', origin: 'user', window: mockWindow });
+
+
+            expect(mockWeek.tasks.length).toBe(0);
+        });
+
+        it('handles place_unplaced', () => {
+            const res = service['applyChange'](mockWeek, { type: 'place_unplaced', taskIds: [], origin: 'user', window: mockWindow });
+
+
+            expect(res).toEqual(mockWindow);
+        });
     });
 
     describe('Endpoints (replan & dryRun)', () => {

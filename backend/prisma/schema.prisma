@@ -103,6 +103,14 @@ enum ExtractionStatus {
   COMPLETED
   FAILED
   REVIEW_REQUIRED
+  SECURITY_REJECTED
+}
+
+enum SecurityReviewStatus {
+  NONE
+  PENDING
+  CLEARED
+  REJECTED
 }
 
 enum MatchRunStatus {
@@ -121,6 +129,8 @@ enum AuditAction {
   PLACEMENT_UPDATED
   PLACEMENT_CANCELLED
   CV_EXTRACTED
+  CV_SECURITY_CLEARED
+  CV_SECURITY_REJECTED
 }
 
 enum GapSeverity {
@@ -173,7 +183,7 @@ model RolePermission {
 model User {
   id                    String               @id @default(uuid())
   fullName              String
-  email                 String               @unique
+  email                 String               @unique //email                 String               @unique  @db.Citext
   passwordHash          String?
   role                  Role
   roleId                String?              @map("role_id")
@@ -252,6 +262,7 @@ model Consultant {
   consultantExperiences ConsultantExperience[]
   education             ConsultantEducation[]
   matchRunResults       MatchRunResult[]
+  hadSecurityFlagOnIntake Boolean @default(false)
 
   @@map("consultants")
 }
@@ -327,6 +338,7 @@ model CvFile {
   id               String           @id @default(uuid())
   userId           String
   consultantId     String?
+  uploadedByUserId String?
   fileName         String
   mimeType         String
   fileSize         Int
@@ -334,6 +346,9 @@ model CvFile {
   s3Url            String
   uploadStatus     UploadStatus     @default(UPLOADED)
   extractionStatus ExtractionStatus @default(PENDING)
+  securityReviewStatus  SecurityReviewStatus @default(NONE)
+  securityReviewedAt    DateTime?
+  securityReviewedBy    String?
   parsingMethod    CvParsingMethod  @default(RULE_BASED)
   rawText          String?
   parsedData       Json?
@@ -342,6 +357,9 @@ model CvFile {
   consultant       Consultant?      @relation(fields: [consultantId], references: [id])
   user             User             @relation(fields: [userId], references: [id])
 
+  @@index([securityReviewStatus])
+  @@index([consultantId, securityReviewStatus])
+  @@index([uploadedByUserId, securityReviewStatus])
   @@map("cv_files")
 }
 
@@ -365,6 +383,7 @@ model Project {
   teamSize         Int
   allocation       Int // Renamed from requiredAllocationPercentage
   budget           Float // Renamed from clientBillingBudget
+  workModel        WorkModel                @default(ONSITE)
   status           ProjectStatus            @default(OPEN)
   tenantId         String?
   createdAt        DateTime                 @default(now())
@@ -588,4 +607,228 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@map("audit_logs")
+}
+
+
+
+enum BlockMobility {
+  fluid
+  pinned
+}
+
+enum TaskStatus {
+  Ready
+  InProgress
+  Done
+}
+
+enum TaskPlacementStatus {
+  placed
+  unplaced
+}
+
+enum SlotKind {
+  task
+  batch
+}
+
+enum CalendarEntryType {
+  meeting
+  training
+  travel
+  personal
+  leave
+  ad_hoc @map("ad-hoc")
+}
+
+enum CalendarEntryOrigin {
+  user
+  system
+  feed
+  public_holiday @map("public-holiday")
+}
+
+enum IdempotencyKeyType {
+  daily_rollover  @map("daily-rollover")
+  slot_rollover   @map("slot-rollover")
+  daily_tick      @map("daily-tick")
+  weekly_tick     @map("weekly-tick")
+  rollover 
+  mark_incomplete @map("mark-incomplete")
+}
+
+model SchedulerWeek {
+  id                 String   @id @default(uuid())
+  consultantId       String   @map("consultant_id")
+  timezone           String
+  weekStart          DateTime @map("week_start") @db.Date 
+  version            Int      @default(1) 
+  lastCommittedAt    DateTime @map("last_committed_at")
+  sourceOfLastChange String   @map("source_of_last_change")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  blocks          SchedulerProjectBlock[]
+  tasks           SchedulerTask[]
+  slots           SchedulerSlot[]
+  calendarEntries SchedulerCalendarEntry[]
+  dismissals      SchedulerIssueDismissal[]
+  pendingChanges  SchedulerPendingChange[]
+
+  @@unique([consultantId, weekStart])
+  @@map("scheduler_weeks")
+}
+
+model SchedulerProjectBlock {
+  id               String        @id @default(uuid())
+  weekId           String        @map("week_id")
+  projectId        String        @map("project_id")
+  placementId      String?       @map("placement_id")
+  allocatedMinutes Int           @map("allocated_minutes")
+  start            DateTime
+  end              DateTime
+  mobility         BlockMobility
+  userSized        Boolean       @default(true) @map("user_sized")
+
+  week SchedulerWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@map("scheduler_project_blocks")
+}
+
+model SchedulerTask {
+  id             String          @id @default(uuid())
+  weekId         String          @map("week_id")
+  projectId      String          @map("project_id")
+  title          String
+  tMin           Int             @map("t_min")
+  tMax           Int             @map("t_max")
+  deadline       DateTime?
+  urgency        Int
+  complexity     Int
+  status         TaskStatus
+  dependsOn      Json            @default("[]") @map("depends_on")
+  splitFromId    String?         @map("split_from_id")
+  carriedOver    Boolean         @default(false) @map("carried_over")
+  placement      TaskPlacementStatus
+  unplacedReason String?         @map("unplaced_reason") 
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  deadlineMissAccepted Boolean             @default(false) @map("deadline_miss_accepted")
+  week      SchedulerWeek       @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  subtasks  SchedulerSubtask[]
+  slotTasks SchedulerSlotTask[]
+
+  @@map("scheduler_tasks")
+}
+
+model SchedulerSubtask {
+  id       String  @id @default(uuid())
+  taskId   String  @map("task_id")
+  title    String
+  estimate Int
+  done     Boolean @default(false)
+
+  // Relations
+  task         SchedulerTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  slotSubtasks SchedulerSlotSubtask[]
+
+  @@map("scheduler_subtasks")
+}
+
+model SchedulerSlot {
+  id      String   @id @default(uuid())
+  weekId  String   @map("week_id")
+  kind    SlotKind
+  blockId String   @map("block_id")
+  start   DateTime
+  end     DateTime
+  locked  Boolean  @default(false)
+  daySpan Int      @map("day_span")
+  tags    Json     @default("[]")
+
+  week         SchedulerWeek          @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  slotTasks    SchedulerSlotTask[]
+  slotSubtasks SchedulerSlotSubtask[]
+
+  @@map("scheduler_slots")
+}
+
+model SchedulerSlotTask {
+  slotId String @map("slot_id")
+  taskId String @map("task_id")
+
+  slot SchedulerSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  task SchedulerTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@id([slotId, taskId])
+  @@map("scheduler_slot_tasks")
+}
+
+model SchedulerSlotSubtask {
+  slotId    String @map("slot_id")
+  subtaskId String @map("subtask_id")
+
+  slot    SchedulerSlot    @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  subtask SchedulerSubtask @relation(fields: [subtaskId], references: [id], onDelete: Cascade)
+
+  @@id([slotId, subtaskId])
+  @@map("scheduler_slot_subtasks")
+}
+
+model SchedulerCalendarEntry {
+  id     String              @id @default(uuid())
+  weekId String              @map("week_id")
+  type   CalendarEntryType
+  start  DateTime
+  end    DateTime
+  tags   Json                @default("[]") 
+  origin CalendarEntryOrigin @default(user)
+
+  week SchedulerWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@map("scheduler_calendar_entries")
+}
+
+model PublicHoliday {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("public_holidays")
+}
+
+model SchedulerIssueDismissal {
+  id          String   @id @default(uuid())
+  weekId      String   @map("week_id")
+  code        String // ReasonCode
+  dismissedAt DateTime @default(now()) @map("dismissed_at")
+
+  week SchedulerWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@unique([weekId, code])
+  @@map("scheduler_issue_dismissals")
+}
+
+model SchedulerIdempotencyKey {
+  id        String             @id @default(uuid())
+  key       String
+  type      IdempotencyKeyType
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@unique([key, type])
+  @@map("scheduler_idempotency_keys")
+}
+
+model SchedulerPendingChange {
+  id        String   @id @default(uuid())
+  weekId    String   @map("week_id")
+  change    Json 
+  createdAt DateTime @default(now()) @map("created_at")
+
+  week SchedulerWeek @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@map("scheduler_pending_changes")
 }

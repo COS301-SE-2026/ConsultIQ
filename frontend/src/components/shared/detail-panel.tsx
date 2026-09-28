@@ -29,17 +29,15 @@ export function DetailPanel({ title, onClose, children }: DetailPanelProps) {
       
       {/* Panel */}
       <div
-        className="relative bg-white h-full overflow-y-auto overscroll-y-none w-1/2 max-w-2xl"
-        style={{ padding: "40px 48px" }}
+        className="relative bg-white h-full overflow-y-auto overflow-x-hidden overscroll-y-none  w-full md:w-1/2 max-w-2xl p-5 sm:px-12 sm:py-10"
       >
         {/* Back button */}
         <button
           onClick={onClose}
-          className="flex items-center gap-2 font-medium hover:opacity-70 transition"
+          className="flex items-center gap-2 font-medium hover:opacity-70 transition mb-6 sm:mb-8"
           style={{
             color: "var(--color-primary)",
             fontSize: "var(--text-h4)",
-            marginBottom: "32px",
           }}
           type="button"
         >
@@ -47,11 +45,9 @@ export function DetailPanel({ title, onClose, children }: DetailPanelProps) {
         </button>
 
         <h1
-          className="font-bold"
+          className="font-bold text-2xl sm:text-[32px] mb-6 sm:mb-9"
           style={{
             color: "var(--color-primary)",
-            fontSize: "32px",
-            marginBottom: "36px",
           }}
         >
           {title}

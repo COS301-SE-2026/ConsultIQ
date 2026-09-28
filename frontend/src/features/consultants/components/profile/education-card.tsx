@@ -24,7 +24,7 @@ function formatDateRange(startDate: string, endDate: string) {
 
 function EducationInfo({edu} : {readonly edu: Education}){
   return(
-     <div className="flex items-start justify-between gap-6">
+     <div className="flex flex-col sm:flex-row items-start justify-between gap-6">
                       {/* institution info */}
                       <div className="flex flex-col" style={{ gap: "8px" }}>
                         <p

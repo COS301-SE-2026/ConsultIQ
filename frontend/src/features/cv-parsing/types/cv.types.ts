@@ -1,4 +1,4 @@
-export type ExtractionStatus = | "PENDING" | "PROCESSING" | "FAILED" | "REVIEW_REQUIRED";
+export type ExtractionStatus = | "PENDING" | "PROCESSING" | "FAILED" | "REVIEW_REQUIRED" | "SECURITY_REJECTED";
 
 export interface FieldWarning{
     path: string;
@@ -67,9 +67,33 @@ education: ParsedEducation[];
 confidenceScores: ConfidenceScores;
 }
 
+export interface SkillCompetencySignal {
+    skillName: string;
+    inferredCompetency: "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+    reasoning: string;
+}
+
+export type CvSecurityFlagType =
+    | "INSTRUCTION_OVERRIDE"
+    | "AUTHORITY_IMPERSONATION"
+    | "DATA_EXFILTRATION_ATTEMPT"
+    | "HIDDEN_OR_OBFUSCATED_TEXT"
+    | "TOOL_USE_OR_EXTERNAL_REQUEST"
+    | "SCHEMA_MANIPULATION_ATTEMPT"
+    | "OTHER_SUSPICIOUS_CONTENT";
+
+export type SecurityReviewStatus = "NONE" | "PENDING" | "CLEARED" | "REJECTED";
+
+export interface CvSecurityFlag {
+    field: string;
+    flagType: CvSecurityFlagType;
+    excerpt: string;
+}
+
 export interface CvParsedDataEnvelope {
     data?: ParsedCvData;
-    comptencySignals?: unknown[];
+    competencySignals?: SkillCompetencySignal[];
+    securityFlags?: CvSecurityFlag[];
     fieldWarnings?: FieldWarning[];
     error?: string;
 }
@@ -81,6 +105,7 @@ export interface CvFileStatus{
     mimeType: string;
     uploadStatus: string;
     extractionStatus: ExtractionStatus;
+    securityReviewStatus: SecurityReviewStatus;
     parsedData : CvParsedDataEnvelope | null;
     updatedAt: string;
 }
@@ -88,4 +113,15 @@ export interface CvFileStatus{
 export interface CvUploadResponse{
     cvFileId: string;
     message: string;
+}
+
+export interface FlaggedCvSummary {
+    cvFileId: string;
+    fileName: string;
+    uploadedAt: string;
+    consultantUserId: string;
+    consultantName: string;
+    consultantEmail: string;
+    securityReviewStatus: "PENDING" | "REJECTED";
+    securityFlags: CvSecurityFlag[];
 }

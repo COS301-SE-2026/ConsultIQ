@@ -6,14 +6,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConsultantService } from './consultant.service';
-import {EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
+import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
 //import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationService } from '../../notification/service/notification.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
-import { userInfo } from 'node:os';
-import { create } from 'node:domain';
-import { title } from 'node:process';
 
 const mockPrismaService = {
   user: {
@@ -29,6 +26,7 @@ const mockPrismaService = {
   },
   cvFile: {
     updateMany: jest.fn(),
+    findFirst: jest.fn(),
   },
   consultantManager: {
     create: jest.fn(),
@@ -84,6 +82,7 @@ describe('ConsultantService', () => {
 
     service = module.get<ConsultantService>(ConsultantService);
     jest.clearAllMocks();
+    mockPrismaService.cvFile.findFirst.mockResolvedValue(null);
   });
 
   // ─── createConsultantProfile ────────────────────────────────────────────────
@@ -118,6 +117,35 @@ describe('ConsultantService', () => {
       ],
     };
 
+    const setupActiveConsultantProfile = (overrideTx: Record<string, any> = {}) => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+
+      const txMock = {
+        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
+        cvFile: { 
+          updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          findFirst: jest.fn().mockResolvedValue(null),
+        },
+        consultantManager: { create: jest.fn().mockResolvedValue({}) },
+        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
+        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
+        ...overrideTx,
+      };
+
+      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
+      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
+      mockPrismaService.consultantManager.create.mockResolvedValue({});
+      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
+      mockPrismaService.consultantSkill.create.mockResolvedValue({});
+      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+
+      return txMock;
+    };
+
     it('should throw NotFoundException if consultant user does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(NotFoundException);
@@ -146,21 +174,7 @@ describe('ConsultantService', () => {
     });
 
     it('should create consultant profile successfully', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
-      });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
-        const tx = {
-          consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
-          cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
-          consultantManager: { create: jest.fn().mockResolvedValue({}) },
-          skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
-          consultantSkill: { create: jest.fn().mockResolvedValue({}) },
-          consultantExperience: { create: jest.fn().mockResolvedValue({}) },
-        };
-        return callback(tx);
-      });
+      setupActiveConsultantProfile();
 
       const result = await service.createConsultantProfile(cmUserId, dto as any);
       expect(result.message).toBe('Consultant profile created successfully.');
@@ -168,20 +182,7 @@ describe('ConsultantService', () => {
     });
 
     it('should correctly map location fields when they are provided in the DTO', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
-      });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
-        return callback(mockPrismaService);
-      });
-
-      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
-      mockPrismaService.consultantManager.create.mockResolvedValue({});
-      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
-      mockPrismaService.consultantSkill.create.mockResolvedValue({});
-      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+      const txMock = setupActiveConsultantProfile();
 
       const dtoWithLocation = {
         ...dto,
@@ -193,7 +194,7 @@ describe('ConsultantService', () => {
 
       await service.createConsultantProfile(cmUserId, dtoWithLocation as any);
 
-      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             latitude: -25.7479,
@@ -206,20 +207,7 @@ describe('ConsultantService', () => {
     });
 
     it('should default location fields to null when they are not provided', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
-      });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-
-      mockPrismaService.$transaction.mockImplementation(async (callback) => {
-        return callback(mockPrismaService);
-      });
-
-      mockPrismaService.consultant.create.mockResolvedValue({ id: 'new-consultant-uuid' });
-      mockPrismaService.consultantManager.create.mockResolvedValue({});
-      mockPrismaService.skill.upsert.mockResolvedValue({ id: 'skill-1' });
-      mockPrismaService.consultantSkill.create.mockResolvedValue({});
-      mockPrismaService.consultantExperience.create.mockResolvedValue({});
+      const txMock = setupActiveConsultantProfile();
 
       const dtoWithoutLocation = { ...dto } as any;
       delete dtoWithoutLocation.latitude;
@@ -228,7 +216,7 @@ describe('ConsultantService', () => {
       delete dtoWithoutLocation.formattedAddress;
 
       await service.createConsultantProfile(cmUserId, dtoWithoutLocation);
-      expect(mockPrismaService.consultant.create).toHaveBeenCalledWith(
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             latitude: null,
@@ -241,20 +229,9 @@ describe('ConsultantService', () => {
     });
 
     it('backfills consultantId onto any CV files uploaded before this profile existed', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      const txMock = setupActiveConsultantProfile({
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-
-      const txMock = {
-        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
-        consultantManager: { create: jest.fn().mockResolvedValue({}) },
-        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
-        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
-        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
-      };
-      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
 
       await service.createConsultantProfile(cmUserId, dto as any);
 
@@ -265,24 +242,57 @@ describe('ConsultantService', () => {
     });
 
     it('does not throw when the consultant has no CV files uploaded beforehand', async () => {
-      mockPrismaService.user.findUnique.mockResolvedValue({
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      setupActiveConsultantProfile({
+        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }), findFirst: jest.fn().mockResolvedValue(null), },
       });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
-
-      const txMock = {
-        consultant: { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid' }) },
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) }, // matches zero rows
-        consultantManager: { create: jest.fn().mockResolvedValue({}) },
-        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
-        consultantSkill: { create: jest.fn().mockResolvedValue({}) },
-        consultantExperience: { create: jest.fn().mockResolvedValue({}) },
-      };
-      mockPrismaService.$transaction.mockImplementation(async (callback) => callback(txMock));
 
       const result = await service.createConsultantProfile(cmUserId, dto as any);
 
       expect(result.message).toBe('Consultant profile created successfully.');
+    });
+
+        it('blocks profile creation when a CV is PENDING security review', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'PENDING' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+      expect(mockPrismaService.consultant.create).not.toHaveBeenCalled();
+    });
+
+    it('blocks profile creation when a CV was REJECTED', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue({
+        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE',
+      });
+      mockPrismaService.cvFile.findFirst.mockResolvedValueOnce({ securityReviewStatus: 'REJECTED' });
+
+      await expect(service.createConsultantProfile(cmUserId, dto as any)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('stamps hadSecurityFlagOnIntake=true when the CV was CLEARED after a flag', async () => {
+      const txMock = setupActiveConsultantProfile({
+        cvFile: {
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          findFirst: jest.fn().mockResolvedValue({ securityReviewStatus: 'CLEARED' }),
+        },
+      });
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: true }) }),
+      );
+    });
+
+    it('stamps hadSecurityFlagOnIntake=false when the CV was never flagged', async () => {
+      const txMock = setupActiveConsultantProfile();
+
+      await service.createConsultantProfile(cmUserId, dto as any);
+
+      expect(txMock.consultant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ hadSecurityFlagOnIntake: false }) }),
+      );
     });
 
     it.each([
@@ -301,9 +311,9 @@ describe('ConsultantService', () => {
           institution: 'University of Cape Town',
           qualification: 'BSc Computer Science',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+          endDate: new Date('2023-12-31T00:00:00.000Z'),
         },
-      },{
+      }, {
         label: 'certificate',
         txKey: 'certificate',
         dtoKey: 'certifications',
@@ -318,29 +328,18 @@ describe('ConsultantService', () => {
           title: 'AWS Certified Developer',
           issuingBody: 'Amazon',
           startDate: new Date('2020-01-01T00:00:00.000Z'),
-          endDate: new Date('2023-12-31T00:00:00.000Z'), 
+          endDate: new Date('2023-12-31T00:00:00.000Z'),
         },
       },
-    ])('should create $label record when $label data is provided', async ({txKey, dtoKey, payload, expected}) =>{
-      mockPrismaService.user.findUnique.mockResolvedValue({ 
-        id: 'consultant-uuid-123', role: 'CONSULTANT', status: 'ACTIVE', });
-      mockPrismaService.consultant.findUnique.mockResolvedValue(null);
+    ])('should create $label record when $label data is provided', async ({ txKey, dtoKey, payload, expected }) => {
+      const txMock = setupActiveConsultantProfile({
+        certificate: { create: jest.fn().mockResolvedValue({}) },
+        consultantEducation: { create: jest.fn().mockResolvedValue({}) },
+      });
 
-      const txMock = {
-        consultant : { create: jest.fn().mockResolvedValue({ id: 'new-consultant-uuid'})},
-        cvFile: { updateMany: jest.fn().mockResolvedValue({ count: 0})},
-        consultantManager: { create: jest.fn().mockResolvedValue({})},
-        skill: {upsert: jest.fn().mockResolvedValue({ id: 'skill-1'})},
-        consultantSkill: {create: jest.fn().mockResolvedValue({})},
-        consultantExperience: {create: jest.fn().mockResolvedValue({})},
-        certificate: {create: jest.fn().mockResolvedValue({})},
-        consultantEducation: { create: jest.fn().mockResolvedValue({})},
-      };
-      mockPrismaService.$transaction.mockImplementation( async (callback) =>callback(txMock));
-      
       const dtoIncludingRelatedData = {
         ...dto,
-        [dtoKey] : [payload],
+        [dtoKey]: [payload],
       } as any;
 
       const result = await service.createConsultantProfile(cmUserId, dtoIncludingRelatedData);
@@ -400,11 +399,14 @@ describe('ConsultantService', () => {
       },
     ];
 
+    // Define a reusable manager ID for these tests
+    const managerId = 'mock-manager-id';
+
     it('should include costToCompanyRate for CONSULTANT_MANAGER', async () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants[0].costToCompanyRate).toBe(650);
     });
 
@@ -412,7 +414,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'PROJECT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'PROJECT_MANAGER', managerId);
       expect(result.consultants[0].costToCompanyRate).toBeUndefined();
     });
 
@@ -420,7 +422,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue(mockConsultants);
       mockPrismaService.consultant.count.mockResolvedValue(1);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants[0].primarySkills).toEqual(['TypeScript']);
     });
 
@@ -428,7 +430,8 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      // Added managerId as 4th argument
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.consultants).toHaveLength(0);
       expect(result.total).toBe(0);
     });
@@ -437,46 +440,45 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
-      const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(3, 10, 'CONSULTANT_MANAGER', managerId);
       expect(result.page).toBe(3);
     });
 
     it('should return cached data and not call the database (Cache Hit)', async () => {
+      const expectedCacheKey = `cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER:manager:${managerId}`;
 
       const mockCachedData = { page: 1, limit: 10, total: 5, consultants: [] };
       mockCacheManager.get.mockResolvedValue(mockCachedData);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
 
-      expect(mockCacheManager.get).toHaveBeenCalledWith('cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER');
+      expect(mockCacheManager.get).toHaveBeenCalledWith(expectedCacheKey);
       expect(result).toEqual(mockCachedData);
       expect(mockPrismaService.consultant.findMany).not.toHaveBeenCalled();
       expect(mockPrismaService.consultant.count).not.toHaveBeenCalled();
     });
 
     it('should fetch from database and save to cache when cache is empty (Cache Miss)', async () => {
+      const expectedCacheKey = `cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER:manager:${managerId}`;
 
       mockCacheManager.get.mockResolvedValue(null);
-
       mockPrismaService.consultant.findMany.mockResolvedValue([]);
       mockPrismaService.consultant.count.mockResolvedValue(0);
 
+      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER', managerId);
 
-      const result = await service.getAllConsultants(1, 10, 'CONSULTANT_MANAGER');
-
-      expect(mockCacheManager.get).toHaveBeenCalled();
+      expect(mockCacheManager.get).toHaveBeenCalledWith(expectedCacheKey);
       expect(mockPrismaService.consultant.findMany).toHaveBeenCalled();
       expect(mockPrismaService.consultant.count).toHaveBeenCalled();
 
       expect(mockCacheManager.set).toHaveBeenCalledWith(
-        'cache:consultants:page:1:limit:10:role:CONSULTANT_MANAGER',
+        expectedCacheKey,
         { page: 1, limit: 10, total: 0, consultants: [] },
         300000
       );
     });
 
     it('should invalidate the cache when a consultant profile is updated', async () => {
-
       const invalidateSpy = jest.spyOn(service, 'invalidateConsultantCache').mockResolvedValue(undefined);
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
@@ -485,8 +487,7 @@ describe('ConsultantService', () => {
       mockPrismaService.consultant.update.mockResolvedValue({ id: '123' });
       mockPrismaService.$transaction.mockImplementation(async (callback) => callback(mockPrismaService));
 
-      await service.updateConsultantProfile('123', {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1');;
-
+      await service.updateConsultantProfile('123', {}, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
 
       expect(invalidateSpy).toHaveBeenCalled();
     });
@@ -797,6 +798,52 @@ describe('ConsultantService', () => {
       expect(result.project.teamMembers).toHaveLength(1);
       expect(result.project.teamMembers[0].email).toBe('jane@bbd.co.za');
     });
+
+    it('only queries ACTIVE placements, excluding terminated placement history', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
+
+      await service.getAssignedProjects('user-1');
+
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { consultantId: 'consultant-1', status: 'ACTIVE'},
+        }),
+      );
+    });
+
+    it('regression: does not returen duplicarte cards for a project the conbsultant was place on, unassigned from, and re-placed on', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-1' });
+
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          id: 'placement-2',
+          status: 'ACTIVE',
+          allocation: 60,
+          startDate: new Date('2026-01-01'),
+          endDate: null,
+          project: {
+            id: 'project-alpha',
+            projectName: 'Project Alpha',
+            clientName: 'Client A',
+            description: 'Test project',
+            suburb: 'Sandton',
+            city: 'Johannesburg',
+            province: 'Gauteng',
+            status: 'IN_PROGRESS',
+            startDate: new Date('2026-01-01'),
+            endDatw: null,
+            allocation: 100,
+          },
+        },
+      ]);
+
+      const result = await service.getAssignedProjects('user-1');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].placementId).toBe('placement-2');
+      expect(result[0].project.projectName).toBe('Project Alpha');
+    });
   });
 
   // --- getConsultantsByProject ---------------------------------------------------
@@ -877,9 +924,58 @@ describe('ConsultantService', () => {
       expect(result.consultants).toEqual([]);
     });
   });
+
   //-------------------------------------Update consultant profile---------------------------------------------------------------------
   describe('updateConsultantProfile', () => {
     const consultantId = 'consultant-uuid-1';
+
+    const createUpdateTxMock = (overrides: Record<string, any> = {}) => {
+      const baseConsultant = {
+        findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
+        update: jest.fn().mockResolvedValue({}),
+      };
+
+      const txMock = {
+        consultant: {
+          ...baseConsultant,
+          ...(overrides.consultant ?? {}),
+        },
+        consultantSkill: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        skill: {
+          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
+        },
+        consultantExperience: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        certificate: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        consultantEducation: {
+          deleteMany: jest.fn().mockResolvedValue({}),
+          create: jest.fn().mockResolvedValue({}),
+        },
+        user: {
+          update: jest.fn().mockResolvedValue({}),
+        },
+        ...overrides,
+      };
+
+      txMock.consultant = {
+        ...baseConsultant,
+        ...(overrides.consultant ?? {}),
+      };
+
+      mockPrismaService.$transaction.mockImplementation(
+        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
+      );
+
+      return txMock;
+    };
 
     it('should throw NotFoundException if consultant does not exist', async () => {
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
@@ -909,25 +1005,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-        consultantSkill: {
-          deleteMany: jest.fn().mockResolvedValue({}),
-          create: jest.fn().mockResolvedValue({}),
-        },
-        skill: {
-          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
-        },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         skills: [
@@ -948,11 +1026,7 @@ describe('ConsultantService', () => {
 
       let capturedSkillData: any = null;
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
+      const txMock = createUpdateTxMock({
         consultantSkill: {
           deleteMany: jest.fn().mockResolvedValue({}),
           create: jest.fn().mockImplementation((args) => {
@@ -960,17 +1034,7 @@ describe('ConsultantService', () => {
             return Promise.resolve({});
           }),
         },
-        skill: {
-          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
-        },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-        user: { update: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      });
 
       await service.updateConsultantProfile(consultantId, {
         skills: [
@@ -986,23 +1050,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: {
-          deleteMany: jest.fn().mockResolvedValue({}),
-          create: jest.fn().mockResolvedValue({}),
-        },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         experiences: [
@@ -1028,24 +1076,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: {
-          deleteMany: jest.fn().mockResolvedValue({}),
-          create: jest.fn().mockResolvedValue({}),
-        },
-        user: { update: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         certifications: [
@@ -1064,24 +1095,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-        consultantEducation: {
-          deleteMany: jest.fn().mockResolvedValue({}),
-          create: jest.fn().mockResolvedValue({}),
-        },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         education: [
@@ -1105,24 +1119,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-        consultantEducation: {
-          deleteMany: jest.fn().mockResolvedValue({}),
-          create: jest.fn().mockResolvedValue({}),
-        },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         phone: '0821234567',
@@ -1138,21 +1135,11 @@ describe('ConsultantService', () => {
       });
 
       const updateSpy = jest.fn().mockResolvedValue({});
-      const txMock = {
+      const txMock = createUpdateTxMock({
         consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: updateSpy
+          update: updateSpy,
         },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-        consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      });
 
       await service.updateConsultantProfile(consultantId, {
         addressLine1: '742 Evergreen Terrace',
@@ -1176,21 +1163,11 @@ describe('ConsultantService', () => {
       });
 
       const updateSpy = jest.fn().mockResolvedValue({});
-      const txMock = {
+      const txMock = createUpdateTxMock({
         consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: updateSpy
+          update: updateSpy,
         },
-        consultantSkill: { deleteMany: jest.fn(), create: jest.fn() },
-        skill: { upsert: jest.fn() },
-        consultantExperience: { deleteMany: jest.fn(), create: jest.fn() },
-        certificate: { deleteMany: jest.fn(), create: jest.fn() },
-        consultantEducation: { deleteMany: jest.fn(), create: jest.fn() },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      });
 
       await service.updateConsultantProfile(consultantId, {
         availability: 'UNAVAILABLE',
@@ -1209,15 +1186,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-      };
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         latitude: -25.7479,
@@ -1241,16 +1210,7 @@ describe('ConsultantService', () => {
         id: consultantId,
       });
 
-      const txMock = {
-        consultant: {
-          findUnique: jest.fn().mockResolvedValue({ id: consultantId, userId: 'consultant-user-1' }),
-          update: jest.fn().mockResolvedValue({}),
-        },
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (fn: (tx: typeof txMock) => Promise<void>) => fn(txMock),
-      );
+      const txMock = createUpdateTxMock();
 
       await service.updateConsultantProfile(consultantId, {
         latitude: -25.7479,
@@ -1312,19 +1272,14 @@ describe('ConsultantService', () => {
 
       const userUpdate = jest.fn().mockResolvedValue({});
       const consultantUpdate = jest.fn().mockResolvedValue({});
-      const txMock = {
+      const txMock = createUpdateTxMock({
         consultant: {
-          findUnique: jest.fn().mockResolvedValue({
-            id: consultantId, userId: 'consultant-user-1',
-          }),
           update: consultantUpdate,
         },
-        user: { update: userUpdate, }
-      };
-
-      mockPrismaService.$transaction.mockImplementation(
-        async (callback: (tx: typeof txMock) => Promise<void>) => callback(txMock),
-      );
+        user: {
+          update: userUpdate,
+        },
+      });
 
       await service.updateConsultantProfile(
         consultantId,
@@ -1341,7 +1296,40 @@ describe('ConsultantService', () => {
         },
       });
     });
+
+    it('throws ForbiddenException when a CONSULTANT_MANAGER tries to update costToCompany', async () => {
+      await expect(
+        service.updateConsultantProfile(
+          consultantId,
+          { costToCompany: 50000 } as any,
+          'CONSULTANT_MANAGER',
+          'cm-user-1',
+        ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows a CONSULTANT to update their own costToCompany', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+
+      const txMock = createUpdateTxMock();
+
+      const result = await service.updateConsultantProfile(
+        consultantId,
+        { costToCompany: 60000 } as any,
+        'CONSULTANT',
+        'consultant-user-1',
+      )
+
+      expect(result.message).toBe('Consultant profile updated successfully.');
+      expect(txMock.consultant.update).toHaveBeenCalledWith({
+         where: { id: consultantId },
+         data: expect.objectContaining({ costToCompany: 60000 }),
+      });
+    });
   });
+
   // ---------- uploadProfilePicture------------
   describe('uploadProfilePicture', () => {
     const consultantId = 'consultant-uuid-1';
@@ -1438,7 +1426,6 @@ describe('ConsultantService', () => {
     });
   });
 
-
   // ---------- unassignConsultant ----------
 
   describe('unassignConsultant', () => {
@@ -1479,17 +1466,28 @@ describe('ConsultantService', () => {
         consultantId: 'consultant-1',
         status: 'ACTIVE',
         allocation: 100,
+        consultant: {
+          userId: 'user-123',
+          capacity: 50,
+        },
+        project: {
+          projectName: 'Alpha Project',
+        },
       });
 
       mockTx.consultant.update.mockResolvedValueOnce({
         id: 'consultant-1',
         capacity: 100,
-        availability: 'UNAVAILABLE',
       });
 
       const result = await service.unassignConsultant('project-1', 'consultant-1');
 
       expect(result.message).toBe('Consultant successfully unassigned and capacity restored.');
+      expect(mockNotificationService.createAndSendNotification).toHaveBeenCalledWith(
+        'user-123',
+        'Project Unassignment Notice',
+        'You have been unassigned from project Alpha Project.',
+      );
       expect(result.placementId).toBe('placement-123');
 
       expect(mockTx.projectPlacement.update).toHaveBeenCalledWith({
@@ -1508,10 +1506,6 @@ describe('ConsultantService', () => {
         },
       });
 
-      expect(mockTx.consultant.update).toHaveBeenNthCalledWith(2, {
-        where: { id: 'consultant-1' },
-        data: { availability: 'AVAILABLE' },
-      });
     });
 
     it('should cap capacity at 100 if the math somehow results in > 100', async () => {
@@ -1521,12 +1515,18 @@ describe('ConsultantService', () => {
         consultantId: 'consultant-1',
         status: 'ACTIVE',
         allocation: 50,
+        consultant: {
+          userId: 'user-123',
+          capacity: 50,
+        },
+        project: {
+          projectName: 'Alpha Project',
+        },
       });
 
       mockTx.consultant.update.mockResolvedValueOnce({
         id: 'consultant-1',
         capacity: 120,
-        availability: 'PARTIALLY_AVAILABLE',
       });
 
       await service.unassignConsultant('project-1', 'consultant-1');
@@ -1536,55 +1536,9 @@ describe('ConsultantService', () => {
         data: { capacity: 100 },
       });
 
-      expect(mockTx.consultant.update).toHaveBeenCalledWith({
-        where: { id: 'consultant-1' },
-        data: { availability: 'AVAILABLE' },
-      });
-    });
 
-
-    it('should set status to UNAVAILABLE if restored capacity is still 0', async () => {
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
-        id: 'placement-123',
-        projectId: 'project-1',
-        consultantId: 'consultant-1',
-        status: 'ACTIVE',
-        allocation: 0,
-      });
-      mockTx.consultant.update.mockResolvedValueOnce({
-        id: 'consultant-1',
-        capacity: 0,
-        availability: 'AVAILABLE',
-      });
-
-      await service.unassignConsultant('project-1', 'consultant-1');
-
-      expect(mockTx.consultant.update).toHaveBeenCalledWith({
-        where: { id: 'consultant-1' },
-        data: { availability: 'UNAVAILABLE' },
-      });
-    });
-
-    it('should skip updating the availability enum if the status is already correct', async () => {
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
-        id: 'placement-123',
-        projectId: 'project-1',
-        consultantId: 'consultant-1',
-        status: 'ACTIVE',
-        allocation: 50,
-      });
-
-      mockTx.consultant.update.mockResolvedValueOnce({
-        id: 'consultant-1',
-        capacity: 50,
-        availability: 'AVAILABLE',
-      });
-
-      await service.unassignConsultant('project-1', 'consultant-1');
-      expect(mockTx.consultant.update).toHaveBeenCalledTimes(1);
     });
 
   });
-
 });
 

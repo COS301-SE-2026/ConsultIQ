@@ -3,6 +3,7 @@ import { Card } from "../../../components/ui/card";
 import ProjectSkillsTable from "./project-skills-table";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 import { toast } from "sonner";
+import { normalizeCompetency } from "../../consultants/types/consultant.types";
 
 interface ProjectSkillsCardProps {
   readonly skills: ProjectSkillData[];
@@ -72,10 +73,10 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
   };
 
   return (
-    <Card className="p-12 h-full w-full flex items-start justify-center">
-      <div className="w-full max-w-[440px] flex flex-col h-full">
+    <Card className="flex w-full items-center justify-center px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12">
+      <div className="flex w-full max-w-[440px] flex-col ">
 
-        <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
+        <h2 className="mb-6 text-2xl font-bold sm:mb-8 sm:text-3xl" style={{ color: "var(--color-primary)" }}>
           {editingSkill ? "Edit Skill" : "Add Skills"}
         </h2>
 
@@ -111,9 +112,9 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
               onChange={(e) => setCompetency(e.target.value)}
               className="h-14 rounded border px-4 outline-none"
             >
-              <option>BEGINNER</option>
-              <option>INTERMEDIATE</option>
-              <option>EXPERT</option>
+              <option value="BEGINNER">{normalizeCompetency("BEGINNER")}</option>
+              <option value="INTERMEDIATE">{normalizeCompetency("INTERMEDIATE")}</option>
+              <option value="EXPERT">{normalizeCompetency("EXPERT")}</option>
             </select>
           </div>
 

@@ -22,11 +22,11 @@ export default function StyleGuideHome(){
         style={{backgroundImage: "linear-gradient(135deg, #002D62 0%, #0B3C78 50%, #002D62 100%)"}}>
             
         <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute right-20 top-40 w-[320px] h-[320px] rounded-full blur-[100px] opacity-50 animate-float-slow"
+            <div className="hidden sm:block absolute right-20 top-40 w-[320px] h-[320px] rounded-full blur-[100px] opacity-50 animate-float-slow"
             style={{background: "radial-gradient(circle, rgba(58, 110, 165, 0.65) 0%, transparent 75%)",}}
             />
-                <div className= "absolute top-0 right-0 w-[190px] h-[30vh] z-10 animate-float-reverse" style={{background: "rgba(52, 84, 132, 0.99)", boxShadow: "0 4px 4px rgba(0,0,0,0.30)"}}/>
-                <div className= "absolute right-[190px] bottom-0 w-[190px] h-[70vh] z-10 animate-float-slow" style={{background: "rgba(48, 80, 129, 0.99)", boxShadow: "inset 0 4px 4px rgba(0,0,0,0.30)"}}/>
+                <div className= "hidden md:block absolute top-0 right-0 w-[120px] md:w-[190px] h-[20vh] md:h-[30vh] z-10 animate-float-reverse" style={{background: "rgba(52, 84, 132, 0.99)", boxShadow: "0 4px 4px rgba(0,0,0,0.30)"}}/>
+                <div className= "hidden md:block absolute right-[120px] md:right-[190px] bottom-0 w-[120px] md:w-[190px] h-[50vh] md:h-[70vh] z-10 animate-float-slow" style={{background: "rgba(48, 80, 129, 0.99)", boxShadow: "inset 0 4px 4px rgba(0,0,0,0.30)"}}/>
 
         </div>
             <div className="relative z-10">

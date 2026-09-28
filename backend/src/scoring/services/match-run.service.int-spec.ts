@@ -75,6 +75,10 @@ async function createProject(
   overrides: { factorName: ScoringFactorName; overrideWeight: number }[],
   extraData: any = {},
 ) {
+  const startDate = new Date();
+  const endDate = new Date(startDate);
+  endDate.setMonth(startDate.getMonth() + 6);
+
   const project = await prisma.project.create({
     data: {
       status: 'OPEN',
@@ -86,14 +90,15 @@ async function createProject(
       postalCode: '1234',
       teamSize,
       budget,
-      startDate: new Date(),
+      startDate,
+      endDate,
       allocation: 100,
       ...extraData,
       skills: {
         create: [
           {
             skillId,
-            competency: CompetencyLevel.INTERMEDIATE,
+            competency: CompetencyLevel.EXPERT,
             years: 5,
             mandatory: true,
           },
@@ -241,13 +246,13 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       const consultantB = await createConsultant(
         prisma,
         'consultantB@consultIq.com',
-        1100,
+        800,
         'Johannesburg',
         'Cape Town',
         backendSkill.id,
-        CompetencyLevel.BEGINNER,
-        2,
-        60,
+        CompetencyLevel.INTERMEDIATE,
+        3,
+        75,
       );
       const consultantC = await createConsultant(
         prisma,
@@ -262,9 +267,10 @@ describe('Scoring Engine (MatchRunService) - Integration-e2e-tests', () => {
       );
 
       // Project level weight configurations
-      const project = await createProject(prisma, 1000, 5, backendSkill.id, [
-        { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.4 },
-        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.6 },
+      const project = await createProject(prisma, 1000000, 5, backendSkill.id, [
+        { factorName: ScoringFactorName.SKILL_ALIGNMENT, overrideWeight: 0.3 },
+        { factorName: ScoringFactorName.COST_TO_COMPANY, overrideWeight: 0.3 },
+        { factorName: ScoringFactorName.COMPETENCY_LEVEL, overrideWeight: 0.4 },
       ]);
 
       const { results } = await matchRunService.executeMatchRun(

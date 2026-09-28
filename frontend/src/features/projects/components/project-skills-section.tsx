@@ -4,6 +4,7 @@ import ProjectSkillsTable from "./project-skills-table";
 import ProjectSkillsCard from "./project-skills-card";
 import type { ProjectSkillData } from "../pages/project-specification-page";
 import { Card } from "../../../components/ui/card";
+import { normalizeCompetency } from "../../consultants/types/consultant.types";
 
 
 interface ProjectSkillsSectionProps {
@@ -43,6 +44,11 @@ export default function ProjectSkillsSection({
     };
   };
 
+  const deleteSkill = (_skill: ProjectSkillData, idx: number) => {
+    setCurrentSkills((prev) => prev.filter((_, i) => i !== idx));
+    if(editingIndex === idx) setEditingIndex(null);
+  };
+
   let skillsSection;
 
   if (isEditing) {
@@ -62,11 +68,12 @@ export default function ProjectSkillsSection({
           skills={currentSkills.map((skill, skillId) => ({
             id: String(skillId),
             name: skill.name,
-            competency: skill.competency,
+            competency: normalizeCompetency(skill.competency),
             years: skill.years,
             mandatory: skill.mandatory,
           }))}
           onEditSkill={startEditing}
+          onDeleteSkill={deleteSkill}
           isEditing={isEditing}
         />
       </>
@@ -77,7 +84,7 @@ export default function ProjectSkillsSection({
         skills={currentSkills.map((skill, skillId) => ({
           id: String(skillId),
           name: skill.name,
-          competency: skill.competency,
+          competency: normalizeCompetency(skill.competency),
           years: skill.years,
           mandatory: skill.mandatory,
         }))}
@@ -87,35 +94,35 @@ export default function ProjectSkillsSection({
     );
   }
   return (
-    <Card style={{ padding: "20px", border: "none" }}>
+    <Card className={`border-none p-4 sm:p-5 ${isDisabled ? "opacity-40 pointer-events-none": "opacity-100"}`}>
 
-      <div className=" flex flex-center gap-3">
-        <h3
-          className="text-3xl font-bold mb-4"
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2
+          className="mb-4 text-2xl font-bold sm:text-3xl"
           style={{ color: "var(--color-primary)" }}
         >
           Skills
-        </h3>
+        </h2>
         <div>
           {isEditing ? (
-            <div className="flex gap-4">
-              <button
+            <div className="flex flex-wrap gap-3">
+              <button type="button"
                 onClick={handleSaveSkill}
                 className="flex items-center text-green-400 font-medium ">
-                <Check className="h-5 w-5" /> Save
+                <Check className="h-6 w-6" /> Save
               </button>
-              <button
+              <button type="button"
                 onClick={onCancel}
                 className="flex items-center text-red-400 font-medium ">
-                <X className="h-5 w-5" /> Cancel
+                <X className="h-6 w-6" /> Cancel
               </button>
             </div>) : (
             isNonConsultant && (
-              <button
+              <button type="button"
                 onClick={onEdit}
                 disabled={isDisabled}
                 className=" hover:text-blue-900 disabled:opacity-30 rounded transition">
-                <Edit className="h-5 w-5" />
+                <Edit className="h-6 w-6 text-primary" />
               </button>
             )
 

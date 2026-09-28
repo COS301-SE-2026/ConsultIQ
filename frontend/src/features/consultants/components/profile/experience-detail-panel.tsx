@@ -15,7 +15,7 @@ export interface Experience {
   jobTitle: string;
   jobType: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   roleDescription: string;
   workModel: string;
 }
@@ -27,13 +27,19 @@ interface ExperienceDetailPanelProps {
   readonly editMode?: boolean;
 }
 
+const parseDateValue = (val: string | null | undefined): Date | null => {
+  if (!val) return null;
+  const parsed = new Date(val);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 export default function ExperienceDetailPanel({ experience, onClose,onSave, editMode }: ExperienceDetailPanelProps) {
 
   const [company, setCompany] = useState(experience.company);
   const [jobTitle, setJobTitle] = useState(experience.jobTitle);
   const [jobType, setJobType]= useState(experience.jobType);
  const [startDate, setStartDate]= useState<Date | null>(experience.startDate ? new Date(experience.startDate) : null);
-  const [endDate, setEndDate]= useState<Date | null>(experience.endDate ? new Date(experience.endDate) : null);
+  const [endDate, setEndDate] = useState<Date | null>(parseDateValue(experience?.endDate));
   const [roleDesc, setRoleDesc]= useState(experience.roleDescription);
   const [workModel, setWorkModel] = useState(experience.workModel);
   
@@ -89,12 +95,10 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
   }
 
   const validateEndDate = () => {
-    if(endDate){
+   
       setEndDateError("");
       return true;
-    }
-       setEndDateError("End date is required");
-      return false;
+    
   }
 
 
@@ -136,7 +140,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
       jobTitle,
       jobType,
       startDate: startDate!.toISOString().split("T")[0],
-      endDate:  endDate!.toISOString().split("T")[0],
+      endDate:  endDate ? endDate.toISOString().split("T")[0] : "",
       roleDescription: roleDesc,
       workModel,
     });
@@ -162,7 +166,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
         </div>
 
          <div className="flex flex-col gap-1">
-            <label htmlFor="form-job=title">Job title</label>
+            <label htmlFor="form-job-title">Job title</label>
             <Input value={jobTitle} onChange={(e) => setJobTitle(e.target.value) } />
              {jobTitleError && <span className="text-red-500 text-xs">{jobTitleError}</span>}
          </div>
@@ -172,7 +176,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
              <select
               value= {jobType}
               onChange={(e)=> setJobType(e.target.value)}
-              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
              >
                 <option value="FULL_TIME">Full-time</option>
                 <option value="PART_TIME">Part-time</option>
@@ -187,7 +191,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
              <select
               value= {workModel}
               onChange={(e)=> setWorkModel(e.target.value)}
-              className="flex h=1- w-full rounded-md vorder border-slate-200 bg-white px-3 py-2 text-sm outline transition focus:border-slate-400"
+              className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-400"
              >
 
                <option value="ONSITE">On-site</option>
@@ -202,7 +206,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
          </div>
 
           <div className="flex flex-col gap-1">
-          <DateField id="form-end-date" label="End date" selected={endDate} onChange={setEndDate} error={endDateError}/>
+          <DateField id="form-end-date" label="End date (leave blank if current)" selected={endDate} onChange={setEndDate} error={endDateError}/>
          </div>
 
 
@@ -220,7 +224,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
             {roleDescError && <span className="text-red-500 text-xs">{roleDescError}</span>}
          </div>
 
-        <div className="flex items-center gap-2 shrink-0 ml-4">
+        <div className="flex items-center gap-2 pt-2">
           <Button
             variant="default"
             onClick={handleSave}
@@ -259,7 +263,7 @@ export default function ExperienceDetailPanel({ experience, onClose,onSave, edit
             <DetailField
               label="Start and end date"
               value={`${experience.startDate ? new Date(experience.startDate).toLocaleDateString("en-GB") : ""} 
-            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : ""}`}
+            - ${experience.endDate ? new Date(experience.endDate).toLocaleDateString("en-GB") : "present"}`}
             />
             <DetailField label="Role description" value={experience.roleDescription} />
           </div>

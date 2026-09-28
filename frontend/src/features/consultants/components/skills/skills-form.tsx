@@ -4,6 +4,7 @@ import { Input } from "../../../../components/ui/input";
 import { Button } from "../../../../components/ui/button";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 import type { CreateConsultantSkillPayload } from "../../services/consultant.service";
+import {normalizeCompetency} from "../../types/consultant.types"
 
 const sanitizeText = (input: string) => {
   if (!input) return "";
@@ -95,28 +96,28 @@ export default function SkillsForm() {
               id="competency-level"
               type="text"
               placeholder="Auto-calculated"
-              value={competencyLevel}
+              value={normalizeCompetency(competencyLevel)}
               readOnly
               className="bg-slate-50 text-slate-500 cursor-not-allowed"
             />
           </div>
         </div>
 
-      
+
 
         <div className="self-end bg-brand-blue! overflow-hidden rounded-xl">
-            <Button
-              variant="default"
-              onClick={handleAddSkill}
-              disabled={!skillName.trim() || !years || !confidence}
-              className="flex items-center justify-center"
-              
-            >
-              Add Skill
-            </Button>
+          <Button
+            variant="default"
+            onClick={handleAddSkill}
+            disabled={!skillName.trim() || !years || !confidence}
+            className="flex items-center justify-center"
+
+          >
+            Add Skill
+          </Button>
         </div>
 
-        
+
 
 
         {/* Skills list */}
@@ -128,13 +129,13 @@ export default function SkillsForm() {
             {skills.map((skill, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between rounded-lg border"
-                style={{ borderColor: "var(--color-border)", padding: "24px" }}
+                className="flex items-start justify-between gap-4  rounded-lg border p-4 sm:p-6 shadown-sm"
+                style={{ borderColor: "var(--color-border)" }}
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex-1 flex flex-col gap-1">
                   <span className="text-sm font-medium ">{skill.skillName}</span>
-                  <span className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                    {skill.competencyLevel} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500" style={{ color: "var(--color-text-secondary)" }}>
+                    {normalizeCompetency(skill.competencyLevel)} · {skill.yearsExperience} yrs · Confidence: {skill.confidenceLevel}/4
                   </span>
                 </div>
                 <button
@@ -148,7 +149,7 @@ export default function SkillsForm() {
           </div>
         )}
 
-     
+
       </div>
     </Card>
   );

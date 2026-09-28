@@ -9,12 +9,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePlacementDto } from '../dto/create-placement.dto';
 import { PlacementStatus, AuditAction } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { NotificationService } from '../../notification/service/notification.service';
 @Injectable()
 export class PlacementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditLog: AuditLogService,
-  ) {}
+    private readonly notification: NotificationService,
+  ) { }
 
   async createPlacement(
     projectId: string,
@@ -41,7 +43,7 @@ export class PlacementService {
 
     const consultant = await this.prisma.consultant.findUnique({
       where: { id: dto.consultantId },
-      select: { id: true, capacity: true, availability: true },
+      select: { id: true, capacity: true, availability: true, userId: true },
     });
     if (!consultant) {
       throw new NotFoundException(
@@ -60,6 +62,21 @@ export class PlacementService {
     if (existingPlacement) {
       throw new ConflictException(
         'This consultant is already placed on this project.',
+      );
+    }
+
+    // -------- Team Size Check --------
+
+    const activePlacements = await this.prisma.projectPlacement.count({
+      where: {
+        projectId,
+        status: PlacementStatus.ACTIVE,
+      },
+    });
+
+    if(activePlacements >= project.teamSize) {
+      throw new ConflictException(
+        `Cannot place consultant: project team size limit of ${project.teamSize} has been reached.`,
       );
     }
 
@@ -121,6 +138,19 @@ export class PlacementService {
         allocation: dto.allocation,
       },
     });
+
+    let stringDate = 'starting on ' + startDate.toDateString();
+    if (startDate < new Date()) {
+      stringDate = 'which started on ' + startDate.toDateString();
+    }
+
+    await this.notification.createAndSendNotification(
+      consultant.userId,
+      'New Placement Assigned',
+      `You have been assigned to project ${project.projectName} ${stringDate}.`,
+      //`/projects/${projectId}`,
+    );
+
 
     return {
       message: 'Placement created successfully.',

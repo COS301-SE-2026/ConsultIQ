@@ -38,11 +38,11 @@ export const SkillGapSummaryCards: React.FC<SkillGapSummaryCardsProps> =({ summa
     ];
 
     return(
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {metrics.map((metric) =>(
-                <div key={metric.label} className={`p-6 rounded-lg border ${metric.color} ${metric.borderColor}`} >
-                    <p className="text-lg font-medium text-gray-600">{metric.label}</p>
-                    <p className={`text-3xl font-bold mt-2 ${metric.textColor}`}>
+                <div key={metric.label} className={`min-w-0 rounded-lg border p-4 sm:p-5 ${metric.color} ${metric.borderColor}`} >
+                    <p className="break-words text-base font-medium text-gray-600 sm:text-lg">{metric.label}</p>
+                    <p className={`mt-2 text-2xl font-bold sm:text-3xl ${metric.textColor}`}>
                         {metric.value}
                     </p>
                 </div>

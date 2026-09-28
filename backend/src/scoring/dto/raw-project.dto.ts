@@ -7,9 +7,11 @@ import {
   Min,
   ValidateNested,
   IsOptional,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RequiredSkillDto } from './required-skill.dto';
+import { WorkModel } from '@prisma/client';
 
 export class RawProjectDto {
   @IsString()
@@ -23,6 +25,10 @@ export class RawProjectDto {
   @IsNumber()
   @Min(0)
   billingBudgetPerHour!: number;
+
+  @IsNumber()
+  @Min(1)
+  teamSize!: number;
 
   @IsString()
   city!: string;
@@ -48,6 +54,11 @@ export class RawProjectDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
+
+  @IsEnum(WorkModel, {
+     message: 'Work model must be one of: ONSITE, REMOTE, HYBRID.',
+  })
+  workModel!: WorkModel
 
   // @IsOptional()
   // @IsBoolean()

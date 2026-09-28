@@ -30,10 +30,10 @@ function CountBadge({count}: {readonly count: number}){
 export default function NotificationTabs({ activeTab, setActiveTab,counts }: Props) {
   return (
     <div
-      className="relative border-b border-slate-200"
+      className="border-b border-slate-200 overflow-x-auto"
       style={{ backgroundColor: "var(--color-surface, #ffffff)", zIndex: 9999 }}
     >
-      <div className="flex items-center justify-center gap-36" style={{backgroundColor: "#ffffff", paddingLeft:"36px",paddingRight:"36px"}}>
+      <div className="flex items-center justify-center gap-6 sm:gap-16 md:gap-36 min-w-max px-4 sm:px-9" style={{backgroundColor: "#ffffff"}}>
 
         <div className="flex items-center gap-2">
           <TabButton

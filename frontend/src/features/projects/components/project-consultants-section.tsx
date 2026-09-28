@@ -60,23 +60,18 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
 
     return (
         <Card
-            className="w-full bg-white overflow-hidden "
-            style={{
-                padding: "28px",
-                border: " 1px solid #f1f5f9"
-            }}
-        >
+            className="w-full overflow-hidden bg-white p-4 sm:p-6">
 
-            <h2 className="text-3xl font-bold">Assigned Consultants</h2>
+            <h2 className="text-2xl font-bold sm:text-3xl">Assigned Consultants</h2>
 
-            <div className="w-full ">
-                <table className="w-full border-separate border-spacing-y-4 text-left">
+            <div className="w-full overflow-x-auto">
+                <table className="min-w-[720px] w-full border-separate border-spacing-y-4 text-left">
                     <thead>
                         <tr className=" bg-[#F5F9FF] h-6  ">
-                            <th className="px-8 py-4 font-bold text-[16px]">Name</th>
-                            <th className="px-8 py-4 font-bold text-[16px]">Contact</th>
-                            <th className="px-8 py-4 font-bold text-[16px]">Skills</th>
-                            {!isConsultant && ( <th className="px-8 py-4 font-bold text-[16px]">Actions</th> )}
+                            <th className="px-3 py-3 text-sm font-bold sm:px-5 sm:py-4 font-bold text-[16px]">Name</th>
+                            <th className="px-3 py-3 text-sm font-bold sm:px-5 sm:py-4 font-bold text-[16px]">Contact</th>
+                            <th className="px-3 py-3 text-sm font-bold sm:px-5 sm:py-4 font-bold text-[16px]">Skills</th>
+                            {!isConsultant && ( <th className="px-3 py-3 text-sm font-bold sm:px-5 sm:py-4 font-bold text-[16px]">Actions</th> )}
                         </tr>
                     </thead>
 
@@ -101,12 +96,12 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                                         {getIntials(user.fullName)}
                                     </div>
 
-                                    <span className="font-semibold">
+                                    <span className="min-w-0 break-words font-semibold">
                                         {user.fullName}
                                     </span>
                                 </td>
 
-                                <td className="px-8 py-4 " >
+                                <td className="px-3 py-3 text-sm sm:px-5 sm:py-4 " >
                                     <div className="flex flex-col text-sm">
                                         <span>
                                             {user.email}
@@ -117,7 +112,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                                     </div>
                                 </td>
 
-                                <td className="px-8 py-4">
+                                <td className="px-3 py-3 text-sm sm:px-5 sm:py-4">
                                     <div className="flex flex-wrap gap-2">
                                         {user.skills.map((skill) => (
                                             <span
@@ -136,7 +131,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                                     </div>
 
                                 </td>
-                                <td className="px-8 py-4 ">
+                                <td className="px-3 py-3 text-sm sm:px-5 sm:py-4 ">
                                     {!isConsultant && (
                                         <Button
                                             onClick={() => handleReassign(user.id)}
@@ -159,7 +154,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                     </tbody>
                 </table>
             </div>
-            <div className="flex justify-between items-center mt-2 pt-4 border-t">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
                 <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}

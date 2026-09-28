@@ -36,7 +36,7 @@ export default function ProjectGrid({
         className="
           grid
           grid-cols-1
-          md:grid-cols-2
+          sm:grid-cols-2 sm:gap-6
           xl:grid-cols-3
           gap-8
         "

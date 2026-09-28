@@ -6,6 +6,7 @@ import { ChartAxes } from "./chart-axes";
 
 interface BarGraphProps<T extends object> extends BaseChartProps<T>{
     bars: ChartSeries<T>[];
+    truncateLength?: number;
 }
 
 
@@ -20,6 +21,7 @@ export default function BarGraph<T extends object>({
     yAxisDomain,
     valueToString = (v) => `${v}${yAxisUnit ?? ""}`,
     emptyMessage = "No data availale yet",
+    truncateLength,
 }: BarGraphProps<T>) {
 
     let hasData = false;
@@ -38,7 +40,7 @@ export default function BarGraph<T extends object>({
     }
 
     return (
-        <Card className="p-4 rounded-xl">
+        <Card className="min-w-0 w-full rounded-xl p-3 sm:p-4">
             <h2 className="text-lg text-brand-blue">{title}</h2>
             {!hasData ? (
                 <div className="h-[220px] flex items-center justify-center text-sm text-brand-muted!">
@@ -56,6 +58,7 @@ export default function BarGraph<T extends object>({
                             yAxisUnit={yAxisUnit}
                             yAxisDomain={yAxisDomain}
                             valueToString={(value) => valueToString(Number(value))}
+                            truncateLength={truncateLength}
                         />
                         {bars.length > 1 && <Legend/>}
                         {bars.map((bar,index) => (

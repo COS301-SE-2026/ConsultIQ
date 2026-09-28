@@ -67,10 +67,23 @@ export interface SkillCompetencySignal {
   reasoning: string;
 }
 
+export const CV_SECURITY_FLAG_TYPES = [
+  'INSTRUCTION_OVERRIDE',
+  'AUTHORITY_IMPERSONATION',
+  'DATA_EXFILTRATION_ATTEMPT',
+  'HIDDEN_OR_OBFUSCATED_TEXT',
+  'TOOL_USE_OR_EXTERNAL_REQUEST',
+  'SCHEMA_MANIPULATION_ATTEMPT',
+  'OTHER_SUSPICIOUS_CONTENT',
+] as const;
+
+export type CvSecurityFlagType = (typeof CV_SECURITY_FLAG_TYPES)[number];
+
 export interface CvParsingResult {
   success: boolean;
   data?: ParsedCvData;
   competencySignals?: SkillCompetencySignal[];
+  securityFlags?: CvSecurityFlag[];
   fieldWarnings?: FieldWarning[];
   error?: string;
   processingTimeMs: number;
@@ -79,4 +92,10 @@ export interface CvParsingResult {
 export interface FieldWarning {
   path: string; // e.g. "contact.email", "experiences[1].endDate"
   message: string; // human-readable, shown directly on the review screen
+}
+
+export interface CvSecurityFlag {
+  field: string;
+  flagType: CvSecurityFlagType;
+  excerpt: string;
 }

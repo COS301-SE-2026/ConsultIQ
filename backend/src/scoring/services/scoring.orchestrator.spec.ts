@@ -10,7 +10,6 @@ import { SkillAligmentScorer } from "./five-scoring-modules/skill-alignment-scor
 import { ScoringOrchestrator } from "./scoring.orchestrator";
 import { InternalServerErrorException } from "@nestjs/common";
 
-
 const WEIGHTS: Record<ScoringFactor, number> = {
     [ScoringFactor.SKILL_ALIGNMENT]: 0.4,
     [ScoringFactor.COMPETENCY_LEVEL]: 0.3,
@@ -18,7 +17,6 @@ const WEIGHTS: Record<ScoringFactor, number> = {
     [ScoringFactor.LOCATION]: 0.1,
     [ScoringFactor.AVAILABILITY]: 0.05
 };
-
 
 function consultant(overrides: Partial<RawConsultantDto> = {}): RawConsultantDto {
     return {
@@ -28,7 +26,6 @@ function consultant(overrides: Partial<RawConsultantDto> = {}): RawConsultantDto
         city: 'Johannesburg',
         province: 'Gauteng',
         ...overrides
-
     } as RawConsultantDto;
 }
 
@@ -43,9 +40,9 @@ function project(overrides: Partial<RawProjectDto> = {}): RawProjectDto {
         endDate: '2026-06-30',
         requiredAllocationPercentage: 50,
         ...overrides
-
     } as RawProjectDto;
 }
+
 const locationServiceMock = {};
 function orcheStrator(emptyPlacement: boolean) {
     const prismaMock = {
@@ -70,113 +67,65 @@ const ACTIVE_FACTORS = new Set<ScoringFactor>([
     ScoringFactor.AVAILABILITY
 ]);
 
-
 describe('ScoringOrchestrator', () => {
 
     describe('Hard Exclusion', () => {
-        it('applies a 15% penalty when a consultant is missing a mandatory skill', async () => {
-            const orchestrator = orcheStrator(true);
 
+        it('excludes a consultant when they have no skills listed (Invalid Data)', async () => {
+            const orchestrator = orcheStrator(true);
             const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [] }),
+                consultant({ skills: [] }), // explicitly passing empty skills
                 project(),
                 WEIGHTS,
                 ACTIVE_FACTORS,
+            );
 
+            expect(result.excluded).toBe(true);
+            if (result.excluded) {
+                expect(result.reason).toBe('Invalid data: Consultant has no skills listed');
+            }
+        });
+
+        it('excludes a consultant when the project has no required skills (Invalid Data)', async () => {
+            const orchestrator = orcheStrator(true);
+            const result = await orchestrator.scoreConsultant(
+                consultant(),
+                project({ requiredSkills: [] }), // explicitly passing empty project skills
+                WEIGHTS,
+                ACTIVE_FACTORS,
+            );
+
+            expect(result.excluded).toBe(true);
+            if (result.excluded) {
+                expect(result.reason).toBe('Invalid data: Project has no required skills defined');
+            }
+        });
+
+        it('does NOT exclude or penalize a consultant for missing a mandatory skill', async () => {
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
+                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
+                WEIGHTS,
+                ACTIVE_FACTORS,
             );
 
             expect(result.excluded).toBe(false);
             if (!result.excluded) {
-                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toContain('[-15% PENALTY APPLIED]');
+                expect(result.factorScores[ScoringFactor.SKILL_ALIGNMENT]).toBeDefined();
+                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toContain('Mandatory skill(s): 0/1 Matched (Missing: Java)');
             }
-        })
-
-        it('does not exclude a consultant who has all mandatory skils', async () => {
-            const orchestrator = orcheStrator(true);
-
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ACTIVE_FACTORS,);
-            expect(result.excluded).toBe(false);
-        })
+        });
 
         it('does not compute other scoring factors if a consultant has been excluded', async () => {
-            {
-                const orchestrator = orcheStrator(true);
-
-                const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS, ACTIVE_FACTORS,);
-
-                expect(result.excluded).toBe(false);
-                if (!result.excluded) {
-                    expect(result.factorScores[ScoringFactor.COMPETENCY_LEVEL]).toBeDefined();
-                    expect(result.factorScores[ScoringFactor.COST_TO_COMPANY]).toBeDefined();
-                    expect(result.factorScores[ScoringFactor.LOCATION]).toBeDefined();
-                }
-
-            }
-        })
-
-        it('handles a penalized consultant when missingMandatorySkills is undefined', async () => {
-            jest.spyOn(SkillAligmentScorer.prototype, 'score').mockReturnValue({
-                score: 0.5,
-                triggerHardExclusion: true,
-                details: 'Some details 10',
-            });
             const orchestrator = orcheStrator(true);
 
-            const result = await orchestrator.scoreConsultant(
-                consultant(),
-                project(),
-                WEIGHTS,
-                ACTIVE_FACTORS
-            );
+            const result = await orchestrator.scoreConsultant(consultant({ skills: [] }), project(), WEIGHTS, ACTIVE_FACTORS);
 
-            expect(result.excluded).toBe(false);
-            if (!result.excluded) {
+            expect(result.excluded).toBe(true);
 
-                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toContain('[-15% PENALTY APPLIED] Missing mandatory skills: ');
-            }
-        });
-        it('sets the penalty notice as the sole detail when no previous details exist', async () => {
-            const spy = jest.spyOn(SkillAligmentScorer.prototype, 'score').mockReturnValue({
-                score: 0.5,
-                triggerHardExclusion: true,
-                missingMandatorySkills: ['Docker'],
-                details: undefined,
-            });
-
-            const orchestrator = orcheStrator(true);
-            const result = await orchestrator.scoreConsultant(
-                consultant(),
-                project(),
-                WEIGHTS,
-                ACTIVE_FACTORS
-            );
-
-            expect(result.excluded).toBe(false);
-            if (!result.excluded) {
-                expect(result.factorDetails[ScoringFactor.SKILL_ALIGNMENT]).toBe(
-                    '[-15% PENALTY APPLIED] Missing mandatory skills: Docker'
-                );
-            }
-
-            spy.mockRestore();
-        });
-
-        it('excludes a consultant when skill hard exclusion is configured', async () => {
-            const orchestrator = orcheStrator(true);
-
-            const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [] }),
-                project(),
-                WEIGHTS,
-                ACTIVE_FACTORS,
-                new Set([ScoringFactor.SKILL_ALIGNMENT]),
-            );
-
-            expect(result).toEqual({
-                excluded: true,
-                reason: 'Missing mandatory skills: C ++',
-                missingMandatorySkills: ['C ++'],
-            });
+            expect(result).toHaveProperty('reason');
         });
 
         it('excludes a consultant when availability hard exclusion is configured', async () => {
@@ -194,11 +143,10 @@ describe('ScoringOrchestrator', () => {
             expect(result.excluded).toBe(true);
         });
 
-    })
+    });
 
     describe('Redistributed Weights', () => {
         it('redistributes weights when an inactive factor is present', async () => {
-
             const orchestrator = orcheStrator(true);
             const activeWeights = new Set<ScoringFactor>([
                 ScoringFactor.SKILL_ALIGNMENT,
@@ -206,7 +154,8 @@ describe('ScoringOrchestrator', () => {
                 ScoringFactor.COST_TO_COMPANY,
                 ScoringFactor.AVAILABILITY
             ]);
-            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, activeWeights,);
+
+            const result = await orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, activeWeights);
             expect(result.excluded).toBe(false);
 
             if (!result.excluded) {
@@ -215,16 +164,16 @@ describe('ScoringOrchestrator', () => {
                 const sum = Object.values(result.redistributedWeights).reduce((aa, weight) => aa + weight, 0);
                 expect(sum).toBeCloseTo(1, 5);
             }
+        });
 
-
-        })
-        it('all factors are inactive', async () => {
+        it('throws an error if all factors are inactive', async () => {
             const ALL_INACTIVE = new Set<ScoringFactor>();
-
             const orchestrator = orcheStrator(true);
 
-            await expect(orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ALL_INACTIVE,)).rejects.toThrow(InternalServerErrorException);
+            await expect(
+                orchestrator.scoreConsultant(consultant(), project(), WEIGHTS, ALL_INACTIVE)
+            ).rejects.toThrow(InternalServerErrorException);
         });
-    })
+    });
 
-})
+});

@@ -9,7 +9,7 @@ interface SearchBarProps {
 
 function SearchBar({ value, onChange, placeholder = "Search...", onFilterClick }: SearchBarProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex w-full items-center gap-2 sm:gap-3">
      
       <div
         className="flex-1 flex items-center gap-3 bg-white rounded-xl"
@@ -40,9 +40,9 @@ function SearchBar({ value, onChange, placeholder = "Search...", onFilterClick }
 
       {/* Filters button */}
       {onFilterClick && (
-        <button
+        <button type="button"
           onClick={onFilterClick}
-          className="flex items-center gap-2 bg-white rounded-xl font-medium transition hover:opacity-80"
+          className="flex h-[52px] shrink-0 items-center gap-2 rounded-xl bg-white px-3 text-sm font-medium transition hover:opacity-80 sm:px-5 sm:text-base"
           style={{
             border: "1px solid var(--color-border)",
             height: "52px",

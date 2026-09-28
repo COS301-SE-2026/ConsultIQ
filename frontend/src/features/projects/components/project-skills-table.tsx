@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { Trash2 } from "lucide-react";
 interface TableSkill {
   readonly id?: string;
   readonly name: string;
@@ -12,32 +12,36 @@ interface TableSkill {
 interface ProjectSkillsTableProps {
    readonly skills: TableSkill[];
    readonly onEditSkill: (skill: TableSkill, idx: number)=> void;
+   readonly onDeleteSkill?: (skill: TableSkill, idx: number) => void; 
    readonly isEditing?: boolean;
 }
 
-export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: ProjectSkillsTableProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onDeleteSkill }: ProjectSkillsTableProps) {
+  const [page, setPage] = useState(1);
   const rowsPerPage = 4;
 
   const totalPages = Math.ceil(skills.length / rowsPerPage);
+  const currentPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
   const startIndex = (currentPage - 1) * rowsPerPage;
   const currentSkills = skills.slice(startIndex, startIndex + rowsPerPage);
-
+  
   return (
-    <div className="mt-6 border-t pt-6 flex flex-col">
-
-      <div className="grid grid-cols-5 text-sm font-semibold mb-4 px-2">
-        <span>Skill</span>
-        <span>Competency</span>
-        <span>Years</span>
-        <span>Mandatory</span>
-      </div>
+    <div className="w-full overflow-x-auto">
+      <div className="min-w-[620px]">
+        <div className="mt-6 border-t pt-6 flex flex-col">
+          <div className="grid grid-cols-5 text-sm font-semibold mb-4 px-2 ">
+            <span>Skill</span>
+            <span>Competency</span>
+            <span>Years</span>
+            <span>Mandatory</span>
+        {isEditing && <span>Actions</span>}
+          </div>
 
       <div className="flex flex-col h-[200px] overflow-y-auto">
         {currentSkills.length > 0 ? (
           currentSkills.map((skill, index) => (
             <div
-              key={index}
+              key={skill.id ?? `${startIndex + index}-${skill.name}`}
               className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
             >
               <span className="truncate pr-2">{skill.name}</span>
@@ -45,9 +49,17 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
               <span>{skill.years}</span>
               <span>{skill.mandatory === undefined ? "—" : skill.mandatory ? "Yes" : "No"}</span>
               {isEditing && (
+              <div className="flex gap-8">
                 <button type="button"
-              onClick={()=> onEditSkill(skill, startIndex+index)}
-              className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>Edit</button>
+                  onClick={()=> onEditSkill(skill, startIndex + index)}
+                  className= "text-sm font-medium" style={{color: "var(--color-primary)"}}>
+                  Edit
+                </button>
+
+                <button type="button" onClick={() => onDeleteSkill?.(skill, startIndex + index)}>
+                <Trash2 className="h-5 w-5 text-red-500 hover:opacity-80 " />
+                </button>
+                </div>
               )}
             </div>
           ))
@@ -58,29 +70,32 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing }: P
         )}
       </div>
 
-      <div className="flex justify-between items-center mt-2 pt-4 border-t">
-        <button
-          type="button"
-          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          disabled={currentPage === 1}
-          className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
-          style={{ color: "var(--color-primary)" }}
-        >
-          Previous
-        </button>
-        <span className="text-sm text-gray-600">
-          Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
-        </span>
-        <button
-          type="button"
-          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-          disabled={currentPage === totalPages || totalPages === 0}
-          className="text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
-          style={{ color: "var(--color-primary)" }}
-        >
-          Next
-        </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-2 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Previous
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {totalPages === 0 ? 0 : currentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="px-2 py-2 text-sm font-medium transition disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+              style={{ color: "var(--color-primary)" }}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+
   );
 }

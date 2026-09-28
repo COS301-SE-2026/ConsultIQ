@@ -8,8 +8,10 @@ import type { MatchRunStatus } from "../services/placement.service";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+
 
 interface RawMatchResult {
     consultantId?: string;
@@ -26,6 +28,7 @@ interface RawMatchResult {
 }
 
 export default function PlacementDashboard() {
+    const navigate = useNavigate();
 
     const location = useLocation();
 
@@ -55,8 +58,6 @@ export default function PlacementDashboard() {
                 isPlaced: placedConsultantIds.includes(result.consultantId ?? result.id ?? "") || (result.isPlaced ?? false),
             }));
     }, [rawMatchData, placedConsultantIds]);
-
-    console.log("URL Parameters:", { projectId, runId });
 
     useEffect(() => {
         if (!projectId || !runId) return;
@@ -130,11 +131,18 @@ export default function PlacementDashboard() {
     const projectExcluded = stats?.totalExcluded ?? 0;
     const projectTotalEvaluated = stats?.totalEvaluated ?? (projectMatched + projectExcluded);
 
+    const hasInitialRecommendations = rawMatchData.length > 0;
+    const isMatchLoading = 
+        !matchRunStatus ||
+        (matchRunStatus.status === "IN_PROGRESS" && !hasInitialRecommendations ) || 
+        (matchRunStatus.status === "COMPLETED" && stats === null);
+
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);
     };
     const handlePlaceConsultant = async (consultantId: string) => {
         if (!projectId || !project) {
+            navigate("/projects", {replace: true});
             throw new Error("Project information is missing.");
         }
         try {
@@ -158,42 +166,71 @@ export default function PlacementDashboard() {
         }
     };
 
-    const handleViewAll = () => {
-        console.log("Viewing full list");
-    };
+    function renderMatchContent() {
+        if(isMatchLoading){
+            return (
+                <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
+                    <Loader2 className="h-10 w-10 animate-spin" style={{color: "var(--color-primary)"}}/>
+                    <div className="text-lg font-semibold text-slate-800">
+                        <h2 className="text-lg font-semibold text-slate-800">
+                            Scoring consultants...
+                        </h2>
+                        <p className="mt-1 text-sm text-slate-500">
+                            {matchRunStatus ? `Progress: ${matchRunStatus.progress}%` : "Preparing the match run"}
+                        </p>
+                    </div>
+                </div>            
+            );
+        }
+        if(matchRunStatus?.status === "FAILED"){
+            return(
+                <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
+                    {matchRunStatus.errorMessage ?? "The match run failed. Please try again."}
+                </div>                
+            );
+        }
+
+        return (
+            <>
+                <MatchStatsGrid
+                    scoringBasis={projectScoringBasis}
+                    totalEvaluated={projectTotalEvaluated}
+                    matched={projectPlaced}
+                    excluded={projectExcluded}
+                />
+                <RecommendationsTable
+                    recommendations={recommendations}
+                    onSelectConsultant={handleSelectConsultant}
+                    onPlaceConsultant={handlePlaceConsultant}
+                />
+            </>    
+        );
+    }
 
     return (
-        <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex h-screen overflow-hidden bg-[var(--color-surface)] lg:flex-row">
             <div className="h-screen shrink-0">
-                <Sidebar items={projectManagerSidebarItems} />
+                <Sidebar items={projectManagerSidebarItems(projectId, runId)} />
             </div>
             <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                    style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
-                    <h1 className="text-4xl font-bold" style={{ color: "var(--color-primary)" }}>
-                        Placement Dashboard</h1>
-                    <span className="text-right">
-                        <p className="text-lg font-medium text-slate-500 mt-1">{project?.projectName}</p>
+                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
+                        Placement Dashboard
+                    </h1>
+                    <div className="text-left sm:text-right">
+                        <p className="text-lg font-medium text-slate-500 lg:text-lg">{project?.projectName}</p>
                         {matchRunStatus?.status === "IN_PROGRESS" && (
                             <p className="text-sm text-slate-400">Scoring in progress: {matchRunStatus.progress}%</p>
                         )}
-                    </span>
+                    </div>
+                   </div>
                 </header>
-                <div className="flex-1 px-[80px] py-[32px]">
-                    <MatchStatsGrid
-                        scoringBasis={projectScoringBasis}
-                        totalEvaluated={projectTotalEvaluated}
-                        matched={projectPlaced}
-                        excluded={projectExcluded}
-                    />
-                    <RecommendationsTable
-                        recommendations={recommendations}
-                        onSelectConsultant={handleSelectConsultant}
-                        onPlaceConsultant={handlePlaceConsultant}
-                        onViewAll={handleViewAll}
-                    />
+                <div className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-[80px] lg:py-[32px]">
+                    {renderMatchContent()}
                 </div>
 
             </div>

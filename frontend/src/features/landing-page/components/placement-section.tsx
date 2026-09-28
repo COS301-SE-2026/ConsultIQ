@@ -34,13 +34,13 @@ const SCORE_FACTORS =[
 
 export default function PlacementSection(){
     return(
-         <div className="relative min-h-175 flex flex-col items-center  pt-20 justify-start p-8 gap-10 w-full">
+         <div className="relative min-h-fit sm:min-h-[600px] md:min-h-175 flex flex-col items-center pt-12 sm:pt-16 md:pt-20 justify-start p-5 sm:p-8 gap-8 sm:gap-10 w-full">
                 <div className="flex flex-col items-center gap-2 text-center max-w-4xl mx-auto gap-y-5">
                     <span className=" inline-block  gap-2 px-3 py-1.5 bg-[#fdf6e7] text-[#8a6420] border border-brand-gold text-xs font-bold rounded-full mb-4">
                         Intelligent Placement
                     </span>
                    
-                    <h2 className="text-brand-blue! text-5xl font-bold ">
+                    <h2 className="text-brand-blue! text-2xl sm:text-3xl md:text-5xl font-bold">
                         The engine behind every great placement.
                     </h2>
                     
@@ -63,7 +63,7 @@ export default function PlacementSection(){
                         {SCORE_FACTORS.map(({label,icon:Icon,colour}) =>(
                             <div
                                 key={label}
-                                className="flex flex-1 min-w-[180px] justfy-center items-center gap-2 px-4 py-2.5 rounded-full border border-dashed border-brand-slate bg-[#eef4fb] text-sm text-brand-muted font-semibold"
+                                className="flex flex-1 min-w-[180px] justify-center items-center gap-2 px-4 py-2.5 rounded-full border border-dashed border-brand-slate bg-[#eef4fb] text-sm text-brand-muted font-semibold"
                             >
                                 <Icon size={14} style={{color:colour}}/>
                                 {label}

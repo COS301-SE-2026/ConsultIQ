@@ -23,6 +23,12 @@ import * as bcrypt from 'bcrypt';
 import { RefreshTokenService } from './auth.refresh-token.service';
 import { JwtService } from '@nestjs/jwt';
 
+const getBcryptCostFactor = (): number => {
+  const configuredRounds = Number(process.env.BCRYPT_ROUNDS || 0);
+  if (configuredRounds > 0) return configuredRounds;
+  return process.env.NODE_ENV === 'test' ? 4 : 12;
+};
+
 /** Shape returned to the controller on successful login. */
 export interface LoginResult {
   userId: string;
@@ -35,7 +41,7 @@ export interface LoginResult {
 
 /** Map role -> frontend route  */
 const ROLE_DASHBOARD_MAP: Record<Role, string> = {
-  SUPER_ADMIN: '/admin',
+  SUPER_ADMIN: '/super-admin-dashboard',
   ADMIN: '/admin-dashboard',
   PROJECT_MANAGER: '/projects',
   CONSULTANT_MANAGER: '/consultants-manager',
@@ -60,7 +66,7 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly jwt: JwtService,
-  ) {}
+  ) { }
 
   async login(
     dto: LoginDto,
@@ -126,7 +132,7 @@ export class AuthService {
         });
         throw new ForbiddenException(
           'Your account has been locked due to too many failed login attempts. ' +
-            'Please contact an administrator to unlock your account.',
+          'Please contact an administrator to unlock your account.',
         );
       }
 
@@ -151,7 +157,7 @@ export class AuthService {
         if (nowLocked) {
           throw new ForbiddenException(
             'Your account has been locked due to too many failed login attempts. ' +
-              'Please contact an administrator to unlock your account.',
+            'Please contact an administrator to unlock your account.',
           );
         }
 
@@ -459,7 +465,7 @@ export class AuthService {
       );
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const passwordHash = await bcrypt.hash(dto.password, getBcryptCostFactor());
 
     //update password
     await this.prisma.$transaction([

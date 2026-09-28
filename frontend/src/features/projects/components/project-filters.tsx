@@ -27,22 +27,22 @@ export default function ProjectFilters({
   onLocationChange,
 }: ProjectFiltersProps) {
   return (
-    <div className="flex flex-col sm:flex-row flex-wrap gap-4 mb-8">
+    <div className="mb-6 grid grid-cols-1 gap-3 sm:flex sm:flex-wrap sm:gap-4 sm:mb-8">
       {/* Budget */}
-      <div className="relative w-fit">
+      <div className="relative w-full sm:w-fit">
         <Wallet className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
         <select
           value={budgetFilter}
           onChange={(e) =>
             onBudgetChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="h-14 w-full min-w-0 rounded-xl border bg-white pr-12 text-base font-semibold appearance-none outline-none sm:min-w-[220px] sm:max-w-[240px] sm:text-lg"
           style={{
             borderColor:
               "var(--color-border)",
             color:
               "var(--color-primary)",
-            paddingLeft: "68px",
+            paddingLeft: "56px",
           }}>
           <option value="" disabled>
             Budget
@@ -72,20 +72,20 @@ export default function ProjectFilters({
       </div>
 
       {/* Team Size */}
-      <div className="relative w-fit">
+      <div className="relative w-full sm:w-fit">
         <Users className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
         <select
           value={teamSizeFilter}
           onChange={(e) =>
             onTeamSizeChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="h-14 w-full min-w-0 rounded-xl border bg-white pr-12 text-base font-semibold appearance-none outline-none sm:min-w-[220px] sm:max-w-[240px] sm:text-lg"
           style={{
             borderColor:
               "var(--color-border)",
             color:
               "var(--color-primary)",
-            paddingLeft: "68px",
+            paddingLeft: "56px",
           }}>
           <option value="" disabled>
             Team Size
@@ -109,26 +109,26 @@ export default function ProjectFilters({
         </select>
 
         <ChevronDown
-          className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none"
+          className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
           style={{ color: "var(--color-primary)" }}
         />
       </div>
 
       {/* Location */}
-      <div className="relative w-fit">
+      <div className="relative w-full sm:w-fit">
         <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 pointer-events-none" size={22} style={{ color: "var(--color-primary)" }} />
         <select
           value={locationFilter}
           onChange={(e) =>
             onLocationChange(e.target.value)
           }
-          className="w-full min-w-[220px] max-w-[240px] h-16 rounded-2xl border bg-white pr-12 text-xl font-semibold appearance-none outline-none"
+          className="h-14 w-full min-w-0 rounded-xl border bg-white pr-12 text-base font-semibold appearance-none outline-none sm:min-w-[220px] sm:max-w-[240px] sm:text-lg"
           style={{
             borderColor:
               "var(--color-border)",
             color:
               "var(--color-primary)",
-            paddingLeft: "68px",
+            paddingLeft: "56px",
           }}>
           <option value="" disabled>
             Location
@@ -176,7 +176,7 @@ export default function ProjectFilters({
         </select>
 
         <ChevronDown
-          className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none"
+          className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"
           style={{ color: "var(--color-primary)" }}
         />
       </div>

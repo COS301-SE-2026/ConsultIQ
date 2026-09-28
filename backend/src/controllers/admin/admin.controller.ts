@@ -35,8 +35,11 @@ export class AdminController {
   async getAllUsers(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('role') role?: string,
   ) {
-    return await this.adminUserService.getAllUsers(page, limit);
+    return await this.adminUserService.getAllUsers(page, limit, search, status, role);
   }
 
   // @Delete('users/:userId')
@@ -63,8 +66,10 @@ export class AdminController {
   async getAllProjects(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('search') search?: string,
+    @Query('budgetSort') budgetSort?: 'asc' | 'desc',
   ) {
-    return await this.adminProjectService.getAllProjects(page, limit);
+    return await this.adminProjectService.getAllProjects(page, limit, search, budgetSort);
   }
 
   @Patch('projects/:projectId/archive')

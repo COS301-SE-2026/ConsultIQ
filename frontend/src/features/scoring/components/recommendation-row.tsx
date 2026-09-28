@@ -49,18 +49,18 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
                 <td className= "py-5 px-6 text-center">
                     <div className= "flex items-center justify-center gap-2">
                     <button type="button" onClick={() => setIsExpanded(!isExpanded)}
-                        className="inline-flex items-center gap 2 px-3 py-2 border-slate-700 rounded-md text-sm font-bold text-slate-800 cursor-pointer">
+                        className="inline-flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-1 text-sm font-bold text-slate-800 md:w-auto">
                         Score Breakdown
                         {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                     </button>
-                    <div className = "w-[150px] flex justify-center">
+                    <div className = "w-full md:w-[150px] ">
                     {recommendation.isPlaced ? (
-                        <span className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-bold text-emerald-700 bg-emerald-50">Placed</span>
+                        <span className="inline-flex w-full items-center justify-center rounded-lg bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700">Placed</span>
                     ):(
                     <button type="button" 
                         onClick={() => setIsConfirming(true)}
                         disabled= {isPlacing}
-                        className="inline-flex items-center justify-center px-3 py-1 rounded-lg text-sm font-bold disabled:opacity-50"
+                        className="inline-flex w-full items-center justify-center rounded-lg px-3 py-1 text-sm font-bold disabled:opacity-50"
                         style={{border: "1px solid var(--color-primary)",
                             color:"var(--color-primary)",
                         }}>
@@ -73,8 +73,8 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
             </tr>
             {isConfirming && !recommendation.isPlaced &&(
                 <tr className="bg-amber-50 border-b border-slate-200">
-                    <td colSpan={5} className="px-6 py-4">
-                        <div className="flex items-center justify-between gap-4">
+                    <td colSpan={5} className="px-6 py-4 sm:px-6">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <p className="text-sm font-medium text-slate-800">
                                 Place {recommendation.consultantName} on this project?
                             </p>

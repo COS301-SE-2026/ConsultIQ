@@ -37,6 +37,10 @@ export interface Profile {
   city: string;
   province: string;
   postalCode: string;
+  latitude: number;
+  longitude: number;
+  placeId: string;
+  formattedAddress?: string;
   skills: Skill[];
   experience: Experience[];
   education: Education[];
@@ -49,39 +53,39 @@ function ConsultantProfileViewPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const{count: unreadCount} = useUnreadNotificationCount();
+  const { count: unreadCount } = useUnreadNotificationCount();
   const fromDashboard = location.state?.fromDashboard || false;
   const targetConsultantId = location.state?.selectedConsultantId;
-  const consultantIdToFetch= targetConsultantId || undefined;
+  const consultantIdToFetch = targetConsultantId || undefined;
 
   const { profile: fetchedProfile, isLoading, error, refetch } = useFetchConsultantProfile(
     consultantIdToFetch,
     user?.userId
   );
 
- const [overrides, setOverrides] = useState<Partial<Profile>>({});
- const [lastConsultantId, setLastConsultantId] = useState(consultantIdToFetch);
+  const [overrides, setOverrides] = useState<Partial<Profile>>({});
+  const [lastConsultantId, setLastConsultantId] = useState(consultantIdToFetch);
 
   if (consultantIdToFetch !== lastConsultantId) {
     setLastConsultantId(consultantIdToFetch);
     setOverrides({});
   }
 
-const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
+  const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   const sidebarItems = user?.role === "CONSULTANT_MANAGER"
     ? consultantManagerSidebarItems
     : consultantSidebarItems;
 
-  const canEdit =  Boolean(targetConsultantId) || !fromDashboard;
+  const canEdit = Boolean(targetConsultantId) || !fromDashboard;
 
   async function save(partial: UpdatePayload, optimisticPatch?: Partial<Profile>) {
-    const idToUpdate= targetConsultantId || user?.userId;
+    const idToUpdate = targetConsultantId || user?.userId;
     if (!idToUpdate) {
       throw new Error("Missing consultant id");
     }
     await updateConsultantProfile(idToUpdate, partial);
-    setOverrides((prev) => ({...prev,...(optimisticPatch ?? (partial as Partial<Profile>) )}));
+    setOverrides((prev) => ({ ...prev, ...(optimisticPatch ?? (partial as Partial<Profile>)) }));
   }
 
   if (isLoading) {
@@ -111,14 +115,14 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={sidebarItems} notificationCount={unreadCount}/>
+      <Sidebar items={sidebarItems} notificationCount={unreadCount} />
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto">
         <header
-          className="shrink-0 sticky top-0 z-20 bg-white border-b px-10 h-[90px] flex items-center"
-          style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+          className="shrink-0 sticky top-0 z-20 bg-white border-b h-[90px] flex items-center pl-20 pr-4 md:px-20"
+          style={{ borderColor: "var(--color-border)"}}
         >
-          <div className="flex items-center gap-6 px-4 w-full">
+          <div className="flex items-center gap-3 md:gap-6 w-full">
             {fromDashboard && (
               <button
                 onClick={() => navigate(-1)}
@@ -135,15 +139,15 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                 <ArrowLeft size={20} /> Back
               </button>
             )}
-            <h1 className="font-bold text-4xl" style={{ color: "var(--color-primary)", marginLeft: fromDashboard ? "auto" : "0", marginRight: fromDashboard ? "auto" : "0" }}>
+            <h1 className={`font-bold text-2xl md:text-4xl ${fromDashboard ? "mx-auto" : ""}`   } style={{ color: "var(--color-primary)" }}>
               {fromDashboard ? "Consultant Profile" : "My Profile"}
             </h1>
-            {fromDashboard && <div style={{ width: "70px" }}></div>}
+            {fromDashboard && <div className="hidden md:block" style={{ width: "70px" }}></div>}
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col items-center p-10">
-          <div className="flex flex-col gap-8 w-full max-w-[1024px]">
+        <main className="flex-1 flex flex-col items-center p-4 sm:p-10">
+          <div className="flex flex-col gap-6 sm:gap-8 w-full max-w-[1024px]">
             <div className="h-1" />
 
             <ProfileHeroCard
@@ -153,7 +157,7 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
-                if(photo) {
+                if (photo) {
                   await uploadConsultantPicture(profile.id, photo);
                 }
                 await refetch();
@@ -179,13 +183,17 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               }}
             />
 
-           <LocationCard
+            <LocationCard
               addressLine1={profile.addressLine1}
               addressLine2={profile.addressLine2}
               suburb={profile.suburb}
               city={profile.city}
               province={profile.province}
               postalCode={profile.postalCode}
+              latitude={profile.latitude}
+              longitude={profile.longitude}
+              placeId={profile.placeId}
+              formattedAddress={profile.formattedAddress}
               canEdit={canEdit}
               onSave={async (loc) => {
                 await save({
@@ -205,15 +213,18 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
               canEdit={canEdit}
               onSave={async (experiences) => {
                 await save({
-                  experiences: experiences.map((e) => ({
-                    jobTitle: e.jobTitle,
-                    companyName: e.company,
-                    jobType: e.jobType,
-                    workModel: e.workModel,
-                    startDate: e.startDate,
-                    endDate: e.endDate,
-                    description: e.roleDescription,
-                  })),
+                  experiences: experiences.map((e) => {
+                    const isValidDate = e.endDate && !Number.isNaN(Date.parse(e.endDate));
+                    return{
+                      jobTitle: e.jobTitle,
+                      companyName: e.company,
+                      jobType: e.jobType,
+                      workModel: e.workModel,
+                      startDate: e.startDate,
+                      endDate: isValidDate ? e.endDate : undefined,
+                      description: e.roleDescription,
+                    };
+                  }),
                 });
                 await refetch();
               }}
@@ -235,8 +246,8 @@ const profile = fetchedProfile ? { ...fetchedProfile, ...overrides } : null;
                     confidenceLevel: s.confidenceLevel,
                   })),
                 },
-                {skills:normalized}
-              );
+                  { skills: normalized }
+                );
                 await refetch();
               }}
             />

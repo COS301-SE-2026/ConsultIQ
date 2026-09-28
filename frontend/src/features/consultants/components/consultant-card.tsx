@@ -40,20 +40,15 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
 
   return (
     <div
-      className="bg-white rounded-2xl flex flex-col h-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow duration-200"
-      style={{ padding: "28px 28px 24px 28px" }}
+      className="bg-white rounded-2xl flex flex-col h-full shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow duration-200 p-5 sm:p-7"
+      // style={{ padding: "28px 28px 24px 28px" }}
     >
       
-      <div className="flex items-start gap-5" style={{ marginBottom: "28px" }}>
+      <div className="flex items-start gap-3 sm:gap-5" style={{ marginBottom: "28px" }}>
       
         <div
-          className="rounded-full flex items-center justify-center text-white font-bold shrink-0"
-          style={{
-            width: "76px",
-            height: "76px",
-            backgroundColor: "var(--color-primary)",
-            fontSize: "24px",
-          }}
+          className="rounded-full flex items-center justify-center text-white font-bold shrink-0 w-14 h-14 sm:w-[76px] sm:h-[76px] text-lg sm:text-2xl"
+          style={{ backgroundColor: "var(--color-primary)" }}
         >
           {getInitials(firstName, lastName)}
         </div>
@@ -61,8 +56,8 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
        
         <div className="flex-1 min-w-0 pt-1">
           <h3
-            className="font-bold"
-            style={{ color: "var(--color-primary)", fontSize: "22px", lineHeight: "1.25" }}
+            className="font-bold text-lg sm:text-[22px]" 
+            style={{ color: "var(--color-primary)", lineHeight: "1.25" }}
           >
             {firstName}
             <br />
@@ -84,8 +79,8 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
 
       
         <span
-          className="shrink-0 pt-1"
-          style={{ color: "var(--color-text-secondary)", fontSize: "var(--text-h4)" }}
+          className="shrink-0 pt-1 text-xs sm:text-[length:var(--text-h4)]"
+          style={{ color: "var(--color-text-secondary)"}}
         >
           #{id.slice(0, 8)}
         </span>

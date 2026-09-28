@@ -28,13 +28,13 @@ const PROFILE_FEATURE =[
 
 export default function ManagementSection(){
     return(
-         <div className="relative min-h-175 flex flex-col items-center  pt-20 justify-start p-8 gap-10 w-full">
+         <div className="relative min-h-fit sm:min-h-[600px] md:min-h-175 flex flex-col items-center pt-12 sm:pt-16 md:pt-20 justify-start p-5 sm:p-8 gap-8 sm:gap-10 w-full">
                 <div className="flex flex-col items-center gap-2 text-center max-w-4xl mx-auto gap-y-5">
                     <span className=" inline-block  gap-2 px-3 py-1.5 bg-[#fdf6e7] text-[#8a6420] border border-brand-gold text-xs font-bold rounded-full mb-4">
                         Profile Management
                     </span>
                    
-                    <h2 className="text-brand-blue! text-5xl font-bold ">
+                    <h2 className="text-brand-blue! text-2xl sm:text-3xl md:text-5xl font-bold">
                         Profiles that feed the matching engine.
                     </h2>
                     

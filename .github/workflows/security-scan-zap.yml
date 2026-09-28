@@ -5,18 +5,22 @@ on :
     branches:
       - main
       - dev
+      - mobilise-admin-pages
   workflow_dispatch:
     inputs:
       target_url: 
         description: 'Target URL to scan (default: staging backend)'
         required: false
-        default: 'http://localhost:3001'
+        default: 'https://consultiq-backend-production-086b.up.railway.app'
 
 jobs: 
   owasp-zap-scan:
     name: OWASP ZAP Baseline Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -32,7 +36,7 @@ jobs:
           fi
 
       - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@906a3c93ffde4864839d31a93daadcbd2737b4da # v0.12.0
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: ${{ steps.set_url.outputs.target_url }}
           rules_file_name: '.zap/rules.tsv'
@@ -42,14 +46,14 @@ jobs:
             -T 10
             -c .zap/zap-config.conf
           allow_issue_writing: false
-          artifact_name: zap-baseline-scan
+          artifact_name: zapBaselineScan
       
       - name: Run OWASP ZAP Full Scan
-        uses: zaproxy/action-full-scan@b09f66e028674e87ce23acc493c675684e4f5a44 # v0.12.0
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           target: ${{ steps.set_url.outputs.target_url }}
           rules_file_name: '.zap/rules.tsv'
-          artifact_name: zap-full-scan
+          artifact_name: zapFullScan
           cmd_options: >
             -a
             -d

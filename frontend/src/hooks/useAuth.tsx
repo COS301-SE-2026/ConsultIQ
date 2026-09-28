@@ -26,14 +26,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isLoggingOutUI, setIsLoggingOutUI] = useState(false);
+  const [logoutProgress, setLogoutProgress] = useState(0);
+
   const logout = useCallback(async () => {
     setLoggingOut(true);
+    setIsLoggingOutUI(true);
+    setLogoutProgress(0);
+
+    const progressInterval = setInterval(() => {
+      setLogoutProgress((prev) => {
+
+        const next = prev + (90 - prev) * 0.15;
+        return next > 89 ? 90 : next;
+      });
+    }, 100);
+
     try {
       await authService.logout();
     } catch {
       // Ignore logout errors
+    } finally {
+      clearInterval(progressInterval);
+      setLogoutProgress(100);
+
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 300);
     }
-    setUser(null);
   }, []);
 
 
@@ -48,8 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [logout]);
 
-  // On mount and check if the user is already logged in by calling /auth/me
-  // The HTTP-only cookie is sent automatically by the browser
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -61,7 +79,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 
@@ -77,7 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ) as UserProfile;
       setUser(userProfile);
       return (userProfile as Record<string, unknown>).dashboardRoute as string | undefined;
-
     } else {
       throw new Error('Malformed response structure from authentication server.');
     }
@@ -94,9 +110,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, isLoading, login, logout],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  return (
+    <AuthContext.Provider value={value}>
+      {isLoggingOutUI && (
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-white h-screen w-screen">
 
+          <div className="flex justify-between w-64 mb-2">
+            <span className="text-sm font-medium text-gray-600">Logging out...</span>
+            {/* Show the exact percentage number */}
+            <span className="text-sm font-medium text-gray-600">
+              {Math.min(100, Math.round(logoutProgress))}%
+            </span>
+          </div>
+
+          {/* Progress Bar Container */}
+          <div className="w-64 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[var(--color-primary)] rounded-full transition-all duration-150 ease-out"
+              style={{ width: `${Math.min(100, logoutProgress)}%` }}
+            ></div>
+          </div>
+
+        </div>
+      )}
+      {children}
+    </AuthContext.Provider>
+  );
+}
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');

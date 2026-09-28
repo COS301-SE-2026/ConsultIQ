@@ -3,8 +3,7 @@
 // path ran, and persists the result.
 
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service'; // ASSUMPTION — adjust to your actual path/pattern
-import { S3Service } from './s3.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CvOcrService } from './cv-ocr.service';
 import { ClaudeExtractionService } from './claude-extraction.service';
 import { CvParsingService } from './cv-parsing.service';
@@ -12,6 +11,7 @@ import { CvFieldValidatorService } from './cv-field-validator.service';
 import { CvParsingResult } from '../types/parsed-cv.types';
 import { Prisma, AuditAction } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
+import { S3Service } from './s3.service';
 
 @Injectable()
 export class CvExtractionService {
@@ -92,15 +92,19 @@ export class CvExtractionService {
     cvFileId: string,
     result: CvParsingResult,
   ): Promise<void> {
+    const hasSecurityFlags = (result.securityFlags?.length ?? 0) > 0;
+
     await this.prisma.cvFile.update({
       where: { id: cvFileId },
       data: {
         extractionStatus: result.success ? 'REVIEW_REQUIRED' : 'FAILED',
+        securityReviewStatus: result.success ? hasSecurityFlags ? 'PENDING' : 'NONE' : undefined,
         parsedData: result.success
           ? ({
               data: result.data,
               competencySignals: result.competencySignals ?? [],
               fieldWarnings: result.fieldWarnings ?? [],
+              securityFlags: result.securityFlags ?? [],
             } as unknown as Prisma.InputJsonValue)
           : { error: result.error },
       },
@@ -120,6 +124,7 @@ export class CvExtractionService {
         metadata: {
           consultantId: cvFile?.consultantId,
           extractedData: result.data,
+          securityFlags: result.securityFlags ?? [],
         } as unknown as Prisma.InputJsonValue 
       });
     } else {

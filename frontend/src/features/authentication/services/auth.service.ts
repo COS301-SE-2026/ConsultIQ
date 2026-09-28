@@ -1,8 +1,21 @@
 import type { LoginPayload, LoginResult } from '../types/auth.types';
-import { apiClient } from '../../../lib/api-client';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+const getCsrfToken = (): string | null => {
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    const match = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith('XSRF-TOKEN='));
+
+    if (!match) return null;
+
+    const value = match.slice('XSRF-TOKEN='.length);
+    return decodeURIComponent(value);
+};
 
 export class ApiError extends Error {
     public readonly status: number;
@@ -42,13 +55,22 @@ export const authService = {
             body: JSON.stringify(payload),
         }).then((res) => handleResponse<LoginResult>(res)),
     getProfile: async () => {
-        const response = await apiClient.get<Record<string, unknown>>('/auth/me');
-        return response?.result ? response.result : response;
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            credentials: 'include',
+        });
+
+        return handleResponse<Record<string, unknown>>(response).then((result) =>
+            result?.result ? result.result : result
+        );
     },
     refresh: async (): Promise<string> => {
+        const csrfToken = getCsrfToken();
         const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+            },
             credentials: 'include',
         });
 
@@ -59,8 +81,10 @@ export const authService = {
         return 'success';
     },
     logout: async (): Promise<void> => {
+        const csrfToken = getCsrfToken();
         await fetch(`${API_BASE_URL}/auth/logout`, {
             method: 'POST',
+            headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
             credentials: 'include',
         });
     },

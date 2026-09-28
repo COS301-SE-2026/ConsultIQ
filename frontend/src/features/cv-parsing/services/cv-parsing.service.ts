@@ -1,5 +1,5 @@
 import { apiClient } from "../../../lib/api-client";
-import type { CvFileStatus, CvUploadResponse } from "../types/cv.types";
+import type { CvFileStatus, CvUploadResponse, FlaggedCvSummary } from "../types/cv.types";
 
 export const cvParsingService = {
     async upload(userId: string, file: File, parsingMethod: "RULE_BASED" | "AI_ASSISTED" = "RULE_BASED"): Promise<CvUploadResponse>{
@@ -20,5 +20,9 @@ export const cvParsingService = {
     async discard(cvFileId: string) : Promise<{ message : string}>{
         return apiClient.delete<{message: string}>(`/cv/${cvFileId}`);
     },
+
+    async getFlagged() : Promise<FlaggedCvSummary[]>{
+        return apiClient.get<FlaggedCvSummary[]>(`/cv/flagged`);
+    } 
 
 };

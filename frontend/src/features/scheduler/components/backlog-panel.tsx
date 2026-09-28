@@ -11,19 +11,19 @@ export interface BacklogProjectOption {
 }
 
 interface BacklogPanelProps {
-    tasks: Task[];
-    unplacedSummaries: UnplacedTaskSummary[];
-    projects: BacklogProjectOption[];
-    now: number;
-    expectedVersion: number;
-    collapsed: boolean;
-    onToggleCollapse: () => void;
-    onAddTask: () => void;
-    onSchedule: (taskId: string) => void | Promise<void>;
-    onResolveDeadline: (task: Task) => void;
-    onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
-    onDismiss: (taskId: string) => void | Promise<void>;
-    onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;
+    readonly tasks: Task[];
+    readonly unplacedSummaries: UnplacedTaskSummary[];
+    readonly projects: BacklogProjectOption[];
+    readonly now: number;
+    readonly expectedVersion: number;
+    readonly collapsed: boolean;
+    readonly onToggleCollapse: () => void;
+    readonly onAddTask: () => void;
+    readonly onSchedule: (taskId: string) => void | Promise<void>;
+    readonly onResolveDeadline: (task: Task) => void;
+    readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
+    readonly onDismiss: (taskId: string) => void | Promise<void>;
+    readonly onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;
 }
 type SortMode = "priority" | "deadline";
 
@@ -43,7 +43,7 @@ function sortTasks(tasks: Task[], mode: SortMode): Task[] {
 
 export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, collapsed, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
 
-    const [activeProject, setActiveProject] = useState<string | "all">("all");
+    const [activeProject, setActiveProject] = useState("all");
     const [sortMode, setSortMode] = useState<SortMode>("priority");
 
     const  summaryByTaskId = useMemo(() => {
@@ -63,7 +63,7 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
     const unplacedTasks = sortTasks(filtered.filter((t) => summaryByTaskId.has(t.id)), sortMode);
     const normalTasks = sortTasks(filtered.filter((t) => !summaryByTaskId.has(t.id)), sortMode);
 
-    const countFor = (projectId: string | "all") => projectId === "all" ? tasks.length : tasks.filter((t) => t.projectId === projectId).length;
+    const countFor = (projectId: string) => projectId === "all" ? tasks.length : tasks.filter((t) => t.projectId === projectId).length;
 
     if(collapsed){
         return (
@@ -186,11 +186,11 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
 }
 
 function FilterChip ({ label, count, active, color, onClick }: {
-    label: string;
-    count: number;
-    active: boolean;
-    color?: string;
-    onClick: () => void;
+    readonly label: string;
+    readonly count: number;
+    readonly active: boolean;
+    readonly color?: string;
+    readonly onClick: () => void;
 }){ 
     return (
         <button type="button"

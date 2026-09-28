@@ -6,17 +6,17 @@ import { ComplexityBars} from "./primitives";
 import { formatDuration, formatEstimateRange } from "./scheduler-utils"
 
 interface BacklogTaskCardProps {
-    task: Task;
-    projectLabel: string;
-    projectColor: string;
-    unplacedSummary?: UnplacedTaskSummary;
-    now: number;
-    expectedVersion: number;
-    onSchedule: (taskId: string) => void | Promise<void>;
-    onResolveDeadline: (task: Task) => void;
-    onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
-    onDismiss: (taskId: string) => void | Promise<void>;
-    onDragStart?: (task: Task, event : DragEvent<HTMLButtonElement>) => void;
+    readonly task: Task;
+    readonly projectLabel: string;
+    readonly projectColor: string;
+    readonly unplacedSummary?: UnplacedTaskSummary;
+    readonly now: number;
+    readonly expectedVersion: number;
+    readonly onSchedule: (taskId: string) => void | Promise<void>;
+    readonly onResolveDeadline: (task: Task) => void;
+    readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
+    readonly onDismiss: (taskId: string) => void | Promise<void>;
+    readonly onDragStart?: (task: Task, event : DragEvent<HTMLButtonElement>) => void;
 }
 
 const URGENCY_DOT: Record<Task["urgency"], string> = {
@@ -70,11 +70,11 @@ const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
 };
 
 function UnplacedReason({ task, summary, onResolveDeadline, onDeferToNextWeek, expectedVersion } :{
-    task: Task;
-    summary: UnplacedTaskSummary; 
-    onResolveDeadline : (task: Task) => void;
-    onDeferToNextWeek : (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
-    expectedVersion: number;
+    readonly task: Task;
+    readonly summary: UnplacedTaskSummary; 
+    readonly onResolveDeadline : (task: Task) => void;
+    readonly onDeferToNextWeek : (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
+    readonly expectedVersion: number;
 }){
     
     const isDeadlineIssue = summary.reason === Reason.DEADLINE_INFEASIBLE;
@@ -98,16 +98,15 @@ function UnplacedReason({ task, summary, onResolveDeadline, onDeferToNextWeek, e
         </div>
     )
 }
+function stopAndRun(action: () => void) {
+    return (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    action();
+    };
+}
 
 export default function BacklogTaskCard({task, projectLabel, projectColor, unplacedSummary, now,
   expectedVersion, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart}: BacklogTaskCardProps) {
-
-    function stopAndRun(action: () => void) {
-        return (event: React.MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        action();
-        };
-    }
 
     return (
         <article className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm" style={{borderLeftWidth: 4, borderLeftColor: projectColor}}>

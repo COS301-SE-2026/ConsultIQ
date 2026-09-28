@@ -1,7 +1,7 @@
 import type { Task } from "../types/scheduler.types";   
 
 
-export function ComplexityBars({ level }: { level: Task["complexity"] }) {
+export function ComplexityBars({ level }: { readonly level: Task["complexity"] }) {
     return (
         <span className="inline-flex h-4 items-end gap-0.5"
         role="img"

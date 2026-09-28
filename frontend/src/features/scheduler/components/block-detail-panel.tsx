@@ -5,24 +5,24 @@ import  { getNextStatus , isOverdue} from "./scheduler-utils";
 import TaskCard from "./task-card";
 
 interface BlockDetailPanelProps {
-    block?: ProjectBlock;
-    projectLabel: string;
-    clientName: string;
-    tasks: Task[];
-    now: number;
-    expectedVersion: number;
-    onExpand: () => void;
-    onClose: () => void;
-    onNextBlock: () => void;
-    onAddTask: () => void
-    onAutoRollover: () => void;
-    onEditTask : (task: Task) => void;
-    onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
-    onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
-    onSendToBacklog: (taskId: string) => void | Promise<void>;
-    onDeleteTask: (taskId: string) => void | Promise<void>;
-    onSplitTask: (task: Task) => void;
-    onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;
+    readonly block?: ProjectBlock;
+    readonly projectLabel: string;
+    readonly clientName: string;
+    readonly tasks: Task[];
+    readonly now: number;
+    readonly expectedVersion: number;
+    readonly onExpand: () => void;
+    readonly onClose: () => void;
+    readonly onNextBlock: () => void;
+    readonly onAddTask: () => void
+    readonly onAutoRollover: () => void;
+    readonly onEditTask : (task: Task) => void;
+    readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
+    readonly onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
+    readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
+    readonly onDeleteTask: (taskId: string) => void | Promise<void>;
+    readonly onSplitTask: (task: Task) => void;
+    readonly onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;
 }
 
 type Tab = "all" | "open" | "done";
@@ -57,8 +57,15 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
     const overdueCount= tasks.filter((t) => isOverdue(t, now)).length;
     const openTasks= tasks.filter((t)  => t.status !== "Done");
     const doneTasks= tasks.filter((t)  => t.status === "Done");
-    const visibleTasks= tab === "open" ? openTasks : tab === "done" ? doneTasks : tasks;
+   
+    let visibleTasks = tasks;
 
+    if (tab === "open") {
+        visibleTasks = openTasks;
+    } else if (tab === "done") {
+        visibleTasks = doneTasks;
+    }
+    
     return (
         <aside className="flex h-full w-[340px] flex-col border-l border-slate-200 bg-white">
             <div className="bg-primary px-4 py-4 text-white">

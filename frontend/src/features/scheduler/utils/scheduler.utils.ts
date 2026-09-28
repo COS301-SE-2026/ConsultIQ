@@ -89,3 +89,15 @@ export function isWeekendInstant(instant: string, timeZone: string): boolean{
     const day = new Date(instantToLocalDate(instant, timeZone) + "T00:00:00Z").getUTCDay();
     return day === 0 || day === 6;
 }
+
+export function hours(minutes: number){
+    return (minutes / 60).toFixed(1).replace(/\.0$/,"");
+}
+
+export function formatRange(weekStart: string){
+    const start = new Date(weekStart + "T00:00:00Z");
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 4);
+    const dayMonth= (d: Date) => d.toLocaleDateString("end-GB", {day: "numeric", month: "long", timeZone: "UTC"});
+    return `${dayMonth(start)} - ${dayMonth(end)} ${end.getUTCFullYear()}`;
+}

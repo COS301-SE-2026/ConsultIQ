@@ -68,16 +68,19 @@ interface AwaitingConfirmation {
 
 export interface WeekCalendarProps {
    readonly weekData?: WeekContainer;
+   readonly createEntryRequested?: boolean;
+   readonly onCreateEntryDone?: () => void;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {
     if (el) el.scrollTop = blockTop("08:00");
 }
 
-export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarProps) {
+type EntryFormState = {mode : "create"} | {mode: "edit"; entry:CalendarEntryData} | null;
+
+export default function WeekCalendar({ weekData = holidayWeek, createEntryRequested= false, onCreateEntryDone }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
-    type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
     const [ghost, setGhost] = useState<GhostState | null>(null);
     const [awaiting, setAwaiting] = useState<AwaitingConfirmation | null>(null);
@@ -85,9 +88,17 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 250, distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
         useSensor(KeyboardSensor, {keyboardCodes: {start: ["Space"], cancel: ["Escape"], end:["Space", "Enter"]},}),
     )
+
+    const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
+
+    function closeEntryForm(){
+        setEntryForm(null);
+        onCreateEntryDone?.();
+    }
+
 
     function handleResize(blockId: string, to: Interval) {
         setWeek((w) => ({
@@ -124,12 +135,12 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
             ...w,
             entries: dto.id ? w.entries.map((e) => (e.id === dto.id ? saved : e)) : [...w.entries, saved],
         }));
-        setEntryForm(null);
+        closeEntryForm();
     }
 
     function handleDeleteEntry(entryId: string) {
         setWeek((w) => ({ ...w, entries: w.entries.filter((e) => e.id !== entryId) }));
-        setEntryForm(null);
+        closeEntryForm();
     }
 
 
@@ -151,7 +162,7 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
         const durationMin = (Date.parse(b.end) - Date.parse(b.start)) / 60_000;
         const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
         const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
-        return { startMin, durationMin, colour: getProjectColour(b?.projectId).color }
+        return { startMin, durationMin, colour: getProjectColour(b.projectId).color }
     }
 
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
@@ -202,7 +213,7 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
     }).filter((d) => showWeekend || !d.isWeekend);
 
     return (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full min-w-0 flex-1 min-h-0">
             <button
                 className="self-start px-3 py-1 text-sm rounded border border-slate-300"
                 onClick={() => setShowWeekend((s) => !s)}
@@ -211,8 +222,8 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
             </button>
           
 
-                <div ref={scrollToCoreHours} className="isolate overflow-auto border border-slate-200 max-h-[70vh]">
-                    <div style={{ minWidth: 64 + days.length * 1 }}>
+                <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
+                    <div style={{ minWidth: 64 + days.length * 112 }}>
 
                         {/*Header row*/}
                         <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
@@ -293,16 +304,16 @@ export default function WeekCalendar({ weekData = holidayWeek }: WeekCalendarPro
                 />
             )}
 
-            {entryForm && (
+            {activeForm && (
                 <CalendarEntryForm
-                    key={entryForm.mode === "edit" ? entryForm.entry.id : "new"}
-                    entry={entryForm.mode === "edit" ? entryForm.entry : undefined}
+                    key={activeForm.mode === "edit" ? activeForm.entry.id : "new"}
+                    entry={activeForm.mode === "edit" ? activeForm.entry : undefined}
                     timezone={week.timezone}
                     version={week.version}
                     defaultDate={week.weekStart}
                     onSave={handleSaveEntry}
                     onDelete={handleDeleteEntry}
-                    onClose={() => setEntryForm(null)}
+                    onClose={closeEntryForm}
                 />
             )}
 

@@ -15,8 +15,9 @@ import {
     Interval,
     ValidateContext,
     AllocationSummary,
-} from '../dto/scheduler.dto';
+    CalendarEntry,
 
+} from '../dto/scheduler.dto';
 
 export interface CommitResult {
     ok: boolean;
@@ -37,24 +38,38 @@ export class WeekService {
     ) { }
 
     // -----------------------------------------------------------------
-    // GET /scheduler/weeks/:weekStart
+    // GET /scheduler/weeks/:weekStart (With Auto-Initialization)
     // -----------------------------------------------------------------
 
     public async getWeek(consultantId: string, weekStart: LocalDate): Promise<WeekContainer> {
-        const dbWeek = await this.prisma.schedulerWeek.findUnique({
+        const weekIncludes = {
+            blocks: true,
+            tasks: true,
+            calendarEntries: true,
+            slots: true
+        };
+
+        const existingWeek = await this.prisma.schedulerWeek.findUnique({
             where: {
                 consultantId_weekStart: {
                     consultantId,
-                    weekStart: new Date(`${weekStart}T00:00:00Z`)
-                }
+                    weekStart: new Date(`${weekStart}T00:00:00Z`),
+                },
             },
-
-            include: { blocks: true, tasks: true, calendarEntries: true, slots: true },
+            include: weekIncludes,
         });
 
-        if (!dbWeek) {
-            throw new NotFoundException(`Week starting ${weekStart} not found for consultant ${consultantId}`);
-        }
+        const dbWeek = existingWeek ?? await this.prisma.schedulerWeek.create({
+            data: {
+                consultantId,
+                weekStart: new Date(`${weekStart}T00:00:00Z`),
+                timezone: 'UTC',
+                version: 1,
+                sourceOfLastChange: 'system',
+                lastCommittedAt: new Date(),
+            },
+            include: weekIncludes,
+        });
 
         const holidays = (await this.holidayService.getForWeek(weekStart)) || [];
         const blocks = this.resolveBlocks(dbWeek);
@@ -65,7 +80,6 @@ export class WeekService {
             timezone: dbWeek.timezone,
             weekStart: DateTime.fromJSDate(dbWeek.weekStart, { zone: 'utc' }).toFormat('yyyy-MM-dd') as LocalDate,
             version: dbWeek.version,
-
             lastCommittedAt: (dbWeek.lastCommittedAt ? dbWeek.lastCommittedAt.toISOString() : dbWeek.createdAt.toISOString()) as WeekContainer['lastCommittedAt'],
             sourceOfLastChange: dbWeek.sourceOfLastChange ?? 'system',
             createdAt: dbWeek.createdAt.toISOString() as WeekContainer['createdAt'],
@@ -86,13 +100,13 @@ export class WeekService {
 
     private resolveBlocks(dbWeek: {
         blocks: Array<{
-            manuallyResized?: boolean;
+            userSized?: boolean;
             allocation?: unknown;
             [key: string]: unknown;
         }>;
     }): ProjectBlock[] {
         return dbWeek.blocks.map((b) => {
-            if (b.manuallyResized || b.allocation == null) {
+            if (b.userSized || b.allocation == null) {
                 return b as unknown as ProjectBlock;
             }
             return {
@@ -115,7 +129,6 @@ export class WeekService {
         }
 
         const clone = this.cloneWeek(week);
-
         const placeWindow = this.applyChange(clone, change);
 
         if (placeWindow) {
@@ -141,7 +154,6 @@ export class WeekService {
 
             return { ok: true, value: clone, violations: [], warnings, infos };
         } catch (error: unknown) {
-
             if (
                 error !== null &&
                 typeof error === 'object' &&
@@ -160,7 +172,6 @@ export class WeekService {
 
     public async replan(weekId: string, expectedVersion?: number): Promise<CommitResult> {
         const week = await this.getWeekById(weekId);
-
         const window: Interval = {
             start: this.timeService.localDateToInstant(week.weekStart, week.timezone),
             end: this.timeService.localDateToInstant(
@@ -185,35 +196,27 @@ export class WeekService {
         return this.commit(week, change, ctx, expectedVersion, { dryRun: true });
     }
 
-
-
     private cloneWeek(week: WeekContainer): WeekContainer {
         return structuredClone(week);
     }
-
 
     private applyChange(week: WeekContainer, change: Change): Interval | undefined {
         switch (change.type) {
             case 'replan':
             case 'place_unplaced':
                 break;
-
             case 'create_task':
                 week.tasks.push(change.task as Task);
                 break;
-
             case 'update_task':
                 this.applyUpdateTask(week, change.taskId, change.patch);
                 break;
-
             case 'delete_task':
                 this.applyDeleteTask(week, change.taskId);
                 break;
-
             case 'set_status':
                 this.applySetStatus(week, change.taskId, change.status as Task['status']);
                 break;
-
             case 'toggle_subtask':
                 this.applyToggleSubtask(week, change.taskId, change.subtaskId);
                 break;
@@ -221,15 +224,12 @@ export class WeekService {
             case 'split_task':
                 this.applySplitTask(week, change.taskId, change.atMinutes);
                 break;
-
             case 'accept_deadline_miss':
                 this.applyAcceptDeadlineMiss(week, change.taskId);
                 break;
-
             case 'move_slot':
                 this.applyMoveSlot(week, change.slotId, change.to, change.tags);
                 break;
-
             case 'move_block': {
                 const block = this.getBlock(week, change.blockId);
                 block.start = change.to.start;
@@ -248,6 +248,31 @@ export class WeekService {
                 block.mobility = change.pinned ? 'pinned' : 'fluid';
                 break;
             }
+
+            case 'calendar_upsert': {
+                const dto = change.entry;
+                const existingIdx = week.calendarEntries.findIndex(e => e.id === dto.id);
+                if (existingIdx > -1) {
+                    week.calendarEntries[existingIdx] = { ...week.calendarEntries[existingIdx], ...dto } as CalendarEntry;
+                } else {
+                    week.calendarEntries.push(dto as CalendarEntry);
+                }
+                break;
+            }
+            case 'calendar_remove': {
+                const entryId = change.entryId;
+                week.calendarEntries = week.calendarEntries.filter(e => e.id !== entryId);
+                break;
+            }
+            case 'pull_forward': {
+                const tasks = change.tasks;
+                if (tasks) week.tasks.push(...tasks);
+                break;
+            }
+            case 'rollover':
+            case 'mark_incomplete':
+
+                break;
             default:
                 throw new Error(`WeekService.applyChange: unhandled change type "${(change as Change).type}"`);
         }
@@ -342,37 +367,99 @@ export class WeekService {
             : { id: week.id };
 
         await this.prisma.$transaction(async (tx) => {
-
             await tx.schedulerWeek.update({
                 where: whereClause,
                 data: { version: { increment: 1 }, lastCommittedAt: new Date() },
             });
 
-            await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
-            if (week.slots.length > 0) {
-                await tx.schedulerSlot.createMany({
-                    data: week.slots.map((s) => ({
-                        ...s,
-                        weekId: week.id,
-                        daySpan: s.daySpan ?? 1,
-                        subtaskIds: s.subtaskIds ?? [],
-                        tags: s.tags ?? [],
-                    })),
+
+            await tx.schedulerCalendarEntry.deleteMany({ where: { weekId: week.id } });
+            if (week.calendarEntries && week.calendarEntries.length > 0) {
+                await tx.schedulerCalendarEntry.createMany({
+                    data: week.calendarEntries.map(e => {
+
+                        const dbType = (e.type === 'ad-hoc' ? 'ad_hoc' : e.type) as unknown as
+                            'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad_hoc';
+
+
+                        const dbOrigin = (
+                            e.origin === 'public-holiday' ? 'public_holiday' : e.origin
+                        ) as unknown as 'user' | 'feed' | 'system' | 'public_holiday';
+
+                        return {
+                            id: e.id,
+                            weekId: week.id,
+                            type: dbType,
+                            start: new Date(e.start),
+                            end: new Date(e.end),
+                            origin: dbOrigin,
+                            tags: e.tags ?? []
+                        };
+                    })
                 });
             }
 
+            const memoryTaskIds = week.tasks.map(t => t.id);
+            await tx.schedulerTask.deleteMany({
+                where: { weekId: week.id, id: { notIn: memoryTaskIds } }
+            });
+
             for (const t of week.tasks) {
-                await tx.schedulerTask.update({
-                    where: { id: t.id },
-                    data: { placement: t.placement, unplacedReason: t.unplacedReason, status: t.status },
-                });
+                const taskData = {
+                    projectId: t.projectId,
+                    title: t.title,
+                    tMin: t.tMin,
+                    tMax: t.tMax,
+                    urgency: t.urgency,
+                    complexity: t.complexity,
+                    status: t.status,
+                    placement: t.placement,
+                    unplacedReason: t.unplacedReason,
+                    carriedOver: t.carriedOver,
+                    deadlineMissAccepted: t.deadlineMissAccepted ?? false,
+                };
+
+                const exists = await tx.schedulerTask.findUnique({ where: { id: t.id } });
+                if (exists) {
+                    await tx.schedulerTask.update({ where: { id: t.id }, data: taskData });
+                } else {
+                    await tx.schedulerTask.create({ data: { id: t.id, weekId: week.id, ...taskData } });
+                }
             }
 
             for (const b of week.blocks) {
-                if ((b as unknown as { manuallyResized?: boolean }).manuallyResized) {
+                if (b.userSized) {
                     await tx.schedulerProjectBlock.update({
                         where: { id: b.id },
                         data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
+                    });
+                }
+            }
+
+            await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
+            await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
+
+            for (const s of week.slots) {
+                await tx.schedulerSlot.create({
+                    data: {
+                        id: s.id,
+                        weekId: week.id,
+                        kind: s.kind,
+                        blockId: s.blockId,
+                        start: s.start,
+                        end: s.end,
+                        locked: s.locked,
+                        daySpan: s.daySpan ?? 1,
+                        tags: s.tags ?? [],
+                    }
+                });
+
+                if (s.taskIds && s.taskIds.length > 0) {
+                    await tx.schedulerSlotTask.createMany({
+                        data: s.taskIds.map(taskId => ({
+                            slotId: s.id,
+                            taskId: taskId
+                        }))
                     });
                 }
             }

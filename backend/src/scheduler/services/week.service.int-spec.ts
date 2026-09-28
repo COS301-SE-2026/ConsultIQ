@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WeekService } from './week.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
@@ -9,8 +8,6 @@ import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
 import { Change, ValidateContext } from '../dto/scheduler.dto';
-
-
 
 async function createConsultant(prisma: PrismaService, email: string) {
     const user = await prisma.user.create({
@@ -99,7 +96,6 @@ async function createSchedulerWeek(
     });
 }
 
-
 describe('WeekService - Integration-e2e-tests', () => {
     let moduleRef: TestingModule;
     let weekService: WeekService;
@@ -133,13 +129,16 @@ describe('WeekService - Integration-e2e-tests', () => {
     });
 
     describe('getWeek function validation', () => {
-        it('should throw NotFoundException if the week does not exist in the database', async () => {
-            const testUUID = '00000000-0000-0000-0000-000000000000';
+        it('should auto-initialize and return a week if it does not exist in the database', async () => {
+            const consultant = await createConsultant(prisma, 'test-auto@consultiq.com');
             const weekStart = '2026-09-21' as LocalDate;
 
-            await expect(
-                weekService.getWeek(testUUID, weekStart),
-            ).rejects.toThrow(NotFoundException);
+            const result = await weekService.getWeek(consultant.id, weekStart);
+
+            expect(result).toBeDefined();
+            expect(result.consultantId).toBe(consultant.id);
+            expect(result.weekStart).toBe(weekStart);
+            expect(result.version).toBe(1);
         });
 
         it('successfully retrieves a week with all nested relations', async () => {
@@ -165,7 +164,6 @@ describe('WeekService - Integration-e2e-tests', () => {
             const weekStartStr = '2026-09-28';
 
             const dbWeek = await createSchedulerWeek(prisma, consultant.id, weekStartStr);
-
 
             const initialWeek = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
 

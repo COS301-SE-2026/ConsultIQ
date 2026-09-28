@@ -5,6 +5,9 @@ import WeekCalendar from "../components/week/week-calendar";
 import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
 import BlockDetailPanel from "../components/block-detail-panel";    
 import { designWeek, FIXTURE_NOW, FIXTURE_PROJECTS } from "../types/scheduler.fixtures";
+import TaskForm, { type TaskSubmission} from "../components/task-form";
+import type { Task } from "../types/scheduler.types";
+
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
 
@@ -20,6 +23,7 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
 export default function SchedulerPage() {
     const [backlogCollapsed, setBacklogCollapsed] = useState(false);
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null );
+    const [taskForm, setTaskForm] = useState<{mode: "create" | "edit"; task?: Task; projectId?: string;} | null>(null);
     const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
 
     const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
@@ -31,6 +35,23 @@ export default function SchedulerPage() {
         const nextIndex = (currentIndex + 1) % designWeek.blocks.length;
 
         setSelectedBlockId(designWeek.blocks[nextIndex].id); 
+    }
+
+    function OpenCreateTask(projectId?: string){
+        setTaskForm({mode: "create", projectId});
+    }
+
+    function openEditTask(task: Task) {
+        setTaskForm({mode: "edit", task, projectId: task.projectId});
+    }
+
+    async function handleTaskSubmit(submission: TaskSubmission) {
+        if(submission.mode === "create"){
+            console.log("Create task", submission.dto);
+        } else{
+            console.log("Update task", submission.taskId, submission.dto);
+        }
+        setTaskForm(null);
     }
 
     return (
@@ -54,7 +75,7 @@ export default function SchedulerPage() {
                         expectedVersion={designWeek.version}
                         collapsed={backlogCollapsed}
                         onToggleCollapse={() => setBacklogCollapsed((collapsed) => !collapsed)}
-                        onAddTask={() => {}}
+                        onAddTask={() => OpenCreateTask()}
                         onSchedule={() => {}}
                         onResolveDeadline={() => {}}
                         onDeferToNextWeek={() => {}}
@@ -74,6 +95,26 @@ export default function SchedulerPage() {
                         </div>
                     </main>
 
+                    {taskForm && (
+                        <TaskForm 
+                        open
+                        mode={taskForm.mode}
+                        initialTask={taskForm.task}
+                        initialProjectId={taskForm.projectId}
+                        projects={projects}
+                        expectedVersion={designWeek.version}
+                        dependencyOptions={designWeek.tasks.filter((task) => task.id !== taskForm.task?.id)
+                        .map((task) => ({
+                            id: task.id,
+                            title: task.title,
+                        }))}
+                        onCancel={() => setTaskForm(null)}
+                        onSubmit={handleTaskSubmit}
+                        />
+                    )
+
+                    }
+
                     {/* BlockDetail panel */}
                     <BlockDetailPanel 
                         block={selectedBlock}
@@ -85,9 +126,9 @@ export default function SchedulerPage() {
                         onExpand={() => setSelectedBlockId(designWeek.blocks[0]?.id ?? null)}
                         onClose={() => setSelectedBlockId(null)}
                         onNextBlock={selectNextBlock}
-                        onAddTask={() => {}}
+                        onAddTask={() => OpenCreateTask(selectedBlock?.projectId)}
                         onAutoRollover={() => {}}
-                        onEditTask={() => {}}
+                        onEditTask={openEditTask}
                         onSetStatus={() => {}}
                         onToggleSubtask={() => {}}
                         onSendToBacklog={() => {}}

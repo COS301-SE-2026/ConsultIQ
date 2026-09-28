@@ -323,7 +323,7 @@ describe('WeekService', () => {
             service['applyChange'](mockWeek, { type: 'create_task', task: { id: 'new-t' } as any, origin: 'user', window: mockWindow });
 
 
-            expect(mockWeek.tasks.length).toBe(initialLen + 1);
+            expect(mockWeek.tasks).toHaveLength(initialLen + 1);
         });
 
         it('handles delete_task', () => {
@@ -331,7 +331,7 @@ describe('WeekService', () => {
             service['applyChange'](mockWeek, { type: 'delete_task', taskId: 'task-1', origin: 'user', window: mockWindow });
 
 
-            expect(mockWeek.tasks.length).toBe(0);
+            expect(mockWeek.tasks).toHaveLength(0);
         });
 
         it('handles place_unplaced', () => {

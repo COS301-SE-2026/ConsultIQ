@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { WeekService } from './week.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';

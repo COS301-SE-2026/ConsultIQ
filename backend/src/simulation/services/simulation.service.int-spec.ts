@@ -576,7 +576,9 @@ describe('SimulationService - Integration-e2e-tests', () => {
         consultant.userId,
       );
 
-      expect(Object.keys(result.recommendations[0]).sort()).toEqual([
+      expect(
+        Object.keys(result.recommendations[0]).sort((a, b) => a.localeCompare(b)),
+      ).toEqual([
         'newlyEligibleProjectCount',
         'projectsTested',
         'skillName',

@@ -40,6 +40,8 @@ export interface SkillRecommendation {
 
   totalScoreDelta: number;
 
+  baselineScore: number ;
+
   projectsTested: number;
 }
 
@@ -52,18 +54,21 @@ export const fallbackRecommendations: SkillRecommendation[] = [
     skillName: "Azure AI Fundamentals",
     newlyEligibleProjectCount: 8,
     totalScoreDelta: 12,
+    baselineScore: 16,
     projectsTested: 24,
   },
   {
     skillName: "Data Engineering",
     newlyEligibleProjectCount: 6,
     totalScoreDelta: 9,
+    baselineScore: 18,
     projectsTested: 24,
   },
   {
     skillName: "Power BI",
     newlyEligibleProjectCount: 4,
     totalScoreDelta: 7,
+    baselineScore:20,
     projectsTested: 24,
   },
 ];

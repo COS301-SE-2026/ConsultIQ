@@ -8,25 +8,36 @@ export default function GrowthCompass() {
   return (
     <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
-
-
-      <main className="flex-1 overflow-y-auto px-10 py-8">
-        <div className="mx-auto max-w-6xl">
-          <header>
-            <p className="text-sm font-bold uppercase tracking-widest text-[#9A7A2C]">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <header
+          className="shrink-0 z-20 bg-white  border-b min-h-[90px] flex items-center  w-full pl-16 pr-4 sm:px-10"
+          style={{ borderColor: "var(--color-border)" }}
+        >
+          <div className="mx-auto w-full max-w-6xl">
+            <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
               Consultant dashboard
-            </p>
-            <p className="mt-2 text-3xl font-bold text-brand-navy">Your next move</p>
-            <p className="mt-2 text-base text-brand-muted">
+            </h1>
+          </div>
+        </header>
+
+
+
+        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-10">
+          <div className="mx-auto max-w-6xl">
+            <p className="text-3xl font-bold text-brand-navy">Your next move</p>
+            <p className="text-base text-brand-muted">
               A focused recommendation based on your profile and current demand.
             </p>
-          </header>
-        </div>
+          </div>
 
-        <section className="mt-8">
-          <SkillGrowthCard recommendations={fallbackRecommendations} />
-        </section>
-      </main>
+          <section className="mt-8">
+            <SkillGrowthCard recommendations={fallbackRecommendations} />
+          </section>
+        </main>
+      </div>
+
+
+
 
     </div>
   );

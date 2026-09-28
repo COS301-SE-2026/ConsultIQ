@@ -3,24 +3,18 @@ import { Card } from "../../../components/ui/card";
 
 
 interface GrowthCompassProps {
-    recommendations: SkillRecommendation[];
-    isLoading?: boolean;
-    isError?: boolean;
+    readonly recommendations: SkillRecommendation[];
+    readonly isLoading?: boolean;
+    readonly isError?: boolean;
 }
 
 function CardHeader() {
     return (
-        <div className="flex items-center gap-5">
-            <div className="flex h-15 w-15 min-h-[60px] min-w-[60px] items-center justify-center rounded-full bg-brand-navy text-sm font-bold text-white">
-                AI
-            </div>
-            <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-[#9A7A2C]">
-                    Growth compass
-                </p>
-                <p className="mt-1 text-sm text-brand-muted">Your top recommended skill</p>
-            </div>
-
+        <div>
+            <p className="text-lg font-bold uppercase tracking-widest text-[#9A7A2C]">
+                Growth compass
+            </p>
+            <p className="mt-2 text-xl text-brand-muted">Your top recommended skill</p>
         </div>
     );
 }
@@ -28,16 +22,27 @@ function CardHeader() {
 interface StatTileProps {
     readonly label: string;
     readonly value: string | number;
-    readonly unit: string;
+    readonly unit?: string;
+    readonly caption: string;
+    readonly highlighted?: boolean;
 }
 
-function StatTile({ label, value, unit }: StatTileProps) {
+function StatTile({ label, value, unit, caption, highlighted }: StatTileProps) {
     return (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 px-6 py-7">
-            <p className="text-xs font-semibold uppercase tracking-wide text-brand-muted">{label}</p>
+        <div className={`rounded-lg border bg-[#F4F6F9] px-6 py-7 ${highlighted ? "border-2 border-[#E6D6A6]" : "border-gray-200"
+            }`}>
+            <p
+                className={`text-xs font-semibold uppercase tracking-wide ${highlighted ? "text-[#9A7A2C]" : "text-[#4B5563]"
+                    }`}
+            >
+                {label}
+            </p>
             <p className="mt-4 text-[#0B2F63]">
                 <span className="text-3xl font-bold">{value}</span>
-                <span className="ml-1.5 font-semibold text-brand-muted">{unit}</span>
+                {unit && <span className="ml-1.5 text-base font-semibold text-brand-muted">{unit}</span>}
+            </p>
+            <p className={`mt-2 text-sm ${highlighted ? "text-[#9A7A2C]" : "text-[#4B5563]"}`}>
+                {caption}
             </p>
         </div>
     );
@@ -56,12 +61,20 @@ function EmptyState() {
 
 
 
-function RowStat({ label, value }: { readonly label: string; readonly value: string }) {
+function RowStat({ label, value }: { readonly label: string; readonly value: string | number }) {
     return (
         <div className="min-w-30">
             <dt className="text-xs font-semibold uppercase tracking-wide text-brand-muted">{label}</dt>
-            <dd className="mt-2 font-bold text-brand-navy">{value}</dd>
+            <dd className="mt-2 font-bold text-base text-brand-navy">{value}</dd>
         </div>
+    );
+}
+
+function RankBadge({ rank }: { readonly rank: number }) {
+    return (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F4F6F9] text-xs font-bold text-[#0B2F63]">
+            {rank}
+        </span>
     );
 }
 
@@ -93,24 +106,26 @@ function SkillRow({ rank, rec }: SkillRowProps) {
     return (
         <li className="flex flex-col gap-4 py-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-brand-navy">
-                    {rank}
-                </span>
-                <span className="font-bold text-brand-navy">{rec.skillName}</span>
+                <RankBadge rank={rank} />
+                <span className=" text-lg font-bold text-brand-navy">{rec.skillName}</span>
             </div>
 
-            <dl className="grid grid-cols-3 gap-6 md:gap-10">
+            <dl className="grid grid-cols-2  gap-6 sm:grid-cols-4 md:gap-8">
                 <RowStat
-                    label="Total delta"
-                    value={`${formatDelta(rec.totalScoreDelta)} ${plural(rec.totalScoreDelta, "point")}`}
+                    label="Placement percentage lift"
+                    value={`${formatDelta(rec.totalScoreDelta)}%`}
+                />
+                <RowStat
+                    label="Without skill"
+                    value={`${formatDelta(rec.totalScoreDelta)}`}
                 />
                 <RowStat
                     label="Newly eligible"
-                    value={`${rec.newlyEligibleProjectCount} ${plural(rec.newlyEligibleProjectCount, "project")}`}
+                    value={formatDelta(rec.newlyEligibleProjectCount)}
                 />
                 <RowStat
                     label="Tested"
-                    value={`${rec.projectsTested} ${plural(rec.projectsTested, "project")}`}
+                    value={rec.projectsTested}
                 />
             </dl>
         </li>
@@ -120,10 +135,10 @@ function SkillRow({ rank, rec }: SkillRowProps) {
 const isViable = (rec: SkillRecommendation) =>
     rec.totalScoreDelta > 0 || rec.newlyEligibleProjectCount > 0;
 
-const formatDelta = (delta: number) => (delta > 0 ? `+${delta}` : `${delta}`)
+const formatDelta = (delta: number) => (delta > 0 ? `+${delta}` : `${delta}`);
 
-const plural = (count: number, word: string) =>
-    `${word}${count === 1 ? "" : "s"}`;
+const eligibleWithSkill = (rec: SkillRecommendation) =>
+    rec.baselineScore + rec.newlyEligibleProjectCount;
 
 
 export default function SkillGrowthCard({ recommendations, isLoading, isError }: GrowthCompassProps) {
@@ -134,7 +149,7 @@ export default function SkillGrowthCard({ recommendations, isLoading, isError }:
 
     const [top, ...others] = ranked;
     return (
-        <Card className="overflow-hidden rounded-lg border border-gray-200 border-t-4 border-t-[#C9A44C] bg-white shadow-sm">
+        <Card className=" gap-0 overflow-hidden rounded-lg border border-gray-200 border-t-4 border-t-[#C9A44C] bg-white shadow-sm">
             <div className="p-8">
                 {isError && !isLoading && (
                     <div
@@ -152,26 +167,36 @@ export default function SkillGrowthCard({ recommendations, isLoading, isError }:
                     <EmptyState />
                 ) : (
                     <>
-                        <h2 className="mt-10 text-4xl font-bold text-brand-blue">{top.skillName}</h2>
-                        <p className="mt-4 max-w-2xl leading-relaxed text-brand-muted">
+                        <div className="mt-10 flex items-center gap-4">
+                            <RankBadge rank={1} />
+                            <h2 className="text-4xl font-bold text-brand-blue">{top.skillName}</h2>
+                        </div>
+
+                        <p className="mt-6 max-w-2xl leading-relaxed text-brand-muted">
                             This skill creates the strongest match between your profile and current project demand across the tested pipeline.
                         </p>
 
-                        <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
+                        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                             <StatTile
-                                label="Total score improvement"
+                                label="Placement likelihood"
                                 value={formatDelta(top.totalScoreDelta)}
-                                unit={plural(top.totalScoreDelta, "point")}
+                                unit="%"
+                                caption="higher chance of being placed"
                             />
                             <StatTile
                                 label="Newly eligible"
                                 value={top.newlyEligibleProjectCount}
-                                unit={plural(top.newlyEligibleProjectCount, "project")}
+                                caption="in the simulation pipeline"
                             />
                             <StatTile
                                 label="Projects tested"
                                 value={top.projectsTested}
-                                unit={plural(top.projectsTested, "project")}
+                                caption="in the simulation pipeline"
+                            />
+                            <StatTile
+                                label="Without skill"
+                                value={top.baselineScore}
+                                caption="eligible projects today"
                             />
 
                         </div>
@@ -189,8 +214,8 @@ export default function SkillGrowthCard({ recommendations, isLoading, isError }:
                                 </div>
 
                                 <ul className="mt-4 divide-y divide-gray-200">
-                                    {others.map((rec,i) => (
-                                        <SkillRow key={rec.skillName} rank={i +2} rec={rec}/>
+                                    {others.map((rec, i) => (
+                                        <SkillRow key={rec.skillName} rank={i + 2} rec={rec} />
                                     ))}
                                 </ul>
 

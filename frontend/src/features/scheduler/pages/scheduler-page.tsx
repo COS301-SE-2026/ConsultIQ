@@ -7,7 +7,7 @@ import BlockDetailPanel from "../components/block-detail-panel";
 import { designWeek, FIXTURE_NOW, FIXTURE_PROJECTS } from "../types/scheduler.fixtures";
 import TaskForm, { type TaskSubmission} from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
-
+import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
 
@@ -25,8 +25,10 @@ export default function SchedulerPage() {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null );
     const [taskForm, setTaskForm] = useState<{mode: "create" | "edit"; task?: Task; projectId?: string;} | null>(null);
     const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
+    const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
 
     const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
+    const schedulerIssues = [ ...designWeek.metadata.alerts, ...designWeek.metadata.warnings ];
 
     function selectNextBlock() {
         if(designWeek.blocks.length === 0) return;
@@ -43,6 +45,18 @@ export default function SchedulerPage() {
 
     function openEditTask(task: Task) {
         setTaskForm({mode: "edit", task, projectId: task.projectId});
+    }
+
+    function dismissAlert(key: string) {
+        setDismissedAlertKeys((current) =>{
+            const next = new Set(current);
+            next.add(key);
+            return next;
+        });
+    }
+
+    function handleAlertAction(){
+        console.log("Handle alert actins"); // still to be implemented
     }
 
     async function handleTaskSubmit(submission: TaskSubmission) {
@@ -88,9 +102,14 @@ export default function SchedulerPage() {
                             <WeekCalendar/>
                         </div>
 
-                        <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
+                        <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
                             <div className="pointer-events-auto z-90 bg-amber-500 text-white p-3 rounded-lg shadow-lg">
-                                Alert Banner
+                                <SchedulerAlertBanner 
+                                    issues={schedulerIssues}
+                                    dismissedKeys={dismissedAlertKeys}
+                                    onDismiss={dismissAlert}
+                                    onAction={handleAlertAction}
+                                />
                             </div>
                         </div>
                     </main>

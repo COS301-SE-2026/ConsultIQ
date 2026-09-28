@@ -44,11 +44,15 @@ interface SubtaskDraft {
 const urgencyOptions = Object.keys(URGENCY_LABELS).map(Number) as Urgency[];
 const complexityOptions = Object.keys(COMPLEXITY_LABELS).map(Number) as Complexity[];
 
+
+let draftIdCounter = 0;
+
 function createId(): string {
-    if(typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    if(typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();
     }
-    return `draft-${Math.random().toString(36).substring(2, 10)}`;
+    draftIdCounter += 1;
+    return `draft-${draftIdCounter}`;
 }
 
 function toDateInput(value?: string): string {

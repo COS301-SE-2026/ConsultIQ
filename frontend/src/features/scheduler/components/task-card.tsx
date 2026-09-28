@@ -85,11 +85,13 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
 
                 {task.subtasks.length > 0 && (
                     <section className="mt-3 border-t border-slate-100 pt-3"
-                        onClick={(event) => event.stopPropagation()}
                     >
                         <button type="button" aria-expanded={subtasksExpanded}
                             className="text-sm text-slate-600 hover:text-slate-900"
-                            onClick={() => setSubtasksExpanded((expanded) => !expanded)}
+                            onClick={(event) =>{
+                                event.stopPropagation();
+                                setSubtasksExpanded((expanded) => !expanded)
+                            }}
                         >
                             {subtasksExpanded ? "Hide subtasks" : "Show subtasks"}
                         </button>
@@ -102,6 +104,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                                     >
                                         <input type="checkbox" 
                                             checked={subtask.done}
+                                            onClick={(event) => event.stopPropagation()}
                                             onChange={() => void onToggleSubtask(task.id, subtask.id, { expectedVersion })}
                                         />
                                         <span className={subtask.done ? "text-slate-400 line-through" : ""} > {subtask.title} </span>
@@ -121,13 +124,14 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                 </button>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3"
-                onClick={(event) => event.stopPropagation()}
-            >
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                 {nextStatus && (
                     <button type="button" 
                         className="inline-flex items-center gap-1 rounded-2xl bg-primary px-3 py-2 text-xs font-semibold text-white hover:bg-primary/80"
-                        onClick={() => void onSetStatus(task.id, { status : nextStatus.status, expectedVersion })}
+                        onClick={(event) =>{
+                            event.stopPropagation();
+                            void onSetStatus(task.id, { status : nextStatus.status, expectedVersion })
+                        }}
                         >
                         <ArrowRight size={14} />
                         {nextStatus.label}

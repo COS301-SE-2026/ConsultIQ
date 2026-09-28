@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
@@ -56,12 +56,10 @@ describe('TaskService', () => {
             schedulerWeek: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
             schedulerTask: { updateMany: jest.fn() },
             schedulerSlot: { findMany: jest.fn().mockResolvedValue([]), delete: jest.fn(), update: jest.fn() },
-
             schedulerSlotTask: {
                 findMany: jest.fn().mockResolvedValue([]),
                 deleteMany: jest.fn().mockResolvedValue({ count: 1 }),
             },
-
         };
 
         const prismaMock = {
@@ -116,18 +114,41 @@ describe('TaskService', () => {
         });
     });
 
+    describe('Security & loadTaskContext Checks', () => {
+        it('throws ForbiddenException if consultantId does not match task ownership', async () => {
+            prisma.schedulerTask.findUnique.mockResolvedValue({
+                id: mockTaskId,
+                week: { consultantId: 'DIFFERENT_OWNER', weekStart: new Date(mockWeekStart) }
+            });
+            await expect(service.update(mockConsultantId, mockTaskId, {})).rejects.toThrow(ForbiddenException);
+        });
+
+        it('throws NotFoundException if task does not exist in the database', async () => {
+            prisma.schedulerTask.findUnique.mockResolvedValue(null);
+            await expect(service.update(mockConsultantId, 'ghost-task', {})).rejects.toThrow(NotFoundException);
+        });
+
+        it('throws NotFoundException if task is in DB but missing from week container', async () => {
+            prisma.schedulerTask.findUnique.mockResolvedValue({
+                id: 'ghost-task',
+                week: { consultantId: mockConsultantId, weekStart: new Date(mockWeekStart) }
+            });
+            await expect(service.update(mockConsultantId, 'ghost-task', {})).rejects.toThrow(NotFoundException);
+        });
+    });
+
     describe('split', () => {
         it('throws if task is not in Ready status', async () => {
             mockTask.status = 'InProgress';
-            await expect(service.split(mockTaskId, 60)).rejects.toThrow(BadRequestException);
+            await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(BadRequestException);
         });
 
         it('throws if either half is less than 60 minutes', async () => {
             mockTask.tMax = 90;
-            await expect(service.split(mockTaskId, 60)).rejects.toThrow(BadRequestException);
+            await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(BadRequestException);
 
             mockTask.tMax = 120;
-            await expect(service.split(mockTaskId, 50)).rejects.toThrow(BadRequestException);
+            await expect(service.split(mockConsultantId, mockTaskId, 50)).rejects.toThrow(BadRequestException);
         });
 
         it('throws if split boundary falls inside a subtask', async () => {
@@ -137,12 +158,12 @@ describe('TaskService', () => {
             ];
             mockTask.tMax = 120;
 
-            await expect(service.split(mockTaskId, 60)).rejects.toThrow(/falls inside subtask/);
+            await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(/falls inside subtask/);
         });
 
         it('dispatches a split_task commit if validation passes', async () => {
             mockTask.tMax = 120;
-            await service.split(mockTaskId, 60, 2);
+            await service.split(mockConsultantId, mockTaskId, 60, 2);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -156,26 +177,29 @@ describe('TaskService', () => {
     describe('deferToNextWeek', () => {
         it('throws if tasks span multiple weeks', async () => {
             prisma.schedulerTask.findMany.mockResolvedValue([
-                { id: 'task-1', weekId: 'week-1' },
-                { id: 'task-2', weekId: 'week-2' }
+                { id: 'task-1', weekId: 'week-1', week: { consultantId: mockConsultantId } },
+                { id: 'task-2', weekId: 'week-2', week: { consultantId: mockConsultantId } }
             ]);
 
-            await expect(service.deferToNextWeek(['task-1', 'task-2'])).rejects.toThrow(/same week/);
+            await expect(service.deferToNextWeek(mockConsultantId, ['task-1', 'task-2'])).rejects.toThrow(/same week/);
         });
 
         it('generates a warning if the deadline will be missed', async () => {
             prisma.schedulerTask.findMany.mockResolvedValue([
-                { id: mockTaskId, weekId: mockWeekId, deadline: new Date('2026-09-23T00:00:00Z') }
+                { id: mockTaskId, weekId: mockWeekId, deadline: new Date('2026-09-23T00:00:00Z'), week: { consultantId: mockConsultantId } }
             ]);
 
             txMock.schedulerWeek.findUnique.mockResolvedValue({ id: 'week-2' });
 
-            const result = await service.deferToNextWeek([mockTaskId]);
+            const result = await service.deferToNextWeek(mockConsultantId, [mockTaskId]);
             expect(result.warnings).toHaveLength(1);
             expect(result.warnings[0].code).toBe('DEADLINE_INFEASIBLE');
         });
 
         it('executes a transactional migration of the tasks and cleans up slots', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }
+            ]);
             txMock.schedulerWeek.findUnique.mockResolvedValue({ id: 'week-2' });
             txMock.schedulerSlot.findMany.mockResolvedValue([
                 { id: 'slot-1', taskIds: [mockTaskId, 'other-task'] }
@@ -186,7 +210,7 @@ describe('TaskService', () => {
                 { slotId: 'slot-1', taskId: 'other-task' }
             ]);
 
-            await service.deferToNextWeek([mockTaskId]);
+            await service.deferToNextWeek(mockConsultantId, [mockTaskId]);
 
             expect(txMock.schedulerTask.updateMany).toHaveBeenCalledWith({
                 where: { id: { in: [mockTaskId] } },
@@ -207,22 +231,30 @@ describe('TaskService', () => {
         });
 
         it('throws BadRequestException if no task ids are provided', async () => {
-            await expect(service.deferToNextWeek([])).rejects.toThrow(BadRequestException);
+            await expect(service.deferToNextWeek(mockConsultantId, [])).rejects.toThrow(BadRequestException);
         });
 
         it('throws NotFoundException if some tasks are not found in the DB', async () => {
-            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId }]);
-            await expect(service.deferToNextWeek([mockTaskId, 'missing-task'])).rejects.toThrow(NotFoundException);
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }
+            ]);
+            await expect(service.deferToNextWeek(mockConsultantId, [mockTaskId, 'missing-task'])).rejects.toThrow(NotFoundException);
         });
 
         it('returns a VERSION_CONFLICT violation if expectedVersion does not match', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }
+            ]);
             const staleVersion = 999;
-            const result = await service.deferToNextWeek([mockTaskId], staleVersion);
+            const result = await service.deferToNextWeek(mockConsultantId, [mockTaskId], staleVersion);
             expect(result.ok).toBe(false);
             expect(result.violations[0].code).toBe('VERSION_CONFLICT');
         });
 
         it('creates nextWeek if it does not exist and handles full slot deletion', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }
+            ]);
             txMock.schedulerWeek.findUnique.mockResolvedValue(null);
             txMock.schedulerWeek.create.mockResolvedValue({ id: 'new-week-id' });
             txMock.schedulerSlot.findMany.mockResolvedValue([{ id: 'slot-delete-me' }]);
@@ -230,20 +262,23 @@ describe('TaskService', () => {
                 { slotId: 'slot-delete-me', taskId: mockTaskId }
             ]);
 
-            await service.deferToNextWeek([mockTaskId]);
+            await service.deferToNextWeek(mockConsultantId, [mockTaskId]);
 
             expect(txMock.schedulerWeek.create).toHaveBeenCalled();
             expect(txMock.schedulerSlot.delete).toHaveBeenCalledWith({ where: { id: 'slot-delete-me' } });
         });
 
         it('skips slot modification if the slot does not contain the deferred tasks', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }
+            ]);
             txMock.schedulerWeek.findUnique.mockResolvedValue({ id: 'week-2' });
             txMock.schedulerSlot.findMany.mockResolvedValue([{ id: 'slot-skip' }]);
             txMock.schedulerSlotTask.findMany.mockResolvedValue([
                 { slotId: 'slot-skip', taskId: 'other-task' }
             ]);
 
-            await service.deferToNextWeek([mockTaskId]);
+            await service.deferToNextWeek(mockConsultantId, [mockTaskId]);
             expect(txMock.schedulerSlot.delete).not.toHaveBeenCalled();
             expect(txMock.schedulerSlotTask.deleteMany).not.toHaveBeenCalled();
         });
@@ -252,15 +287,15 @@ describe('TaskService', () => {
     describe('placeUnplaced', () => {
         it('dry-runs candidates and commits only the valid ones', async () => {
             prisma.schedulerTask.findMany.mockResolvedValue([
-                { id: mockTaskId, weekId: mockWeekId },
-                { id: 'task-B', weekId: mockWeekId }
+                { id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } },
+                { id: 'task-B', weekId: mockWeekId, week: { consultantId: mockConsultantId } }
             ]);
 
             weekService.dryRun.mockImplementation(async (weekId, change: any) => {
                 return { ok: change.taskIds.includes(mockTaskId) } as any;
             });
 
-            await service.placeUnplaced([mockTaskId, 'task-B']);
+            await service.placeUnplaced(mockConsultantId, [mockTaskId, 'task-B']);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
@@ -270,28 +305,40 @@ describe('TaskService', () => {
             );
         });
 
+        // it('temporarily blinds the placer by setting unrequested unplaced tasks to placed', async () => {
+        //     prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);
+
+        //     const unrequestedTask = { id: 'task-B', placement: 'unplaced' } as Task;
+        //     mockWeek.tasks.push(unrequestedTask);
+        //     weekService.dryRun.mockResolvedValue({ ok: true } as any);
+
+        //     await service.placeUnplaced(mockConsultantId, [mockTaskId]);
+
+        //     expect(unrequestedTask.placement).toBe('placed');
+        // });
+
         it('throws BadRequestException if no tasks pass the dry-run', async () => {
-            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId }]);
+            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);
             weekService.dryRun.mockResolvedValue({ ok: false } as any);
 
-            await expect(service.placeUnplaced([mockTaskId])).rejects.toThrow(/dry-run validation/);
+            await expect(service.placeUnplaced(mockConsultantId, [mockTaskId])).rejects.toThrow(/dry-run validation/);
         });
 
         it('throws BadRequestException if no task ids are provided', async () => {
-            await expect(service.placeUnplaced([])).rejects.toThrow(BadRequestException);
+            await expect(service.placeUnplaced(mockConsultantId, [])).rejects.toThrow(BadRequestException);
         });
 
         it('throws NotFoundException if some tasks are not found in the DB', async () => {
-            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId }]);
-            await expect(service.placeUnplaced([mockTaskId, 'missing-task'])).rejects.toThrow(NotFoundException);
+            prisma.schedulerTask.findMany.mockResolvedValue([{ id: mockTaskId, weekId: mockWeekId, week: { consultantId: mockConsultantId } }]);
+            await expect(service.placeUnplaced(mockConsultantId, [mockTaskId, 'missing-task'])).rejects.toThrow(NotFoundException);
         });
 
         it('throws BadRequestException if tasks span multiple weeks', async () => {
             prisma.schedulerTask.findMany.mockResolvedValue([
-                { id: mockTaskId, weekId: 'week-1' },
-                { id: 'task-b', weekId: 'week-2' }
+                { id: mockTaskId, weekId: 'week-1', week: { consultantId: mockConsultantId } },
+                { id: 'task-b', weekId: 'week-2', week: { consultantId: mockConsultantId } }
             ]);
-            await expect(service.placeUnplaced([mockTaskId, 'task-b'])).rejects.toThrow(/same week/);
+            await expect(service.placeUnplaced(mockConsultantId, [mockTaskId, 'task-b'])).rejects.toThrow(/same week/);
         });
     });
 
@@ -301,7 +348,7 @@ describe('TaskService', () => {
         });
 
         it('update dispatches update_task commit', async () => {
-            await service.update(mockTaskId, { title: 'Updated' });
+            await service.update(mockConsultantId, mockTaskId, { title: 'Updated' });
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'update_task', patch: { title: 'Updated' } }),
@@ -311,7 +358,7 @@ describe('TaskService', () => {
         });
 
         it('deleteTask dispatches delete_task commit', async () => {
-            await service.deleteTask(mockTaskId);
+            await service.deleteTask(mockConsultantId, mockTaskId);
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'delete_task', taskId: mockTaskId }),
@@ -321,7 +368,7 @@ describe('TaskService', () => {
         });
 
         it('setStatus dispatches set_status commit', async () => {
-            await service.setStatus(mockTaskId, 'InProgress');
+            await service.setStatus(mockConsultantId, mockTaskId, 'InProgress');
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'set_status', status: 'InProgress' }),
@@ -331,7 +378,7 @@ describe('TaskService', () => {
         });
 
         it('toggleSubtask dispatches toggle_subtask commit', async () => {
-            await service.toggleSubtask(mockTaskId, 'sub-1');
+            await service.toggleSubtask(mockConsultantId, mockTaskId, 'sub-1');
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'toggle_subtask', subtaskId: 'sub-1' }),
@@ -341,21 +388,13 @@ describe('TaskService', () => {
         });
 
         it('acceptDeadlineMiss dispatches accept_deadline_miss commit', async () => {
-            await service.acceptDeadlineMiss(mockTaskId);
+            await service.acceptDeadlineMiss(mockConsultantId, mockTaskId);
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'accept_deadline_miss' }),
                 expect.anything(),
                 undefined
             );
-        });
-
-        it('throws NotFoundException if task is in DB but missing from week container', async () => {
-            prisma.schedulerTask.findUnique.mockResolvedValue({
-                id: 'ghost-task',
-                week: { consultantId: mockConsultantId, weekStart: new Date(mockWeekStart) }
-            });
-            await expect(service.update('ghost-task', {})).rejects.toThrow(NotFoundException);
         });
     });
 });

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
@@ -30,14 +30,14 @@ export class TaskService {
             task: dto,
             origin: 'user',
             window: this.getWeekWindow(week),
-        };
+        } as Change;
 
         const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
-    public async update(taskId: string, dto: Partial<Task>, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+    public async update(consultantId: string, taskId: string, dto: Partial<Task>, expectedVersion?: number): Promise<CommitResult> {
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'update_task',
@@ -51,8 +51,8 @@ export class TaskService {
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
-    public async deleteTask(taskId: string, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+    public async deleteTask(consultantId: string, taskId: string, expectedVersion?: number): Promise<CommitResult> {
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'delete_task',
@@ -70,11 +70,12 @@ export class TaskService {
     // -----------------------------------------------------------------
 
     public async setStatus(
+        consultantId: string,
         taskId: string,
         status: Task['status'],
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'set_status',
@@ -89,11 +90,12 @@ export class TaskService {
     }
 
     public async toggleSubtask(
+        consultantId: string,
         taskId: string,
         subtaskId: string,
         expectedVersion?: number,
     ): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'toggle_subtask',
@@ -111,8 +113,8 @@ export class TaskService {
     // Advanced operations
     // -----------------------------------------------------------------
 
-    public async split(taskId: string, atMinutes: number, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+    public async split(consultantId: string, taskId: string, atMinutes: number, expectedVersion?: number): Promise<CommitResult> {
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         if (task.status !== 'Ready') {
             throw new BadRequestException(`Cannot split task in status: ${task.status}`);
@@ -120,6 +122,7 @@ export class TaskService {
         if (task.tMax < 120 || atMinutes < 60 || task.tMax - atMinutes < 60) {
             throw new BadRequestException('Split rejected: both halves must be at least 60 minutes.');
         }
+
         this.assertSplitBoundaryClearOfSubtasks(task, atMinutes);
 
         const change: Change = {
@@ -134,8 +137,8 @@ export class TaskService {
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
-    public async acceptDeadlineMiss(taskId: string, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId);
+    public async acceptDeadlineMiss(consultantId: string, taskId: string, expectedVersion?: number): Promise<CommitResult> {
+        const { week, task } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'accept_deadline_miss',
@@ -148,27 +151,32 @@ export class TaskService {
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
-    public async deferToNextWeek(taskIds: string[], expectedVersion?: number): Promise<CommitResult> {
+    public async deferToNextWeek(consultantId: string, taskIds: string[], expectedVersion?: number): Promise<CommitResult> {
         if (!taskIds.length) {
             throw new BadRequestException('No task ids provided');
         }
 
-        const tasks = await this.prisma.schedulerTask.findMany({ where: { id: { in: taskIds } } });
+        const tasks = await this.prisma.schedulerTask.findMany({ where: { id: { in: taskIds } }, include: { week: true } });
         if (tasks.length !== taskIds.length) {
             const found = new Set(tasks.map((t) => t.id));
             throw new NotFoundException(`Task(s) not found: ${taskIds.filter((id) => !found.has(id)).join(', ')}`);
         }
 
+        // : Verify ownership of all deferred tasks
+        for (const task of tasks) {
+            if (task.week.consultantId !== consultantId) {
+                throw new ForbiddenException(`You do not have permission to defer task ${task.id}`);
+            }
+        }
+
         const distinctWeekIds = new Set(tasks.map((t) => t.weekId));
         if (distinctWeekIds.size > 1) {
-
             throw new BadRequestException('deferToNextWeek: all tasks must belong to the same week');
         }
 
-        const { week: sourceWeek } = await this.loadTaskContext(taskIds[0]);
+        const { week: sourceWeek } = await this.loadTaskContext(taskIds[0], consultantId);
 
         if (expectedVersion !== undefined && expectedVersion !== sourceWeek.version) {
-
             const stale = await this.weekService.getWeek(sourceWeek.consultantId, sourceWeek.weekStart as LocalDate);
             return {
                 ok: false,
@@ -186,7 +194,6 @@ export class TaskService {
         const nextWeekStart = DateTime.fromISO(sourceWeek.weekStart as string, { zone: 'utc' })
             .plus({ days: 7 }).toFormat('yyyy-MM-dd');
 
-
         const nextWeekStartDt = DateTime.fromISO(nextWeekStart, { zone: 'utc' });
         const deadlineWarnings = tasks
             .filter((t) => t.deadline && DateTime.fromJSDate(t.deadline, { zone: 'utc' }) < nextWeekStartDt)
@@ -196,7 +203,6 @@ export class TaskService {
                 message: `Task ${t.id}'s deadline falls before the week it's being deferred into.`,
                 entityIds: [t.id],
             }));
-
 
         await this.prisma.$transaction(async (tx) => {
             let nextWeek = await tx.schedulerWeek.findUnique({
@@ -238,10 +244,8 @@ export class TaskService {
                 }
 
                 if (remainingTaskIds.length === 0) {
-                    // If no tasks remain in this slot, delete the slot entirely
                     await tx.schedulerSlot.delete({ where: { id: slot.id } });
                 } else {
-                    // Otherwise, remove the specific task associations from the join table
                     await tx.schedulerSlotTask.deleteMany({
                         where: {
                             slotId: slot.id,
@@ -261,7 +265,7 @@ export class TaskService {
         return { ok: true, value: updated, violations: [], warnings: deadlineWarnings, infos: [] };
     }
 
-    public async placeUnplaced(taskIds: string[], expectedVersion?: number): Promise<CommitResult> {
+    public async placeUnplaced(consultantId: string, taskIds: string[], expectedVersion?: number): Promise<CommitResult> {
         if (!taskIds.length) throw new BadRequestException('No tasks provided');
 
         const tasks = await this.prisma.schedulerTask.findMany({ where: { id: { in: taskIds } } });
@@ -273,17 +277,18 @@ export class TaskService {
             throw new BadRequestException('placeUnplaced: all tasks must belong to the same week');
         }
 
-        const { week } = await this.loadTaskContext(taskIds[0]);
+        const { week } = await this.loadTaskContext(taskIds[0], consultantId);
         const window = this.getWeekWindow(week);
 
         const validIds: string[] = [];
         for (const id of taskIds) {
-            const dryRun = await this.weekService.dryRun(week.id, {
+            const dryRunChange: Change = {
                 type: 'place_unplaced',
                 taskIds: [id],
                 origin: 'system',
                 window,
-            } as Change);
+            };
+            const dryRun = await this.weekService.dryRun(week.id, dryRunChange);
             if (dryRun.ok) validIds.push(id);
         }
 
@@ -291,25 +296,29 @@ export class TaskService {
             throw new BadRequestException('No tasks could be placed during dry-run validation.');
         }
 
-        const change: Change = { type: 'place_unplaced', taskIds: validIds, origin: 'user', window } as Change;
+        const change: Change = { type: 'place_unplaced', taskIds: validIds, origin: 'user', window };
         const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
 
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
-    private async loadTaskContext(taskId: string): Promise<{ week: WeekContainer; task: Task }> {
+    private async loadTaskContext(taskId: string, requestedConsultantId?: string): Promise<{ week: WeekContainer; task: Task }> {
         const dbTask = await this.prisma.schedulerTask.findUnique({
             where: { id: taskId },
             include: { week: true },
         });
         if (!dbTask) throw new NotFoundException(`Task ${taskId} not found`);
 
+
+        if (requestedConsultantId && dbTask.week.consultantId !== requestedConsultantId) {
+            throw new ForbiddenException(`You do not have permission to modify task ${taskId}`);
+        }
+
         const weekStart = dbTask.week.weekStart.toISOString().split('T')[0] as LocalDate;
         const week = await this.weekService.getWeek(dbTask.week.consultantId, weekStart);
         const task = week.tasks.find((t) => t.id === taskId);
 
         if (!task) {
-
             throw new NotFoundException(`Task ${taskId} found in DB but missing from its week's container`);
         }
 
@@ -331,7 +340,6 @@ export class TaskService {
             end: this.timeService.localDateToInstant(nextDay, timezone),
         };
     }
-
 
     private taskDayWindow(week: WeekContainer, task: Task): Interval {
         const existing = week.slots.filter((s) => s.taskIds?.includes(task.id));

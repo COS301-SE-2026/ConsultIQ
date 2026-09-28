@@ -643,14 +643,18 @@ enum CalendarEntryType {
 
 enum CalendarEntryOrigin {
   user
+  system
   feed
+  public_holiday @map("public-holiday")
 }
 
 enum IdempotencyKeyType {
-  daily_rollover @map("daily-rollover")
-  slot_rollover  @map("slot-rollover")
-  daily_tick     @map("daily-tick")
-  weekly_tick    @map("weekly-tick")
+  daily_rollover  @map("daily-rollover")
+  slot_rollover   @map("slot-rollover")
+  daily_tick      @map("daily-tick")
+  weekly_tick     @map("weekly-tick")
+  rollover 
+  mark_incomplete @map("mark-incomplete")
 }
 
 model SchedulerWeek {
@@ -710,6 +714,7 @@ model SchedulerTask {
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
+  deadlineMissAccepted Boolean             @default(false) @map("deadline_miss_accepted")
   week      SchedulerWeek       @relation(fields: [weekId], references: [id], onDelete: Cascade)
   subtasks  SchedulerSubtask[]
   slotTasks SchedulerSlotTask[]
@@ -740,6 +745,7 @@ model SchedulerSlot {
   end     DateTime
   locked  Boolean  @default(false)
   daySpan Int      @map("day_span")
+  tags    Json     @default("[]")
 
   week         SchedulerWeek          @relation(fields: [weekId], references: [id], onDelete: Cascade)
   slotTasks    SchedulerSlotTask[]

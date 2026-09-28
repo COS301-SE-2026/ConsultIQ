@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { RolloverService } from './rollover.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
@@ -32,7 +32,6 @@ describe('RolloverService', () => {
                 create: jest.fn(),
                 deleteMany: jest.fn(),
             },
-
             schedulerSlot: {
                 findUnique: jest.fn(),
                 deleteMany: jest.fn(),
@@ -44,7 +43,6 @@ describe('RolloverService', () => {
             schedulerWeek: {
                 updateMany: jest.fn(),
             },
-
             $transaction: jest.fn(async (cb) => cb(prismaMock)),
         };
 
@@ -83,11 +81,19 @@ describe('RolloverService', () => {
 
     describe('rollover', () => {
 
+        it('throws ForbiddenException if consultantId does not match slot ownership', async () => {
+            prisma.schedulerSlot.findUnique.mockResolvedValueOnce({
+                id: 'slot-1',
+                week: { consultantId: 'DIFFERENT_OWNER' },
+            });
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow(ForbiddenException);
+        });
+
         it('throws original error if idempotency creation fails with a non-P2002 error', async () => {
             const dbError = new Error('Database connection lost');
             prisma.schedulerIdempotencyKey.create.mockRejectedValueOnce(dbError);
 
-            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow('Database connection lost');
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow('Database connection lost');
             expect(weekService.commit).not.toHaveBeenCalled();
         });
 
@@ -100,22 +106,21 @@ describe('RolloverService', () => {
             weekService.commit.mockRejectedValueOnce(new Error('Commit failed'));
 
             prisma.schedulerIdempotencyKey.deleteMany.mockRejectedValueOnce(new Error('DeleteMany failed'));
-            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow('Commit failed');
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow('Commit failed');
         });
-        it('throws ConflictException if operation is already processed (P2002)', async () => {
 
+        it('throws ConflictException if operation is already processed (P2002)', async () => {
             const p2002Error = new Error('Unique constraint failed');
             (p2002Error as any).code = 'P2002';
             prisma.schedulerIdempotencyKey.create.mockRejectedValueOnce(p2002Error);
 
-            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow(ConflictException);
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow(ConflictException);
             expect(weekService.commit).not.toHaveBeenCalled();
         });
 
         it('throws NotFoundException if the target slot does not exist', async () => {
             prisma.schedulerSlot.findUnique.mockResolvedValueOnce(null);
-
-            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow(NotFoundException);
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow(NotFoundException);
         });
 
         it('successfully dispatches a rollover change and retains idempotency lock on success', async () => {
@@ -125,7 +130,7 @@ describe('RolloverService', () => {
                 week: { consultantId: 'cons-1', weekStart: new Date('2026-09-21T00:00:00Z') },
             });
 
-            const result = await service.rollover('task-1', 'slot-1');
+            const result = await service.rollover('cons-1', 'task-1', 'slot-1');
 
             expect(result.ok).toBe(true);
             expect(prisma.schedulerIdempotencyKey.create).toHaveBeenCalledWith(
@@ -149,7 +154,7 @@ describe('RolloverService', () => {
 
             weekService.commit.mockResolvedValueOnce({ ...mockCommitResult, ok: false });
 
-            await service.rollover('task-1', 'slot-1');
+            await service.rollover('cons-1', 'task-1', 'slot-1');
 
             expect(prisma.schedulerIdempotencyKey.deleteMany).toHaveBeenCalledWith({
                 where: { key: 'rollover:task-1:slot-1' },
@@ -165,7 +170,7 @@ describe('RolloverService', () => {
 
             weekService.commit.mockRejectedValueOnce(new Error('DB crash'));
 
-            await expect(service.rollover('task-1', 'slot-1')).rejects.toThrow('DB crash');
+            await expect(service.rollover('cons-1', 'task-1', 'slot-1')).rejects.toThrow('DB crash');
 
             expect(prisma.schedulerIdempotencyKey.deleteMany).toHaveBeenCalledWith({
                 where: { key: 'rollover:task-1:slot-1' },
@@ -178,7 +183,6 @@ describe('RolloverService', () => {
             const result = await service.markIncomplete('cons-1', '2026-09-25' as LocalDate);
 
             expect(result.ok).toBe(true);
-
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'mark_incomplete', date: '2026-09-25' }),
@@ -203,6 +207,7 @@ describe('RolloverService', () => {
                 where: { key: 'mark_incomplete:cons-1:2026-09-25' },
             });
         });
+
         it('throws ConflictException if operation is already processed (P2002)', async () => {
             const p2002Error = new Error('Unique constraint failed');
             (p2002Error as any).code = 'P2002';
@@ -236,7 +241,6 @@ describe('RolloverService', () => {
             const result = await service.migrateWeek('week-A', 'week-B');
 
             expect(result.ok).toBe(true);
-
             expect(prisma.schedulerTask.update).not.toHaveBeenCalled();
             expect(prisma.schedulerWeek.updateMany).not.toHaveBeenCalled();
         });

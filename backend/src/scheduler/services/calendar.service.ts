@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
@@ -34,7 +34,6 @@ export class CalendarService {
 
         const week = await this.weekService.getWeek(consultantId, weekStart);
 
-
         const resolvedEntry = this.resolveOverrideTags(entry, week.timezone);
         const window = this.dayWindow(resolvedEntry.start, week.timezone);
 
@@ -55,7 +54,11 @@ export class CalendarService {
     // DELETE /scheduler/calendar-entries/:id
     // -----------------------------------------------------------------
 
-    public async remove(entryId: string, expectedVersion?: number): Promise<CommitResult> {
+    public async remove(
+        consultantId: string,
+        entryId: string,
+        expectedVersion?: number
+    ): Promise<CommitResult> {
 
         const dbEntry = await this.prisma.schedulerCalendarEntry.findUnique({
             where: { id: entryId },
@@ -66,7 +69,10 @@ export class CalendarService {
             throw new NotFoundException(`Calendar entry ${entryId} not found`);
         }
 
-        const consultantId = dbEntry.week.consultantId;
+        if (dbEntry.week.consultantId !== consultantId) {
+            throw new ForbiddenException('You do not have permission to modify this calendar entry.');
+        }
+
         const weekStart = dbEntry.week.weekStart.toISOString().split('T')[0] as LocalDate;
 
         if ((dbEntry.origin as string) === 'public-holiday') {
@@ -93,7 +99,6 @@ export class CalendarService {
 
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
-
 
     private resolveOverrideTags(entry: CalendarEntryDto, timezone: string): CalendarEntryDto {
         const isOutOfHours = !this.timeService.isRangeInCoreHours(entry.start, entry.end, timezone);

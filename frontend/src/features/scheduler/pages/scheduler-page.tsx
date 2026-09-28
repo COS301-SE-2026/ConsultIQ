@@ -4,11 +4,11 @@ import { consultantSidebarItems } from "../../../components/layout/sidebar/sideb
 import WeekCalendar from "../components/week/week-calendar";
 import UnderutilisationCard, {type ActionSuggestion} from "../components/underutilisation-card";
 import { ReasonCode } from "../types/scheduler.types";
-import { useState } from "react";
 import {
     FIXTURE_PROJECTS,
     designWeek,
     holidayWeek,
+    FIXTURE_NOW,
     leaveWeek,
     batchWeek,
     emptyWeek,
@@ -18,7 +18,6 @@ import {
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
 import BlockDetailPanel from "../components/block-detail-panel";    
-import { designWeek, FIXTURE_NOW, FIXTURE_PROJECTS } from "../types/scheduler.fixtures";
 import TaskForm, { type TaskSubmission} from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
@@ -139,9 +138,22 @@ export default function SchedulerPage() {
                         <div className="flex-1 overflow-auto p-4">
                             <WeekCalendar/>
                         </div>
+                        {showUnderused && (
+                            <div className="flex-none">
+                                <UnderutilisationCard
+                                    issue={underused}
+                                    metadata={week.metadata}
+                                    weekStart={week.weekStart}
+                                    onSuggestion={handleSuggestion}
+                                    onDismiss={() => setDismissed((d) => [...d, dismissKey])}
+                                />
+
+                            </div>
+                        )}
+
 
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
-                            <div className="pointer-events-auto z-90 bg-amber-500 text-white p-3 rounded-lg shadow-lg">
+                            <div className="pointer-events-auto z-90  text-white p-3 rounded-lg shadow-lg">
                                 <SchedulerAlertBanner 
                                     issues={schedulerIssues}
                                     dismissedKeys={dismissedAlertKeys}

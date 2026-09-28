@@ -10,6 +10,9 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    ForbiddenException,
+    UsePipes,
+    ValidationPipe,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -22,16 +25,32 @@ import { ManualPlacementService } from '../../scheduler/services/manual-placemen
 import { CalendarService } from '../../scheduler/services/calendar.service';
 import { AdvisoryService } from '../../scheduler/services/advisory.service';
 import { RolloverService } from '../../scheduler/services/rollover.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
-
-import { Change, Interval } from '../../scheduler/dto/scheduler.dto';
 import { LocalDate } from '../../scheduler/services/time.service';
+
+import {
+    ReplanDto,
+    DryRunDto,
+    CreateTaskDto,
+    UpdateTaskDto,
+    SetTaskStatusDto,
+    SplitTaskDto,
+    TaskIdsDto,
+    RolloverDto,
+    MoveIntervalDto,
+    PinBlockDto,
+    ConcurrencyControlDto
+} from '../../scheduler/dto/scheduler-requests.dto';
 
 @Controller('scheduler')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.CONSULTANT)
+
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
 export class SchedulerController {
     constructor(
+        private readonly prisma: PrismaService,
         private readonly weekService: WeekService,
         private readonly taskService: TaskService,
         private readonly manualPlacementService: ManualPlacementService,
@@ -40,6 +59,16 @@ export class SchedulerController {
         private readonly rolloverService: RolloverService,
     ) { }
 
+    private async getConsultantId(userId: string): Promise<string> {
+        const consultant = await this.prisma.consultant.findUnique({
+            where: { userId }
+        });
+        if (!consultant) {
+            throw new ForbiddenException('Authenticated user does not have an associated consultant profile.');
+        }
+        return consultant.id;
+    }
+
     // --- WEEKS ---
 
     @Get('weeks/:weekStart')
@@ -47,17 +76,17 @@ export class SchedulerController {
         @Param('weekStart') weekStart: string,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.weekService.getWeek(consultantId, weekStart as LocalDate);
     }
 
     @Post('weeks/:weekStart/replan')
     async replan(
         @Param('weekStart') weekStart: string,
-        @Body() body: { expectedVersion?: number },
+        @Body() body: ReplanDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const week = await this.weekService.getWeek(consultantId, weekStart as LocalDate);
         return this.weekService.replan(week.id, body.expectedVersion);
     }
@@ -65,34 +94,41 @@ export class SchedulerController {
     @Post('weeks/:weekStart/dry-run')
     async dryRun(
         @Param('weekStart') weekStart: string,
-        @Body() body: { change: Change; expectedVersion?: number },
+        @Body() body: DryRunDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const week = await this.weekService.getWeek(consultantId, weekStart as LocalDate);
         return this.weekService.dryRun(week.id, body.change, body.expectedVersion);
     }
 
     // --- TASKS ---
 
+
     @Post('weeks/:weekStart/tasks')
     async createTask(
         @Param('weekStart') weekStart: string,
-        @Body() body: any,
+        @Body() body: CreateTaskDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
+
         const { expectedVersion, ...dto } = body;
-        return this.taskService.create(consultantId, weekStart as LocalDate, dto, expectedVersion);
+        const newTaskPayload = {
+            ...dto,
+            dependsOn: dto.dependsOn ?? [],
+        };
+
+        return this.taskService.create(consultantId, weekStart as LocalDate, newTaskPayload as any, expectedVersion);
     }
 
     @Patch('tasks/:taskId')
     async updateTask(
         @Param('taskId') taskId: string,
-        @Body() body: any,
+        @Body() body: UpdateTaskDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const { expectedVersion, ...patch } = body;
         return this.taskService.update(consultantId, taskId, patch, expectedVersion);
     }
@@ -100,20 +136,20 @@ export class SchedulerController {
     @Delete('tasks/:taskId')
     async deleteTask(
         @Param('taskId') taskId: string,
-        @Body() body: { expectedVersion?: number },
+        @Body() body: ConcurrencyControlDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.deleteTask(consultantId, taskId, body.expectedVersion);
     }
 
     @Patch('tasks/:taskId/status')
     async setTaskStatus(
         @Param('taskId') taskId: string,
-        @Body() body: { status: 'Ready' | 'InProgress' | 'Done'; expectedVersion?: number; },
+        @Body() body: SetTaskStatusDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.setStatus(consultantId, taskId, body.status, body.expectedVersion);
     }
 
@@ -121,58 +157,58 @@ export class SchedulerController {
     async toggleSubtask(
         @Param('taskId') taskId: string,
         @Param('subtaskId') subtaskId: string,
-        @Body() body: { expectedVersion?: number },
+        @Body() body: ConcurrencyControlDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.toggleSubtask(consultantId, taskId, subtaskId, body.expectedVersion);
     }
 
     @Post('tasks/:taskId/split')
     async splitTask(
         @Param('taskId') taskId: string,
-        @Body() body: { atMinutes: number; expectedVersion?: number },
+        @Body() body: SplitTaskDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.split(consultantId, taskId, body.atMinutes, body.expectedVersion);
     }
 
     @Post('tasks/:taskId/accept-deadline-miss')
     async acceptDeadlineMiss(
         @Param('taskId') taskId: string,
-        @Body() body: { expectedVersion?: number },
+        @Body() body: ConcurrencyControlDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.acceptDeadlineMiss(consultantId, taskId, body.expectedVersion);
     }
 
     @Post('tasks/defer')
     async deferTasks(
-        @Body() body: { taskIds: string[]; expectedVersion?: number },
+        @Body() body: TaskIdsDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.deferToNextWeek(consultantId, body.taskIds, body.expectedVersion);
     }
 
     @Post('tasks/place-unplaced')
     async placeUnplaced(
-        @Body() body: { taskIds: string[]; expectedVersion?: number },
+        @Body() body: TaskIdsDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.taskService.placeUnplaced(consultantId, body.taskIds, body.expectedVersion);
     }
 
     @Post('tasks/:taskId/rollover')
     async rolloverTask(
         @Param('taskId') taskId: string,
-        @Body() body: { fromSlotId: string; expectedVersion?: number },
+        @Body() body: RolloverDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.rolloverService.rollover(consultantId, taskId, body.fromSlotId, body.expectedVersion);
     }
 
@@ -181,10 +217,10 @@ export class SchedulerController {
     @Patch('slots/:slotId/move')
     async moveSlot(
         @Param('slotId') slotId: string,
-        @Body() body: { to: Interval; confirmedOverride?: boolean; expectedVersion?: number },
+        @Body() body: MoveIntervalDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.manualPlacementService.moveSlot(
             consultantId,
             slotId,
@@ -197,10 +233,10 @@ export class SchedulerController {
     @Patch('blocks/:blockId/move')
     async moveBlock(
         @Param('blockId') blockId: string,
-        @Body() body: { to: Interval; confirmedOverride?: boolean; expectedVersion?: number },
+        @Body() body: MoveIntervalDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.manualPlacementService.moveBlock(
             consultantId,
             blockId,
@@ -213,10 +249,10 @@ export class SchedulerController {
     @Patch('blocks/:blockId/resize')
     async resizeBlock(
         @Param('blockId') blockId: string,
-        @Body() body: { to: Interval; confirmedOverride?: boolean; expectedVersion?: number },
+        @Body() body: MoveIntervalDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.manualPlacementService.resizeBlock(
             consultantId,
             blockId,
@@ -229,14 +265,15 @@ export class SchedulerController {
     @Patch('blocks/:blockId/pin')
     async pinBlock(
         @Param('blockId') blockId: string,
-        @Body() body: { pinned: boolean; expectedVersion?: number },
+        @Body() body: PinBlockDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.manualPlacementService.pinBlock(consultantId, blockId, body.pinned, body.expectedVersion);
     }
 
     // --- CALENDAR ENTRIES ---
+
 
     @Post('weeks/:weekStart/calendar-entries')
     async upsertCalendarEntry(
@@ -244,7 +281,7 @@ export class SchedulerController {
         @Body() body: any,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.calendarService.upsert(consultantId, weekStart as LocalDate, body);
     }
 
@@ -255,7 +292,7 @@ export class SchedulerController {
         @Body() body: any,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const entry = { ...body, id: entryId };
         return this.calendarService.upsert(consultantId, weekStart as LocalDate, entry);
     }
@@ -263,10 +300,10 @@ export class SchedulerController {
     @Delete('calendar-entries/:entryId')
     async removeCalendarEntry(
         @Param('entryId') entryId: string,
-        @Body() body: { expectedVersion?: number },
+        @Body() body: ConcurrencyControlDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         return this.calendarService.remove(consultantId, entryId, body.expectedVersion);
     }
 
@@ -277,7 +314,7 @@ export class SchedulerController {
         @Param('weekStart') weekStart: string,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const week = await this.weekService.getWeek(consultantId, weekStart as LocalDate);
         return this.advisoryService.buildSuggestions(week);
     }
@@ -285,10 +322,10 @@ export class SchedulerController {
     @Post('weeks/:weekStart/pull-forward')
     async pullForward(
         @Param('weekStart') weekStart: string,
-        @Body() body: { taskIds: string[]; expectedVersion?: number },
+        @Body() body: TaskIdsDto,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const week = await this.weekService.getWeek(consultantId, weekStart as LocalDate);
         return this.advisoryService.pullForward(week.id, body.taskIds, body.expectedVersion);
     }
@@ -300,7 +337,7 @@ export class SchedulerController {
         @Param('code') code: string,
         @Req() req: any,
     ): Promise<any> {
-        const consultantId = req.user?.userId;
+        const consultantId = await this.getConsultantId(req.user?.userId);
         const week = await this.weekService.getWeek(consultantId, weekStart as LocalDate);
         return this.advisoryService.dismiss(week.id, code);
     }

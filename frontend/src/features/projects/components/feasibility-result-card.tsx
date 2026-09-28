@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
-import type { FeasibilityResponseDto, FeasibilityValue } from "../types/feasibility.types";
+import type { FeasibilityResponseDto } from "../types/feasibility.types";
 import type { FeasibilityCheckState } from "../hooks/use-feasibility-check";    
 
 interface FeasibilityResultCardProps {
@@ -8,16 +8,8 @@ interface FeasibilityResultCardProps {
     readonly error: string | null;
 }
 
-function formatValue(value: FeasibilityValue | null): string {
-    if(value === null) return "Unavailable";
-
-    if(typeof value === "number") return value.toString();
-
-    if(value.min === value.max){
-        return value.min.toLocaleString()
-    }
-
-    return `${value.min.toLocaleString()}–${value.max.toLocaleString()}`;
+function formatValue(value: number): string {
+    return value?.toLocaleString();
 }
 
 export  default function FeasibilityResultCard({state, result, error} : FeasibilityResultCardProps){
@@ -75,12 +67,12 @@ export  default function FeasibilityResultCard({state, result, error} : Feasibil
                         <CheckCircle2 className="h-4 w-4" />
                         Eligible consultants
                     </div>
-                    <p className="text-2xl font-bold text-emerald-950">{formatValue(result.base.eligibleCount)}</p>
+                    <p className="text-2xl font-bold text-emerald-950">{formatValue(result.eligibleCount)}</p>
                 </div>
 
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <p className="mb-1 text-sm font-medium text-blue-800">Top match score</p>
-                    <p className="text-2xl font-bold text-blue-950">{formatValue(result.base.topScore)}</p>
+                    <p className="text-2xl font-bold text-blue-950">{formatValue(result.topScore)}</p>
                 </div>
             </div>
 
@@ -93,9 +85,9 @@ export  default function FeasibilityResultCard({state, result, error} : Feasibil
                             <div key={variant.label} className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-sm text-slate-700">{variant.label}</span>
                                 <span className="text-sm font-semibold text-slate-950">
-                                    {formatValue(variant.result.eligibleCount)} eligible
+                                    {formatValue(variant.eligibleCount)} eligible
                                     <span className="ml-2 font-normal text-slate-500">
-                                      · top score {formatValue(variant.result.topScore)}  
+                                      · top score {formatValue(variant.topScore)}  
                                     </span>
                                 </span>
                             </div>

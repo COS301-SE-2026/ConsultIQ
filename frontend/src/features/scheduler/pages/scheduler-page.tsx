@@ -1,9 +1,47 @@
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
+import UnderutilisationCard, {type ActionSuggestion} from "../components/underutilisation-card";
+import { ReasonCode } from "../types/scheduler.types";
+import { useState } from "react";
+import {
+    FIXTURE_PROJECTS,
+    designWeek,
+    holidayWeek,
+    leaveWeek,
+    batchWeek,
+    emptyWeek,
+    underusedWeek
 
+} from "../types/scheduler.fixtures";
+
+const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 export default function SchedulerPage() {
+    const [dismissed, setDismissed] = useState<string[]>([]);
+    const [weekIndex, setWeekIndex] = useState(0);
+    const week = FIXTURE_WEEKS[weekIndex];
+
+    const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
+        (i) => i.code === ReasonCode.UNDERUTILISED,
+    );
+
+    const dismissKey = `${week.id}:${ReasonCode.UNDERUTILISED}`;
+    const showUnderused = underused && !dismissed.includes(dismissKey);
+
+    function handleSuggestion(s:ActionSuggestion){
+        switch (s.code){
+            case "PLACE_UNPLACED":
+            //
+            case "PULL_FORWARD":
+                //
+            case "EXTEND_BLOCK":
+                //
+                break;
+        }
+    }
+
+
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
@@ -26,6 +64,18 @@ export default function SchedulerPage() {
                         <div className="flex-1 overflow-auto p-4">
                             <WeekCalendar/>
                         </div>
+                        {showUnderused && (
+                            <div className="flex-none">
+                                <UnderutilisationCard
+                                    issue={underused}
+                                    metadata={week.metadata}
+                                    weekStart={week.weekStart}
+                                    onSuggestion={handleSuggestion}
+                                    onDismiss={() => setDismissed((d) => [...d, dismissKey])}
+                                />
+
+                            </div>
+                        )}
 
                         <div className="absolute bottom-0 left-0 right-0 p-4 pointer-events-none">
                             <div className="pointer-events-auto z-90 bg-amber-500 text-white p-3 rounded-lg shadow-lg">

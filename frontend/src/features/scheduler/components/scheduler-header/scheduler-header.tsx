@@ -169,21 +169,6 @@ export default function SchedulerHeader({
 
             </div>
             <div className="flex items-center gap-2 justify-self-end">
-                <Button
-                    variant={backlogOpen ? "default" : "outline"}
-                    className="px-4 py-2 gap-2 rounded-lg whitespace-nowrap"
-                    aria-pressed={backlogOpen}
-                    onClick={onToggleBacklog}
-                >
-                    Backlog
-                    {backlogCount > 0 && (
-                        <span className="min-w-5 h-5 px-1.5 rounded-full text-[10px] font-bold flex items-center justify-center"
-                            style={{ backgroundColor: "#C9A84C", color: "#fff" }}
-                        >
-                            {backlogCount}
-                        </span>
-                    )}
-                </Button>
 
                 <Button
                     className="px-4 py-2 rounded-lg whitespace-nowrap border-slate-200 "

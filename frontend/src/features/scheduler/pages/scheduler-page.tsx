@@ -2,11 +2,11 @@ import { useState } from "react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
-import { useState } from "react";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import {
     FIXTURE_PROJECTS,
     designWeek,
+    FIXTURE_NOW,
     holidayWeek,
     leaveWeek,
     batchWeek,
@@ -14,16 +14,13 @@ import {
     underusedWeek
 
 } from "../types/scheduler.fixtures";
-
-const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
-
-
 import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
 import BlockDetailPanel from "../components/block-detail-panel";    
-import { designWeek, FIXTURE_NOW, FIXTURE_PROJECTS } from "../types/scheduler.fixtures";
 import TaskForm, { type TaskSubmission} from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
+
+const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
 
@@ -137,7 +134,7 @@ export default function SchedulerPage() {
                         </div>
 
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
-                            <div className="pointer-events-auto z-90 bg-amber-500 text-white p-3 rounded-lg shadow-lg">
+                            <div className="pointer-events-auto z-9 text-white p-3 rounded-lg shadow-lg">
                                 <SchedulerAlertBanner 
                                     issues={schedulerIssues}
                                     dismissedKeys={dismissedAlertKeys}

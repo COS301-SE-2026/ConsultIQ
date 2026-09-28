@@ -98,7 +98,7 @@ export default function UnderutilisationCard({ issue, metadata, weekStart, onSug
             </div>
             <CapacitySummary metadata={metadata} />
 
-            <div>
+            <div className="flex flex-wrap gap-2">
                 {actions.map((s) => (
                     <Button key={s.code + s.label} className="px-3 py-2 rounded-lg text-xs" onClick={() => onSuggestion(s)}>
                         {s.label}

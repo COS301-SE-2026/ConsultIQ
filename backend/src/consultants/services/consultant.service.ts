@@ -32,6 +32,7 @@ import {
   ProjectConsultantsResponseDto,
 } from '../dto/consultant-placement.dto';
 import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
+import { upsertSkillCatalogueEntry } from '../../common/utils/skill-catalogue.util';
 
 @Injectable()
 export class ConsultantService {
@@ -162,12 +163,10 @@ export class ConsultantService {
 
         // Create skills
         for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          const skillRecord = await tx.skill.upsert({
-            where: { name: normalizedName },
-            update: {},
-            create: { name: normalizedName, category: 'General' },
-          });
+          const skillRecord = await upsertSkillCatalogueEntry(
+            tx,
+            skill.skillName,
+          );
           await tx.consultantSkill.create({
             data: {
               consultantId: consultant.id,
@@ -332,7 +331,11 @@ export class ConsultantService {
 
         include: {
           user: { select: { fullName: true, email: true } },
-          skills: { include: { skill: { select: { name: true } } } },
+          skills: {
+            include: {
+              skill: { select: { name: true, displayName: true } },
+            },
+          },
           certificates: { select: { title: true } },
           consultantExperiences: { select: { startDate: true, endDate: true } },
         },
@@ -363,7 +366,9 @@ export class ConsultantService {
         province: c.province,
         postalCode: c.postalCode,
         availabilityStatus: c.availability,
-        primarySkills: c.skills.map((cs) => cs.skill.name),
+        primarySkills: c.skills.map(
+          (cs) => cs.skill.displayName ?? cs.skill.name,
+        ),
         phone: c.phone,
         idNumber: c.idNumber,
         experienceYears: Math.floor(experienceYears),
@@ -594,12 +599,10 @@ export class ConsultantService {
         });
 
         for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          const skillRecord = await tx.skill.upsert({
-            where: { name: normalizedName },
-            update: {},
-            create: { name: normalizedName, category: 'General' },
-          });
+          const skillRecord = await upsertSkillCatalogueEntry(
+            tx,
+            skill.skillName,
+          );
 
           // Recompute competency level server-side
           const competencyLevel = this.inferCompetencyLevel(
@@ -823,7 +826,7 @@ export class ConsultantService {
         : null,
       skills: consultant.skills.map((cs: any) => ({
         id: cs.id,
-        skillName: cs.skill.name,
+        skillName: cs.skill.displayName ?? cs.skill.name,
         competencyLevel: cs.competencyLevel,
         yearsExperience: cs.yearsExperience,
         confidenceLevel: cs.confidenceLevel,
@@ -935,7 +938,12 @@ export class ConsultantService {
           include: {
             skills: {
               include: {
-                skill: true,
+                skill: {
+                  select: {
+                    name: true,
+                    displayName: true,
+                  }
+                }
               },
             },
             placements: {

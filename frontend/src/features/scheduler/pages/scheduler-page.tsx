@@ -16,11 +16,25 @@ import {
 
 } from "../types/scheduler.fixtures";
 
-const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
+const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];import SchedulerHeader from "../components/scheduler-header/scheduler-header";
+import {
+    FIXTURE_PROJECTS,
+    designWeek,
+    FIXTURE_NOW,
+    holidayWeek,
+    leaveWeek,
+    batchWeek,
+    emptyWeek,
+    underusedWeek
+
+} from "../types/scheduler.fixtures";
+import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
 import BlockDetailPanel from "../components/block-detail-panel";    
 import TaskForm, { type TaskSubmission} from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
+
+const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
 
@@ -105,13 +119,26 @@ export default function SchedulerPage() {
         setTaskForm(null);
     }
 
+    const [weekIndex, setWeekIndex] = useState(0);
+    const [backlogOpen, setBacklogOpen] = useState(true);
+    const [creatingEntry, setCreatingEntry] = useState(false);
+
+    const week = FIXTURE_WEEKS[weekIndex];
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <header className="h-14 flex-none border-b border-slate-200 bg-white px-6 flex items-center justify-between">
-                    <h1 className="font-bold text-slate-800">Scheduler Header</h1>
+                <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
+                    <SchedulerHeader
+                        week={week}
+                        projects={FIXTURE_PROJECTS}
+                        backlogOpen={backlogOpen}
+                        onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
+                        onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
+                        onToggleBacklog={() => setBacklogOpen((o) => !o)}
+                        onAddEvent={() => setCreatingEntry(true)}
+                    />
                 </header>
 
                 {/* Three vertical sections */}
@@ -136,7 +163,12 @@ export default function SchedulerPage() {
                     {/*Week calendar*/}
                     <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
                         <div className="flex-1 overflow-auto p-4">
-                            <WeekCalendar/>
+                            <WeekCalendar
+                                key={week.id}
+                                weekData={week}
+                                createEntryRequested={creatingEntry}
+                                onCreateEntryDone={() => setCreatingEntry(false)}
+                            />
                         </div>
                         {showUnderused && (
                             <div className="flex-none">
@@ -153,7 +185,7 @@ export default function SchedulerPage() {
 
 
                         <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
-                            <div className="pointer-events-auto z-90  text-white p-3 rounded-lg shadow-lg">
+                            <div className="pointer-events-auto z-9 text-white p-3 rounded-lg shadow-lg">
                                 <SchedulerAlertBanner 
                                     issues={schedulerIssues}
                                     dismissedKeys={dismissedAlertKeys}

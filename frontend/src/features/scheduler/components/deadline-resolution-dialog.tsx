@@ -3,14 +3,14 @@ import type { AcceptDeadlineMissDto, Task, UnplacedTaskSummary, UpdateTaskDto } 
 import { formatDuration } from "./scheduler-utils";
 
 interface DeadlineResolutionDialogProps {
-  task: Task;
-  summary: UnplacedTaskSummary;
-  expectedVersion: number;
-  open: boolean;
-  onCancel: () => void;
-  onExtendDeadline: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
-  onReduceEstimate: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
-  onAcceptMiss: (taskId: string, dto: AcceptDeadlineMissDto) => void | Promise<void>;
+  readonly task: Task;
+  readonly summary: UnplacedTaskSummary;
+  readonly expectedVersion: number;
+  //readonly open: boolean;
+  readonly onCancel: () => void;
+  readonly onExtendDeadline: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
+  readonly onReduceEstimate: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
+  readonly onAcceptMiss: (taskId: string, dto: AcceptDeadlineMissDto) => void | Promise<void>;
 }
 
 export default function DeadlineResolutionDialog(props: DeadlineResolutionDialogProps){
@@ -34,14 +34,16 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
     const shortfall = Math.max(summary.neededMinutes - summary.availableMinutes, 0);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            role="presentation"
+        <dialog 
+            open
+            aria-labelledby="deadline-resolution-title"
+            className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center border-0 bg-black/40 p-4"
             onMouseDown={(event) => {
                 if(event.target === event.currentTarget) onCancel();
             }}
         >
             <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl"
-                role="dialog" aria-modal="true" aria-labelledby="deadline-resolution-title"
+                aria-labelledby="deadline-resolution-title"
             >
                 <header className="bg-slate-900 px-6 py-4 text-white">
                     <h2 id="deadline-resolution-title" className="text-base font-semibold">
@@ -102,16 +104,16 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
                         </button>
                     </footer>
             </section>
-        </div>
+        </dialog>
     )
 }
 
 function ReduceEstimateOption({  maxHours, maxAllowedMinutes, canApply, onMaxHoursChange, onApply}: {
-  maxHours: number;
-  maxAllowedMinutes: number;
-  canApply: boolean;
-  onMaxHoursChange: (value: number) => void;
-  onApply: () => void;
+  readonly maxHours: number;
+  readonly maxAllowedMinutes: number;
+  readonly canApply: boolean;
+  readonly onMaxHoursChange: (value: number) => void;
+  readonly onApply: () => void;
 }){
     return (
         <section className="space-y-2 rounded-md border border-slate-200 p-3">

@@ -3,11 +3,11 @@ import type { SplitTaskDto, Subtask,Task } from "../types/scheduler.types";
 import { formatDuration } from "./scheduler-utils";
 
 interface SplitTaskDialogProps{
-    task: Task;
-    expectedVersion: number;
-    open: boolean;
-    onCancel: () => void;
-    onConfirm: (taskId: string, dto: SplitTaskDto) => void | Promise<void>;
+    readonly task: Task;
+    readonly expectedVersion: number;
+    //readonly open: boolean;
+    readonly onCancel: () => void;
+    readonly onConfirm: (taskId: string, dto: SplitTaskDto) => void | Promise<void>;
 }
 
 const MIN_HALF_MINUTES = 60;
@@ -58,14 +58,16 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
     const secondHalf = spans.filter((span) => span.start >= atMinutes).map((span) => span.subtask);
 
     return(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-            role="presentation"
+        <dialog 
+            open
+            aria-labelledby="split-task-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
             onMouseDown={(e) => {
                 if(e.target === e.currentTarget) onCancel();
             }}
         >
             <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl"
-                role="dialog" aria-modal="true" aria-labelledby="split-task-title"
+                aria-labelledby="split-task-title"
             >
                 <header className="bg-slate-900 px-6 py-4 text-white">
                     <h2 id="split-task-title" className="text-base font-semibold">
@@ -140,14 +142,14 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                     </button>
                 </footer>
             </section>
-        </div>
+        </dialog>
     );
 }
 
 function SplitPreview ({label, minutes, subtasks} :{
-    label: string;
-    minutes: number;
-    subtasks: Subtask[];
+    readonly label: string;
+    readonly minutes: number;
+    readonly subtasks: Subtask[];
 }){
     return (
         <div className="rounded-md border border-slate-200 p-3">

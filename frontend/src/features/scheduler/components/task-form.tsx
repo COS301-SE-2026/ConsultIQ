@@ -22,17 +22,17 @@ export interface ContainerContext {
 export type TaskSubmission = | { mode: "create"; dto: CreateTaskDto } | { mode: "edit"; taskId: string; dto: UpdateTaskDto };
 
 interface TaskFormProps { 
-    mode: "create" | "edit";
-    initialTask?: Task;
-    projects: ProjectOption[];
-    expectedVersion: number;
-    containerContext?: ContainerContext;
-    dependencyOptions?: Pick<Task, "id" | "title">[];
-    serverIssues?: Issue[];
-    open: boolean;
-    initialProjectId?: string;
-    onCancel: () => void;
-    onSubmit: (submission: TaskSubmission) => Promise<void> ;
+    readonly mode: "create" | "edit";
+    readonly initialTask?: Task;
+    readonly projects: ProjectOption[];
+    readonly expectedVersion: number;
+    readonly containerContext?: ContainerContext;
+    readonly dependencyOptions?: Pick<Task, "id" | "title">[];
+    readonly serverIssues?: Issue[];
+    readonly open: boolean;
+    readonly initialProjectId?: string;
+    readonly onCancel: () => void;
+    readonly onSubmit: (submission: TaskSubmission) => Promise<void> ;
 }
 
 interface SubtaskDraft {
@@ -390,7 +390,7 @@ function TaskFormContent({ mode, initialProjectId, initialTask, projects, expect
   )}
 
 function ToggleGroup<T extends number>({ label, options, value, labels,  variant, onChange }:
-    { label: string; options: T[]; value: T; labels: Record<T, string>; variant: "complexity" | "urgency"; onChange: (value: T) => void }) {
+    { readonly label: string; readonly options: T[]; readonly value: T; readonly labels: Record<T, string>; variant: "complexity" | "urgency"; onChange: (value: T) => void }) {
         
         const complexityColors: Record<number, string> = {
         1: "border-emerald-600 bg-emerald-600/10 text-emerald-700",
@@ -426,7 +426,7 @@ function ToggleGroup<T extends number>({ label, options, value, labels,  variant
         );
     }
 
-function IssueBanner({ issue }: { issue: Issue }) {
+function IssueBanner({ issue }: { readonly  issue: Issue }) {
     const blocking = issue.level === "violation";
 
     return (

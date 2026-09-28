@@ -40,7 +40,7 @@ function daysUntil(deadline: string, now: number) : number {
     return Math.round(ms / 86_400_000);
 }
 
-function DeadlineLabel({ deadline, now } : { deadline?: string; now : number }) {
+function DeadlineLabel({ deadline, now } : { readonly deadline?: string; readonly now : number }) {
     if(!deadline) return null;
     const days = daysUntil(deadline, now);
     const urgent = days <= URGENT_DEADLINE_DAYS;

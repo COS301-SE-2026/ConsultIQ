@@ -5,21 +5,27 @@ import { ComplexityBars } from "./primitives";
 import {STATUS_LABELS, formatDuration, getStartTime } from "./scheduler-utils";
 
 interface TaskCardProps {
-    task: Task;
-    now : number;
-    expectedVersion: number;
-    subtaskProgress : { completed: number, total : number };
-    nextStatus? : { status : TaskStatus, label : string }
-    timeZone?: string;
-    onEdit: (task: Task) => void;
-    onSetStatus: (taskId : string, dto : SetTaskStatusDto) => void | Promise<void>;
-    onToggleSubtask: (taskId: string, subtaskId : string, dto: ToggleSubtaskDto) => void | Promise<void>;
-    onSendToBacklog: (taskId: string) => void | Promise<void>;
-    onDelete: (taskId: string) => void | Promise<void>;
-    onSplit: (task: Task) => void;
-    onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;  
+    readonly task: Task;
+    readonly now : number;
+    readonly expectedVersion: number;
+    readonly subtaskProgress : { completed: number, total : number };
+    readonly nextStatus? : { status : TaskStatus, label : string }
+    readonly timeZone?: string;
+    readonly onEdit: (task: Task) => void;
+    readonly onSetStatus: (taskId : string, dto : SetTaskStatusDto) => void | Promise<void>;
+    readonly onToggleSubtask: (taskId: string, subtaskId : string, dto: ToggleSubtaskDto) => void | Promise<void>;
+    readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
+    readonly onDelete: (taskId: string) => void | Promise<void>;
+    readonly onSplit: (task: Task) => void;
+    readonly onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;  
 }
 
+function stopAndRun(action: () => void) {
+    return (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      action();
+    };
+}
 
 export default function TaskCard({ task, now, expectedVersion, subtaskProgress, nextStatus, timeZone,
   onEdit, onSetStatus, onToggleSubtask, onSendToBacklog, onDelete, onSplit, onDragStart, } : TaskCardProps){
@@ -28,13 +34,6 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
   const startTime = getStartTime(task, timeZone);
 
     const overdue = task.status !== "Done" && Boolean(task.deadline) && Date.parse(task.deadline ?? "") < now;
-
-  function stopAndRun(action: () => void) {
-    return (event: React.MouseEvent<HTMLButtonElement>) => {
-      event.stopPropagation();
-      action();
-    };
-  }
 
   return (
     <article className="cursor-pointer rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300"

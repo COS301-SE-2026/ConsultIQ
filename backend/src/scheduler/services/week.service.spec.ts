@@ -523,5 +523,80 @@ describe('WeekService', () => {
             const badWeek = { slots: [] } as any;
             expect(() => service['applyMoveSlot'](badWeek, 'non-existent-slot', mockWindow)).toThrow(NotFoundException);
         });
+
+        it('generates missing IDs for tasks and subtasks during applyChange (create_task & pull_forward)', () => {
+            const testWeek = createMockWeek();
+
+
+            const newTask = {
+                title: 'New Task',
+                subtasks: [{ title: 'New Subtask' }]
+            } as any;
+
+            service['applyChange'](testWeek, {
+                type: 'create_task',
+                task: newTask,
+                origin: 'user',
+                window: mockWindow
+            });
+
+            const addedTask = testWeek.tasks[testWeek.tasks.length - 1];
+            expect(addedTask.id).toBeDefined();
+            expect(typeof addedTask.id).toBe('string');
+            expect(addedTask.subtasks![0].id).toBeDefined();
+
+
+            const pullTask = {
+                title: 'Pulled Task',
+                subtasks: [{ title: 'Pulled Subtask' }]
+            } as any;
+
+            service['applyChange'](testWeek, {
+                type: 'pull_forward',
+                taskIds: [],
+                tasks: [pullTask],
+                origin: 'system',
+                window: mockWindow
+            });
+
+            const pulledTask = testWeek.tasks[testWeek.tasks.length - 1];
+            expect(pulledTask.id).toBeDefined();
+            expect(pulledTask.subtasks![0].id).toBeDefined();
+        });
+
+        it('generates missing IDs for tasks and subtasks during persistTasksAndSubtasks', async () => {
+            const testWeek = createMockWeek();
+
+            testWeek.tasks = [{
+                projectId: 'P1',
+                title: 'Task without ID',
+                subtasks: [{ title: 'Subtask without ID' }]
+            } as any];
+
+            const change = { type: 'replan', window: mockWindow } as Change;
+            const ctx = { bumpedEntityIds: [], allocations: [] };
+
+            const result = await service.commit(testWeek, change, ctx, 2);
+
+            expect(result.ok).toBe(true);
+
+            expect(mockPrisma.schedulerTask.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ id: expect.any(String) }),
+                    create: expect.objectContaining({ id: expect.any(String) })
+                })
+            );
+
+            expect(mockPrisma.schedulerSubtask.createMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.arrayContaining([
+                        expect.objectContaining({
+                            id: expect.any(String),
+                            taskId: expect.any(String)
+                        })
+                    ])
+                })
+            );
+        });
     });
 });

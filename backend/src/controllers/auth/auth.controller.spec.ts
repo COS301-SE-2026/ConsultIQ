@@ -381,7 +381,7 @@ describe('AuthController', () => {
 
       expect(result).toHaveProperty('csrfToken');
       expect(typeof result.csrfToken).toBe('string');
-      expect(result.csrfToken.length).toBe(64);
+      expect(result.csrfToken).toHaveLength(64);
 
       expect(mockRes.cookie).toHaveBeenCalledWith(
         'XSRF-TOKEN',

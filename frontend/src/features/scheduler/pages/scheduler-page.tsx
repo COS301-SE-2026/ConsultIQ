@@ -3,7 +3,10 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
 import UnderutilisationCard, { type ActionSuggestion } from "../components/underutilisation-card";
-import { ReasonCode, type SchedulerWeekResponse } from "../types/scheduler.types";
+import { ReasonCode, 
+    type Task, 
+    type SchedulerWeekResponse, 
+    type SetTaskStatusDto } from "../types/scheduler.types";
 import {
     FIXTURE_PROJECTS,
     designWeek,
@@ -17,11 +20,12 @@ import {
 } from "../types/scheduler.fixtures";
 import { type BacklogProjectOption } from "../components/backlog-panel";
 import TaskForm, { type TaskSubmission } from "../components/task-form";
-import type { Task, SetTaskStatusDto } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
-import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek} from "../services/scheduler.service"
+import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
+    updateSchedulerTask
+} from "../services/scheduler.service"
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
@@ -73,7 +77,7 @@ export default function SchedulerPage() {
 
     useEffect(() => {
         const controller = new AbortController();
-        const weekStart = getCurrentWeekStart(schedulerTimeZone);
+        const weekStart = selectedWeekStart;
 
         getSchedulerWeek(weekStart, controller.signal).then((loaded) =>{
             setLoadedWeek({ weekStart, week: loaded});
@@ -86,7 +90,7 @@ export default function SchedulerPage() {
             });
         });
         return () => controller.abort();
-    }, [schedulerTimeZone]);
+    }, [selectedWeekStart]);
 
     const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
         (i) => i.code === ReasonCode.UNDERUTILISED,
@@ -150,11 +154,23 @@ export default function SchedulerPage() {
     }
 
     async function handleTaskSubmit(submission: TaskSubmission) {
-        if (submission.mode === "create") {
-            console.log("Create task", submission.dto);
-        } else {
-            console.log("Update task", submission.taskId, submission.dto);
+        if(!apiWeek){
+            throw new Error("The selected week is still loading.");
         }
+        
+        let result;
+
+        if (submission.mode === "create") {
+            result = await createSchedulerTask(selectedWeekStart, submission.dto);
+        } else {
+            result = await updateSchedulerTask(submission.taskId, submission.dto); 
+        }
+            
+        if(!result.ok){
+            throw new Error(result.violations.map((issue) => issue.message).join(" "));
+        }
+        setLoadedWeek({weekStart: selectedWeekStart, week : result.value});
+         
         setTaskForm(null);
     }
 
@@ -176,7 +192,7 @@ export default function SchedulerPage() {
 
     }
 
-    const [creatingEntry, setCreatingEntry] = useState(false);
+    const [_creatingEntry, setCreatingEntry] = useState(false);
 
 
     return (
@@ -295,7 +311,7 @@ export default function SchedulerPage() {
                             initialTask={taskForm.task}
                             initialProjectId={taskForm.projectId}
                             projects={projects}
-                            expectedVersion={designWeek.version}
+                            expectedVersion={apiWeek?.version ?? 0}
                             dependencyOptions={designWeek.tasks.filter((task) => task.id !== taskForm.task?.id)
                                 .map((task) => ({
                                     id: task.id,

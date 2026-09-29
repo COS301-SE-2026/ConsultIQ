@@ -1,6 +1,7 @@
 import { apiClient } from "../../../lib/api-client";
-import type { SetTaskStatusDto , Task} from "../types/scheduler.types";
-import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult, type CalendarEntry, type WeekContainer } from "../types/scheduler.types";
+import type { SetTaskStatusDto, Task, } from "../types/scheduler.types";
+import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult, type CalendarEntry, type WeekContainer,
+    type CreateTaskDto, type UpdateTaskDto} from "../types/scheduler.types";
 
 export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
   const slots = api.slots.map(({ weekId: _weekId, tags: _tags, ...slot }) => slot);
@@ -66,4 +67,12 @@ export function getSchedulerWeek(weekStart: string, signal?: AbortSignal){
 
 export function setSchedulerTaskStatus(taskId: string, dto: SetTaskStatusDto){
     return apiClient.patch<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/status`, dto);
+}
+
+export function createSchedulerTask(weekStart: string, dto: CreateTaskDto){
+    return apiClient.post<SchedulerCommitResult>(`/scheduler/weeks/${weekStart}/tasks`, dto);
+}
+
+export function updateSchedulerTask(taskId: string, dto: UpdateTaskDto){
+    return apiClient.patch<SchedulerCommitResult>(`/scheduler/tasks/${taskId}`, dto);
 }

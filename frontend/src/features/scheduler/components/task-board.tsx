@@ -1,8 +1,7 @@
 import { useState, type DragEvent } from "react";
-import type { SetTaskStatusDto, Task, TaskStatus } from "../types/scheduler.types";
+import type { SetTaskStatusDto, Task, TaskStatus, type ToggleSubtaskDto } from "../types/scheduler.types";
 import { STATUS_LABELS, getNextStatus } from "./scheduler-utils";
 import TaskCard from "./task-card";
-import {type ToggleSubtaskDto} from "../types/scheduler.types"
  
 type BoardColumn = "Backlog" | TaskStatus;
  

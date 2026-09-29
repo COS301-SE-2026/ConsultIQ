@@ -16,11 +16,13 @@ function findMostImpactfulVariant(
     base: FeasibilityResponseDto,
     ): FeasibilityVariantResultDto | null {
     if (base.variants.length === 0) return null;
-    return base.variants.reduce((best, current) =>
-        current.eligibleCount - base.eligibleCount > best.eligibleCount - base.eligibleCount
-        ? current
-        : best,
-    );
+
+    return base.variants.reduce<FeasibilityVariantResultDto>((best, current) => {
+        const bestGain = best.eligibleCount - base.eligibleCount;
+        const currentGain = current.eligibleCount - base.eligibleCount;
+
+        return currentGain > bestGain ? current : best;
+    }, base.variants[0]);
 }
 
 export  default function FeasibilityResultCard({state, result, error} : FeasibilityResultCardProps){

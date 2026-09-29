@@ -161,32 +161,10 @@ export class ConsultantService {
           },
         });
 
-        // Preserve the first entry for each normalized catalogue skill.
-        const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
-        for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          if (!uniqueSkills.has(normalizedName)) {
-            uniqueSkills.set(normalizedName, skill);
-          }
-        }
-        const skillRecords = await Promise.all(
-          Array.from(uniqueSkills.values(), async (skill) => ({
-            skill,
-            skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
-          })),
-        );
-        await Promise.all(
-          skillRecords.map(({ skill, skillRecord }) =>
-            tx.consultantSkill.create({
-              data: {
-                consultantId: consultant.id,
-                skillId: skillRecord.id,
-                competencyLevel: skill.competencyLevel as CompetencyLevel,
-                yearsExperience: skill.yearsExperience,
-                confidenceLevel: skill.confidenceLevel,
-              },
-            }),
-          ),
+        await this.createConsultantSkills(
+          tx,
+          consultant.id,
+          dto.skills,
         );
 
         await this.createExperienceRecords(tx, consultant.id, dto.experiences);
@@ -242,6 +220,52 @@ export class ConsultantService {
         },
       });
     }));
+  }
+
+  private async createConsultantSkills(
+    tx: any,
+    consultantId: string,
+    skills: {
+      skillName: string;
+      competencyLevel?: string;
+      yearsExperience: number;
+      confidenceLevel: number;
+    }[],
+  ): Promise<void> {
+    const uniqueSkills = new Map<string, (typeof skills)[number]>();
+    for (const skill of skills) {
+      const normalizedName = skill.skillName.trim().toLowerCase();
+      if (!uniqueSkills.has(normalizedName)) {
+        uniqueSkills.set(normalizedName, skill);
+      }
+    }
+
+    const skillRecords = await Promise.all(
+      Array.from(uniqueSkills.values(), async (skill) => ({
+        skill,
+        skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
+      })),
+    );
+
+    await Promise.all(
+      skillRecords.map(async ({ skill, skillRecord }) => {
+        await tx.consultantSkill.create({
+          data: {
+            consultantId,
+            skillId: skillRecord.id,
+            competencyLevel:
+              skill.competencyLevel !== undefined
+                ? (skill.competencyLevel as CompetencyLevel)
+                : this.inferCompetencyLevel(
+                    skill.yearsExperience,
+                    skill.confidenceLevel,
+                  ),
+            yearsExperience: skill.yearsExperience,
+            confidenceLevel: skill.confidenceLevel,
+          },
+        });
+      }),
+    );
   }
 
   private async createCertificateRecords(
@@ -615,34 +639,10 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
-        for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          if (!uniqueSkills.has(normalizedName)) {
-            uniqueSkills.set(normalizedName, skill);
-          }
-        }
-        const skillRecords = await Promise.all(
-          Array.from(uniqueSkills.values(), async (skill) => ({
-            skill,
-            skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
-          })),
-        );
-        await Promise.all(
-          skillRecords.map(({ skill, skillRecord }) =>
-            tx.consultantSkill.create({
-              data: {
-                consultantId: resolvedConsultantId,
-                skillId: skillRecord.id,
-                competencyLevel: this.inferCompetencyLevel(
-                  skill.yearsExperience,
-                  skill.confidenceLevel,
-                ),
-                yearsExperience: skill.yearsExperience,
-                confidenceLevel: skill.confidenceLevel,
-              },
-            }),
-          ),
+        await this.createConsultantSkills(
+          tx,
+          resolvedConsultantId,
+          dto.skills,
         );
       }
 

@@ -24,15 +24,14 @@ export default function Modal({
 	return (
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-			role="presentation"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby={labelledBy}
+			aria-describedby={describedBy}
 			onMouseDown={handleBackdropMouseDown}
 		>
 			<div
 				className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby={labelledBy}
-				aria-describedby={describedBy}
 			>
 				{children}
 			</div>

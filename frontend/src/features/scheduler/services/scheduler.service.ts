@@ -80,6 +80,14 @@ export function updateSchedulerTask(taskId: string, dto: UpdateTaskDto){
 export function deleteSchedulerTask(taskId: string, expectedVersion: number) {
   return apiClient.delete<SchedulerCommitResult>(`/scheduler/tasks/${taskId}`, {
     body: JSON.stringify({ expectedVersion }),
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" },                                                                                                                                                 
   });
+}
+
+export function splitSchedulerTask(taskId: string, atMinutes: number, expectedVersion: number){
+  return apiClient.post<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/split`, { atMinutes, expectedVersion });
+}
+
+export function placeUnplacedTasks(taskIds: string[], expectedVersion: number) {
+  return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/place-unplaced", { taskIds, expectedVersion });
 }

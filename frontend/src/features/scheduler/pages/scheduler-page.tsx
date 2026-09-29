@@ -8,10 +8,8 @@ import { ReasonCode,
     type SchedulerWeekResponse, 
     type SetTaskStatusDto } from "../types/scheduler.types";
 import {
-    FIXTURE_PROJECTS,
     designWeek,
     holidayWeek,
-    FIXTURE_NOW,
     leaveWeek,
     batchWeek,
     emptyWeek,
@@ -24,21 +22,15 @@ import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
 import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
-    updateSchedulerTask, deleteSchedulerTask
+    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks
 } from "../services/scheduler.service"
+import { getAssignedProjects } from "../../consultants/services/consultant.service";
+import { toast } from "sonner";
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
 
-const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
-    (project, index) => ({
-        id: project.id,
-        label: project.name,
-        clientName: project.clientName,
-        color: projectColors[index % projectColors.length]
-    }),
-);
 
 type SchedulerTab = "calendar" | "tasks" | "notifications";
 
@@ -75,6 +67,8 @@ export default function SchedulerPage() {
     const weekLoading = loadedWeek.weekStart !== selectedWeekStart;
     const weekError = loadedWeek.weekStart === selectedWeekStart ? loadedWeek.error ?? null : null;
 
+    const [projects, setProjects] = useState<BacklogProjectOption[]>([]);
+
     useEffect(() => {
         const controller = new AbortController();
         const weekStart = selectedWeekStart;
@@ -91,6 +85,30 @@ export default function SchedulerPage() {
         });
         return () => controller.abort();
     }, [selectedWeekStart]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        getAssignedProjects().then((assigned) => {
+            if(cancelled) return;
+
+            setProjects(assigned.filter((item) => item.placementStatus === "ACTIVE")
+            .map((item, index) => ({
+                id: item.project.id,
+                label: item.project.projectName,
+                clientName: item.project.clientName,
+                color: projectColors[index % projectColors.length]
+            })));
+        })
+        .catch(() => {
+            if(!cancelled){
+                toast("Could not load assigned projects");
+            }
+        });
+
+        return() => { cancelled = true; };
+
+    }, [])
 
     const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
         (i) => i.code === ReasonCode.UNDERUTILISED,
@@ -113,14 +131,11 @@ export default function SchedulerPage() {
         }
     }
 
-
-   // const [backlogCollapsed, setBacklogCollapsed] = useState(false);
-    //const [selectedBlockId, setSelectedBlockId] = useState<string | null>(() => designWeek.blocks[0]?.id ?? null);
+    const [_creatingEntry, setCreatingEntry] = useState(false);
     const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
-    //const selectedBlock = designWeek.blocks.find((block) => block.id === selectedBlockId);
     const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
+    const [splitTask, setSplitTask] = useState<Task | null>(null);
 
-   // const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
     const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
 
     const fixtureSubtaskProgressByTaskId = Object.fromEntries(
@@ -132,6 +147,15 @@ export default function SchedulerPage() {
             },
         ]),
         );
+    const serverSubtaskProgressByTaskId = Object.fromEntries(
+        (serverWeek?.tasks ?? []).map((task) => [
+            task.id,
+            {
+            completed: task.subtasks.filter((subtask) => subtask.done).length,
+            total: task.subtasks.length,
+            },
+        ]),
+    );
 
     function OpenCreateTask(projectId?: string) {
         setTaskForm({ mode: "create", projectId });
@@ -213,8 +237,38 @@ export default function SchedulerPage() {
         }
     }
 
-    const [_creatingEntry, setCreatingEntry] = useState(false);
+    async function handleConfirmSplit(taskId: string, atMinutes: number) {
+        if(!apiWeek) return;
 
+        const result = await splitSchedulerTask(taskId, atMinutes, apiWeek.version);
+
+        if(!result.ok){
+            setLoadedWeek((current) => ({
+                ...current, error: result.violations.map((issue) => issue.message).join(" ")
+            }));
+            return;
+        }
+
+        setLoadedWeek({ weekStart: apiWeek.weekStart,  week: result.value});
+        setSplitTask(null);
+    }
+
+    async function handleScheduleTask(taskId: string){
+        if(!apiWeek) return;
+
+        try {
+            const result = await placeUnplacedTasks([taskId], apiWeek.version);
+
+            if(!result.ok) {
+                setLoadedWeek((current) => ({ ...current, error:  result.violations.map((issue) => issue.message).join(" ")}));
+                return;
+            }
+
+            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
+        } catch(error) {
+            setLoadedWeek((current) => ({ ...current, error: error instanceof Error ? error.message : "Could not schedule task."}));
+        }
+    }
 
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -224,7 +278,8 @@ export default function SchedulerPage() {
                 <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
                     <SchedulerHeader
                         week={week}
-                        projects={FIXTURE_PROJECTS}
+                        projects={projects.map(({ id, label, clientName }) => ({
+                                id, name: label, clientName}))}
                         onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
                         onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
                     />
@@ -282,22 +337,29 @@ export default function SchedulerPage() {
                             )}
 
                         {activeTab === "tasks" && (
+                            weekLoading ? (
+                            <p className="p-4">Loading week…</p>
+                            ) :  weekError ? (
+                                <p role="alert" className="p-4 text-red-700">{weekError}</p>
+                            ) :  serverWeek ? (
                             <div className="h-full min-h-0 min-w-0 overflow-hidden">
                                 <TaskBoard
-                                tasks={week.tasks}
+                                tasks={serverWeek.tasks}
                                 projects={projects}
-                                now={Date.parse(FIXTURE_NOW)}
-                                expectedVersion={week.version}
-                                subtaskProgressByTaskId={fixtureSubtaskProgressByTaskId}
+                                now={Date.now()}
+                                expectedVersion={serverWeek.version}
+                                subtaskProgressByTaskId={serverSubtaskProgressByTaskId}
                                 onEditTask={openEditTask}
                                 onSetStatus={handleSetStatus}
                                 onToggleSubtask={() => {}}
+                                onSchedule={handleScheduleTask}
                                 onSendToBacklog={() => {}}
                                 onDelete={handleDeleteTask}
-                                onSplit={() => {}}
+                                onSplit={setSplitTask}
                                 />
                             </div>
-                        )}
+                        ) : null
+                    )}
 
                         {activeTab == "notifications" && (
                             <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
@@ -333,7 +395,7 @@ export default function SchedulerPage() {
                             initialProjectId={taskForm.projectId}
                             projects={projects}
                             expectedVersion={apiWeek?.version ?? 0}
-                            dependencyOptions={designWeek.tasks.filter((task) => task.id !== taskForm.task?.id)
+                            dependencyOptions={(serverWeek?.tasks ?? []).filter((task) => task.id !== taskForm.task?.id)
                                 .map((task) => ({
                                     id: task.id,
                                     title: task.title,

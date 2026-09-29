@@ -1,7 +1,8 @@
 import { useState, type DragEvent } from "react";
-import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto } from "../types/scheduler.types";
+import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto, DeferToNextWeekDto } from "../types/scheduler.types";
 import { STATUS_LABELS, getNextStatus } from "./scheduler-utils";
 import TaskCard from "./task-card";
+import BacklogTaskCard from "./backlog-task-card";
  
 type BoardColumn = "Backlog" | TaskStatus;
  
@@ -16,6 +17,12 @@ interface TaskBoardProject{
     id: string;
     label: string;
 }
+
+interface TaskBoardProject {
+  id: string;
+  label: string;
+  color?: string;
+}
 interface TaskBoardProps {
   readonly tasks: Task[];
   readonly projects: TaskBoardProject[];
@@ -25,7 +32,7 @@ interface TaskBoardProps {
   readonly onEditTask: (task: Task) => void;
   readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
   readonly onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
-  //readonly onSchedule: (taskId: string) => void | Promise<void>;
+  readonly onSchedule: (taskId: string) => void | Promise<void>;
   readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
   readonly onDelete: (taskId: string) => void | Promise<void>;
   readonly onSplit: (task: Task) => void;
@@ -35,7 +42,7 @@ function columnFor(task: Task) : BoardColumn{
     return task.placement === "unplaced" ? "Backlog" : task.status;
 }
 
-export default function TaskBoard({ tasks,projects,  now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask, onSendToBacklog, onDelete, onSplit }: TaskBoardProps) {
+export default function TaskBoard({ tasks,projects,  now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask,onSchedule,  onSendToBacklog, onDelete, onSplit }: TaskBoardProps) {
     const [dragOverColumn, setDragOverColumn] = useState<BoardColumn | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [projectFilter, setProjectFilter] = useState("all");
@@ -61,8 +68,10 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
 
         if(target === "Backlog"){
             void onSendToBacklog(taskId);
-        } else {
-            void onSetStatus(taskId,  { status: target as TaskStatus, expectedVersion })
+        } else if (from === "Backlog") {
+            if (target === "Ready") void onSchedule(taskId);
+            } else {
+                void onSetStatus(taskId, {status: target as TaskStatus, expectedVersion});
         }
     }
 
@@ -108,26 +117,50 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                             </div> 
 
                             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
-                                {columnTasks.map((task) => (
-                                    <TaskCard
-                                        key={task.id}
-                                        task={task}
-                                        now={now}
-                                        expectedVersion={expectedVersion}
-                                        subtaskProgress={subtaskProgressByTaskId[task.id]}
-                                        nextStatus={getNextStatus(task.status) ?? undefined}
-                                        onEdit={onEditTask}
-                                        onSetStatus={onSetStatus}
-                                        onToggleSubtask={onToggleSubtask}
-                                        onSendToBacklog={onSendToBacklog}
-                                        onDelete={onDelete}
-                                        onSplit={onSplit}
-                                        onDragStart={(draggedTask, event) => {
-                                        event.dataTransfer.setData("text/plain", draggedTask.id);
-                                        event.dataTransfer.effectAllowed = "move";
-                                        }}
-                                    />
-                                ))}
+                                {columnTasks.map((task) => {
+                                    if(key === "Backlog"){
+                                        const project = projects.find((item) => item.id === task.projectId);
+                                        return (
+                                            <BacklogTaskCard
+                                                key={task.id}
+                                                task={task}
+                                                projectLabel={project?.label ?? task.projectId}
+                                                projectColor={project?.color ?? "#64748b"}
+                                                now={now}
+                                                expectedVersion={expectedVersion}
+                                                onSchedule={onSchedule}
+                                                onResolveDeadline={() => {}}
+                                                onDeferToNextWeek={(_taskId: string, _dto: DeferToNextWeekDto) => {}}
+                                                onDismiss={() => {}}
+                                                onDragStart={(draggedTask, event) => {
+                                                event.dataTransfer.setData("text/plain", draggedTask.id);
+                                                event.dataTransfer.effectAllowed = "move";
+                                                }}
+                                            />
+                                        )
+                                    }
+                                    
+                                    return(
+                                        <TaskCard
+                                            key={task.id}
+                                            task={task}
+                                            now={now}
+                                            expectedVersion={expectedVersion}
+                                            subtaskProgress={subtaskProgressByTaskId[task.id]}
+                                            nextStatus={getNextStatus(task.status) ?? undefined}
+                                            onEdit={onEditTask}
+                                            onSetStatus={onSetStatus}
+                                            onToggleSubtask={onToggleSubtask}
+                                            onSendToBacklog={onSendToBacklog}
+                                            onDelete={onDelete}
+                                            onSplit={onSplit}
+                                            onDragStart={(draggedTask, event) => {
+                                            event.dataTransfer.setData("text/plain", draggedTask.id);
+                                            event.dataTransfer.effectAllowed = "move";
+                                            }}
+                                        />
+                                        )
+                                })}
 
                                 {columnTasks.length === 0 && (
                                     <p className="pt-4 text-center text-xs text-slate-400">No tasks</p>

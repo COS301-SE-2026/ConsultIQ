@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CompetencyLevel } from '@prisma/client';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
+import { FeasibilityVariant } from '../interfaces/feasibility-variant.interface';
 
-export interface FeasibilityVariant {
-  label: string;
-  spec: FeasibilityCheckRequestDto;
-}
 
 /**
  * "one level down" is a simple index lookup rather than guessed arithmetic.
@@ -28,21 +25,17 @@ const BUDGET_INCREASE_FACTOR = 1.15;
 @Injectable()
 export class VariantGenerator {
   generate(baseSpec: FeasibilityCheckRequestDto): FeasibilityVariant[] {
-    const variants: FeasibilityVariant[] = [];
-
-    const budgetVariant = this.buildBudgetVariant(baseSpec);
-    if (budgetVariant) variants.push(budgetVariant);
-
-    const competencyVariant = this.buildCompetencyVariant(baseSpec);
-    if (competencyVariant) variants.push(competencyVariant);
-
-    return variants;
+ return [
+      this.buildBudgetVariant(baseSpec),
+      ...this.buildCompetencyVariants(baseSpec),
+    ];
   }
 
   private buildBudgetVariant(
     baseSpec: FeasibilityCheckRequestDto,
-  ): FeasibilityVariant | null {
+  ): FeasibilityVariant {
     return {
+      kind: 'budget',
       label: `Budget +${Math.round((BUDGET_INCREASE_FACTOR - 1) * 100)}%`,
       spec: {
         ...baseSpec,
@@ -51,37 +44,33 @@ export class VariantGenerator {
     };
   }
 
-  private buildCompetencyVariant(
+  private buildCompetencyVariants(
     baseSpec: FeasibilityCheckRequestDto,
-  ): FeasibilityVariant | null {
-    let anySkillLowered = false;
+  ): FeasibilityVariant[] {
+    const variants: FeasibilityVariant[] = [];
 
-    const relaxedSkills = baseSpec.skills.map((skill) => {
+    baseSpec.skills.forEach((skill, index) => {
       const currentLevel = skill.competency.toUpperCase() as CompetencyLevel;
       const currentIndex = COMPETENCY_ORDER.indexOf(currentLevel);
 
-      // Unknown/invalid competency strings are left untouched here —
-      // FeasibilityService's own validation is what rejects bad input;
-      // this method only lowers levels it can confidently place in the
-      // ordering.
-      if (currentIndex <= 0) {
-        return skill; // already at floor (or unrecognized) — no change
-      }
+      // Already at floor, or unrecognised — skip rather than guess.
+      if (currentIndex <= 0) return;
 
-      anySkillLowered = true;
-      return {
-        ...skill,
-        competency: COMPETENCY_ORDER[currentIndex - 1],
-      };
+      const targetLevel = COMPETENCY_ORDER[currentIndex - 1];
+      const relaxedSkills = baseSpec.skills.map((s, i) =>
+        i === index ? { ...s, competency: targetLevel } : s,
+      );
+
+      variants.push({
+        kind: 'competency',
+        skillName: skill.name,
+        fromLevel: currentLevel,
+        toLevel: targetLevel,
+        label: `Lower ${skill.name} to ${targetLevel}`,
+        spec: { ...baseSpec, skills: relaxedSkills },
+      });
     });
 
-    if (!anySkillLowered) {
-      return null; // every skill already at floor — omit per AC4
-    }
-
-    return {
-      label: 'Minimum competency −1 level',
-      spec: { ...baseSpec, skills: relaxedSkills },
-    };
+    return variants;
   }
 }

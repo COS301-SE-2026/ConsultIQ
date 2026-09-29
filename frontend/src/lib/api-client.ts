@@ -26,14 +26,14 @@ const readCsrfTokenCookie = (): string | null => {
     return decodeURIComponent(value);
 };
 
-const getCsrfToken = async (): Promise<string | null> => {
+const getCsrfToken = async (forceRefresh = false): Promise<string | null> => {
     const cookieToken = readCsrfTokenCookie();
-    if (cookieToken) {
+    if (cookieToken && !forceRefresh) {
         csrfTokenMemory = cookieToken;
         return cookieToken;
     }
 
-    if (csrfTokenMemory) return csrfTokenMemory;
+    if (csrfTokenMemory && !forceRefresh) return csrfTokenMemory;
 
     const response = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
         credentials: 'include',
@@ -162,16 +162,20 @@ async function fetchWithAuth<T>(
                 return waitForLogout<T>();
             }
 
-            if (typeof navigator !== 'undefined' && 'locks' in navigator) {
-                await navigator.locks.request('ciq-refresh-token', async () => {
-                    if (isLoggingOut) {
-                        return;
-                    }
-
-                    await refreshTokenFn();
-                });
+            if (response.status === 403 && isCsrfFailure(responseData)) {
+                await getCsrfToken(true);
             } else {
-                await refreshTokenFn();
+                if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+                    await navigator.locks.request('ciq-refresh-token', async () => {
+                        if (isLoggingOut) {
+                            return;
+                        }
+
+                        await refreshTokenFn();
+                    });
+                } else {
+                    await refreshTokenFn();
+                }
             }
 
             if (isLoggingOut) {

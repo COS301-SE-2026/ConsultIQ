@@ -19,7 +19,7 @@ describe('FeasibilityController', () => {
       checkFeasibility: jest.fn().mockResolvedValue({
         eligibleCount: 7,
         topScore: 82,
-        variants: [{ label: 'Budget +15%', eligibleCount: 12, topScore: 88 }],
+        variants: [{ label: 'Budget +15%', kind: 'budget', eligibleCount: 12, topScore: 88 }],
       }),
     };
     sanitizer = {
@@ -92,8 +92,16 @@ describe('FeasibilityController', () => {
       eligibleCount: 1,
       topScore: 50,
       variants: [
-        { label: 'Budget +15%', eligibleCount: 2, topScore: 60 },
-        { label: 'Minimum competency −1 level', eligibleCount: 3, topScore: 70 },
+        { label: 'Budget +15%', kind: 'budget', eligibleCount: 2, topScore: 60 },
+        {
+          label: 'Lower React to BEGINNER',
+          kind: 'competency',
+          skillName: 'React',
+          fromLevel: 'INTERMEDIATE',
+          toLevel: 'BEGINNER',
+          eligibleCount: 3,
+          topScore: 70,
+        },
       ],
     });
 
@@ -101,7 +109,7 @@ describe('FeasibilityController', () => {
 
     expect(result.variants.map((v: any) => v.label)).toEqual([
       'Budget +15%',
-      'Minimum competency −1 level',
+      'Lower React to BEGINNER',
     ]);
   });
 });

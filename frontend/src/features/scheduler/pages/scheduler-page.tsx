@@ -6,7 +6,8 @@ import UnderutilisationCard, { type ActionSuggestion } from "../components/under
 import { ReasonCode, 
     type Task, 
     type SchedulerWeekResponse, 
-    type SetTaskStatusDto } from "../types/scheduler.types";
+    type SetTaskStatusDto,
+    type SplitTaskDto } from "../types/scheduler.types";
 import {
     designWeek,
     holidayWeek,
@@ -21,6 +22,7 @@ import TaskForm, { type TaskSubmission } from "../components/task-form";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
+import SplitTaskDialog from "../components/split-task-dialog";
 import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
     updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks
 } from "../services/scheduler.service"
@@ -139,15 +141,6 @@ export default function SchedulerPage() {
 
     const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
 
-    const fixtureSubtaskProgressByTaskId = Object.fromEntries(
-        week.tasks.map((task) => [
-            task.id,
-            {
-            completed: task.subtasks.filter((subtask) => subtask.done).length,
-            total: task.subtasks.length,
-            },
-        ]),
-        );
     const serverSubtaskProgressByTaskId = Object.fromEntries(
         (serverWeek?.tasks ?? []).map((task) => [
             task.id,
@@ -238,10 +231,10 @@ export default function SchedulerPage() {
         }
     }
 
-    async function handleConfirmSplit(taskId: string, atMinutes: number) {
+    async function handleConfirmSplit(taskId: string, dto: SplitTaskDto) {
         if(!apiWeek) return;
 
-        const result = await splitSchedulerTask(taskId, atMinutes, apiWeek.version);
+        const result = await splitSchedulerTask(taskId, dto.atMinutes, apiWeek.version);
 
         if(!result.ok){
             setLoadedWeek((current) => ({
@@ -404,6 +397,15 @@ export default function SchedulerPage() {
                                 }))}
                             onCancel={() => setTaskForm(null)}
                             onSubmit={handleTaskSubmit}
+                        />
+                    )}
+
+                    {splitTask && apiWeek && (
+                        <SplitTaskDialog
+                            task={splitTask}
+                            expectedVersion={apiWeek.version}
+                            onCancel={() => setSplitTask(null)}
+                            onConfirm={handleConfirmSplit}
                         />
                     )}
 

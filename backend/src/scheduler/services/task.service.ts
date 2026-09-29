@@ -155,6 +155,12 @@ export class TaskService {
             throw new BadRequestException('Split rejected: both halves must be at least 60 minutes.');
         }
 
+        const taskSlots = week.slots.filter((slot) => slot.taskIds.includes(taskId));
+
+        if (taskSlots.some((slot) => slot.locked)) {
+        throw new BadRequestException("Cannot split a task with locked slots.");
+        }
+
         this.assertSplitBoundaryClearOfSubtasks(task, atMinutes);
 
         const change: Change = {
@@ -162,10 +168,10 @@ export class TaskService {
             taskId,
             atMinutes,
             origin: 'user',
-            window: this.taskDayWindow(week, task),
+            window: this.getWeekWindow(week),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [taskId], allocations: [] };
+        const ctx: ValidateContext = { bumpedEntityIds: [taskId, ...taskSlots.map((slot) => slot.id)], allocations: []};
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 

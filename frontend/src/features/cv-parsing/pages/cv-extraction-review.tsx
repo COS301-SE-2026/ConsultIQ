@@ -13,6 +13,7 @@ import SearchBar from "../../../components/shared/search-bar";
 import type { ParsedAddress } from "../../../api/search-address";
 import SecurityReviewModal from "./security-review-modal";
 import SecurityClearedModal from "./security-cleared-modal";
+import ConfirmationDialog from "../../../components/shared/confirmation-dialog";
 
 import type {
     CvFileStatus,
@@ -101,6 +102,7 @@ export default function CVExtractionReview() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDiscarding, setIsDiscarding] = useState(false);
+    const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
     const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
     const confidenceScores = cvFile?.parsedData?.data?.confidenceScores;
 
@@ -389,10 +391,6 @@ export default function CVExtractionReview() {
     const handleDiscard = async () => {
         if (!cvFileId || isSecurityBlocked) return;
 
-        const confirmed = window.confirm("This will permanently delete the uploaded CV. Continue?");
-
-        if (!confirmed) return;
-
         try {
             setIsDiscarding(true);
             await cvParsingService.discard(cvFileId);
@@ -402,6 +400,7 @@ export default function CVExtractionReview() {
             toast.error(error instanceof Error ? error.message : "Failed to discard cv.");
         } finally {
             setIsDiscarding(false);
+            setShowDiscardConfirmation(false);
         }
     };
 
@@ -420,6 +419,15 @@ export default function CVExtractionReview() {
 
     return (
         <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+            <ConfirmationDialog
+                open={showDiscardConfirmation}
+                title="Discard uploaded CV?"
+                description="This will permanently delete the uploaded CV. This action cannot be undone."
+                confirmLabel="Discard CV"
+                loading={isDiscarding}
+                onConfirm={() => void handleDiscard()}
+                onCancel={() => setShowDiscardConfirmation(false)}
+            />
             <Sidebar items={consultantManagerSidebarItems} />
 
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -715,7 +723,7 @@ export default function CVExtractionReview() {
                                     {!isSecurityBlocked && (
                                         <div className="flex justify-between items-center pb-10">
                                             <button className="flex items-center gap-2 h-12 px-6 rounded-lg font-semibold border border-red-300 text-red-600"
-                                                onClick={handleDiscard} disabled={isDiscarding || isSubmitting} >
+                                                onClick={() => setShowDiscardConfirmation(true)} disabled={isDiscarding || isSubmitting} >
                                                 <Trash2 className="h-5 w-5" />
                                                 {isDiscarding ? "Discarding..." : "Discard this CV"}
                                             </button>

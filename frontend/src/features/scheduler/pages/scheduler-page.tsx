@@ -97,7 +97,8 @@ export default function SchedulerPage() {
                 id: item.project.id,
                 label: item.project.projectName,
                 clientName: item.project.clientName,
-                color: projectColors[index % projectColors.length]
+                color: projectColors[index % projectColors.length],
+                allocation: item.placementAllocation
             })));
         })
         .catch(() => {
@@ -278,8 +279,8 @@ export default function SchedulerPage() {
                 <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
                     <SchedulerHeader
                         week={week}
-                        projects={projects.map(({ id, label, clientName }) => ({
-                                id, name: label, clientName}))}
+                        projects={projects.map(({ id, label, clientName, allocation }) => ({
+                                id, name: label, clientName, allocation : allocation ?? 0}))}
                         onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
                         onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
                     />
@@ -330,6 +331,7 @@ export default function SchedulerPage() {
                                         <WeekCalendar
                                             key={`${serverWeek.id}:${serverWeek.version}`}
                                             weekData={serverWeek}
+                                            projects={projects.map(({ id, label, clientName, allocation }) => ({ id, name: label, clientName, allocation }))}
                                         />
                                     </div>
                                 )}

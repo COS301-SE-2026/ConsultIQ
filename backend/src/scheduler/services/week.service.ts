@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TimeService, type LocalDate } from './time.service';
@@ -35,6 +35,7 @@ export interface CommitResult {
 
 @Injectable()
 export class WeekService {
+    private readonly logger = new Logger(WeekService.name);
     constructor(
         private readonly prisma: PrismaService,
         private readonly timeService: TimeService,
@@ -94,8 +95,16 @@ export class WeekService {
 
         const slots = dbWeek.slots.map((s: PrismaSlotWithTasks) => ({
             ...s,
+            start: this.normalizeDatabaseInstant(s.start),
+            end: this.normalizeDatabaseInstant(s.end),
             taskIds: s.slotTasks ? s.slotTasks.map((st) => st.taskId) : [],
         })) as unknown as Slot[];
+
+        const calendarEntries = dbWeek.calendarEntries.map((entry) => ({
+            ...entry,
+            start: this.normalizeDatabaseInstant(entry.start),
+            end: this.normalizeDatabaseInstant(entry.end),
+        })) as unknown as WeekContainer['calendarEntries'];
 
         const week: WeekContainer = {
             id: dbWeek.id,
@@ -110,7 +119,7 @@ export class WeekService {
 
             blocks,
             tasks: dbWeek.tasks as unknown as Task[],
-            calendarEntries: dbWeek.calendarEntries as unknown as WeekContainer['calendarEntries'],
+            calendarEntries,
             holidays,
             slots,
             metadata: {} as WeekContainer['metadata'],
@@ -132,6 +141,10 @@ export class WeekService {
                 allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
             } as unknown as ProjectBlock;
         });
+    }
+
+    private normalizeDatabaseInstant(value: unknown): string {
+        return value instanceof Date ? value.toISOString() : String(value);
     }
 
     // -----------------------------------------------------------------
@@ -167,6 +180,9 @@ export class WeekService {
             },
             orderBy: [{ startDate: "asc" }, { id: "asc" }],
         });
+        this.logger.debug(
+            `Seeding week ${weekStart} for ${consultantId}: ${placements.length} overlapping active placements`,
+        );
 
         if (placements.length === 0) return;
 

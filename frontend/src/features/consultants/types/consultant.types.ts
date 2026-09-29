@@ -49,11 +49,58 @@ export interface TeamSkillDemandItem {
   consultantsNeedingTraining: ConsultantSummary[];
 }
 
-/** `skills` arrives pre-sorted, most urgent first — the UI does not re-sort. */
 export interface TeamSkillDemandResponse {
   teamSize: number;
   skills: TeamSkillDemandItem[];
 }
+
+/** `skills` arrives pre-sorted, most urgent first — the UI does not re-sort. */
+
+export interface SkillRecommendation {
+  skillName: string;
+  newlyEligibleProjectCount: number;
+  totalScoreDelta: number;
+  projectsTested: number;
+  projectedEligibleCount: number;
+}
+
+export interface SkillRecommendationWithStats extends SkillRecommendation {
+  projectedEligibleCount: number;
+}
+
+export interface SkillGrowthResponse {
+  eligibleNow: number;
+  pipelineSize: number;
+  recommendations: SkillRecommendationWithStats[];
+}
+
+export const fallbackEligibility = { eligibleNow: 8, pipelineSize: 24 };
+
+export const fallbackRecommendations: SkillRecommendation[] = [
+  {
+    skillName: "Azure AI Fundamentals",
+    newlyEligibleProjectCount: 8,
+    totalScoreDelta: 12,
+    projectsTested: 24,
+    projectedEligibleCount: 16,
+  },
+  {
+    skillName: "Data Engineering",
+    newlyEligibleProjectCount: 6,
+    totalScoreDelta: 9,
+    projectsTested: 24,
+    projectedEligibleCount: 14,
+  },
+  {
+    skillName: "Power BI",
+    newlyEligibleProjectCount: 4,
+    totalScoreDelta: 7,
+    projectsTested: 24,
+    projectedEligibleCount: 12,
+  },
+];
+
+
 
 const c = (consultantId: string, fullName: string): ConsultantSummary => ({
   consultantId,

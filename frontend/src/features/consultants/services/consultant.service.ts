@@ -1,5 +1,6 @@
 import { apiClient } from "../../../lib/api-client";
 import type { ConsultantProfileDto } from "../../../hooks/useFetchConsultantsProfiles";
+import {type SkillGrowthResponse, type TeamSkillDemandResponse} from "../types/consultant.types";
 
 export interface CreateConsultantSkillPayload {
   skillName: string;
@@ -191,4 +192,13 @@ export const  getConsultantProfileById = async (id: string): Promise<ConsultantP
 export const getConsultantProfileByUserId = async (userId: string): Promise<ConsultantProfileDto> => {
   return await apiClient.get<ConsultantProfileDto>(`/consultants/user/${userId}`);
 
+}
+
+export const getSkillGrowth = async (): Promise<SkillGrowthResponse> =>{
+    return await apiClient.get<SkillGrowthResponse>("consultants/me/skill-growth");
+    
+}
+
+export const getTeamSkillDemand = async () : Promise<TeamSkillDemandResponse> => {
+  return await apiClient.get<TeamSkillDemandResponse>("consultant-managers/me/skill-demand")
 }

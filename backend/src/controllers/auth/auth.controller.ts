@@ -38,7 +38,7 @@ export class AuthController {
     private readonly prisma: PrismaService,
   ) { }
 
-  private setCsrfCookie(res: any): void {
+  private setCsrfCookie(res: any): string {
     const csrfToken = randomBytes(32).toString('hex');
     res.cookie('XSRF-TOKEN', csrfToken, {
       httpOnly: false,
@@ -46,6 +46,14 @@ export class AuthController {
       sameSite: 'none',
       maxAge: 5 * 60 * 1000,
     });
+    return csrfToken;
+  }
+
+  @Public()
+  @SkipCsrf()
+  @Get('csrf-token')
+  getCsrfToken(@Res({ passthrough: true }) res: any): { csrfToken: string } {
+    return { csrfToken: this.setCsrfCookie(res) };
   }
 
   @Post('register')

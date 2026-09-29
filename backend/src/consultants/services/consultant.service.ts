@@ -161,29 +161,33 @@ export class ConsultantService {
           },
         });
 
-        // Create skills without duplicating normalized catalogue entries.
-        const createdSkillIds = new Set<string>();
+        // Preserve the first entry for each normalized catalogue skill.
+        const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
         for (const skill of dto.skills) {
-          const skillRecord = await upsertSkillCatalogueEntry(
-            tx,
-            skill.skillName,
-          );
-
-          if (createdSkillIds.has(skillRecord.id)) {
-            continue;
+          const normalizedName = skill.skillName.trim().toLowerCase();
+          if (!uniqueSkills.has(normalizedName)) {
+            uniqueSkills.set(normalizedName, skill);
           }
-          createdSkillIds.add(skillRecord.id);
-
-          await tx.consultantSkill.create({
-            data: {
-              consultantId: consultant.id,
-              skillId: skillRecord.id,
-              competencyLevel: skill.competencyLevel as CompetencyLevel,
-              yearsExperience: skill.yearsExperience,
-              confidenceLevel: skill.confidenceLevel,
-            },
-          });
         }
+        const skillRecords = await Promise.all(
+          Array.from(uniqueSkills.values(), async (skill) => ({
+            skill,
+            skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
+          })),
+        );
+        await Promise.all(
+          skillRecords.map(({ skill, skillRecord }) =>
+            tx.consultantSkill.create({
+              data: {
+                consultantId: consultant.id,
+                skillId: skillRecord.id,
+                competencyLevel: skill.competencyLevel as CompetencyLevel,
+                yearsExperience: skill.yearsExperience,
+                confidenceLevel: skill.confidenceLevel,
+              },
+            }),
+          ),
+        );
 
         await this.createExperienceRecords(tx, consultant.id, dto.experiences);
         await this.createCertificateRecords(
@@ -224,8 +228,8 @@ export class ConsultantService {
     experiences: any[],
   ): Promise<void> {
     // Create experiences
-    for (const exp of experiences) {
-      await tx.consultantExperience.create({
+    await Promise.all(experiences.map((exp) =>
+      tx.consultantExperience.create({
         data: {
           consultantId,
           jobTitle: exp.jobTitle,
@@ -236,8 +240,8 @@ export class ConsultantService {
           endDate: exp.endDate ? new Date(exp.endDate) : null,
           description: exp.description,
         },
-      });
-    }
+      }),
+    ));
   }
 
   private async createCertificateRecords(
@@ -245,8 +249,8 @@ export class ConsultantService {
     consultantId: string,
     certifications: any[],
   ): Promise<void> {
-    for (const cert of certifications) {
-      await tx.certificate.create({
+    await Promise.all(certifications.map((cert) =>
+      tx.certificate.create({
         data: {
           consultantId,
           title: cert.title,
@@ -254,8 +258,8 @@ export class ConsultantService {
           startDate: cert.startDate ? new Date(cert.startDate) : null,
           endDate: cert.endDate ? new Date(cert.endDate) : null,
         },
-      });
-    }
+      }),
+    ));
   }
 
   private async createEducationRecords(
@@ -263,8 +267,8 @@ export class ConsultantService {
     consultantId: string,
     education: any[],
   ): Promise<void> {
-    for (const edu of education) {
-      await tx.consultantEducation.create({
+    await Promise.all(education.map((edu) =>
+      tx.consultantEducation.create({
         data: {
           consultantId,
           institution: edu.institution,
@@ -272,8 +276,8 @@ export class ConsultantService {
           startDate: new Date(edu.startDate),
           endDate: edu.endDate ? new Date(edu.endDate) : null,
         },
-      });
-    }
+      }),
+    ));
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -611,34 +615,35 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        const createdSkillIds = new Set<string>();
+        const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
         for (const skill of dto.skills) {
-          const skillRecord = await upsertSkillCatalogueEntry(
-            tx,
-            skill.skillName,
-          );
-
-          if (createdSkillIds.has(skillRecord.id)) {
-            continue;
+          const normalizedName = skill.skillName.trim().toLowerCase();
+          if (!uniqueSkills.has(normalizedName)) {
+            uniqueSkills.set(normalizedName, skill);
           }
-          createdSkillIds.add(skillRecord.id);
-
-          // Recompute competency level server-side
-          const competencyLevel = this.inferCompetencyLevel(
-            skill.yearsExperience,
-            skill.confidenceLevel,
-          );
-
-          await tx.consultantSkill.create({
-            data: {
-              consultantId: resolvedConsultantId,
-              skillId: skillRecord.id,
-              competencyLevel,
-              yearsExperience: skill.yearsExperience,
-              confidenceLevel: skill.confidenceLevel,
-            },
-          });
         }
+        const skillRecords = await Promise.all(
+          Array.from(uniqueSkills.values(), async (skill) => ({
+            skill,
+            skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
+          })),
+        );
+        await Promise.all(
+          skillRecords.map(({ skill, skillRecord }) =>
+            tx.consultantSkill.create({
+              data: {
+                consultantId: resolvedConsultantId,
+                skillId: skillRecord.id,
+                competencyLevel: this.inferCompetencyLevel(
+                  skill.yearsExperience,
+                  skill.confidenceLevel,
+                ),
+                yearsExperience: skill.yearsExperience,
+                confidenceLevel: skill.confidenceLevel,
+              },
+            }),
+          ),
+        );
       }
 
       if (dto.experiences !== undefined) {
@@ -646,8 +651,8 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const exp of dto.experiences) {
-          await tx.consultantExperience.create({
+        await Promise.all(dto.experiences.map((exp) =>
+          tx.consultantExperience.create({
             data: {
               consultantId: resolvedConsultantId,
               jobTitle: exp.jobTitle,
@@ -662,8 +667,8 @@ export class ConsultantService {
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,
             },
-          });
-        }
+          }),
+        ));
       }
 
       if (dto.certifications !== undefined) {
@@ -671,16 +676,16 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const cert of dto.certifications) {
-          await tx.certificate.create({
+        await Promise.all(dto.certifications.map((cert) =>
+          tx.certificate.create({
             data: {
               consultantId: resolvedConsultantId,
               title: cert.title,
               issuingBody: cert.issuingBody,
               startDate: cert.startDate ? new Date(cert.startDate) : null,
             },
-          });
-        }
+          }),
+        ));
       }
 
       if (dto.education !== undefined) {
@@ -688,8 +693,8 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const edu of dto.education) {
-          await tx.consultantEducation.create({
+        await Promise.all(dto.education.map((edu) =>
+          tx.consultantEducation.create({
             data: {
               consultantId: resolvedConsultantId,
               institution: edu.institution,
@@ -698,8 +703,8 @@ export class ConsultantService {
               endDate: edu.endDate ? new Date(edu.endDate) : null,
               fileName: edu.fileName ?? null,
             },
-          });
-        }
+          }),
+        ));
       }
     });
 

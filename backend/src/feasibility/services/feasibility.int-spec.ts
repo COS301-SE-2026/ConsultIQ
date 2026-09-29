@@ -44,6 +44,7 @@ describe('FeasibilityService (integration)', () => {
       province: 'Gauteng',
       latitude: -26.2041,
       longitude: 28.0473,
+      workModel: 'ONSITE',
       skills: [{ name: 'React', competency: 'INTERMEDIATE', years: 3, mandatory: true }],
     }) as FeasibilityCheckRequestDto;
 

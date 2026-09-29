@@ -125,6 +125,11 @@ export const consultantSidebarItems: SidebarItem[] = [
         icon: Calendar
     },
     {
+        label: "Skill growth",
+        path: "/skill-growth",
+        icon: TrendingUp
+    },
+    {
         label: "Help",
         path: "/help-page",
         icon: HelpCircle

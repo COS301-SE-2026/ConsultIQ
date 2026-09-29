@@ -3,7 +3,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import Redis from 'ioredis';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
-import { FeasibilityCheckResponse } from '../interface/feasibility-response.interface';
+import { FeasibilityCheckResponse } from '../interfaces/feasibility-response.interface';
 
 const CACHE_TTL_SECONDS = 20; // short, staleness should be barely perceptible
 const CACHE_KEY_PREFIX = 'feasibility';

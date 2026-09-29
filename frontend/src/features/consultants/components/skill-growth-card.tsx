@@ -137,9 +137,6 @@ const isViable = (rec: SkillRecommendation) =>
 
 const formatDelta = (delta: number) => (delta > 0 ? `+${delta}` : `${delta}`);
 
-const eligibleWithSkill = (rec: SkillRecommendation) =>
-    rec.baselineScore + rec.newlyEligibleProjectCount;
-
 
 export default function SkillGrowthCard({ recommendations, isLoading, isError }: GrowthCompassProps) {
     const ranked = recommendations.filter(isViable).sort(

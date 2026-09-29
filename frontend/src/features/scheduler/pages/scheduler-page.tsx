@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
 import UnderutilisationCard, { type ActionSuggestion } from "../components/underutilisation-card";
-import { ReasonCode } from "../types/scheduler.types";
+import { ReasonCode, type SchedulerWeekResponse } from "../types/scheduler.types";
 import {
     FIXTURE_PROJECTS,
     designWeek,
@@ -17,10 +17,11 @@ import {
 } from "../types/scheduler.fixtures";
 import { type BacklogProjectOption } from "../components/backlog-panel";
 import TaskForm, { type TaskSubmission } from "../components/task-form";
-import type { Task } from "../types/scheduler.types";
+import type { Task, SetTaskStatusDto } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
+import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek} from "../services/scheduler.service"
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
@@ -37,12 +38,55 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
 
 type SchedulerTab = "calendar" | "tasks" | "notifications";
 
+function getCurrentWeekStart(timeZone: string) : string {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone, year: "numeric", month: "2-digit", day: "2-digit"}).formatToParts(new Date());
+
+    const part = (type :string) => Number(parts.find((item) => item.type === type)?.value);
+
+    const date = new Date(Date.UTC(part("year"), part("month") - 1, part("day")));
+    const daysSinceMonday = (date.getUTCDay() + 6) % 7;
+    date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+
+    return date.toISOString().slice(0, 10);
+}
+
 export default function SchedulerPage() {
     const [activeTab, setActiveTab] = useState<SchedulerTab>("calendar");
 
     const [dismissed, setDismissed] = useState<string[]>([]);
-    const [weekIndex, setWeekIndex] = useState(0);
+    
+    const schedulerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const currentWeekStart = getCurrentWeekStart(schedulerTimeZone);
+    const [weekIndex, setWeekIndex] = useState(() => {
+        const index = FIXTURE_WEEKS.findIndex((fixture) => fixture.weekStart === currentWeekStart);
+        return index >= 0 ? index : 0;
+    });
     const week = FIXTURE_WEEKS[weekIndex];
+    const selectedWeekStart = week.weekStart;
+
+    const [loadedWeek, setLoadedWeek] = useState<{ weekStart: string; week?: SchedulerWeekResponse; error?: string;}>({ weekStart: "" });
+    const apiWeek = loadedWeek.weekStart === selectedWeekStart ? loadedWeek.week : undefined;
+    const serverWeek = apiWeek? toCalendarWeek(apiWeek) : null;
+
+    const weekLoading = loadedWeek.weekStart !== selectedWeekStart;
+    const weekError = loadedWeek.weekStart === selectedWeekStart ? loadedWeek.error ?? null : null;
+
+    useEffect(() => {
+        const controller = new AbortController();
+        const weekStart = getCurrentWeekStart(schedulerTimeZone);
+
+        getSchedulerWeek(weekStart, controller.signal).then((loaded) =>{
+            setLoadedWeek({ weekStart, week: loaded});
+        }).catch((error: unknown) => {
+            if(controller.signal.aborted) return;
+
+            setLoadedWeek({
+                weekStart,
+                error: error instanceof Error ? error.message : "Could not load week." 
+            });
+        });
+        return () => controller.abort();
+    }, [schedulerTimeZone]);
 
     const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
         (i) => i.code === ReasonCode.UNDERUTILISED,
@@ -84,14 +128,6 @@ export default function SchedulerPage() {
             },
         ]),
         );
-    // function selectNextBlock() {
-    //     if (designWeek.blocks.length === 0) return;
-
-    //     const currentIndex = designWeek.blocks.findIndex((block) => block.id === selectedBlockId);
-    //     const nextIndex = (currentIndex + 1) % designWeek.blocks.length;
-
-    //     setSelectedBlockId(designWeek.blocks[nextIndex].id);
-    // }
 
     function OpenCreateTask(projectId?: string) {
         setTaskForm({ mode: "create", projectId });
@@ -120,6 +156,24 @@ export default function SchedulerPage() {
             console.log("Update task", submission.taskId, submission.dto);
         }
         setTaskForm(null);
+    }
+
+    async function handleSetStatus(taskId: string, dto: SetTaskStatusDto) {
+        if(!apiWeek) return;
+
+        try{
+            const result = await setSchedulerTaskStatus(taskId, { ...dto, expectedVersion: apiWeek.version });
+
+            if(!result.ok){
+                setLoadedWeek((current) => ({...current, error: result.violations.map((issue) => issue.message).join(" ")}));
+                return;
+            }
+
+            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
+        } catch (error){
+            setLoadedWeek((current) => ({...current, error: error instanceof Error ? error.message : "Could not update task status."}))
+        }
+
     }
 
     const [creatingEntry, setCreatingEntry] = useState(false);
@@ -173,14 +227,20 @@ export default function SchedulerPage() {
                     <main className="min-h-0 min-w-0 flex-1 overflow-hidden bg-white">
                         {activeTab == "calendar" && (
                             <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-                                <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-4">
-                                    <WeekCalendar
-                                        key={week.id}
-                                        weekData={week}
-                                        createEntryRequested={creatingEntry}
-                                        onCreateEntryDone={() => setCreatingEntry(false)}
-                                    />
-                                </div>
+                                {weekLoading && <p className="p-4">Loading week…</p>}
+
+                                {!weekLoading && weekError && (
+                                    <p role="alert" className="p-4 text-red-700">{weekError}</p>
+                                )}
+                                
+                                {!weekLoading && !weekError && serverWeek && (
+                                    <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-4">
+                                        <WeekCalendar
+                                            key={`${serverWeek.id}:${serverWeek.version}`}
+                                            weekData={serverWeek}
+                                        />
+                                    </div>
+                                )}
                             </div>    
                             )}
 
@@ -193,7 +253,7 @@ export default function SchedulerPage() {
                                 expectedVersion={week.version}
                                 subtaskProgressByTaskId={fixtureSubtaskProgressByTaskId}
                                 onEditTask={openEditTask}
-                                onSetStatus={() => {}}
+                                onSetStatus={handleSetStatus}
                                 onToggleSubtask={() => {}}
                                 onSendToBacklog={() => {}}
                                 onDelete={() => {}}

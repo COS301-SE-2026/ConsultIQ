@@ -7,8 +7,10 @@ describe('SkillGrowthCacheService', () => {
   let redisMock: { get: jest.Mock; set: jest.Mock };
 
   const response: SkillGrowthResponse = {
+    eligibleNow: 8,
+    pipelineSize: 24,
     recommendations: [
-      { skillName: 'AWS', newlyEligibleProjectCount: 2, totalScoreDelta: 30, projectsTested: 3 },
+      { skillName: 'AWS', newlyEligibleProjectCount: 2, totalScoreDelta: 30, projectsTested: 3, projectedEligibleCount: 10 },
     ],
   };
 
@@ -56,7 +58,7 @@ describe('SkillGrowthCacheService', () => {
   });
 
   it('round-trips an empty recommendations list as a valid cached value', async () => {
-    const empty: SkillGrowthResponse = { recommendations: [] };
+    const empty: SkillGrowthResponse = { eligibleNow: 0, pipelineSize: 0, recommendations: [] };
     redisMock.get.mockResolvedValue(JSON.stringify(empty));
     expect(await service.get('user-1')).toEqual(empty);
   });

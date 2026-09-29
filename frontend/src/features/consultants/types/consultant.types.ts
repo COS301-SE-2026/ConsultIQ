@@ -35,40 +35,40 @@ const workModelMap: Record<string, string> = {
 
 export interface SkillRecommendation {
   skillName: string;
-
   newlyEligibleProjectCount: number;
-
   totalScoreDelta: number;
-
-  baselineScore: number ;
-
   projectsTested: number;
+  projectedEligibleCount: number;
 }
 
 export interface SkillGrowthResponse {
+  eligibleNow: number;
+  pipelineSize: number;
   recommendations: SkillRecommendation[];
 }
+
+export const fallbackEligibility = { eligibleNow: 8, pipelineSize: 24 };
 
 export const fallbackRecommendations: SkillRecommendation[] = [
   {
     skillName: "Azure AI Fundamentals",
     newlyEligibleProjectCount: 8,
     totalScoreDelta: 12,
-    baselineScore: 16,
     projectsTested: 24,
+    projectedEligibleCount: 16,
   },
   {
     skillName: "Data Engineering",
     newlyEligibleProjectCount: 6,
     totalScoreDelta: 9,
-    baselineScore: 18,
     projectsTested: 24,
+    projectedEligibleCount: 14,
   },
   {
     skillName: "Power BI",
     newlyEligibleProjectCount: 4,
     totalScoreDelta: 7,
-    baselineScore:20,
     projectsTested: 24,
+    projectedEligibleCount: 12,
   },
 ];

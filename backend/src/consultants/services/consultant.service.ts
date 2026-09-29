@@ -228,8 +228,8 @@ export class ConsultantService {
     experiences: any[],
   ): Promise<void> {
     // Create experiences
-    await Promise.all(experiences.map((exp) =>
-      tx.consultantExperience.create({
+    await Promise.all(experiences.map(async (exp) => {
+      await tx.consultantExperience.create({
         data: {
           consultantId,
           jobTitle: exp.jobTitle,
@@ -240,8 +240,8 @@ export class ConsultantService {
           endDate: exp.endDate ? new Date(exp.endDate) : null,
           description: exp.description,
         },
-      }),
-    ));
+      });
+    }));
   }
 
   private async createCertificateRecords(
@@ -249,8 +249,8 @@ export class ConsultantService {
     consultantId: string,
     certifications: any[],
   ): Promise<void> {
-    await Promise.all(certifications.map((cert) =>
-      tx.certificate.create({
+    await Promise.all(certifications.map(async (cert) => {
+      await tx.certificate.create({
         data: {
           consultantId,
           title: cert.title,
@@ -258,8 +258,8 @@ export class ConsultantService {
           startDate: cert.startDate ? new Date(cert.startDate) : null,
           endDate: cert.endDate ? new Date(cert.endDate) : null,
         },
-      }),
-    ));
+      });
+    }));
   }
 
   private async createEducationRecords(
@@ -267,8 +267,8 @@ export class ConsultantService {
     consultantId: string,
     education: any[],
   ): Promise<void> {
-    await Promise.all(education.map((edu) =>
-      tx.consultantEducation.create({
+    await Promise.all(education.map(async (edu) => {
+      await tx.consultantEducation.create({
         data: {
           consultantId,
           institution: edu.institution,
@@ -276,8 +276,8 @@ export class ConsultantService {
           startDate: new Date(edu.startDate),
           endDate: edu.endDate ? new Date(edu.endDate) : null,
         },
-      }),
-    ));
+      });
+    }));
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {

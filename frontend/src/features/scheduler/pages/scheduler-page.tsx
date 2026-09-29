@@ -35,7 +35,7 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
     }),
 );
 
-type SchedulerTab = "calendar" | "tasks";
+type SchedulerTab = "calendar" | "tasks" | "notifications";
 
 export default function SchedulerPage() {
     const [activeTab, setActiveTab] = useState<SchedulerTab>("calendar");
@@ -142,7 +142,7 @@ export default function SchedulerPage() {
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <nav className="flex flex-none items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
                         <div className="flex">
-                           {([["calendar", "Calendar"], ["tasks", "Tasks"]] as const).map(([key, label]) => (
+                           {([["calendar", "Calendar"], ["tasks", "Tasks"], ["notifications", "Notifications"]] as const).map(([key, label]) => (
                             <button key={key} type="button" role="tab"
                                 aria-selected={activeTab === key}
                                 onClick={() => setActiveTab(key)}
@@ -181,29 +181,6 @@ export default function SchedulerPage() {
                                         onCreateEntryDone={() => setCreatingEntry(false)}
                                     />
                                 </div>
-                                {showUnderused && (
-                                    <div className="flex-none">
-                                        <UnderutilisationCard
-                                            issue={underused}
-                                            metadata={week.metadata}
-                                            weekStart={week.weekStart}
-                                            onSuggestion={handleSuggestion}
-                                            onDismiss={() => setDismissed((d) => [...d, dismissKey])}
-                                        />
-
-                                    </div>
-                                )}
-
-                                <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-40 p-4">
-                                    <div className="pointer-events-auto">
-                                        <SchedulerAlertBanner
-                                            issues={schedulerIssues}
-                                            dismissedKeys={dismissedAlertKeys}
-                                            onDismiss={dismissAlert}
-                                            onAction={handleAlertAction}
-                                        />
-                                    </div>
-                                </div>
                             </div>    
                             )}
 
@@ -223,6 +200,30 @@ export default function SchedulerPage() {
                                 onSplit={() => {}}
                                 />
                             </div>
+                        )}
+
+                        {activeTab == "notifications" && (
+                            <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
+                                <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+                                    <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
+                                    {showUnderused && (
+                                        <UnderutilisationCard
+                                            issue={underused}
+                                            metadata={week.metadata}
+                                            weekStart={week.weekStart}
+                                            onSuggestion={handleSuggestion}
+                                            onDismiss={() => setDismissed((d) => [...d, dismissKey])}
+                                        />
+                                    )}
+
+                                    <SchedulerAlertBanner
+                                        issues={schedulerIssues}
+                                        dismissedKeys={dismissedAlertKeys}
+                                        onDismiss={dismissAlert}
+                                        onAction={handleAlertAction}
+                                    />
+                                </div>
+                            </main>
                         )}
                 </main> 
 

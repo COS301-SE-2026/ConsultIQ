@@ -282,6 +282,31 @@ describe('ProjectService', () => {
     });
   });
 
+  describe('getProjectById - skill display names', () => {
+    it('uses displayName when available and falls back to the normalized name', async () => {
+      const project = {
+        id: 'project-1',
+        projectName: 'Display Name Project',
+        skills: [
+          {
+            id: 'project-skill-1',
+            skill: { name: 'typescript', displayName: 'TypeScript' },
+          },
+          {
+            id: 'project-skill-2',
+            skill: { name: 'docker', displayName: null },
+          },
+        ],
+      };
+      mockPrismaService.project.findUnique.mockResolvedValue(project);
+
+      const result = await service.getProjectById(project.id);
+
+      expect(result.skills[0].skill.name).toBe('TypeScript');
+      expect(result.skills[1].skill.name).toBe('docker');
+    });
+  });
+
   describe('createProject - date validation', () => {
     it('should throw BadRequestException if endDate is before startDate', async () => {
       const dto = { ...baseDto, startDate: '2026-12-01', endDate: '2026-06-01' };

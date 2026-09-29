@@ -193,6 +193,20 @@ describe('ConsultantService', () => {
       expect(result.consultantId).toBe('new-consultant-uuid');
     });
 
+    it('should not create duplicate consultant skills with case-insensitive names', async () => {
+      const txMock = setupActiveConsultantProfile();
+
+      await service.createConsultantProfile(cmUserId, {
+        ...dto,
+        skills: [
+          { skillName: 'TypeScript', competencyLevel: 'EXPERT', yearsExperience: 4, confidenceLevel: 4 },
+          { skillName: 'typescript', competencyLevel: 'BEGINNER', yearsExperience: 1, confidenceLevel: 1 },
+        ],
+      } as any);
+
+      expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
+    });
+
     it('should correctly map location fields when they are provided in the DTO', async () => {
       const txMock = setupActiveConsultantProfile();
 
@@ -590,6 +604,16 @@ describe('ConsultantService', () => {
         'TypeScript',
         'docker',
       ]);
+    });
+  });
+
+  describe('withDisplayNames', () => {
+    it('returns the object unchanged when it has no skills', () => {
+      const projectWithoutSkills = { id: 'project-1' };
+
+      expect((service as any).withDisplayNames(projectWithoutSkills)).toBe(
+        projectWithoutSkills,
+      );
     });
   });
 
@@ -1081,6 +1105,22 @@ describe('ConsultantService', () => {
       expect(txMock.consultantSkill.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
       });
+      expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not create duplicate consultant skills with case-insensitive names', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+      const txMock = createUpdateTxMock();
+
+      await service.updateConsultantProfile(consultantId, {
+        skills: [
+          { skillName: 'TypeScript', yearsExperience: 4, confidenceLevel: 4 },
+          { skillName: 'typescript', yearsExperience: 1, confidenceLevel: 1 },
+        ],
+      }, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
+
       expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
     });
 

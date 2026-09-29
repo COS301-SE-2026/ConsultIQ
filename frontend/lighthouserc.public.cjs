@@ -11,7 +11,7 @@ module.exports = {
             settings: {
                 onlyCategories: ['accessibility'],
                 throttlingMethod: 'provided',
-                chromeFlags: '--no-sandbox --disable-gpu --disable-dev-shm-usage --headless=new'
+                chromeFlags: '--no-sandbox --disable-dev-shm-usage --headless=new'
             }
         },
         assert: {

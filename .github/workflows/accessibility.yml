@@ -30,8 +30,8 @@ jobs:
 
       - name: Start auth mock
         run: |
-          node -e "require('http').createServer((req, res) => { const headers = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'}; if (req.method === 'OPTIONS') { res.writeHead(204, headers); res.end(); return; } if (req.url === '/auth/me') { res.writeHead(401, {...headers, 'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404, headers); res.end(); }).listen(3000)" &
-
+          node -e "require('http').createServer((req, res) => { const headers = {'Access-Control-Allow-Origin': 'http://localhost:4173', 'Access-Control-Allow-Credentials': 'true', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'}; if (req.method === 'OPTIONS') { res.writeHead(204, headers); res.end(); return; } if (req.url === '/auth/me') { res.writeHead(401, {...headers, 'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404, headers); res.end(); }).listen(3000)" &
+     
       - name: Run accessibility audit 
         working-directory: frontend
         run: npx --no-install lhci autorun --config=lighthouserc.public.cjs
@@ -52,7 +52,7 @@ jobs:
       - name: Install Chrome for puppeteer
         if: failure()
         working-directory: frontend
-        run: npx --yes puppeteer@24.15.0 browsers install chrome
+        run: node_modules/.bin/puppeteer browsers install chrome
 
       - name: Capture debug screenshot + console output
         if: failure()

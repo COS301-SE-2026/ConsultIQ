@@ -23,9 +23,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts
+
       - name: Install Playwright browsers
         run: npx --no-install playwright install --with-deps chromium
-
+        
       - name: Start auth mock
         run: |
           node -e "require('http').createServer((req, res) => { const headers = {'Access-Control-Allow-Origin': 'http://localhost:5173', 'Access-Control-Allow-Credentials': 'true', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'}; if (req.method === 'OPTIONS') { res.writeHead(204, headers); res.end(); return; } if (req.url === '/auth/me') { res.writeHead(401, {...headers, 'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404, headers); res.end(); }).listen(3000)" &

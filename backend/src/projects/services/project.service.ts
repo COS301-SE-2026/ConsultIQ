@@ -243,24 +243,31 @@ export class ProjectService {
         }
       }
 
-      await Promise.all(
-        Array.from(uniqueSkills.values(), async (skill) => {
-          const skillRecord = await upsertSkillCatalogueEntry(tx, skill.name);
-          const existingProjectSkill = await tx.projectSkill.findFirst({
+      const skills = Array.from(uniqueSkills.values());
+      const skillRecords = await Promise.all(
+        skills.map((skill) => upsertSkillCatalogueEntry(tx, skill.name)),
+      );
+      const existingProjectSkills = await Promise.all(
+        skillRecords.map((skillRecord) =>
+          tx.projectSkill.findFirst({
             where: { projectId: project.id, skillId: skillRecord.id },
-          });
+          }),
+        ),
+      );
 
-          if (!existingProjectSkill) {
-            await tx.projectSkill.create({
-              data: {
-                projectId: project.id,
-                skillId: skillRecord.id,
-                competency: skill.competency as CompetencyLevel,
-                mandatory: skill.mandatory,
-                years: skill.years,
-              },
-            });
-          }
+      await Promise.all(
+        skills.map((skill, index) => {
+          if (existingProjectSkills[index]) return Promise.resolve();
+
+          return tx.projectSkill.create({
+            data: {
+              projectId: project.id,
+              skillId: skillRecords[index].id,
+              competency: skill.competency as CompetencyLevel,
+              mandatory: skill.mandatory,
+              years: skill.years,
+            },
+          });
         }),
       );
       return { projectId: project.id };
@@ -474,33 +481,40 @@ export class ProjectService {
       uniqueSkills.set(skillInput.name.trim().toLowerCase(), skillInput);
     }
 
-    await Promise.all(
-      Array.from(uniqueSkills.values(), async (skillInput) => {
-        const skillRecord = await upsertSkillCatalogueEntry(tx, skillInput.name);
-        const existingProjectSkill = await tx.projectSkill.findFirst({
+    const uniqueSkillInputs = Array.from(uniqueSkills.values());
+    const skillRecords = await Promise.all(
+      uniqueSkillInputs.map((skillInput) =>
+        upsertSkillCatalogueEntry(tx, skillInput.name),
+      ),
+    );
+    const existingProjectSkills = await Promise.all(
+      skillRecords.map((skillRecord) =>
+        tx.projectSkill.findFirst({
           where: { projectId, skillId: skillRecord.id },
-        });
+        }),
+      ),
+    );
+
+    await Promise.all(
+      uniqueSkillInputs.map((skillInput, index) => {
+        const skillRecord = skillRecords[index];
+        const existingProjectSkill = existingProjectSkills[index];
+        const data = {
+          competency: skillInput.competency as CompetencyLevel,
+          years: skillInput.years,
+          mandatory: skillInput.mandatory,
+        };
 
         if (existingProjectSkill) {
-          await tx.projectSkill.update({
+          return tx.projectSkill.update({
             where: { id: existingProjectSkill.id },
-            data: {
-              competency: skillInput.competency as CompetencyLevel,
-              years: skillInput.years,
-              mandatory: skillInput.mandatory,
-            },
-          });
-        } else {
-          await tx.projectSkill.create({
-            data: {
-              projectId,
-              skillId: skillRecord.id,
-              competency: skillInput.competency as CompetencyLevel,
-              years: skillInput.years,
-              mandatory: skillInput.mandatory,
-            },
+            data,
           });
         }
+
+        return tx.projectSkill.create({
+          data: { projectId, skillId: skillRecord.id, ...data },
+        });
       }),
     );
   }

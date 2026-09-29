@@ -547,6 +547,50 @@ describe('ConsultantService', () => {
       expect(result.skills[0].competencyLevel).toBe('EXPERT');
       expect(result.education).toEqual([]);
     });
+
+    it('should use displayName for cased skills and name for legacy skills', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'uuid-2',
+        phone: '0123456789',
+        idNumber: '9901015555081',
+        nationality: 'South African',
+        addressLine1: '123 South road',
+        addressLine2: null,
+        suburb: 'Hillbrow',
+        city: 'Johannesburg',
+        province: 'Gauteng',
+        postalCode: '2001',
+        costToCompany: 50000,
+        availability: 'AVAILABLE',
+        user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
+        skills: [
+          {
+            id: 'skill-1',
+            skill: { name: 'typescript', displayName: 'TypeScript' },
+            competencyLevel: 'EXPERT',
+            yearsExperience: 4,
+            confidenceLevel: 4,
+          },
+          {
+            id: 'skill-2',
+            skill: { name: 'docker', displayName: null },
+            competencyLevel: 'INTERMEDIATE',
+            yearsExperience: 2,
+            confidenceLevel: 3,
+          },
+        ],
+        consultantExperiences: [],
+        certificates: [],
+        education: [],
+      });
+
+      const result = await service.getConsultantById('uuid-2');
+
+      expect(result.skills.map((skill) => skill.skillName)).toEqual([
+        'TypeScript',
+        'docker',
+      ]);
+    });
   });
 
   // ─── getConsultantByUserId ──────────────────────────────────────────────────

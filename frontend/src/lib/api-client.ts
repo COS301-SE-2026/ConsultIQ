@@ -9,7 +9,9 @@ export class ApiError extends Error {
     }
 }
 
-const getCsrfToken = (): string | null => {
+let csrfTokenMemory: string | null = null;
+
+const readCsrfTokenCookie = (): string | null => {
     if (typeof document === 'undefined') {
         return null;
     }
@@ -22,6 +24,25 @@ const getCsrfToken = (): string | null => {
 
     const value = match.slice('XSRF-TOKEN='.length);
     return decodeURIComponent(value);
+};
+
+const getCsrfToken = async (): Promise<string | null> => {
+    const cookieToken = readCsrfTokenCookie();
+    if (cookieToken) {
+        csrfTokenMemory = cookieToken;
+        return cookieToken;
+    }
+
+    if (csrfTokenMemory) return csrfTokenMemory;
+
+    const response = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
+        credentials: 'include',
+    });
+    if (!response.ok) return null;
+
+    const data = await response.json() as { csrfToken?: string };
+    csrfTokenMemory = data.csrfToken ?? null;
+    return csrfTokenMemory;
 };
 
 let refreshTokenFn: () => Promise<string | null> = async () => {
@@ -79,15 +100,21 @@ const processQueue = (error: unknown = null) => {
 };
 
 
-async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchWithAuth<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    allowAuthRecovery = true,
+): Promise<T> {
     const headers = new Headers(options.headers);
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
         headers.set('Content-Type', 'application/json');
     }
 
     const method = (options.method ?? 'GET').toUpperCase();
-    const csrfToken = getCsrfToken();
-    if (csrfToken && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    const csrfToken = !['GET', 'HEAD', 'OPTIONS'].includes(method)
+        ? await getCsrfToken()
+        : null;
+    if (csrfToken) {
         headers.set('X-CSRF-Token', csrfToken);
     }
 
@@ -106,8 +133,10 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
         // If parsing fails
     }
 
-    const shouldRetryWithRefresh = response.status === 401 ||
-        (response.status === 403 && isCsrfFailure(responseData));
+    const shouldRetryWithRefresh = allowAuthRecovery && (
+        response.status === 401 ||
+        (response.status === 403 && isCsrfFailure(responseData))
+    );
 
     // (Token Expiration / CSRF recovery)
     if (shouldRetryWithRefresh) {
@@ -122,7 +151,7 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
                 if (isLoggingOut) {
                     return waitForLogout<T>();
                 }
-                return fetchWithAuth<T>(endpoint, options);
+                return fetchWithAuth<T>(endpoint, options, false);
             });
         }
 
@@ -151,7 +180,7 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
 
             processQueue(null);
 
-            return fetchWithAuth<T>(endpoint, options);
+            return fetchWithAuth<T>(endpoint, options, false);
 
         } catch (err) {
             processQueue(err);

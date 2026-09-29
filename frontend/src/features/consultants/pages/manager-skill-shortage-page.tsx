@@ -3,9 +3,10 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import {
     consultantManagerSidebarItems
 } from "../../../components/layout/sidebar/sidebar.config";
-import { fallbackTeamSkillDemand } from "../types/consultant.types";
+import { useTeamSkillDemand } from "../../../hooks/useTeamSkillDemand";
 
 export default function ManagerSkillShortage() {
+    const { data, isLoading, isError, refetch } = useTeamSkillDemand();
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantManagerSidebarItems} />
@@ -28,12 +29,41 @@ export default function ManagerSkillShortage() {
                         <p className="mt-2 text-base text-[#6B7280]">
                             Skills your team is short on, ranked by how many projects they leave uncovered.
                         </p>
-                         <section className="mt-8">
-                        <SkillShortageTable
-                            teamSize={fallbackTeamSkillDemand.teamSize}
-                            skills={fallbackTeamSkillDemand.skills}
-                        />
-                    </section>
+                        <section className="mt-8">
+                            {isError && (
+                                <div
+                                    role="alert"
+                                    className="mb-6 flex items-center justify-between gap-4 rounded-md border border-yellow-300 bg-yellow-50 px-5 py-3 text-sm text-yellow-900"
+                                >
+                                    <span>
+                                        {data ? "Couldn't refresh skill demand. Showing the last loaded data." : "Couldn't load skill demand."}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={refetch}
+                                        className="rounded border border-yellow-400 px-3 py-1 font-semibold hover:bg-yellow-100"
+                                    >
+                                        Try again
+                                    </button>
+                                </div>
+                            )}
+
+                            {isLoading && !data ? (
+                                <div
+                                    className="h-64 animate-pulse rounded-lg border border-gray-200 bg-white"
+                                    aria-busy="true"
+                                    aria-live="polite"
+                                >
+                                    <span className="sr-only">Loading skill demand</span>
+                                </div>
+                            ) : data ? (
+                                <SkillShortageTable
+                                    teamSize={data?.teamSize ?? 0}
+                                    skills={data?.skills ?? []}
+                                />
+                            ) : null}
+
+                        </section>
                     </div>
                 </main>
             </div>

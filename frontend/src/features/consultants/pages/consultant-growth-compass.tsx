@@ -1,10 +1,11 @@
-import { fallbackRecommendations } from "../types/consultant.types"
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import SkillGrowthCard from "../components/skill-growth-card";
+import { useSkillGrowth } from "../../../hooks/useSkillGrowth";
 
 
 export default function GrowthCompass() {
+  const {data, isLoading, isError} = useSkillGrowth();
   return (
     <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />
@@ -31,7 +32,13 @@ export default function GrowthCompass() {
           </div>
 
           <section className="mt-8">
-            <SkillGrowthCard recommendations={fallbackRecommendations} />
+            <SkillGrowthCard 
+              recommendations={data?.recommendations ?? []}
+              eligibleNow={data?.eligibleNow ?? 0}
+              pipelineSize={data?.pipelineSize ?? 0}
+              isLoading={isLoading && !data}
+              isError={isError} 
+            />
           </section>
         </main>
       </div>

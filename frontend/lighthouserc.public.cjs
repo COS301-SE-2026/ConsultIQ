@@ -10,6 +10,7 @@ module.exports = {
             startServerReadyPattern: 'Local',
             settings: {
                 onlyCategories: ['accessibility'],
+                throttlingMethod: 'provided',
                 chromeFlags: '--no-sandbox --disable-gpu --disable-dev-shm-usage --headless=new'
             }
         },

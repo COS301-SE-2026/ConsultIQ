@@ -47,12 +47,12 @@ jobs:
       - name: Install puppeteer for debug capture
         if: failure()
         working-directory: frontend
-        run: npm install --no-save puppeteer
+        run: npm install --no-save --ignore-scripts puppeteer@24.15.0
 
       - name: Install Chrome for puppeteer
         if: failure()
         working-directory: frontend
-        run: npx --yes puppeteer browsers install chrome
+        run: npx --yes puppeteer@24.15.0 browsers install chrome
 
       - name: Capture debug screenshot + console output
         if: failure()

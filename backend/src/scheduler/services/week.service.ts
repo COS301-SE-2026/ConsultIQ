@@ -678,10 +678,12 @@ export class WeekService {
         await Promise.all(
             week.blocks
                 .filter(b => b.userSized)
-                .map(b => tx.schedulerProjectBlock.update({
-                    where: { id: b.id },
-                    data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                }))
+                .map(async (b) => {
+                    await tx.schedulerProjectBlock.update({
+                        where: { id: b.id },
+                        data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
+                    });
+                })
         );
     }
 
@@ -689,7 +691,7 @@ export class WeekService {
         await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
         await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
 
-        await Promise.all(week.slots.map(async (s) => {
+        await Promise.all(week.slots.map(async (s): Promise<void> => {
             await tx.schedulerSlot.create({
                 data: {
                     id: s.id,
@@ -713,7 +715,6 @@ export class WeekService {
             }
         }));
     }
-
     private async getWeekById(weekId: string): Promise<WeekContainer> {
         const dbWeek = await this.prisma.schedulerWeek.findUnique({ where: { id: weekId } });
         if (!dbWeek) throw new NotFoundException(`Week ${weekId} not found`);

@@ -8,7 +8,7 @@ import { Role } from '../../auth/enums/role.enum';
 import { RefreshTokenService } from '../../auth/services/auth.refresh-token.service';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
+//import { ForgotPasswordDto } from 'src/auth/dto/forgot-password.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -371,6 +371,28 @@ describe('AuthController', () => {
 
       expect(authService.forgotPassword).toHaveBeenCalledWith(dto.email);
       expect(result).toEqual(expected);
+    });
+  });
+
+
+  describe('getCsrfToken', () => {
+    it('should generate a CSRF token, set the XSRF-TOKEN cookie, and return the token', () => {
+      const result = controller.getCsrfToken(mockRes as any);
+
+      expect(result).toHaveProperty('csrfToken');
+      expect(typeof result.csrfToken).toBe('string');
+      expect(result.csrfToken).toHaveLength(64);
+
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'XSRF-TOKEN',
+        result.csrfToken,
+        {
+          httpOnly: false,
+          secure: true,
+          sameSite: 'none',
+          maxAge: 5 * 60 * 1000,
+        },
+      );
     });
   });
 

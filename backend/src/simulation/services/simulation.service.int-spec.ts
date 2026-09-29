@@ -472,9 +472,10 @@ describe('SimulationService - Integration-e2e-tests', () => {
         consultant.userId,
       );
 
-      expect(result).toEqual({ recommendations: [] });
+      expect(result.recommendations).toEqual([]);
+      expect(result.eligibleNow).toBe(1);
+      expect(result.pipelineSize).toBe(1);
     });
-
     it('ignores projects that are not in the active pipeline (COMPLETED, CLOSED, ARCHIVED)', async () => {
       const { backendSkill, consultant } = await createTestConsultant(prisma);
       const awsSkill = await prisma.skill.create({
@@ -500,7 +501,9 @@ describe('SimulationService - Integration-e2e-tests', () => {
         consultant.userId,
       );
 
-      expect(result).toEqual({ recommendations: [] });
+      expect(result.recommendations).toEqual([]);
+      expect(result.eligibleNow).toBe(0);
+      expect(result.pipelineSize).toBe(0);
     });
 
     it('throws NotFoundException for a user with no consultant profile, and writes nothing', async () => {
@@ -580,6 +583,7 @@ describe('SimulationService - Integration-e2e-tests', () => {
         Object.keys(result.recommendations[0]).sort((a, b) => a.localeCompare(b)),
       ).toEqual([
         'newlyEligibleProjectCount',
+        'projectedEligibleCount',
         'projectsTested',
         'skillName',
         'totalScoreDelta',

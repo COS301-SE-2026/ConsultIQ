@@ -18,6 +18,7 @@ import { PipelineProject } from '../interfaces/candidates-skills.interface';
 import { aggregateSkillRecommendations } from './aggregate-skill-recommendations';
 import { selectTopSkillRecommendations } from './select-top-skill-recommendations';
 import { SkillGrowthResponse } from '../interfaces/skill-growth-response.interface';
+import { PipelineEligibilitySummary } from '../interfaces/pipeline-eligibility-summary.interface';
 
 @Injectable()
 export class SimulationService {
@@ -217,16 +218,52 @@ export class SimulationService {
       : { score: 0, excluded: true };
   }
 
-  async getSkillRecommendationsForUser(
-    userId: string,
-  ): Promise<SkillGrowthResponse> {
+  async getSkillRecommendationsForUser(userId: string): Promise<SkillGrowthResponse> {
     const consultantId = await this.resolveConsultantIdForUser(userId);
-    const results = await this.recommendSkillGrowth(consultantId);
+
+    const [results, eligibility] = await Promise.all([
+      this.recommendSkillGrowth(consultantId),
+      this.computePipelineEligibility(consultantId),
+    ]);
+
+    const ranked = selectTopSkillRecommendations(aggregateSkillRecommendations(results));
+
+    const recommendations = ranked.map((rec) => ({
+      ...rec,
+      projectedEligibleCount: eligibility.eligibleNow + rec.newlyEligibleProjectCount,
+    }));
 
     return {
-      recommendations: selectTopSkillRecommendations(
-        aggregateSkillRecommendations(results),
-      ),
+      eligibleNow: eligibility.eligibleNow,
+      pipelineSize: eligibility.pipelineSize,
+      recommendations,
+    };
+  }
+
+  private async computePipelineEligibility( consultantId: string,
+  ): Promise<PipelineEligibilitySummary> {
+    const [consultantRow, pipelineProjects] = await Promise.all([
+      this.fetchConsultantRow(consultantId),
+      this.fetchPipelineProjects(),
+    ]);
+
+    const consultantDto = this.mapConsultantToDto(consultantRow);
+    const isPlaced = consultantRow.placements && consultantRow.placements.length > 0;
+
+    const outcomes = await Promise.all(
+      pipelineProjects.map(async (projectRow) => {
+        const projectContext = await this.resolveProjectScoringContext(
+          consultantId,
+          projectRow.id,
+          projectRow,
+        );
+        return this.scoreConsultantOnProject(consultantRow, projectContext, consultantDto, isPlaced);
+      }),
+    );
+
+    return {
+      eligibleNow: outcomes.filter((o) => !o.excluded).length,
+      pipelineSize: pipelineProjects.length,
     };
   }
 

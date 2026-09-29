@@ -1,9 +1,8 @@
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface ModalProps {
 	readonly open: boolean;
 	readonly children: ReactNode;
-	readonly onClose?: () => void;
 	readonly labelledBy?: string;
 	readonly describedBy?: string;
 }
@@ -11,15 +10,10 @@ interface ModalProps {
 export default function Modal({
 	open,
 	children,
-	onClose,
 	labelledBy,
 	describedBy,
 }: ModalProps) {
 	if (!open) return null;
-
-	const handleBackdropMouseDown = (event: MouseEvent<HTMLDialogElement>) => {
-		if (event.target === event.currentTarget) onClose?.();
-	};
 
 	return (
 		<dialog
@@ -28,7 +22,6 @@ export default function Modal({
 			aria-modal="true"
 			aria-labelledby={labelledBy}
 			aria-describedby={describedBy}
-			onMouseDown={handleBackdropMouseDown}
 		>
 			<div
 				className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl"

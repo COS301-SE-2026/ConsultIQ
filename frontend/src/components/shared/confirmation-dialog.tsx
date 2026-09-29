@@ -28,7 +28,6 @@ export default function ConfirmationDialog({
 	return (
 		<Modal
 			open={open}
-			onClose={loading ? undefined : onCancel}
 			labelledBy="confirmation-dialog-title"
 			describedBy="confirmation-dialog-description"
 		>

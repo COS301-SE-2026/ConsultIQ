@@ -727,7 +727,7 @@ describe('WeekService', () => {
             expect(mockPrisma.schedulerProjectBlock.createMany).toHaveBeenCalled();
             expect(mockPrisma.schedulerProjectBlock.findMany).toHaveBeenCalled();
 
-            expect(result.blocks.length).toBe(1);
+            expect(result.blocks).toHaveLength(1);
         });
 
         it('durationMinutes and workingWindowInstantAt calculate correctly', () => {

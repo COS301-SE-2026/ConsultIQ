@@ -631,7 +631,7 @@ export class WeekService {
             }
         });
 
-        for (const t of week.tasks) {
+        await Promise.all(week.tasks.map(async (t) => {
             if (!t.id) {
                 t.id = randomUUID();
             }
@@ -673,23 +673,23 @@ export class WeekService {
                     })
                 });
             }
-        }
+        }));
 
-        for (const b of week.blocks) {
-            if (b.userSized) {
-                await tx.schedulerProjectBlock.update({
+        await Promise.all(
+            week.blocks
+                .filter(b => b.userSized)
+                .map(b => tx.schedulerProjectBlock.update({
                     where: { id: b.id },
                     data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                });
-            }
-        }
+                }))
+        );
     }
 
     private async persistSlots(tx: any, week: WeekContainer): Promise<void> {
         await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
         await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
 
-        for (const s of week.slots) {
+        await Promise.all(week.slots.map(async (s) => {
             await tx.schedulerSlot.create({
                 data: {
                     id: s.id,
@@ -711,7 +711,7 @@ export class WeekService {
                     }))
                 });
             }
-        }
+        }));
     }
 
     private async getWeekById(weekId: string): Promise<WeekContainer> {

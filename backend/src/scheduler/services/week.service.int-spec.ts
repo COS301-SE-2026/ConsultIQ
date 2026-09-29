@@ -31,6 +31,8 @@ async function createConsultant(prisma: PrismaService, email: string) {
     });
 }
 
+
+
 async function createSchedulerWeek(
     prisma: PrismaService,
     consultantId: string,
@@ -128,6 +130,17 @@ describe('WeekService - Integration-e2e-tests', () => {
             await moduleRef.close();
         }
     });
+
+
+    async function setupFreshWeek() {
+        const consultant = await createConsultant(prisma, `change-${randomUUID()}@consultiq.com`);
+        const weekStartStr = '2026-11-02';
+        const dbWeek = await createSchedulerWeek(prisma, consultant.id, weekStartStr);
+        const week = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
+        const taskId = week.tasks[0].id;
+        const blockId = week.blocks[0].id;
+        return { consultant, week, dbWeek, taskId, blockId, weekStartStr };
+    }
 
     describe('getWeek function validation', () => {
         it('should auto-initialize and return a week if it does not exist in the database', async () => {
@@ -263,16 +276,6 @@ describe('WeekService - Integration-e2e-tests', () => {
             defaultCtx = { bumpedEntityIds: [], allocations: [] };
         });
 
-        async function setupFreshWeek() {
-            const consultant = await createConsultant(prisma, `change-${randomUUID()}@consultiq.com`);
-            const weekStartStr = '2026-11-02';
-            const dbWeek = await createSchedulerWeek(prisma, consultant.id, weekStartStr);
-            const week = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
-            const taskId = week.tasks[0].id;
-            const blockId = week.blocks[0].id;
-            return { consultant, week, dbWeek, taskId, blockId, weekStartStr };
-        }
-
         it('update_task: updates targeted task properties', async () => {
             const { week, taskId } = await setupFreshWeek();
             const change = { type: 'update_task', taskId, patch: { title: 'Updated Title', urgency: 3 } } as unknown as Change;
@@ -310,7 +313,7 @@ describe('WeekService - Integration-e2e-tests', () => {
         });
 
         it('place_unplaced: runs without error and reverts temporary placed status', async () => {
-            const { week, taskId } = await setupFreshWeek();
+            const { week } = await setupFreshWeek();
             week.tasks[0].placement = 'unplaced';
 
             const change = { type: 'place_unplaced', taskIds: [], window: {} } as unknown as Change;

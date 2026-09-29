@@ -1,4 +1,6 @@
-import { FeasibilityVariant, FeasibilityVariantMetadata } from '../interfaces/feasibility-variant.interface';
+import {
+  FeasibilityVariantMetadata,
+} from '../interfaces/feasibility-variant.interface';
 import { FeasibilityCheckResult } from '../interfaces/feasibility-result.interface';
 import { formatCompetencyLevel } from './format-competency-level';
 

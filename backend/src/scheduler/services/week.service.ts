@@ -491,6 +491,8 @@ export class WeekService {
                 unplacedReason: t.unplacedReason,
                 carriedOver: t.carriedOver ?? false,
                 deadlineMissAccepted: t.deadlineMissAccepted ?? false,
+                deadline: t.deadline ? new Date(t.deadline) : null,
+                dependsOn: t.dependsOn ?? [],
             };
 
             await tx.schedulerTask.upsert({
@@ -499,10 +501,9 @@ export class WeekService {
                 create: { id: t.id, ...taskData }
             });
 
+            await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
+            
             if (t.subtasks && t.subtasks.length > 0) {
-
-                await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
-
                 await tx.schedulerSubtask.createMany({
                     data: t.subtasks.map((sub: any) => {
 
@@ -512,7 +513,7 @@ export class WeekService {
                             taskId: taskId,
                             title: sub.title ?? 'Subtask',
                             done: sub.done ?? false,
-                            estimate: sub.durationMinutes ?? 0
+                            estimate: sub.estimate ?? 0
                         };
                     })
                 });

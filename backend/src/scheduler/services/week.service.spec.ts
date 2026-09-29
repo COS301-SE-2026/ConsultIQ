@@ -40,6 +40,8 @@ describe('WeekService', () => {
         },
         schedulerProjectBlock: {
             update: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([]),
+            createMany: jest.fn().mockResolvedValue({ count: 0 }),
         },
         schedulerSubtask: {
             deleteMany: jest.fn(),
@@ -49,6 +51,11 @@ describe('WeekService', () => {
             deleteMany: jest.fn(),
             createMany: jest.fn(),
         },
+
+        projectPlacement: {
+            findMany: jest.fn().mockResolvedValue([]),
+        },
+
         $transaction: jest.fn().mockImplementation(async (cb) => cb(mockPrisma)),
     };
 
@@ -597,6 +604,152 @@ describe('WeekService', () => {
                     ])
                 })
             );
+        });
+    });
+
+    describe('ID Generation & Block Seeding', () => {
+        let mockWeek: WeekContainer;
+
+        beforeEach(() => {
+            mockWeek = {
+                id: 'W-SEED',
+                consultantId: 'C1',
+                weekStart: '2026-11-02' as LocalDate,
+                version: 1,
+                timezone: 'UTC',
+                tasks: [],
+                blocks: [],
+                slots: [],
+                calendarEntries: [],
+                holidays: [],
+                metadata: {} as any,
+                createdAt: '2026-11-02T00:00:00Z' as Instant,
+                updatedAt: '2026-11-02T00:00:00Z' as Instant,
+                lastCommittedAt: '2026-11-02T00:00:00Z' as Instant,
+                sourceOfLastChange: 'system',
+            };
+        });
+
+        it('generates missing IDs for create_task in applyChange', () => {
+            const newTask = { title: 'No ID Task', subtasks: [{ title: 'No ID Subtask' }] } as any;
+
+            service['applyChange'](mockWeek, { type: 'create_task', task: newTask, origin: 'user', window: {} as any });
+
+            const added = mockWeek.tasks[0];
+            expect(added.id).toBeDefined();
+            expect(typeof added.id).toBe('string');
+            expect(added.subtasks![0].id).toBeDefined();
+        });
+
+        it('generates missing IDs for pull_forward in applyChange', () => {
+            const pullTask = { title: 'Pulled Task', subtasks: [{ title: 'Pulled Subtask' }] } as any;
+
+            service['applyChange'](mockWeek, { type: 'pull_forward', taskIds: [], tasks: [pullTask], origin: 'system', window: {} as any });
+
+            const pulled = mockWeek.tasks[0];
+            expect(pulled.id).toBeDefined();
+            expect(typeof pulled.id).toBe('string');
+            expect(pulled.subtasks![0].id).toBeDefined();
+        });
+
+        it('generates missing IDs in persistTasksAndSubtasks', async () => {
+            mockWeek.tasks = [{
+                projectId: 'P1',
+                title: 'Persist Task',
+                id: undefined,
+                subtasks: [{ title: 'Persist Subtask', id: undefined }]
+            } as any];
+
+            const mockTx = {
+                schedulerTask: { deleteMany: jest.fn(), upsert: jest.fn() },
+                schedulerSubtask: { deleteMany: jest.fn(), createMany: jest.fn() },
+                schedulerProjectBlock: { update: jest.fn() }
+            };
+
+            await service['persistTasksAndSubtasks'](mockTx, mockWeek);
+
+            expect(mockTx.schedulerTask.upsert).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: expect.any(String) },
+                    create: expect.objectContaining({ id: expect.any(String) })
+                })
+            );
+
+            expect(mockTx.schedulerSubtask.createMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.arrayContaining([
+                        expect.objectContaining({ id: expect.any(String), taskId: expect.any(String) })
+                    ])
+                })
+            );
+        });
+
+        it('seeds placement blocks when getWeek encounters an empty week', async () => {
+            mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce({
+                id: 'W-EMPTY',
+                consultantId: 'C1',
+                timezone: 'UTC',
+                weekStart: new Date('2026-11-02T00:00:00Z'),
+                version: 1,
+                createdAt: new Date('2026-11-02T00:00:00Z'),
+                updatedAt: new Date('2026-11-02T00:00:00Z'),
+                lastCommittedAt: null,
+                blocks: [],
+                slots: [],
+                tasks: [],
+                calendarEntries: []
+            });
+
+            (mockPrisma as any).projectPlacement = {
+                findMany: jest.fn().mockResolvedValue([{
+                    id: 'PL-1',
+                    projectId: 'PROJ-1',
+                    allocation: 100,
+                    startDate: new Date('2026-11-01T00:00:00Z'),
+                    endDate: new Date('2026-11-30T00:00:00Z')
+                }])
+            };
+
+            (mockPrisma as any).schedulerProjectBlock = {
+                createMany: jest.fn().mockResolvedValue({ count: 1 }),
+                findMany: jest.fn().mockResolvedValue([{ id: 'B1', allocation: { target: 100 } }]), // Return reloaded block
+                update: jest.fn()
+            };
+
+            (mockTimeService as any).workingWindows = jest.fn().mockReturnValue([
+                { start: '2026-11-02T08:00:00Z', end: '2026-11-02T16:00:00Z' }
+            ]);
+            (mockTimeService as any).localDate = jest.fn().mockReturnValue('2026-11-02');
+
+            const result = await service.getWeek('C1', '2026-11-02' as LocalDate);
+
+            expect(mockPrisma.projectPlacement.findMany).toHaveBeenCalled();
+            expect(mockPrisma.schedulerProjectBlock.createMany).toHaveBeenCalled();
+            expect(mockPrisma.schedulerProjectBlock.findMany).toHaveBeenCalled();
+
+            expect(result.blocks.length).toBe(1);
+        });
+
+        it('durationMinutes and workingWindowInstantAt calculate correctly', () => {
+            const dur = service['durationMinutes']('2026-11-02T08:00:00Z', '2026-11-02T10:00:00Z');
+            expect(dur).toBe(120);
+
+            const windows = [
+                { start: '2026-11-02T08:00:00Z', end: '2026-11-02T12:00:00Z' },
+                { start: '2026-11-02T13:00:00Z', end: '2026-11-02T17:00:00Z' }
+            ];
+
+            const instant1 = service['workingWindowInstantAt'](windows, 60);
+            expect(instant1).toBe('2026-11-02T09:00:00.000Z');
+
+            const instant2 = service['workingWindowInstantAt'](windows, 240);
+            expect(instant2).toBe('2026-11-02T13:00:00Z');
+
+            const instant3 = service['workingWindowInstantAt'](windows, 300);
+            expect(instant3).toBe('2026-11-02T14:00:00.000Z');
+
+            const instant4 = service['workingWindowInstantAt'](windows, 1000);
+            expect(instant4).toBe('2026-11-02T17:00:00Z');
         });
     });
 });

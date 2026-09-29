@@ -99,6 +99,42 @@ async function createSchedulerWeek(
     });
 }
 
+async function createProjectWithPlacement(
+    prisma: PrismaService,
+    consultantId: string,
+    allocation: number,
+    startDateStr: string
+) {
+    const project = await prisma.project.create({
+        data: {
+            projectName: 'Allocation Contract Project',
+            clientName: 'Test Client',
+            status: 'OPEN',
+            addressLine1: '123 Test St',
+            province: 'Gauteng',
+            city: 'Pretoria',
+            postalCode: '0001',
+            teamSize: 1,
+            budget: 100,
+            startDate: new Date('2026-01-01T00:00:00Z'),
+            endDate: new Date('2026-12-31T00:00:00Z'),
+            allocation,
+        },
+    });
+
+    await prisma.projectPlacement.create({
+        data: {
+            consultantId,
+            projectId: project.id,
+            allocation,
+            startDate: new Date(`${startDateStr}T00:00:00Z`),
+            status: 'ACTIVE',
+        }
+    });
+
+    return project;
+}
+
 describe('WeekService - Integration-e2e-tests', () => {
     let moduleRef: TestingModule;
     let weekService: WeekService;
@@ -534,6 +570,61 @@ describe('WeekService - Integration-e2e-tests', () => {
             expect(task?.status).toBe('InProgress');
             expect(task?.subtasks?.find(s => s.id === 'sub2')?.done).toBe(false);
             expect(task?.subtasks?.find(s => s.id === 'sub1')?.done).toBe(true);
+        });
+    });
+
+    describe('Allocation Contract & Block Seeding', () => {
+        it('seeds project blocks from active placements and successfully places tasks into them', async () => {
+            const consultant = await createConsultant(prisma, `alloc-${randomUUID()}@consultiq.com`);
+            const weekStartStr = '2026-11-09';
+
+            const project = await createProjectWithPlacement(prisma, consultant.id, 100, '2026-11-01');
+            const week = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
+
+            expect(week.blocks.length).toBeGreaterThan(0);
+            const totalAllocatedMinutes = week.blocks.reduce((sum, b) => sum + b.allocatedMinutes, 0);
+            expect(totalAllocatedMinutes).toBe(2400);
+            const sortedBlocks = [...week.blocks].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+            let overlap = false;
+            for (let i = 0; i < sortedBlocks.length - 1; i++) {
+                if (new Date(sortedBlocks[i].end) > new Date(sortedBlocks[i + 1].start)) {
+                    overlap = true;
+                }
+            }
+            expect(overlap).toBe(false);
+
+            const newTaskChange: Change = {
+                type: 'create_task',
+                task: {
+                    projectId: project.id,
+                    title: 'Contract Validation Task',
+                    tMin: 60,
+                    tMax: 120,
+                    status: 'Ready',
+                    placement: 'unplaced',
+                    urgency: 1,
+                    complexity: 1,
+                },
+                origin: 'user',
+                window: { start: '2026-11-09T00:00:00Z', end: '2026-11-16T00:00:00Z' } as any
+            };
+
+            let res = await weekService.commit(week, newTaskChange, { bumpedEntityIds: [], allocations: [] }, week.version);
+            expect(res.ok).toBe(true);
+
+            const placeChange: Change = {
+                type: 'place_unplaced',
+                taskIds: [],
+                window: { start: '2026-11-09T00:00:00Z', end: '2026-11-16T00:00:00Z' } as any,
+                origin: 'user'
+            };
+
+            res = await weekService.commit(res.value, placeChange, { bumpedEntityIds: [], allocations: [] }, res.value.version);
+
+            expect(res.ok).toBe(true);
+            const placedTask = res.value.tasks.find(t => t.title === 'Contract Validation Task');
+
+            expect(placedTask?.placement).toBe('placed');
         });
     });
 });

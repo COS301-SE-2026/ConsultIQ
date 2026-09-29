@@ -86,7 +86,14 @@ export class TaskService {
             window: this.taskDayWindow(week, task),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
+        const changedEntityIds = [
+            taskId,
+            ...week.slots
+                .filter((slot) => slot.taskIds.includes(taskId))
+                .map((slot) => slot.id),
+        ];
+
+        const ctx: ValidateContext = { bumpedEntityIds: changedEntityIds, allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 

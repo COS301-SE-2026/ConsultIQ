@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FeasibilityCacheService } from './feasibility-cache.service';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
-import { FeasibilityCheckResponse } from '../interface/feasibility-response.interface';
+import { FeasibilityCheckResponse } from '../interfaces/feasibility-response.interface';
 
 describe('FeasibilityCacheService', () => {
   let service: FeasibilityCacheService;

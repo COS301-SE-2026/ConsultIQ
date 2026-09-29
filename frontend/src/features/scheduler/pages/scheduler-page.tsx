@@ -15,12 +15,12 @@ import {
     underusedWeek
 
 } from "../types/scheduler.fixtures";
-import BacklogPanel, { type BacklogProjectOption } from "../components/backlog-panel";
-import BlockDetailPanel from "../components/block-detail-panel";
+import { type BacklogProjectOption } from "../components/backlog-panel";
 import TaskForm, { type TaskSubmission } from "../components/task-form";
 import type { Task } from "../types/scheduler.types";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
+import TaskBoard from "../components/task-board";
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
@@ -35,7 +35,11 @@ const projects: BacklogProjectOption[] = FIXTURE_PROJECTS.map(
     }),
 );
 
+type SchedulerTab = "calendar" | "tasks";
+
 export default function SchedulerPage() {
+    const [activeTab, setActiveTab] = useState<SchedulerTab>("calendar");
+
     const [dismissed, setDismissed] = useState<string[]>([]);
     const [weekIndex, setWeekIndex] = useState(0);
     const week = FIXTURE_WEEKS[weekIndex];
@@ -71,6 +75,15 @@ export default function SchedulerPage() {
     const blockTasks = selectedBlock ? designWeek.tasks.filter((task) => task.slots.some((slot) => slot.blockId === selectedBlock.id)) : [];
     const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
 
+    const fixtureSubtaskProgressByTaskId = Object.fromEntries(
+        week.tasks.map((task) => [
+            task.id,
+            {
+            completed: task.subtasks.filter((subtask) => subtask.done).length,
+            total: task.subtasks.length,
+            },
+        ]),
+        );
     function selectNextBlock() {
         if (designWeek.blocks.length === 0) return;
 
@@ -128,24 +141,30 @@ export default function SchedulerPage() {
                 </header>
 
                 {/* Three vertical sections */}
-                <div className="flex-1 flex min-h-0 overflow-hidden">
+                <div className="flex-none border-b border-slate-200 bg-white px-6">
+                    <nav className="flex-none border-b border-slate-200 bg-white px-6">
+                        <div className="flex gap-1">
+                           {([["calendar", "Calendar"], ["tasks", "Tasks"]] as const).map(([key, label]) => (
+                            <button key={key} type="button" 
+                                onClick={() => setActiveTab(key)}
+                                className = {`border-b-2 px-3 py-2 text-sm font-medium ${
+                                    activeTab === key ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                            >
+                                {label}
+                            </button>
+                           ))} 
+                        </div>
 
-                    {/* Backlog panel */}
-                    <BacklogPanel
-                        tasks={designWeek.tasks.filter((task) => task.placement === "unplaced")}
-                        unplacedSummaries={designWeek.metadata.unplaced}
-                        projects={projects}
-                        now={Date.parse(FIXTURE_NOW)}
-                        expectedVersion={designWeek.version}
-                        collapsed={backlogCollapsed}
-                        onToggleCollapse={() => setBacklogCollapsed((collapsed) => !collapsed)}
-                        onAddTask={() => OpenCreateTask()}
-                        onSchedule={() => { }}
-                        onResolveDeadline={() => { }}
-                        onDeferToNextWeek={() => { }}
-                        onDismiss={() => { }}
-                    />
+                        <button type="button" 
+                        onClick={() => OpenCreateTask()}
+                        className="rounded bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"
+                        >
+                            + New Task
+                        </button>
+                    </nav>
 
+                    {activeTab == "calendar" && (
+                        <>
                     {/*Week calendar*/}
                     <main className="relative flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
                         <div className="flex-1 overflow-auto p-4">
@@ -180,7 +199,25 @@ export default function SchedulerPage() {
                                 />
                             </div>
                         </div>
-                    </main>
+                    </main> 
+                    </>                       
+                    )}
+
+                    {activeTab === "tasks" && (
+                        <TaskBoard
+                            tasks={week.tasks}
+                            now={Date.parse(FIXTURE_NOW)}
+                            expectedVersion={week.version}
+                            subtaskProgressByTaskId={fixtureSubtaskProgressByTaskId}
+                            onEditTask={openEditTask}
+                            onSetStatus={() => {}}
+                            onToggleSubtask={() => {}}
+                            onSendToBacklog={() => {}}
+                            onDelete={() => {}}
+                            onSplit={() => {}}
+                            />
+                    )}
+
 
                     {taskForm && (
                         <TaskForm
@@ -198,30 +235,7 @@ export default function SchedulerPage() {
                             onCancel={() => setTaskForm(null)}
                             onSubmit={handleTaskSubmit}
                         />
-                    )
-
-                    }
-
-                    {/* BlockDetail panel */}
-                    <BlockDetailPanel
-                        block={selectedBlock}
-                        projectLabel={projects.find((project) => project.id === selectedBlock?.projectId)?.label ?? "Select a project block"}
-                        clientName={projects.find((project) => project.id === selectedBlock?.projectId)?.clientName ?? ""}
-                        tasks={blockTasks}
-                        now={Date.parse(FIXTURE_NOW)}
-                        expectedVersion={designWeek.version}
-                        onExpand={() => setSelectedBlockId(designWeek.blocks[0]?.id ?? null)}
-                        onClose={() => setSelectedBlockId(null)}
-                        onNextBlock={selectNextBlock}
-                        onAddTask={() => OpenCreateTask(selectedBlock?.projectId)}
-                        onAutoRollover={() => { }}
-                        onEditTask={openEditTask}
-                        onSetStatus={() => { }}
-                        onToggleSubtask={() => { }}
-                        onSendToBacklog={() => { }}
-                        onDeleteTask={() => { }}
-                        onSplitTask={() => { }}
-                    />
+                    )}
 
                 </div>
 

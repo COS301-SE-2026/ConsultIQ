@@ -76,3 +76,10 @@ export function createSchedulerTask(weekStart: string, dto: CreateTaskDto){
 export function updateSchedulerTask(taskId: string, dto: UpdateTaskDto){
     return apiClient.patch<SchedulerCommitResult>(`/scheduler/tasks/${taskId}`, dto);
 }
+
+export function deleteSchedulerTask(taskId: string, expectedVersion: number) {
+  return apiClient.delete<SchedulerCommitResult>(`/scheduler/tasks/${taskId}`, {
+    body: JSON.stringify({ expectedVersion }),
+    headers: { "Content-Type": "application/json" },
+  });
+}

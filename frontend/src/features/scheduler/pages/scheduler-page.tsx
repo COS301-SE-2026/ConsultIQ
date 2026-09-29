@@ -24,7 +24,7 @@ import SchedulerAlertBanner from "../components/scheduler-alert-banner";
 import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
 import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
-    updateSchedulerTask
+    updateSchedulerTask, deleteSchedulerTask
 } from "../services/scheduler.service"
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
@@ -192,6 +192,27 @@ export default function SchedulerPage() {
 
     }
 
+    async function handleDeleteTask(taskId: string) {
+        if(!apiWeek) return;
+
+        try{ 
+            const result = await deleteSchedulerTask(taskId, apiWeek.version);
+
+            if(!result.ok) {
+                setLoadedWeek((current) => ({
+                    ...current, error: result.violations.map((issue) => issue.message).join(" ")
+                }));
+                return;
+            }
+
+            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value});
+        } catch (error) {
+            setLoadedWeek((current) => ({
+                ...current, error: error instanceof Error ? error.message : "Could not delete task."
+            }))
+        }
+    }
+
     const [_creatingEntry, setCreatingEntry] = useState(false);
 
 
@@ -272,7 +293,7 @@ export default function SchedulerPage() {
                                 onSetStatus={handleSetStatus}
                                 onToggleSubtask={() => {}}
                                 onSendToBacklog={() => {}}
-                                onDelete={() => {}}
+                                onDelete={handleDeleteTask}
                                 onSplit={() => {}}
                                 />
                             </div>

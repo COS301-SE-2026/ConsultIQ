@@ -474,7 +474,7 @@ describe('getSkillRecommendationsForUser', () => {
   });
 
   it('looks the consultant up by userId with a minimal select, then simulates for that consultant', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-99' });
+    mockPrismaService.consultant.findUnique.mockResolvedValue({ ...baseConsultantRow, id: 'consultant-99' });
     const spy = jest.spyOn(service, 'recommendSkillGrowth').mockResolvedValue([]);
 
     await service.getSkillRecommendationsForUser('user-01');
@@ -498,7 +498,7 @@ describe('getSkillRecommendationsForUser', () => {
   });
 
   it('returns ranked recommendations and drops skills that help nothing', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-01' });
+    mockPrismaService.consultant.findUnique.mockResolvedValue(baseConsultantRow);
     mockScoringExecutor.scorePool.mockResolvedValue({
       finalResults: [{ consultantId: 'consultant-01', finalScore: 70, rank: 1, factorBreakdown: [], isPlaced: false, availabilityStatus: 'AVAILABLE' }],
       excludedCount: 0,
@@ -522,7 +522,7 @@ describe('getSkillRecommendationsForUser', () => {
   });
 
   it('returns an empty recommendations list when no skill would help, but still reports pipeline eligibility', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-01' });
+    mockPrismaService.consultant.findUnique.mockResolvedValue(baseConsultantRow);
     mockPrismaService.project.findMany.mockResolvedValue([baseProjectRow]);
     mockScoringExecutor.scorePool.mockResolvedValue({
       finalResults: [{ consultantId: 'consultant-01', finalScore: 70, rank: 1, factorBreakdown: [], isPlaced: false, availabilityStatus: 'AVAILABLE' }],
@@ -539,7 +539,7 @@ describe('getSkillRecommendationsForUser', () => {
   });
 
   it("computes projectedEligibleCount as eligibleNow plus the skill's own newlyEligibleProjectCount", async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-01' });
+    mockPrismaService.consultant.findUnique.mockResolvedValue(baseConsultantRow);
     mockPrismaService.project.findMany.mockResolvedValue([baseProjectRow, projectRequiringKubernetesMandatorily]);
     jest.spyOn(service, 'recommendSkillGrowth').mockResolvedValue([
       row({ candidateSkillName: 'AWS', baselineExcluded: true, projectedExcluded: false, scoreDelta: 0 }),
@@ -559,7 +559,7 @@ describe('getSkillRecommendationsForUser', () => {
   });
 
   it('caps the response at three recommendations', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-01' });
+    mockPrismaService.consultant.findUnique.mockResolvedValue(baseConsultantRow);
     mockScoringExecutor.scorePool.mockResolvedValue({
       finalResults: [{ consultantId: 'consultant-01', finalScore: 70, rank: 1, factorBreakdown: [], isPlaced: false, availabilityStatus: 'AVAILABLE' }],
       excludedCount: 0, errorCount: 0,
@@ -575,27 +575,25 @@ describe('getSkillRecommendationsForUser', () => {
     expect(result.recommendations.map((r) => r.skillName)).toEqual(['A', 'B', 'C']);
   });
 
-  it('exposes only expected fields — no project ids, no population-wide stats', async () => {
-    mockPrismaService.consultant.findUnique.mockResolvedValue({ id: 'consultant-01' });
-    mockPrismaService.project.findMany.mockResolvedValue([baseProjectRow]);
-    mockScoringExecutor.scorePool.mockResolvedValue({
-      finalResults: [{ consultantId: 'consultant-01', finalScore: 70, rank: 1, factorBreakdown: [], isPlaced: false, availabilityStatus: 'AVAILABLE' }],
-      excludedCount: 0, errorCount: 0,
-    });
-    jest
-      .spyOn(service, 'recommendSkillGrowth')
-      .mockResolvedValue([row({ projectId: 'secret-project', scoreDelta: 10 })]);
-
-    const result = await service.getSkillRecommendationsForUser('user-01');
-
-    expect(Object.keys(result.recommendations[0]).sort((a, b) => a.localeCompare(b))).toEqual([
-      'candidateSkillName' in result.recommendations[0] ? 'candidateSkillName' : 'skillName',
-      'newlyEligibleProjectCount',
-      'projectedEligibleCount',
-      'projectsTested',
-      'totalScoreDelta',
-    ].sort((a, b) => a.localeCompare(b)));
-    expect(JSON.stringify(result)).not.toContain('secret-project');
+it('exposes only expected fields — no project ids, no population-wide stats', async () => {
+  mockPrismaService.consultant.findUnique.mockResolvedValue(baseConsultantRow);
+  mockPrismaService.project.findMany.mockResolvedValue([baseProjectRow]);
+  mockScoringExecutor.scorePool.mockResolvedValue({
+    finalResults: [{ consultantId: 'consultant-01', finalScore: 70, rank: 1, factorBreakdown: [], isPlaced: false, availabilityStatus: 'AVAILABLE' }],
+    excludedCount: 0, errorCount: 0,
   });
+  jest
+    .spyOn(service, 'recommendSkillGrowth')
+    .mockResolvedValue([row({ projectId: 'secret-project', scoreDelta: 10 })]);
+
+  const result = await service.getSkillRecommendationsForUser('user-01');
+
+  expect(Object.keys(result.recommendations[0]).sort((a, b) => a.localeCompare(b))).toEqual(
+    ['newlyEligibleProjectCount', 'projectedEligibleCount', 'projectsTested', 'skillName', 'totalScoreDelta'].sort(
+      (a, b) => a.localeCompare(b),
+    ),
+  );
+  expect(JSON.stringify(result)).not.toContain('secret-project');
+});
 });
 });

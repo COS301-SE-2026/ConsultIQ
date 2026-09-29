@@ -235,28 +235,34 @@ export class ProjectService {
       });
 
 
-      for(const skill of dto.skills) {
-        const skillRecord = await upsertSkillCatalogueEntry(
-          tx,
-          skill.name,
-        );
-
-        const existingProjectSkill = await tx.projectSkill.findFirst({
-          where: { projectId: project.id, skillId: skillRecord.id },
-        });
-
-        if (!existingProjectSkill) {
-          await tx.projectSkill.create({
-            data: {
-              projectId: project.id,
-              skillId: skillRecord.id,
-              competency: skill.competency as CompetencyLevel,
-              mandatory: skill.mandatory,
-              years: skill.years,
-            },
-          });
+      const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
+      for (const skill of dto.skills) {
+        const normalizedName = skill.name.trim().toLowerCase();
+        if (!uniqueSkills.has(normalizedName)) {
+          uniqueSkills.set(normalizedName, skill);
         }
       }
+
+      await Promise.all(
+        Array.from(uniqueSkills.values(), async (skill) => {
+          const skillRecord = await upsertSkillCatalogueEntry(tx, skill.name);
+          const existingProjectSkill = await tx.projectSkill.findFirst({
+            where: { projectId: project.id, skillId: skillRecord.id },
+          });
+
+          if (!existingProjectSkill) {
+            await tx.projectSkill.create({
+              data: {
+                projectId: project.id,
+                skillId: skillRecord.id,
+                competency: skill.competency as CompetencyLevel,
+                mandatory: skill.mandatory,
+                years: skill.years,
+              },
+            });
+          }
+        }),
+      );
       return { projectId: project.id };
     });
   }
@@ -463,41 +469,40 @@ export class ProjectService {
   ) {
     if (!skills || skills.length === 0) return;
 
+    const uniqueSkills = new Map<string, UpdateProjectSkillDto>();
     for (const skillInput of skills) {
-      const skillRecord = await upsertSkillCatalogueEntry(
-        tx,
-        skillInput.name,
-      );
-
-      const existingProjectSkill = await tx.projectSkill.findFirst({
-        where: {
-          projectId: projectId,
-          skillId: skillRecord.id,
-        },
-      });
-
-      if (existingProjectSkill) {
-        await tx.projectSkill.update({
-          where: { id: existingProjectSkill.id },
-          data: {
-            //  skillId: skillRecord.id,
-            competency: skillInput.competency as CompetencyLevel,
-            years: skillInput.years,
-            mandatory: skillInput.mandatory,
-          },
-        });
-      } else {
-        await tx.projectSkill.create({
-          data: {
-            projectId,
-            skillId: skillRecord.id,
-            competency: skillInput.competency as CompetencyLevel,
-            years: skillInput.years,
-            mandatory: skillInput.mandatory,
-          },
-        });
-      }
+      uniqueSkills.set(skillInput.name.trim().toLowerCase(), skillInput);
     }
+
+    await Promise.all(
+      Array.from(uniqueSkills.values(), async (skillInput) => {
+        const skillRecord = await upsertSkillCatalogueEntry(tx, skillInput.name);
+        const existingProjectSkill = await tx.projectSkill.findFirst({
+          where: { projectId, skillId: skillRecord.id },
+        });
+
+        if (existingProjectSkill) {
+          await tx.projectSkill.update({
+            where: { id: existingProjectSkill.id },
+            data: {
+              competency: skillInput.competency as CompetencyLevel,
+              years: skillInput.years,
+              mandatory: skillInput.mandatory,
+            },
+          });
+        } else {
+          await tx.projectSkill.create({
+            data: {
+              projectId,
+              skillId: skillRecord.id,
+              competency: skillInput.competency as CompetencyLevel,
+              years: skillInput.years,
+              mandatory: skillInput.mandatory,
+            },
+          });
+        }
+      }),
+    );
   }
 
   private withDisplayNames<

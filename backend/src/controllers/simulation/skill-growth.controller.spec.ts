@@ -12,8 +12,16 @@ describe('SkillGrowthController', () => {
   let cache: { get: jest.Mock; set: jest.Mock };
 
   const response: SkillGrowthResponse = {
+    eligibleNow: 8,
+    pipelineSize: 24,
     recommendations: [
-      { skillName: 'AWS', newlyEligibleProjectCount: 2, totalScoreDelta: 30, projectsTested: 3 },
+      {
+        skillName: 'AWS',
+        newlyEligibleProjectCount: 2,
+        totalScoreDelta: 30,
+        projectsTested: 3,
+        projectedEligibleCount: 10,
+      },
     ],
   };
   const req = { user: { userId: 'user-1' } };
@@ -37,7 +45,7 @@ describe('SkillGrowthController', () => {
   });
 
   it('returns the cached response and skips the simulation on a cache hit', async () => {
-    const cached: SkillGrowthResponse = { recommendations: [] };
+    const cached: SkillGrowthResponse = { eligibleNow: 0, pipelineSize: 0, recommendations: [] };
     cache.get.mockResolvedValue(cached);
 
     const result = await controller.getSkillGrowth(req);
@@ -63,7 +71,7 @@ describe('SkillGrowthController', () => {
   });
 
   it('caches an empty recommendations list too', async () => {
-    const empty: SkillGrowthResponse = { recommendations: [] };
+    const empty: SkillGrowthResponse = { eligibleNow: 0, pipelineSize: 0, recommendations: [] };
     simulationService.getSkillRecommendationsForUser.mockResolvedValue(empty);
 
     await controller.getSkillGrowth(req);

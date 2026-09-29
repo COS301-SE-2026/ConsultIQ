@@ -29,6 +29,7 @@ import { HealthModule } from './health/health.module';
 import { CsrfGuard } from './common/guards/csrf.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TeamSkillDemandModule } from './team-skill-demand/team-skill-demand.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     FeasibilityModule,
     SimulationModule,
     SchedulerModule,
+    TeamSkillDemandModule
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: CsrfGuard },],

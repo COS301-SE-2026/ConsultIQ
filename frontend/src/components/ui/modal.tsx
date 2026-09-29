@@ -17,14 +17,14 @@ export default function Modal({
 }: ModalProps) {
 	if (!open) return null;
 
-	const handleBackdropMouseDown = (event: MouseEvent<HTMLDivElement>) => {
+	const handleBackdropMouseDown = (event: MouseEvent<HTMLDialogElement>) => {
 		if (event.target === event.currentTarget) onClose?.();
 	};
 
 	return (
-		<div
+		<dialog
+			open
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-			role="dialog"
 			aria-modal="true"
 			aria-labelledby={labelledBy}
 			aria-describedby={describedBy}
@@ -35,6 +35,6 @@ export default function Modal({
 			>
 				{children}
 			</div>
-		</div>
+		</dialog>
 	);
 }

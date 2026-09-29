@@ -9,32 +9,106 @@ jobs:
     name: Frontend Accessibility
     runs-on: ubuntu-latest
     continue-on-error: true
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci --ignore-scripts
 
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci --ignore-scripts
 
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx --no-install prisma generate
+
+      - name: Push Prisma schema to test DB
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+        run: npx --no-install prisma db push --accept-data-loss
+
+      - name: Seed test DB
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+        run: npx --no-install ts-node prisma/seed-test.ts
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+          REDIS_URL: redis://localhost:6379
+          PORT: 3000
+          AWS_REGION: ${{ secrets.AWS_REGION || 'af-south-1' }}
+          AWS_S3_BUCKET: ${{ secrets.TEST_AWS_S3_BUCKET || 'consultiq-test-bucket' }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TEST_AWS_ACCESS_KEY_ID || 'test-access-key-id' }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TEST_AWS_SECRET_ACCESS_KEY || 'test-secret-access-key' }}
+          ANTHROPIC_API_KEY: ${{ secrets.TEST_ANTHROPIC_API_KEY || 'test-anthropic-key' }}
+          RESEND_API_KEY: ${{ secrets.TEST_RESEND_API_KEY || 're_test_dummy_key' }}
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret' }}
+          ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY || 'test_encryption_key_32_bytes____' }}
+        run: |
+          node dist/main.js > server.log 2>&1 &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Install wait-on
+        run: npm install -g wait-on@7.2.0 --ignore-scripts
+
+      - name: Wait for backend
+        run: |
+          wait-on http://localhost:3000/health -t 60000 || {
+            echo "::error::Backend failed to start"
+            cat backend/server.log
+            exit 1
+          }
+
       - name: Install Playwright browsers
         run: npx --no-install playwright install --with-deps chromium
-        
-      - name: Start auth mock
-        run: |
-          node -e "require('http').createServer((req, res) => { const headers = {'Access-Control-Allow-Origin': 'http://localhost:5173', 'Access-Control-Allow-Credentials': 'true', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'}; if (req.method === 'OPTIONS') { res.writeHead(204, headers); res.end(); return; } if (req.url === '/auth/me') { res.writeHead(401, {...headers, 'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404, headers); res.end(); }).listen(3000)" &
 
       - name: Run accessibility audit (axe-core)
+        env:
+          API_BASE_URL: http://localhost:3000
         run: npm run a11y:public
 
       - name: Upload accessibility report
@@ -43,3 +117,7 @@ jobs:
         with:
           name: a11y-report-public
           path: a11y-report
+
+      - name: Stop backend
+        if: always()
+        run: kill ${{ env.BACKEND_PID }} || true

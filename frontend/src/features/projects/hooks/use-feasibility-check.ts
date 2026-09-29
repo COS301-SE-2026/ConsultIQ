@@ -131,7 +131,8 @@ export type FeasibilityCheckState =
 
     return () => {
       window.clearTimeout(timer);
-      //controller.abort();
+      controllerRef.current?.abort();
+      controllerRef.current = null;
     };
   }, [debounceMs, enabled, requestKey]);
 

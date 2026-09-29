@@ -29,10 +29,15 @@ export interface FeasibilityResultDto {
   topScore: number;
 }
 
-export interface FeasibilityVariantDto extends FeasibilityResultDto {
+export interface FeasibilityVariantResultDto extends FeasibilityResultDto {
   label: string;
+  kind: string;
+  skillName?: string;
+  fromLevel?: FeasibilityCompetency;
+  toLevel?: FeasibilityCompetency;
+  message?: string;
 }
 
 export interface FeasibilityResponseDto extends FeasibilityResultDto {
-  variants: FeasibilityVariantDto[];
+  variants: FeasibilityVariantResultDto[];
 }

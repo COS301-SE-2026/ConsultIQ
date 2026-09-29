@@ -7,8 +7,8 @@ import { VariantGenerator } from './variant-generator';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
 import { RawProjectDto } from '../../scoring/dto/raw-project.dto';
 import { ConsultantPoolEntry } from '../../scoring/services/interfaces/consultant-pool-entry.interface';
-import { FeasibilityCheckResult } from '../interface/feasibility-result.interface';
-import { FeasibilityCheckResponse } from '../interface/feasibility-response.interface';
+import { FeasibilityCheckResult } from '../interfaces/feasibility-result.interface';
+import { FeasibilityCheckResponse } from '../interfaces/feasibility-response.interface';
 import { randomUUID } from 'node:crypto';
 
 @Injectable()
@@ -44,6 +44,10 @@ export class FeasibilityService {
       ...base,
       variants: variants.map((v, i) => ({
         label: v.label,
+        kind: v.kind,
+        skillName: v.skillName,
+        fromLevel: v.fromLevel,
+        toLevel: v.toLevel,
         ...variantResults[i],
       })),
     };

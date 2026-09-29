@@ -6,6 +6,7 @@ import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
 import { randomUUID } from 'node:crypto';
+import { SCHEDULER_RULES } from './scheduler-rules.constant';
 
 import {
     WeekContainer,
@@ -21,6 +22,7 @@ import {
     PrismaSlotWithTasks,
     PrismaBlock,
     CalendarEntryDto,
+    PublicHoliday,
 } from '../dto/scheduler.dto';
 
 export interface CommitResult {
@@ -63,11 +65,13 @@ export class WeekService {
             include: weekIncludes,
         });
 
+        const timezone = process.env.SCHEDULER_DEFAULT_TIMEZONE ?? 'UTC';
+
         const dbWeek = existingWeek ?? await this.prisma.schedulerWeek.create({
             data: {
                 consultantId,
                 weekStart: new Date(`${weekStart}T00:00:00Z`),
-                timezone: 'UTC',
+                timezone,
                 version: 1,
                 sourceOfLastChange: 'system',
                 lastCommittedAt: new Date(),
@@ -76,7 +80,17 @@ export class WeekService {
         });
 
         const holidays = (await this.holidayService.getForWeek(weekStart)) || [];
-        const blocks = this.resolveBlocks(dbWeek);
+
+        let dbBlocks = dbWeek.blocks;
+
+        if (dbBlocks.length === 0) {
+            await this.seedPlacementBlocks(dbWeek.id, consultantId, weekStart, dbWeek.timezone, holidays);
+            dbBlocks = await this.prisma.schedulerProjectBlock.findMany({
+                where: { weekId: dbWeek.id },
+            }) as any;
+        }
+
+        const blocks = this.resolveBlocks({ blocks: dbBlocks as PrismaBlock[] });
 
         const slots = dbWeek.slots.map((s: PrismaSlotWithTasks) => ({
             ...s,
@@ -119,6 +133,151 @@ export class WeekService {
             } as unknown as ProjectBlock;
         });
     }
+
+    // -----------------------------------------------------------------
+    // BLOCK SEEDING 
+    // -----------------------------------------------------------------
+
+    private async seedPlacementBlocks(
+        weekId: string,
+        consultantId: string,
+        weekStart: LocalDate,
+        timezone: string,
+        holidays: PublicHoliday[],
+    ): Promise<void> {
+        const weekStartDate = DateTime.fromISO(weekStart as string, { zone: "utc" }).startOf("day");
+        const weekEndDate = weekStartDate.plus({ days: 7 });
+
+        const placements = await this.prisma.projectPlacement.findMany({
+            where: {
+                consultantId,
+                status: "ACTIVE",
+                startDate: { lt: weekEndDate.toJSDate() },
+                OR: [
+                    { endDate: null },
+                    { endDate: { gte: weekStartDate.toJSDate() } },
+                ],
+            },
+            select: {
+                id: true,
+                projectId: true,
+                allocation: true,
+                startDate: true,
+                endDate: true,
+            },
+            orderBy: [{ startDate: "asc" }, { id: "asc" }],
+        });
+
+        if (placements.length === 0) return;
+
+        const holidayDates = new Set(holidays.map((holiday) => holiday.date));
+        const windowsByDay = new Map();
+
+        for (const window of this.timeService.workingWindows(weekStart, timezone)) {
+            const day = this.timeService.localDate(window.start, timezone);
+            if (holidayDates.has(day)) continue;
+
+            const windows = windowsByDay.get(day) ?? [];
+            windows.push(window);
+            windowsByDay.set(day, windows);
+        }
+
+        const data: Array<{
+            id: string;
+            weekId: string;
+            projectId: string;
+            placementId: string;
+            allocatedMinutes: number;
+            start: Date;
+            end: Date;
+            mobility: "fluid";
+            userSized: boolean;
+        }> = [];
+
+        for (const [day, windows] of windowsByDay) {
+            const activePlacements = placements.filter((placement) => {
+                const start = DateTime.fromJSDate(placement.startDate, { zone: "utc" }).toFormat("yyyy-MM-dd");
+                const end = placement.endDate
+                    ? DateTime.fromJSDate(placement.endDate, { zone: "utc" }).toFormat("yyyy-MM-dd")
+                    : null;
+
+                return start <= day && (!end || end >= day);
+            });
+
+            const totalAllocation = activePlacements.reduce(
+                (sum: number, placement): number => sum + placement.allocation,
+                0,
+            );
+
+            const allocationDivisor = Math.max(totalAllocation, 100);
+
+            const availableWindowMinutes = windows.reduce(
+                (sum: number, window: Interval): number => sum + this.durationMinutes(window.start, window.end),
+                0,
+            );
+
+            let cursorMinutes = 0;
+
+            for (const placement of activePlacements) {
+                const blockMinutes = Math.floor(
+                    availableWindowMinutes * placement.allocation / allocationDivisor,
+                );
+                if (blockMinutes <= 0) continue;
+
+                const start = this.workingWindowInstantAt(windows, cursorMinutes);
+                const end = this.workingWindowInstantAt(windows, cursorMinutes + blockMinutes);
+                cursorMinutes += blockMinutes;
+
+                data.push({
+                    id: randomUUID(),
+                    weekId,
+                    projectId: placement.projectId,
+                    placementId: placement.id,
+                    allocatedMinutes: Math.round(
+                        (SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * placement.allocation / 100) / 5,
+                    ),
+                    start: new Date(start),
+                    end: new Date(end),
+                    mobility: "fluid",
+                    userSized: false,
+                });
+            }
+        }
+
+        if (data.length > 0) {
+            await this.prisma.schedulerProjectBlock.createMany({
+                data,
+                skipDuplicates: true,
+            });
+        }
+    }
+
+    private workingWindowInstantAt(windows: Interval[], offsetMinutes: number): string {
+        for (let index = 0; index < windows.length; index++) {
+            const window = windows[index];
+            const duration = this.durationMinutes(window.start, window.end);
+
+            if (offsetMinutes < duration) {
+                return new Date(Date.parse(window.start) + offsetMinutes * 60_000).toISOString();
+            }
+
+            offsetMinutes -= duration;
+
+            if (offsetMinutes === 0) {
+                return windows[index + 1]?.start ?? window.end;
+            }
+        }
+
+        return windows.at(-1)?.end ?? "";
+    }
+
+    private durationMinutes(start: string, end: string): number {
+        return (Date.parse(end) - Date.parse(start)) / 60_000;
+    }
+
+    // -----------------------------------------------------------------
+    // MUTATION PIPELINE & APPLY CHANGE
+    // -----------------------------------------------------------------
 
     public async commit(
         week: WeekContainer,
@@ -352,6 +511,7 @@ export class WeekService {
         slot.locked = true;
         if (tags) slot.tags = tags;
     }
+
     private applyPlaceUnplacedChange(week: WeekContainer, taskIds: string[]): void {
         for (const t of week.tasks) {
             if (t.placement === 'unplaced' && !taskIds.includes(t.id)) {
@@ -471,8 +631,7 @@ export class WeekService {
             }
         });
 
-        for (const t of week.tasks) {
-
+        await Promise.all(week.tasks.map(async (t) => {
             if (!t.id) {
                 t.id = randomUUID();
             }
@@ -498,7 +657,7 @@ export class WeekService {
             await tx.schedulerTask.upsert({
                 where: { id: taskId },
                 update: taskData,
-                create: { id: t.id, ...taskData }
+                create: { id: taskId, ...taskData }
             });
 
             await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
@@ -506,7 +665,6 @@ export class WeekService {
             if (t.subtasks && t.subtasks.length > 0) {
                 await tx.schedulerSubtask.createMany({
                     data: t.subtasks.map((sub: any) => {
-
                         if (!sub.id) sub.id = randomUUID();
                         return {
                             id: sub.id,
@@ -518,23 +676,25 @@ export class WeekService {
                     })
                 });
             }
-        }
+        }));
 
-        for (const b of week.blocks) {
-            if (b.userSized) {
-                await tx.schedulerProjectBlock.update({
-                    where: { id: b.id },
-                    data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
-                });
-            }
-        }
+        await Promise.all(
+            week.blocks
+                .filter(b => b.userSized)
+                .map(async (b) => {
+                    await tx.schedulerProjectBlock.update({
+                        where: { id: b.id },
+                        data: { allocatedMinutes: b.allocatedMinutes, mobility: b.mobility, start: b.start, end: b.end },
+                    });
+                })
+        );
     }
 
     private async persistSlots(tx: any, week: WeekContainer): Promise<void> {
         await tx.schedulerSlotTask.deleteMany({ where: { slot: { weekId: week.id } } });
         await tx.schedulerSlot.deleteMany({ where: { weekId: week.id } });
 
-        for (const s of week.slots) {
+        await Promise.all(week.slots.map(async (s): Promise<void> => {
             await tx.schedulerSlot.create({
                 data: {
                     id: s.id,
@@ -556,9 +716,8 @@ export class WeekService {
                     }))
                 });
             }
-        }
+        }));
     }
-
     private async getWeekById(weekId: string): Promise<WeekContainer> {
         const dbWeek = await this.prisma.schedulerWeek.findUnique({ where: { id: weekId } });
         if (!dbWeek) throw new NotFoundException(`Week ${weekId} not found`);

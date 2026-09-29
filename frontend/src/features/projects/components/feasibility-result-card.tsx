@@ -1,5 +1,5 @@
-import { AlertCircle, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
-import type { FeasibilityResponseDto } from "../types/feasibility.types";
+import { AlertCircle, CheckCircle2, Loader2, ShieldAlert, TrendingUp } from "lucide-react";
+import type { FeasibilityResponseDto, FeasibilityVariantResultDto  } from "../types/feasibility.types";
 import type { FeasibilityCheckState } from "../hooks/use-feasibility-check";    
 
 interface FeasibilityResultCardProps {
@@ -10,6 +10,17 @@ interface FeasibilityResultCardProps {
 
 function formatValue(value: number): string {
     return value?.toLocaleString();
+}
+
+function findMostImpactfulVariant(
+    base: FeasibilityResponseDto,
+    ): FeasibilityVariantResultDto | null {
+    if (base.variants.length === 0) return null;
+    return base.variants.reduce((best, current) =>
+        current.eligibleCount - base.eligibleCount > best.eligibleCount - base.eligibleCount
+        ? current
+        : best,
+    );
 }
 
 export  default function FeasibilityResultCard({state, result, error} : FeasibilityResultCardProps){
@@ -58,6 +69,7 @@ export  default function FeasibilityResultCard({state, result, error} : Feasibil
     }
 
     if(!result) return null;
+    const topPick = findMostImpactfulVariant(result);
 
     return(
         <div className="flex flex-col gap-4">
@@ -71,30 +83,49 @@ export  default function FeasibilityResultCard({state, result, error} : Feasibil
                 </div>
 
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                    <p className="mb-1 text-sm font-medium text-blue-800">Top match score</p>
-                    <p className="text-2xl font-bold text-blue-950">{formatValue(result.topScore)}</p>
+                    <p className="mb-1 text-sm font-medium text-blue-800">Top match score (approx.)</p>
+                    <p className="text-2xl font-bold text-blue-950">{formatValue(result.topScore)}%</p>
                 </div>
             </div>
 
-            {result.variants.length > 0 &&(
-                <div className="border-t border-slate-200 pt-4">
-                    <h3 className="mb-3 text-sm font-semibold text-slate-800">Relaxed scenarios</h3>
+            {result.variants.length > 0 && (
+            <div className="border-t border-slate-200 pt-4">
+            <h3 className="mb-3 text-sm font-semibold text-slate-800">What would help</h3>
 
-                    <div className="flex flex-col gap-2">
-                        {result.variants.map((variant) => (
-                            <div key={variant.label} className="flex flex-col gap-1 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                <span className="text-sm text-slate-700">{variant.label}</span>
-                                <span className="text-sm font-semibold text-slate-950">
-                                    {formatValue(variant.eligibleCount)} eligible
-                                    <span className="ml-2 font-normal text-slate-500">
-                                      · top score {formatValue(variant.topScore)}  
-                                    </span>
-                                </span>
-                            </div>
-                        ))}
+            <div className="flex flex-col gap-2">
+                {result.variants.map((variant) => {
+                const isTopPick = topPick !== null && variant === topPick;
+                return (
+                    <div
+                    key={variant.label}
+                    className={`flex items-start gap-3 rounded-lg border px-4 py-3 ${
+                        isTopPick
+                        ? "border-emerald-300 bg-emerald-50"
+                        : "border-slate-200 bg-slate-50"
+                    }`}
+                    >
+                    {isTopPick && (
+                        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                    )}
+                    <div className="flex flex-col gap-1">
+                        <span
+                        className={`text-sm ${
+                            isTopPick ? "font-medium text-emerald-900" : "text-slate-700"
+                        }`}
+                        >
+                        {variant.message ?? variant.label}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                        {formatValue(variant.eligibleCount)} eligible · top score{" "}
+                        {formatValue(variant.topScore)}%
+                        </span>
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                    </div>
+                );
+                })}
+            </div>
+            </div>
+        )}
+    </div>
+  );
 }

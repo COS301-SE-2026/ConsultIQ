@@ -5,6 +5,8 @@ import { TimeService, type LocalDate } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
+import { randomUUID } from 'node:crypto';
+
 import {
     WeekContainer,
     Change,
@@ -217,6 +219,12 @@ export class WeekService {
                 this.applyPlaceUnplacedChange(week, change.taskIds);
                 break;
             case 'create_task':
+                if (!change.task.id) change.task.id = randomUUID();
+                if (change.task.subtasks) {
+                    change.task.subtasks.forEach((st: any) => {
+                        if (!st.id) st.id = randomUUID();
+                    });
+                }
                 week.tasks.push(change.task as Task);
                 break;
             case 'update_task':
@@ -256,7 +264,17 @@ export class WeekService {
                 week.calendarEntries = week.calendarEntries.filter(e => e.id !== change.entryId);
                 break;
             case 'pull_forward':
-                if (change.tasks) week.tasks.push(...change.tasks);
+                if (change.tasks) {
+                    change.tasks.forEach(t => {
+                        if (!t.id) t.id = randomUUID();
+                        if (t.subtasks) {
+                            t.subtasks.forEach((st: any) => {
+                                if (!st.id) st.id = randomUUID();
+                            });
+                        }
+                    });
+                    week.tasks.push(...change.tasks);
+                }
                 break;
             case 'rollover':
                 this.applyRollover(week, change.taskId, change.fromSlotId);
@@ -444,12 +462,22 @@ export class WeekService {
     }
 
     private async persistTasksAndSubtasks(tx: any, week: WeekContainer): Promise<void> {
-        const memoryTaskIds = week.tasks.map(t => t.id);
+        const memoryTaskIds = week.tasks.map(t => t.id).filter(id => id != null);
+
         await tx.schedulerTask.deleteMany({
-            where: { weekId: week.id, id: { notIn: memoryTaskIds } }
+            where: {
+                weekId: week.id,
+                id: { notIn: memoryTaskIds }
+            }
         });
 
         for (const t of week.tasks) {
+
+            if (!t.id) {
+                t.id = randomUUID();
+            }
+            const taskId = t.id;
+
             const taskData = {
                 weekId: week.id,
                 projectId: t.projectId,
@@ -461,26 +489,32 @@ export class WeekService {
                 status: t.status,
                 placement: t.placement,
                 unplacedReason: t.unplacedReason,
-                carriedOver: t.carriedOver,
+                carriedOver: t.carriedOver ?? false,
                 deadlineMissAccepted: t.deadlineMissAccepted ?? false,
             };
 
             await tx.schedulerTask.upsert({
-                where: { id: t.id },
+                where: { id: taskId },
                 update: taskData,
                 create: { id: t.id, ...taskData }
             });
 
             if (t.subtasks && t.subtasks.length > 0) {
-                await tx.schedulerSubtask.deleteMany({ where: { taskId: t.id } });
+
+                await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
+
                 await tx.schedulerSubtask.createMany({
-                    data: t.subtasks.map((sub: any) => ({
-                        id: sub.id,
-                        taskId: t.id,
-                        title: sub.title ?? 'Subtask',
-                        done: sub.done ?? false,
-                        estimate: sub.durationMinutes ?? 0
-                    }))
+                    data: t.subtasks.map((sub: any) => {
+
+                        if (!sub.id) sub.id = randomUUID();
+                        return {
+                            id: sub.id,
+                            taskId: taskId,
+                            title: sub.title ?? 'Subtask',
+                            done: sub.done ?? false,
+                            estimate: sub.durationMinutes ?? 0
+                        };
+                    })
                 });
             }
         }

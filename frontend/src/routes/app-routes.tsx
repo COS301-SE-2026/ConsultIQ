@@ -39,7 +39,6 @@ import AnalyticsPage from "../features/admin/pages/analytics-dashboard.tsx";
 import SecurityReviewPage from "../features/super-admin/pages/security-review-page.tsx";
 import SuperAdminDashboardPage from "../features/super-admin/pages/super-admin-dashboard-page.tsx";
 
-import { AuthProvider } from "../hooks/useAuth";
 import { ProtectedRoute } from "./protected-route";
 
 import NotificationPage from "../features/notifications/pages/notifications-page"
@@ -126,12 +125,10 @@ function AnimatedRoutes() {
 
 function AppRoutes() {
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                {/* Swapped the old static markup out for your animated wrapper component */}
-                <AnimatedRoutes />
-            </BrowserRouter>
-        </AuthProvider>
+        <BrowserRouter>
+            {/* Swapped the old static markup out for our animated wrapper component */}
+            <AnimatedRoutes />
+        </BrowserRouter>
     );
 }
 

@@ -28,6 +28,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Start auth mock
+        run: |
+          node -e "require('http').createServer((req, res) => { if (req.url === '/auth/me') { res.writeHead(401, {'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404); res.end(); }).listen(3000)" &
+
       - name: Run accessibility audit 
         working-directory: frontend
         run: npx --no-install lhci autorun --config=lighthouserc.public.cjs

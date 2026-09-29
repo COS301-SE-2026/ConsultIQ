@@ -139,7 +139,6 @@ export interface SchedulerHeaderProps {
     readonly projects: ProjectSummary[];
     readonly onPrevWeek?: () => void;
     readonly onNextWeek?: () => void;
-    readonly onAddEvent: () => void;
 }
 
 export default function SchedulerHeader({
@@ -147,7 +146,6 @@ export default function SchedulerHeader({
     projects,
     onPrevWeek,
     onNextWeek,
-    onAddEvent
 }: SchedulerHeaderProps) {
     
 
@@ -164,18 +162,6 @@ export default function SchedulerHeader({
                 <ProjectLegend blocks={week.blocks} projects={projects} contractedMinutes={week.metadata.contractedMinutes} />
 
             </div>
-            <div className="flex items-center gap-2 justify-self-end">
-
-                <Button
-                    className="px-4 py-2 rounded-lg whitespace-nowrap border-slate-200 "
-                    onClick={onAddEvent}
-                >
-                    + Event
-                </Button>
-            </div>
-
-
-
         </div>
     );
 

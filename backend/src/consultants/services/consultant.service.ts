@@ -454,19 +454,10 @@ export class ConsultantService {
     projectId: string,
     userRole: string,
   ): Promise<ProjectConsultantsResponseDto> {
-    const now = new Date();
-
     const placements = await this.encryptionPrisma.projectPlacement.findMany({
       where: {
-        projectId: projectId,
+        projectId,
         status: 'ACTIVE',
-
-        startDate: {
-          lte: now,
-        },
-
-        OR: [{ endDate: null }, { endDate: { gte: now } }],
-
         consultant: {
           user: {
             status: 'ACTIVE',

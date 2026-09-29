@@ -963,7 +963,6 @@ describe('ConsultantService', () => {
         where: expect.objectContaining({
           projectId: 'project-123',
           status: 'ACTIVE',
-          startDate: { lte: expect.any(Date) },
           consultant: expect.objectContaining({
             user: expect.objectContaining({ status: 'ACTIVE' })
           })
@@ -983,6 +982,25 @@ describe('ConsultantService', () => {
 
       expect(mappedConsultant.costToCompany).toBeUndefined();
 
+    });
+
+    it('includes active assignments whose scheduled start date is in the future', async () => {
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          ...mockPlacementData,
+          startDate: new Date('2030-01-01'),
+        },
+      ]);
+
+      const result = await service.getConsultantsByProject('project-123', 'PROJECT_MANAGER');
+
+      expect(result.consultants).toHaveLength(1);
+      expect(result.consultants[0].consultantId).toBe('consultant-1');
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.not.objectContaining({ startDate: expect.anything(), OR: expect.anything() }),
+        }),
+      );
     });
 
     it('should include costToCompany for roles other than PROJECT_MANAGER (ADMIN)', async () => {

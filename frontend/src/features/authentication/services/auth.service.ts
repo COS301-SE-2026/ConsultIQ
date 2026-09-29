@@ -55,13 +55,21 @@ export const authService = {
             body: JSON.stringify(payload),
         }).then((res) => handleResponse<LoginResult>(res)),
     getProfile: async () => {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-            credentials: 'include',
-        });
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 5000);
 
-        return handleResponse<Record<string, unknown>>(response).then((result) =>
-            result?.result ? result.result : result
-        );
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                credentials: 'include',
+                signal: controller.signal,
+            });
+
+            return handleResponse<Record<string, unknown>>(response).then((result) =>
+                result?.result ? result.result : result
+            );
+        } finally {
+            window.clearTimeout(timeout);
+        }
     },
     refresh: async (): Promise<string> => {
         const csrfToken = getCsrfToken();

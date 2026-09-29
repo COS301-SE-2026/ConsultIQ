@@ -69,17 +69,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logout]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const checkAuth = async () => {
       try {
         const profile = await authService.getProfile();
-        setUser(profile as UserProfile);
+        if (!cancelled) {
+          setUser(profile as UserProfile);
+        }
       } catch {
-        setUser(null);
+        if (!cancelled) {
+          setUser(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
+
     checkAuth();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {

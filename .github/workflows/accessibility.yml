@@ -30,7 +30,7 @@ jobs:
 
       - name: Start auth mock
         run: |
-          node -e "require('http').createServer((req, res) => { if (req.url === '/auth/me') { res.writeHead(401, {'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404); res.end(); }).listen(3000)" &
+          node -e "require('http').createServer((req, res) => { const headers = {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization'}; if (req.method === 'OPTIONS') { res.writeHead(204, headers); res.end(); return; } if (req.url === '/auth/me') { res.writeHead(401, {...headers, 'Content-Type': 'application/json'}); res.end(JSON.stringify({message: 'Unauthorized'})); return; } res.writeHead(404, headers); res.end(); }).listen(3000)" &
 
       - name: Run accessibility audit 
         working-directory: frontend

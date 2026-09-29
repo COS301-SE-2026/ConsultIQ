@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsNotEmpty, IsOptional, IsArray, IsBoolean, IsObject } from 'class-validator';
+import { IsString, IsInt, IsNotEmpty, IsOptional, IsArray, IsBoolean, IsObject, IsDateString } from 'class-validator';
 import type { Change, Interval } from './scheduler.dto';
 
 export class ConcurrencyControlDto {
@@ -40,6 +40,10 @@ export class CreateTaskDto extends ConcurrencyControlDto {
     @IsInt()
     @IsOptional()
     complexity?: number;
+    
+   @IsDateString()
+    @IsOptional()
+    deadline?: string;
 
     @IsArray()
     @IsOptional()

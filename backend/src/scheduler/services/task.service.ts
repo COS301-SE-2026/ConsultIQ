@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
 import { TimeService, LocalDate } from './time.service';
 import { WeekContainer, Change, Interval, Task, ValidateContext, NewTask, Issue } from '../dto/scheduler.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskService {
@@ -24,10 +25,34 @@ export class TaskService {
         expectedVersion?: number,
     ): Promise<CommitResult> {
         const week = await this.weekService.getWeek(consultantId, weekStart);
+        const newTask: Task = {
+            id: randomUUID(),
+            weekId: week.id,
+            projectId: dto.projectId,
+            title: dto.title,
+            tMin: dto.tMin,
+            tMax: dto.tMax,
+            deadline: dto.deadline,
+            urgency: dto.urgency,
+            complexity: dto.complexity,
+            status: 'Ready',
+            dependsOn: dto.dependsOn ?? [],
+            carriedOver: false,
+            placement: 'unplaced',
+            subtasks: (dto.subtasks ?? []).map((sub) => ({
+            id: sub.id ?? randomUUID(),
+            taskId: '',
+            title: sub.title,
+            estimate: sub.estimate ?? 0,
+            done: sub.done ?? false,
+            })),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
 
         const change: Change = {
             type: 'create_task',
-            task: dto,
+            task: newTask,
             origin: 'user',
             window: this.getWeekWindow(week),
         } as Change;

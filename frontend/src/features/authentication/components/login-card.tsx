@@ -112,6 +112,8 @@ export const LoginCard: React.FC = () => {
           </label>
           <input
             id="email"
+            name="email"
+            autoComplete="username"
             type="email"
             placeholder="email@example.com"
             value={email}
@@ -133,6 +135,8 @@ export const LoginCard: React.FC = () => {
           </label>
           <input
             id="password"
+            name="password"
+            autoComplete="current-password"
             type="password"
             placeholder="Enter password"
             value={password}

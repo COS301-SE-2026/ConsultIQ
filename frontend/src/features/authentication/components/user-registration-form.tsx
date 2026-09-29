@@ -62,7 +62,7 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-[560px] h-[560px] bg-white px-12 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-6"
+      className="w-full max-w-[560px] min-h-[560px] h-auto bg-white px-6 sm:px-12 py-10 rounded-2xl shadow-2xl flex flex-col items-center justify-center gap-6"
     >
       <div className="mb-8 w-full text-center">
         <h2 className="text-3xl font-bold mb-3" style={{ color: "var(--color-primary)" }}>
@@ -76,7 +76,7 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
       <div className="flex flex-col gap-8 w-full items-center">
         {/* Full Name */}
         <div className="flex flex-col gap-2 w-full items-center">
-          <label htmlFor="fullName" className="font-semibold text-base w-96" style={{ color: "var(--color-primary)" }}>
+          <label htmlFor="fullName" className="font-semibold text-base w-full max-w-96" style={{ color: "var(--color-primary)" }}>
             Full Name
           </label>
           <input
@@ -85,14 +85,14 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
             placeholder="Enter full name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={`w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border outline-none transition ${errors.fullName ? "border-red-500" : "border-gray-200"}`}
+            className={`w-full max-w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border outline-none transition ${errors.fullName ? "border-red-500" : "border-gray-200"}`}
           />
-          {errors.fullName && <div className="text-red-500 text-sm mt-1 w-96">{errors.fullName}</div>}
+          {errors.fullName && <div className="text-red-500 text-sm mt-1 w-full max-w-96">{errors.fullName}</div>}
         </div>
 
         {/* Email */}
         <div className="flex flex-col gap-2 w-full items-center">
-          <label htmlFor="email" className="font-semibold text-base w-96" style={{ color: "var(--color-primary)" }}>
+          <label htmlFor="email" className="font-semibold text-base w-full max-w-96" style={{ color: "var(--color-primary)" }}>
             Email Address
           </label>
           <input
@@ -101,14 +101,14 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
             placeholder="Enter email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border outline-none transition ${errors.email ? "border-red-500" : "border-gray-200"}`}
+            className={`w-full max-w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border outline-none transition ${errors.email ? "border-red-500" : "border-gray-200"}`}
           />
-          {errors.email && <div className="text-red-500 text-sm mt-1 w-96">{errors.email}</div>}
+          {errors.email && <div className="text-red-500 text-sm mt-1 w-full max-w-96">{errors.email}</div>}
         </div>
 
         {/* Role */}
         <div className="flex flex-col gap-2 w-full items-center">
-          <label htmlFor="role" className="font-semibold text-base w-96" style={{ color: "var(--color-primary)" }}>
+          <label htmlFor="role" className="font-semibold text-base w-full max-w-96" style={{ color: "var(--color-primary)" }}>
             Role
           </label>
           <select
@@ -116,7 +116,7 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
             disabled={isRoleLocked}
-            className={`w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border bg-white outline-none transition ${errors.role ? "border-red-500" : "border-gray-200"}`}
+            className={`w-full max-w-96 px-5 py-4 min-h-[52px] rounded-xl text-base border bg-white outline-none transition ${errors.role ? "border-red-500" : "border-gray-200"}`}
           >
             {allowedRoles.map((r) => (
               <option key={r} value={r}>
@@ -124,18 +124,18 @@ function UserRegistrationForm({ allowedRoles }: UserRegistrationFormProps) {
               </option>
             ))}
           </select>
-          {errors.role && <div className="text-red-500 text-sm mt-1 w-96">{errors.role}</div>}
+          {errors.role && <div className="text-red-500 text-sm mt-1 w-full max-w-96">{errors.role}</div>}
         </div>
       </div>
 
       {submitError && (
-        <div className="text-red-500 text-sm text-center w-96">{submitError}</div>
+        <div className="text-red-500 text-sm text-center w-full max-w-96">{submitError}</div>
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-96 px-5 py-4 min-h-[52px] rounded-xl text-white font-semibold text-lg transition hover:opacity-90 disabled:opacity-60"
+        className="w-full max-w-96 px-5 py-4 min-h-[52px] rounded-xl text-white font-semibold text-lg transition hover:opacity-90 disabled:opacity-60"
         style={{ backgroundColor: "var(--color-primary)" }}
       >
         {loading ? "Registering..." : "Register User"}

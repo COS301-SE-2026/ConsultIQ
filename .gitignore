@@ -448,3 +448,4 @@ $RECYCLE.BIN/
 /playwright/.auth/
 /load-test-results
 .neon
+a11y-report/

@@ -873,6 +873,7 @@ describe('ConsultantService', () => {
 
       expect(result.placementId).toBe('placement-1');
       expect(result.project.projectName).toBe('Project Alpha');
+      expect(result.project).not.toHaveProperty('budget');
       expect(result.project.skills).toHaveLength(1);
       expect(result.project.skills[0].skillName).toBe('TypeScript');
       expect(result.project.teamMembers).toHaveLength(1);

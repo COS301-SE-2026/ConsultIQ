@@ -63,7 +63,7 @@ describe('EmailService', () => {
   });
 
   describe('sendActivationEmail', () => {
-    it('attaches the CV template and mentions it when isConsultant is true and the template loaded', async () => {
+    it('attaches the CV template and includes the CV paragraph when isConsultant is true and the template loaded', async () => {
       (fs.readFileSync as jest.Mock).mockReturnValue(Buffer.from('fake pdf bytes'));
       service.onModuleInit();
 
@@ -78,13 +78,14 @@ describe('EmailService', () => {
       const call = mockSend.mock.calls[0][0];
 
       expect(call.to).toBe('jane@consultiq.com');
-      expect(call.html).toContain('the attached CV template');
+      expect(call.html).toContain('please send your CV to');
+      expect(call.html).toContain('your consultant manager'); // fallback text — no managerEmail passed
       expect(call.attachments).toEqual([
         { filename: 'ConsultIQ_CV_Template.pdf', content: expect.any(String) },
       ]);
     });
 
-    it('falls back to generic CV wording and sends no attachment when the template failed to load', async () => {
+    it('includes the CV paragraph but sends no attachment when isConsultant is true and the template failed to load, and logs a warning', async () => {
       (fs.readFileSync as jest.Mock).mockImplementation(() => {
         throw new Error('ENOENT');
       });
@@ -98,12 +99,27 @@ describe('EmailService', () => {
       );
 
       const call = mockSend.mock.calls[0][0];
-      expect(call.html).toContain('a CV in our standard format');
-      expect(call.html).not.toContain('the attached CV template');
+      expect(call.html).toContain('please send your CV to');
       expect(call.attachments).toBeUndefined();
       expect(warnSpy).toHaveBeenCalledWith(
         'CV template unavailable — sending activation email without attachment.',
       );
+    });
+
+    it('links the CV paragraph to the manager email when one is provided', async () => {
+      (fs.readFileSync as jest.Mock).mockReturnValue(Buffer.from('fake pdf bytes'));
+      service.onModuleInit();
+
+      await service.sendActivationEmail(
+        'jane@consultiq.com',
+        'Jane Smith',
+        'http://localhost/activate?token=abc',
+        { isConsultant: true, managerEmail: 'cm@consultiq.com' },
+      );
+
+      const call = mockSend.mock.calls[0][0];
+      expect(call.html).toContain('please send your CV to');
+      expect(call.html).toContain('<a href="mailto:cm@consultiq.com">cm@consultiq.com</a>');
     });
 
     it('omits the CV paragraph and attachment entirely for a non-consultant role, even if the template loaded fine', async () => {
@@ -118,8 +134,7 @@ describe('EmailService', () => {
       );
 
       const call = mockSend.mock.calls[0][0];
-      expect(call.html).not.toContain('CV template');
-      expect(call.html).not.toContain('a CV in our standard format');
+      expect(call.html).not.toContain('please send your CV to');
       expect(call.attachments).toBeUndefined();
       expect(warnSpy).not.toHaveBeenCalled();
     });
@@ -134,8 +149,20 @@ describe('EmailService', () => {
 
       const call = mockSend.mock.calls[0][0];
       expect(call.replyTo).toBe('cm@consultiq.com');
-      expect(call.html).toContain('created by CM Person');
       expect(call.html).toContain('Contact your consultant manager at');
+      expect(call.html).toContain('<a href="mailto:cm@consultiq.com">cm@consultiq.com</a>');
+    });
+
+    it('does not render the manager name anywhere, even when provided (managerName is currently unused)', async () => {
+      await service.sendActivationEmail(
+        'jane@consultiq.com',
+        'Jane Smith',
+        'http://localhost/activate?token=abc',
+        { isConsultant: false, managerEmail: 'cm@consultiq.com', managerName: 'CM Person' },
+      );
+
+      const call = mockSend.mock.calls[0][0];
+      expect(call.html).not.toContain('CM Person');
     });
 
     it('omits replyTo and the contact paragraph when no manager email is given', async () => {
@@ -148,7 +175,6 @@ describe('EmailService', () => {
       const call = mockSend.mock.calls[0][0];
       expect(call.replyTo).toBeUndefined();
       expect(call.html).not.toContain('Contact your consultant manager');
-      expect(call.html).not.toContain('created by');
     });
   });
 

@@ -10,7 +10,7 @@ on:
       - '.zap/**'
       - '.github/workflows/owasp-zap.yml'
   schedule:
-    - cron: '0 2 * * 1'        
+    - cron: '0 2 * * 1'       
   workflow_dispatch:
     inputs:
       baseline_url:
@@ -70,6 +70,7 @@ jobs:
       ADMIN_ONLY_PATH: /admin/users
       PROJECT_PATH: /projects
       CONSULTANT_PATH: /consultants
+
       CSRF_HEADER: X-CSRF-Token
       OPENAPI_PATH: /api-json
 
@@ -95,7 +96,7 @@ jobs:
       - name: Push schema and seed (with security fixtures)
         working-directory: backend
         env:
-          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}  
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}   
           SEED_SECURITY_FIXTURES: 'true'
         run: |
           npx --no-install prisma db push --accept-data-loss
@@ -186,6 +187,8 @@ jobs:
             fi
           }
 
+          # CSRF is enforced on authenticated mutating routes, and our header/cookie pair is accepted.
+          # (register is not @SkipCsrf; body {} is rejected by validation only AFTER the guards pass.)
           if [ "${{ matrix.role }}" = "ADMIN" ] || [ "${{ matrix.role }}" = "CONSULTANT_MANAGER" ]; then
             C1=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/register" \
                   -H 'Content-Type: application/json' -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" -d '{}')
@@ -255,6 +258,8 @@ jobs:
           fi
 
       - name: Endpoint access sweep (no accidental public endpoints + role matrix)
+        id: access_sweep
+        continue-on-error: true
         run: |
           # GETs that are allowed to be public
           PUBLIC_ALLOW='^/(health|auth/csrf-token)$'
@@ -282,9 +287,9 @@ jobs:
           retention-days: 30
 
       - name: Report access-control result
-        if: always() && steps.access_control.outcome == 'failure'
+        if: always() && (steps.access_control.outcome == 'failure' || steps.access_sweep.outcome == 'failure')
         run: |
-          MSG="Access-control checks FAILED for ${{ matrix.role }}. Rule: a PROJECT_MANAGER must not access another PM's data, and a CONSULTANT_MANAGER must not access another CM's data. See the 'Access-control checks (A01)' step log."
+          MSG="Access-control checks FAILED for ${{ matrix.role }} (checks: ${{ steps.access_control.outcome }}, sweep: ${{ steps.access_sweep.outcome }}). Rule: a PROJECT_MANAGER must not access another PM's data, and a CONSULTANT_MANAGER must not access another CM's data. See the 'Access-control checks (A01)' and 'Endpoint access sweep' step logs."
           echo "::warning title=Broken access control::$MSG"
           {
             echo "### :warning: Access-control failure (${{ matrix.role }})"
@@ -338,7 +343,7 @@ jobs:
           echo "target_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Run OWASP ZAP baseline (passive)
-        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: ${{ steps.set_url.outputs.target_url }}
           rules_file_name: '.zap/rules.tsv'

@@ -3,12 +3,14 @@ name: OWASP ZAP Security Scan
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [dev, main]
-    paths:
-      - 'backend/**'
-      - '.zap/**'
-      - '.github/workflows/owasp-zap.yml'
+  schedule:
+    - cron: '0 2 * * 1'       
+  workflow_dispatch:
+    inputs:
+      baseline_url:
+        description: 'URL for the passive baseline scan of a deployed environment'
+        required: false
+        default: 'https://consultiq-backend-production-086b.up.railway.app'
   schedule:
     - cron: '0 2 * * 1'       
   workflow_dispatch:

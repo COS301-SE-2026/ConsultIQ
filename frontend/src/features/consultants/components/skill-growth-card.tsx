@@ -51,6 +51,31 @@ function StatTile({ label, value, caption, highlighted }: StatTileProps) {
   );
 }
 
+function ScoreImprovementNote({
+  totalScoreDelta,
+  projectsTested,
+  skillName,
+}: {
+  readonly totalScoreDelta: number;
+  readonly projectsTested: number;
+  readonly skillName: string;
+}) {
+  const avgImprovement = projectsTested > 0 ? Math.round(totalScoreDelta / projectsTested) : 0;
+
+  return (
+    <div className="mt-6 rounded-lg border-2 border-[#E6D6A6] bg-[#FBF7EE] px-6 py-5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#9A7A2C]">With {skillName}</p>
+      <p className="mt-2 text-2xl font-bold text-brand-navy">
+        +{avgImprovement} <span className="text-base font-medium text-brand-muted">avg. fit score points</span>
+      </p>
+      <p className="mt-1 text-sm text-[#9A7A2C]">
+        across the {projectsTested} active project{projectsTested === 1 ? "" : "s"} that need it — you already
+        qualify for {projectsTested === 1 ? "it" : "them"}, this would strengthen your match
+      </p>
+    </div>
+  );
+}
+
 function EligibilityComparison({
   eligibleNow,
   projectedEligibleCount,
@@ -193,12 +218,20 @@ export default function SkillGrowthCard({
               This skill creates the strongest match between your profile and current project demand across the tested pipeline.
             </p>
 
-            <EligibilityComparison
-              eligibleNow={eligibleNow}
-              projectedEligibleCount={top.projectedEligibleCount}
-              pipelineSize={pipelineSize}
-              skillName={top.skillName}
-            />
+            {top.newlyEligibleProjectCount > 0 ? (
+              <EligibilityComparison
+                eligibleNow={eligibleNow}
+                projectedEligibleCount={top.projectedEligibleCount}
+                pipelineSize={pipelineSize}
+                skillName={top.skillName}
+              />
+            ) : (
+              <ScoreImprovementNote
+                totalScoreDelta={top.totalScoreDelta}
+                projectsTested={top.projectsTested}
+                skillName={top.skillName}
+              />
+            )}
 
             <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
               <StatTile label="Demand" value={top.projectsTested} caption="active projects need this skill" />

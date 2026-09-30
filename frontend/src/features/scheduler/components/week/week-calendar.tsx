@@ -172,7 +172,7 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
         setWeek(patch(previous));
         save?.then((ok) => {
             if (!ok) setWeek(previous);
-        });
+        }).catch(() => setWeek(previous));
     }
 
     function applyChange(c: AwaitingConfirmation, confirmedOverride = false) {

@@ -51,7 +51,7 @@ export function getPositionStyle(interval: {start: LocalTime; end: LocalTime}){
 
     return{
         top: `${topPct}%`,
-        height: `${heightPct}`,
+        height: `${heightPct}%`,
     };
 }
 
@@ -98,6 +98,6 @@ export function formatRange(weekStart: string){
     const start = new Date(weekStart + "T00:00:00Z");
     const end = new Date(start);
     end.setUTCDate(end.getUTCDate() + 4);
-    const dayMonth= (d: Date) => d.toLocaleDateString("end-GB", {day: "numeric", month: "long", timeZone: "UTC"});
-    return `${dayMonth(start)} - ${dayMonth(end)} ${end.getUTCFullYear()}`;
+    const dayMonth= (d: Date) => d.toLocaleDateString("en-GB", {day: "numeric", month: "long", timeZone: "UTC"});
+    return `${dayMonth(start)} – ${dayMonth(end)} ${end.getUTCFullYear()}`;
 }

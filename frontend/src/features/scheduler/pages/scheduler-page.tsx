@@ -421,6 +421,7 @@ export default function SchedulerPage() {
                                             onResizeBlock={handleResizeBlock}
                                             onPinBlock={handlePinBlock}
                                             onMoveSlot={handleMoveSlot}
+                                            onSetStatus={handleSetStatus}
                                         />
                                     </div>
                                 )}

@@ -23,7 +23,7 @@ export interface ProjectBlockProps {
 
 export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize, onSetStatus, onTogglePin }: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
-    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: block.id });
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: `block:${block.id}` });
 
     const start = instantToLocalTime(block.start, timezone);
     const end = instantToLocalTime(block.end, timezone);

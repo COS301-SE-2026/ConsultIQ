@@ -8,6 +8,7 @@ import type {
     CalendarEntry as CalendarEntryData,
     CalendarEntryDto,
     ProjectBlock as ProjectBlockData,
+    SetTaskStatusDto,
 } from "../../types/scheduler.types";
 import CalendarEntryForm from "../calendar-entry-form";
 import {
@@ -61,8 +62,8 @@ interface GhostState {
 }
 
 interface AwaitingConfirmation {
-    kind: "move" | "resize";
-    blockId: string;
+    kind: "move" | "resize" | "slot";
+    id: string;
     to: Interval;
 }
 
@@ -76,6 +77,7 @@ export interface WeekCalendarProps {
     readonly onResizeBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
     readonly onPinBlock?: (blockId: string, pinned: boolean) => Promise<boolean>;
     readonly onMoveSlot?: (slotId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onSetStatus?: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {
@@ -88,7 +90,24 @@ function withBlock(w: WeekContainer, blockId: string, patch: Partial<ProjectBloc
     return { ...w, blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) };
 }
 
-export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested = false, onCreateEntryDone, onMoveBlock, onMoveSlot, onPinBlock, onResizeBlock }: WeekCalendarProps) {
+
+function parseDragId(dragId: string) {
+    const i = dragId.indexOf(":");
+    return { kind: dragId.slice(0, i) as "block" | "slot", id: dragId.slice(i + 1) };
+}
+
+
+function withSlot(w: WeekContainer, slotId: string, to: Interval): WeekContainer {
+    return {
+        ...w,
+        tasks: w.tasks.map((t) => ({
+            ...t,
+            slots: t.slots.map((s) => (s.id === slotId ? { ...s, ...to } : s)),
+        })),
+    };
+}
+
+export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested = false, onCreateEntryDone, onMoveBlock, onMoveSlot, onPinBlock, onResizeBlock, onSetStatus }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
@@ -116,6 +135,14 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
             tasks: w.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
 
         }));
+    }
+
+    function changeStatus(taskId: string, status: TaskStatus) {
+        if (onSetStatus) {
+            onSetStatus(taskId, { status, expectedVersion: week.version });
+        } else {
+            handleSetStatus(taskId, status); // fixtures only: no backend
+        }
     }
 
     function handleSaveEntry(dto: CalendarEntryDto) {
@@ -149,18 +176,23 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     }
 
     function applyChange(c: AwaitingConfirmation, confirmedOverride = false) {
-        if (c.kind === "move") {
-            applyOptimistic(
-                (w) => withBlock(w, c.blockId, c.to),
-                onMoveBlock?.(c.blockId, c.to, confirmedOverride),
-            );
-        } else {
-            applyOptimistic(
-                (w) => withBlock(w, c.blockId, { ...c.to, userSized: true }),
-                onResizeBlock?.(c.blockId, c.to, confirmedOverride),
-            );
-        }
+    if (c.kind === "slot") {
+        applyOptimistic(
+            (w) => withSlot(w, c.id, c.to),
+            onMoveSlot?.(c.id, c.to, confirmedOverride),
+        );
+    } else if (c.kind === "move") {
+        applyOptimistic(
+            (w) => withBlock(w, c.id, c.to),
+            onMoveBlock?.(c.id, c.to, confirmedOverride),
+        );
+    } else {
+        applyOptimistic(
+            (w) => withBlock(w, c.id, { ...c.to, userSized: true }),
+            onResizeBlock?.(c.id, c.to, confirmedOverride),
+        );
     }
+}
 
     function handleTogglePin(blockId: string, pinned: boolean) {
         applyOptimistic(
@@ -176,14 +208,25 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
         else applyChange(c);
     }
 
-    function snappedStart(blockId: string, deltaY: number) {
-        const b = week.blocks.find((x) => x.id === blockId)!;
-        const originalMin = timeToMinutes(instantToLocalTime(b.start, week.timezone));
-        const durationMin = (Date.parse(b.end) - Date.parse(b.start)) / 60_000;
-        const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
-        const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
-        return { startMin, durationMin, colour: getProjectColour(b.projectId).color }
+    function dragSubject(dragId: string) {
+    const { kind, id } = parseDragId(dragId);
+    if (kind === "slot") {
+        const task = week.tasks.find((t) => t.slots.some((s) => s.id === id))!;
+        const slot = task.slots.find((s) => s.id === id)!;
+        return { start: slot.start, end: slot.end, projectId: task.projectId };
     }
+    const b = week.blocks.find((x) => x.id === id)!;
+    return { start: b.start, end: b.end, projectId: b.projectId };
+}
+
+function snappedStart(dragId: string, deltaY: number) {
+    const subject = dragSubject(dragId);
+    const originalMin = timeToMinutes(instantToLocalTime(subject.start, week.timezone));
+    const durationMin = (Date.parse(subject.end) - Date.parse(subject.start)) / 60_000;
+    const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
+    const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
+    return { startMin, durationMin, colour: getProjectColour(subject.projectId).color };
+}
 
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
         if (!over) {
@@ -198,17 +241,20 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     }
 
     function handleDragEnd({ active, over, delta }: DragEndEvent) {
-        setGhost(null);
-        if (!over) return;
-        const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
-        const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
-        const end = new Date(start.getTime() + durationMin * 60_000);
-        requestChange({
-            kind: "move",
-            blockId: String(active.id),
-            to: { start: start.toISOString(), end: end.toISOString() },
-        });
-    }
+    setGhost(null);
+    if (!over) return;
+
+    const { kind, id } = parseDragId(String(active.id));
+    const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
+    const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
+    const end = new Date(start.getTime() + durationMin * 60_000);
+
+    requestChange({
+        kind: kind === "slot" ? "slot" : "move",
+        id,
+        to: { start: start.toISOString(), end: end.toISOString() },
+    });
+}
 
     const today = instantToLocalDate(new Date().toISOString(), week.timezone);
 
@@ -288,8 +334,8 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
                                                     timezone={week.timezone}
                                                     selected={selectedBlockId === b.id}
                                                     onClick={() => setSelectedBlockId(b.id)}
-                                                    onResize={(blockId, to) => requestChange({ kind: "resize", blockId, to })}
-                                                    onSetStatus={handleSetStatus}
+                                                    onResize={(blockId, to) => requestChange({ kind: "resize", id: blockId, to })}
+                                                    onSetStatus={changeStatus}
                                                     onTogglePin={(pinned) => handleTogglePin(b.id, pinned)}
                                                 />
                                             );

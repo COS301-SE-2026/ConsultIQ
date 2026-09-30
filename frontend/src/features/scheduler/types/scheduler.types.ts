@@ -406,4 +406,86 @@ export interface Project {
   province: string;
   gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
- 
+
+export interface SchedulerTaskResponse extends Omit<Task, "slots" | "subtasks"> {
+  weekId: string;
+  createdAt: Instant;
+  updatedAt: Instant;
+  deadlineMissAccepted?: boolean;
+  subtasks?: Array<{ id: string; done: boolean; durationMinutes?: Minutes;}>;
+}
+
+export interface SchedulerSlotResponse extends Slot {
+  weekId: string;
+  tags?: string[];
+}
+
+export interface SchedulerProjectBlockResponse
+  extends Omit<ProjectBlock, "placementId"> {
+  weekId: string;
+  placementId?: string;
+  userSized: boolean;
+}
+
+export interface SchedulerCalendarEntryResponse {
+  id: string;
+  weekId: string;
+  type: "meeting" | "training" | "travel" | "personal" | "leave" | "ad-hoc";
+  start: Instant;
+  end: Instant;
+  tags: string[];
+  origin: "user" | "feed" | "system" | "public-holiday";
+}
+
+export interface SchedulerWeekMetadataResponse {
+  available: Minutes;
+  allocated: Minutes;
+  scheduled: Minutes;
+  buffer: Minutes;
+  utilization: number;
+  softCapBreached: boolean;
+  hardCapBreached: boolean;
+  hasOutOfHours: boolean;
+  hasWeekend: boolean;
+  hasContainerOverflow: boolean;
+}
+
+export interface SchedulerWeekResponse extends Omit<WeekContainer, "entries" | "metadata" | "tasks" | "blocks"> {
+  blocks: Array<Omit<ProjectBlock, "placementId"> & { placementId?: string; weekId: string; userSized: boolean }>;
+  tasks: Array<Omit<Task, "slots" | "subtasks"> & {
+    weekId: string;
+    createdAt: Instant;
+    updatedAt: Instant;
+    subtasks: Array<{ id: string; taskId: string; title: string; estimate: number; done: boolean }>;
+  }>;
+  slots: Array<Slot & { weekId: string; tags?: string[] }>;
+  calendarEntries: Array<{
+    id: string; weekId: string; type: string; start: Instant; end: Instant;
+    tags: string[]; origin: string;
+  }>;
+  metadata: {
+    available: Minutes; allocated: Minutes; scheduled: Minutes; buffer: Minutes;
+    utilization: number; softCapBreached: boolean; hardCapBreached: boolean;
+    hasOutOfHours: boolean; hasWeekend: boolean; hasContainerOverflow: boolean;
+  };
+  lastCommittedAt: Instant;
+  sourceOfLastChange: string;
+  createdAt: Instant;
+  updatedAt: Instant;
+}
+
+export interface SchedulerCommitIssue {
+  level: IssueLevel;
+  code: string;
+  message: string;
+  entityIds?: string[];
+  persistent?: boolean;
+}
+
+export interface SchedulerCommitResult {
+  ok: boolean;
+  value: SchedulerWeekResponse;
+  violations: Array<{ level: IssueLevel; code: string; message: string }>;
+  warnings: Array<{ level: IssueLevel; code: string; message: string }>;
+  infos: Array<{ level: IssueLevel; code: string; message: string }>;
+}

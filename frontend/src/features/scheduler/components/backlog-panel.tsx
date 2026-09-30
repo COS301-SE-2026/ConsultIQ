@@ -8,6 +8,7 @@ export interface BacklogProjectOption {
     label: string;
     clientName: string;
     color: string;
+    readonly allocation?: number;
 }
 
 interface BacklogPanelProps {

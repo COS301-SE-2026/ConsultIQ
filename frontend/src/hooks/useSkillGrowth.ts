@@ -14,11 +14,10 @@ export function useSkillGrowth(){
         setIsError(false);
 
         getSkillGrowth().then((res) => {
-            console.log("skill data", res);
+           
             if(!cancelled) setData(res);
         })
-        .catch((err) => {
-             console.log("skill error ", err);
+        .catch(() => {
             if(!cancelled) setIsError(true);
         })
         .finally(() => {

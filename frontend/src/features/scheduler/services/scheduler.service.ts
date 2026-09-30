@@ -1,6 +1,8 @@
 import { apiClient } from "../../../lib/api-client";
 import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult, type CalendarEntry, type WeekContainer,
-    type CreateTaskDto, type UpdateTaskDto, type SetTaskStatusDto, type Task} from "../types/scheduler.types";
+    type CreateTaskDto, type UpdateTaskDto, type SetTaskStatusDto, type Task,
+    type MoveSlotDto, type MoveBlockDto, type ResizeBlockDto, type PinBlockDto
+  } from "../types/scheduler.types";
 
 export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
   const slots = api.slots.map((slot) => {
@@ -99,3 +101,22 @@ export function splitSchedulerTask(taskId: string, atMinutes: number, expectedVe
 export function placeUnplacedTasks(taskIds: string[], expectedVersion: number) {
   return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/place-unplaced", { taskIds, expectedVersion });
 }
+
+export function moveSlot({slotId, ...body}:MoveSlotDto) {
+  return apiClient.patch<SchedulerCommitResult>(`/scheduler/slots/${slotId}/move`, body);
+}
+
+export function moveBlock({blockId, ...body}:MoveBlockDto) {
+  return apiClient.patch<SchedulerCommitResult>(`/scheduler/blocks/${blockId}/move`, body);
+}
+
+export function resizeBlock({blockId, ...body}:ResizeBlockDto) {
+  return apiClient.patch<SchedulerCommitResult>(`/scheduler/blocks/${blockId}/resize`, body);
+}
+
+export function pinBlock({blockId, ...body}:PinBlockDto) {
+  return apiClient.patch<SchedulerCommitResult>(`/scheduler/blocks/${blockId}/pin`, body);
+}
+
+
+

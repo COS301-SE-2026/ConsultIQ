@@ -1,7 +1,6 @@
 import { apiClient } from "../../../lib/api-client";
-import type { SetTaskStatusDto, Task, } from "../types/scheduler.types";
 import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult, type CalendarEntry, type WeekContainer,
-    type CreateTaskDto, type UpdateTaskDto} from "../types/scheduler.types";
+    type CreateTaskDto, type UpdateTaskDto, type SetTaskStatusDto, type Task} from "../types/scheduler.types";
 
 export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
   const slots = api.slots.map((slot) => {

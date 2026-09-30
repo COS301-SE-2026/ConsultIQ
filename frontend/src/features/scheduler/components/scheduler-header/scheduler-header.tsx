@@ -1,4 +1,4 @@
-import { type ProjectBlock, type WeekContainer, type WeekMetadata, SCHEDULER_RULES } from "../../types/scheduler.types"
+import { type WeekContainer, type WeekMetadata, SCHEDULER_RULES } from "../../types/scheduler.types"
 import type { ProjectSummary } from "../../types/scheduler.fixtures"
 import { getProjectColour } from "../week/project-colour"
 import { Button } from "../../../../components/ui/button"
@@ -106,37 +106,41 @@ function HoursSummary({ metadata }: { readonly metadata: WeekMetadata }) {
 }
 
 interface ProjectLegendprops {
-    readonly blocks: ProjectBlock[];
-    readonly projects: ProjectSummary[];
+    readonly projects: SchedulerHeaderProject[];
     readonly contractedMinutes: number;
 }
 
-function ProjectLegend({ blocks, projects, contractedMinutes }: ProjectLegendprops) {
-    const allocations = [...new Map(blocks.map((b) => [b.projectId, b.allocatedMinutes])).entries()];
-    return (
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-            {allocations.map(([projectId, minutes]) => {
-                const project = projects.find((p) => p.id === projectId);
+interface SchedulerHeaderProject extends ProjectSummary {
+  allocation: number;
+}
 
-                return (
-                    <div key={projectId} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getProjectColour(projectId).color }} />
-                        <span className=" text-slate-600">{project?.name ?? projectId}</span>
-                        <span className="text-slate-400">
-                            {Math.round((minutes / contractedMinutes) * 100)}% &middot; {hours(minutes)}h
-                        </span>
-                    </div>
+function ProjectLegend({ projects, contractedMinutes }: ProjectLegendprops) {
+   
+        return (
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                {projects.map((project) => {
+                    const minutes = Math.round((project.allocation / 100) * contractedMinutes);
 
-                );
-            })}
-        </div>
-    );
+                    return (
+                        <div key={project.id} className="flex items-center gap-1.5 text-xs whitespace-nowrap">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: getProjectColour(project.id).color }} />
+                            <span className=" text-slate-600">{project.name}</span>
+                            <span className="text-slate-400">
+                                {project.allocation}% · {hours(minutes)}h
+                            </span>
+                        </div>
+
+                    );
+                })}
+            </div>
+        );
+
 }
 
 
 export interface SchedulerHeaderProps {
     readonly week: WeekContainer;
-    readonly projects: ProjectSummary[];
+    readonly projects: SchedulerHeaderProject[];
     readonly onPrevWeek?: () => void;
     readonly onNextWeek?: () => void;
 }
@@ -159,7 +163,7 @@ export default function SchedulerHeader({
 
             <div className="flex flex-col items-center gap-2 min-w-0">
                 <HoursSummary metadata={week.metadata} />
-                <ProjectLegend blocks={week.blocks} projects={projects} contractedMinutes={week.metadata.contractedMinutes} />
+                <ProjectLegend projects={projects} contractedMinutes={week.metadata.contractedMinutes} />
 
             </div>
         </div>

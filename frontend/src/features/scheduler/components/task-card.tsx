@@ -32,7 +32,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
 
   const [subtasksExpanded, setSubtasksExpanded] = useState(false);
   const startTime = getStartTime(task, timeZone);
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const overdue = task.status !== "Done" && Boolean(task.deadline) && Date.parse(task.deadline ?? "") < now;
 
   return (
@@ -62,7 +62,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                     )}
                 </div>
 
-                <button type="button" className="mt-2 block text-left font-semibold text-slate-900 hover:text-indigo-700"
+                <button type="button" className="mt-2 block text-left font-semibold text-primary text-sm hover:text-indigo-700"
                     onClick={stopAndRun(() => onEdit(task))}
                 >
                     {task.title}
@@ -116,7 +116,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
 
                 <button type="button" aria-label="Delete task" title="Delete task"
                     className="shrink-0 text-slate-400 hover:text-red-600"
-                    onClick={stopAndRun(() => void onDelete(task.id))}
+                    onClick={stopAndRun(() => setDeleteDialogOpen(true))}
                 >
                     <X size={18} />
                 </button>
@@ -150,6 +150,35 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                     Split
                 </button>
             </div>
+
+            {deleteDialogOpen && (
+                <dialog open aria-labelledby={`delete-task-title-${task.id}`}
+                onCancel={() => setDeleteDialogOpen(false)}
+                className="fixed inset-0 z-50 m-0 flex h-full w-full items-center justify-center border-0 bg-black/40 p-4"
+                >
+                    <section className="w-full max-w-sm rounded-lg bg-white p-5 shadow-xl">
+                        <h2 id={`delete-task-title-${task.id}`}  className="font-semibold text-slate-900"> Delete task? </h2>
+                        <p className="mt-2 text-sm text-slate-600"> “{task.title}” will be permanently deleted. </p>
+                    
+                    <div className="mt-5 flex justify-end gap-2">
+                        <button type="button" className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                            onClick={() => setDeleteDialogOpen(false)}
+                        >
+                            Cancel
+                        </button>
+                        <button type="button" className="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white hover:bg-red-800"
+                            onClick={() =>{
+                                setDeleteDialogOpen(false);
+                                void onDelete(task.id)
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                    
+                    </section>
+                </dialog>
+            )}
     </article>
   );
 } 

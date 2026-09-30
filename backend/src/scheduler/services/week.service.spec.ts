@@ -279,12 +279,48 @@ describe('WeekService', () => {
             service['applyChange'](mockWeek, { type: 'toggle_subtask', taskId: 'task-1', subtaskId: 'sub-1', origin: 'user', window: mockWindow });
             expect((mockWeek.tasks[0] as any).subtasks[0].done).toBe(true);
             expect(mockWeek.tasks[0].status).toBe('Done');
+            expect((mockWeek.tasks[0] as any).subtasks.every((subtask: any) => subtask.done)).toBe(true);
         });
 
         it('handles split_task (found and not found)', () => {
             service['applyChange'](mockWeek, { type: 'split_task', taskId: 'bad-id', atMinutes: 90, origin: 'user', window: mockWindow });
-            service['applyChange'](mockWeek, { type: 'split_task', taskId: 'task-1', atMinutes: 90, origin: 'user', window: mockWindow });
+            mockWeek.tasks[0].tMax = 120;
+            mockWeek.tasks[0].subtasks = [
+                { id: 'sub-1', title: 'First half', estimate: 60, done: false },
+                { id: 'sub-2', title: 'Second half', estimate: 60, done: false },
+            ] as any;
+            service['applyChange'](mockWeek, { type: 'split_task', taskId: 'task-1', atMinutes: 60, origin: 'user', window: mockWindow });
             expect(mockWeek.tasks).toHaveLength(2);
+            expect(mockWeek.tasks[0].tMax).toBe(60);
+            expect(mockWeek.tasks[0].subtasks).toHaveLength(1);
+            expect(mockWeek.tasks[1].tMax).toBe(60);
+            expect(mockWeek.tasks[1].subtasks).toHaveLength(1);
+        });
+
+        it('retains shared slots and removes split subtask ids', () => {
+            mockWeek.tasks[0].tMax = 120;
+            mockWeek.tasks[0].subtasks = [
+                { id: 'sub-1', title: 'First half', estimate: 60, done: false },
+                { id: 'sub-2', title: 'Second half', estimate: 60, done: false },
+            ] as any;
+            mockWeek.slots = [{
+                id: 'shared-slot',
+                taskIds: ['task-1', 'task-2'],
+                subtaskIds: ['sub-1', 'unrelated-subtask'],
+            }] as any;
+
+            service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            });
+
+            expect(mockWeek.slots).toEqual([expect.objectContaining({
+                taskIds: ['task-2'],
+                subtaskIds: ['unrelated-subtask'],
+            })]);
         });
 
         it('handles accept_deadline_miss (found and not found)', () => {
@@ -369,6 +405,55 @@ describe('WeekService', () => {
 
 
             expect(res).toEqual(mockWindow);
+        });
+
+        it('handles move_slot and locks the moved slot', () => {
+            mockWeek.slots = [{ id: 'slot-1', taskIds: [], start: 'A', end: 'B', locked: false } as any];
+
+            service['applyChange'](mockWeek, {
+                type: 'move_slot',
+                slotId: 'slot-1',
+                to: { start: 'C', end: 'D' },
+                tags: ['extended-hours'],
+                origin: 'user',
+                window: mockWindow,
+            });
+
+            expect(mockWeek.slots[0]).toEqual(expect.objectContaining({
+                start: 'C',
+                end: 'D',
+                locked: true,
+                tags: ['extended-hours'],
+            }));
+        });
+
+        it('rejects an unknown change type', () => {
+            expect(() => service['applyChange'](mockWeek, { type: 'unknown-change' } as any))
+                .toThrow(/unhandled change type/);
+        });
+
+        it('rejects splitting when a subtask has no estimate', () => {
+            mockWeek.tasks[0].subtasks = [{ id: 'sub-1', title: 'Missing estimate', done: false }] as any;
+
+            expect(() => service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            })).toThrow(/needs an estimate/);
+        });
+
+        it('rejects splitting through the middle of a subtask', () => {
+            mockWeek.tasks[0].subtasks = [{ id: 'sub-1', title: 'Long subtask', estimate: 90, done: false }] as any;
+
+            expect(() => service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            })).toThrow(/Split point falls inside subtask/);
         });
 
         it('handles move_block', () => {
@@ -490,7 +575,7 @@ describe('WeekService', () => {
             expect((unblindedTask as any)._tempBlinded).toBeUndefined();
         });
 
-        it('persists subtasks with durationMinutes mapping correctly', async () => {
+        it('persists subtask estimates correctly', async () => {
             const testWeek = {
                 ...createMockWeek(),
                 tasks: [{
@@ -501,7 +586,7 @@ describe('WeekService', () => {
                     tMax: 60,
                     status: 'Ready',
                     placement: 'placed',
-                    subtasks: [{ id: 'sub-1', title: 'Sub 1', done: false, durationMinutes: 30 }]
+                    subtasks: [{ id: 'sub-1', title: 'Sub 1', done: false, estimate: 30 }]
                 } as any],
                 slots: [],
                 calendarEntries: []
@@ -707,6 +792,12 @@ describe('WeekService', () => {
                     allocation: 100,
                     startDate: new Date('2026-11-01T00:00:00Z'),
                     endDate: new Date('2026-11-30T00:00:00Z')
+                }, {
+                    id: 'PL-OPEN',
+                    projectId: 'PROJ-2',
+                    allocation: 50,
+                    startDate: new Date('2026-11-01T00:00:00Z'),
+                    endDate: null,
                 }])
             };
 
@@ -728,6 +819,32 @@ describe('WeekService', () => {
             expect(mockPrisma.schedulerProjectBlock.findMany).toHaveBeenCalled();
 
             expect(result.blocks).toHaveLength(1);
+        });
+
+        it('skips placement blocks for holiday working windows', async () => {
+            mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce({
+                id: 'W-HOLIDAY',
+                consultantId: 'C1',
+                timezone: 'UTC',
+                weekStart: new Date('2026-11-02T00:00:00Z'),
+                version: 1,
+                createdAt: new Date('2026-11-02T00:00:00Z'),
+                updatedAt: new Date('2026-11-02T00:00:00Z'),
+                lastCommittedAt: null,
+                blocks: [],
+                slots: [],
+                tasks: [],
+                calendarEntries: [],
+            });
+            (mockPrisma as any).projectPlacement.findMany.mockResolvedValueOnce([{id: 'PL-HOLIDAY', projectId: 'PROJ-1', allocation: 100, startDate: new Date('2026-11-01T00:00:00Z'), endDate: new Date('2026-11-30T00:00:00Z') }]);
+            (mockTimeService as any).workingWindows = jest.fn().mockReturnValue([{ start: '2026-11-02T08:00:00Z', end: '2026-11-02T16:00:00Z' }]);
+            (mockTimeService as any).localDate = jest.fn().mockReturnValue('2026-11-02');
+            (mockHolidayService as any).getForWeek.mockResolvedValueOnce([{ date: '2026-11-02' }]);
+            (mockPrisma as any).schedulerProjectBlock.findMany.mockResolvedValueOnce([]);
+
+            const result = await service.getWeek('C1', '2026-11-02' as LocalDate);
+            expect(mockPrisma.schedulerProjectBlock.createMany).not.toHaveBeenCalled();
+            expect(result.blocks).toEqual([]);
         });
 
         it('durationMinutes and workingWindowInstantAt calculate correctly', () => {

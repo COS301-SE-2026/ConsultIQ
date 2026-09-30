@@ -13,7 +13,5 @@ export function getAvailabilityDisplay(breakdown: FactorBreakdownItem[]): string
 
     const availability = breakdown.find((f) => f.factorName === 'AVAILABILITY');
     if (!availability) return 'Available';
-    if (availability.rawScore >= 0.8) return 'Available';
-    if (availability.rawScore >= 0.1) return 'Partially Available'
-    return 'Unavailable';
+    return availability.rawScore >= 1 ? 'Available' : 'Unavailable';
 }

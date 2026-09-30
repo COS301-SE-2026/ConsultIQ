@@ -9,8 +9,7 @@ export function useApiQuery<T>(fetcher: () => Promise<T>){
 
     useEffect(() => {
         let cancelled = false;
-        setIsLoading(true);
-        setIsError(false);
+       
 
         fetcher().then((res) => {
            

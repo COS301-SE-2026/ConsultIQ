@@ -6,7 +6,7 @@ import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
 import { randomUUID } from 'node:crypto';
-import { SCHEDULER_RULES } from './scheduler-rules.constant';
+
 
 import {
     WeekContainer,

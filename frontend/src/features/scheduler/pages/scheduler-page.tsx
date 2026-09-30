@@ -186,7 +186,7 @@ export default function SchedulerPage() {
         }
     }
 
-    const [, setCreatingEntry] = useState(false);
+   
     const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
     const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
     const [splitTask, setSplitTask] = useState<Task | null>(null);

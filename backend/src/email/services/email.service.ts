@@ -37,7 +37,7 @@ export class EmailService  implements OnModuleInit {
       isConsultant?: boolean;
     },
   ): Promise<void> {
-    const { managerName, managerEmail, isConsultant } = options ?? {};
+    const {managerEmail, isConsultant } = options ?? {};
     const attachTemplate = !!isConsultant && !!this.cvTemplateBase64;
 
     if (isConsultant && !this.cvTemplateBase64) {

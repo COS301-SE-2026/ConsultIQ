@@ -1,6 +1,6 @@
-# ConsultIQ
-
-**Team TROOS: ConsultIQ - A consultancy platform built to match the right consultants to the right projects.**
+<p align="center">
+  <img src="./Documents/Images/ConsultIQ%20logo.jpeg" alt="ConsultIQ Logo" width="800">
+</p>
 
 ### What is ConsultIQ?
 ConsultIQ is an intelligent matching platform designed for consultancy firms. Using a configurable fit-scoring engine that weighs skills, availability, location, and cost-to-company, the platform surfaces a ranked shortlist of the ideal candidates for any given job. This is followed by a transparent breakdown of each candidate's score, taking the guesswork out of resource allocation.
@@ -49,8 +49,22 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
 ## Documentation
 
-
 <details open>
+<summary><strong>Demo 4</strong></summary>
+
+<br>
+
+| Resource |
+|:---|
+| [System Requirements Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/docs/dem4/Documents/Demo%204/SRS_V3.pdf) |
+| [System Architecture Specification](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/docs/dem4/Documents/Demo%204/SAS_V2.pdf) |
+| [User Manual](https://github.com/COS301-SE-2026/ConsultIQ/blob/feature/docs/dem4/Documents/Demo%204/User%20manual_V2.pdf) |
+
+
+</details>
+<details>
+
+
 <summary><strong>Demo 3</strong></summary>
 
 <br>
@@ -63,7 +77,7 @@ Our team follows a structured Git Flow strategy to maintain high code quality an
 
 
 </details>
-<details open>
+<details>
 <summary><strong>Demo 2</strong></summary>
 
 <br>
@@ -186,17 +200,4 @@ This starts PostgreSQL, Redis, backend, and frontend together.
 
 ---
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" width="50%">
-        <p><strong>PROJECT LOGO: ConsultIQ</strong></p>
-        <img src="./Documents/Images/ConsultIQ logo.jpeg" alt="ConsultIQ Logo" style="width: 250px; height: 250px; object-fit: cover; border-radius: 50%; border: 3px solid #007ACC; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);" />
-      </td>
-      <td align="center" width="50%">
-        <p><strong>TEAM LOGO: TROOS</strong></p>
-        <img src="./Documents/Images/Troos_Logo.png" alt="TROOS Logo" style="width: 250px; height: 250px; object-fit: cover; border-radius: 50%; border: 3px solid #007ACC; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);" />
-      </td>
-    </tr>
-  </table>
-</div>
+

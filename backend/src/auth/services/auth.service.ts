@@ -235,7 +235,7 @@ export class AuthService {
       let managerName: string | undefined;
       let managerEmail: string | undefined;
 
-      if (dto.role === 'CONSULTANT' && registeredByUserId) {
+      if (dto.role === Role.CONSULTANT && registeredByUserId) {
         const manager = await this.prisma.user.findUnique({
           where: { id: registeredByUserId },
           select: { fullName: true, email: true },
@@ -253,7 +253,7 @@ export class AuthService {
       .sendActivationEmail(user.email, user.fullName, activationLink, {
         managerName,
         managerEmail,
-        isConsultant: dto.role === 'CONSULTANT',
+        isConsultant: dto.role === Role.CONSULTANT,
       })
       .catch((err) => {
         console.error('Failed to send activation email:', err);

@@ -6,6 +6,7 @@ import { unassignConsultant } from "../services/project.service";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useAuth } from "../../../hooks/useAuth";
+import ConfirmationDialog from "../../../components/shared/confirmation-dialog";
 
 interface ProjectConsultantsProps {
     readonly consultants: AssignedConsultants[];
@@ -31,23 +32,24 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
     const { user } = useAuth();
     const isConsultant = user?.role === "CONSULTANT";
 
-    const [unassigned, setUnassigned] = useState<Set<string>>(new Set());
+    const [consultantToUnassign, setConsultantToUnassign] = useState<AssignedConsultants | null>(null);
+    const [unassigningId, setUnassigningId] = useState<string | null>(null);
 
-    const handleReassign = async (consultantId: string) => {
-        setUnassigned((prev) => new Set(prev).add(consultantId));
+    const handleConfirmUnassign = async () => {
+        if (!consultantToUnassign) return;
+
+        const consultant = consultantToUnassign;
+        setUnassigningId(consultant.id);
         try {
-            unassignConsultant(projectId, consultantId);
-            onUnassign(consultantId);
+            await unassignConsultant(projectId, consultant.id);
+            onUnassign(consultant.id);
+            setConsultantToUnassign(null);
+            toast.success(`${consultant.fullName} was unassigned from the project.`);
         } catch (error) {
-            toast.error("Failed to unassign consultant" + error);
-        }finally{
-            setUnassigned((prev) => {
-                const next = new Set(prev);
-                next.delete(consultantId);
-                return next;
-            });
+            toast.error(error instanceof Error ? error.message : "Failed to unassign consultant.");
+        } finally {
+            setUnassigningId(null);
         }
-
     }
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +61,18 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
     );
 
     return (
+        <>
+        <ConfirmationDialog
+            open={consultantToUnassign !== null}
+            title="Unassign consultant?"
+            description={consultantToUnassign
+                ? `${consultantToUnassign.fullName} will be removed from this project and their capacity will be restored.`
+                : "This consultant will be removed from the project."}
+            confirmLabel="Unassign"
+            loading={unassigningId !== null}
+            onConfirm={() => void handleConfirmUnassign()}
+            onCancel={() => setConsultantToUnassign(null)}
+        />
         <Card
             className="w-full overflow-hidden bg-white p-4 sm:p-6">
 
@@ -78,7 +92,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
 
                     <tbody>
                         {!isLoading && paginatedConsultants.map((user) => {
-                            const isUnassigned= unassigned.has(user.id);
+                            const isUnassigning = unassigningId === user.id;
                             return(
                                <tr key={user.id} className=" hover:bg-slate-50  align-top  ">
                                 <td className="flex items-center justify-center gap-4 px-8  text-sm py-4">
@@ -134,8 +148,8 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                                 <td className="px-3 py-3 text-sm sm:px-5 sm:py-4 ">
                                     {!isConsultant && (
                                         <Button
-                                            onClick={() => handleReassign(user.id)}
-                                            disabled={isUnassigned}
+                                            onClick={() => setConsultantToUnassign(user)}
+                                            disabled={isUnassigning || unassigningId !== null}
                                             className="px-5 py-2 rounded-md text-white font-semibold text-sm bg-brand-blue hover:bg-red-800"
                                             style={{
                                                 color: "white",
@@ -143,7 +157,7 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                                                 padding: "4px 8px",
                                             }}
                                         >
-                                            {isUnassigned ? "Unassigned" : "Unassign"}
+                                            {isUnassigning ? "Unassigning..." : "Unassign"}
                                         </Button>
                                     )}
                                 </td>
@@ -178,6 +192,6 @@ export default function ProjectConsultants({ consultants, projectId, isLoading, 
                 </button>
             </div>
         </Card>
-
+        </>
     );
 }

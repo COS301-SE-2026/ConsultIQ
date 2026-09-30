@@ -142,7 +142,6 @@ export interface AssignedProjectDetail {
   endDate: string | null;
   teamSize: number;
   allocation: number;
-  budget: number;
   skills: AssignedProjectSkill[];
   teamMembers: AssignedProjectTeamMember[];
 }

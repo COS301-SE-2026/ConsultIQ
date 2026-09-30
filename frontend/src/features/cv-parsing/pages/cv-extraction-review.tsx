@@ -109,6 +109,7 @@ export default function CVExtractionReview() {
     const enteredCost = Number(manualFields.costToCompany);
     const hasValidCost = manualFields.costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >= 0;
     const dailyCostToCompany = manualFields.costRateType === "MONTHLY" ? (enteredCost * 12) / WORKING_DAYS_PER_YEAR : enteredCost;
+    const roundedDailyCostToCompany = Math.round((dailyCostToCompany + Number.EPSILON) * 100) / 100;
 
     // Security review gates everything else.
     const securityReviewStatus = cvFile?.securityReviewStatus ?? "NONE";
@@ -366,7 +367,7 @@ export default function CVExtractionReview() {
                 longitude: addressGeo.longitude ?? undefined,
                 placeId: addressGeo.placeId ?? "",
                 formattedAddress: addressGeo.formattedAddress ?? "",
-                costToCompany: hasValidCost ? dailyCostToCompany : 0,
+                costToCompany: hasValidCost ? roundedDailyCostToCompany : 0,
                 availability: manualFields.availability,
                 skills: skills.map((s) => ({
                     skillName: s.skillName,

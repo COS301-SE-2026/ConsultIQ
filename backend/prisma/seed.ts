@@ -39,7 +39,7 @@ const BATCH_SIZE = 10;
 const GENERATED_CONSULTANT_COUNT = 100;
 const GENERATED_PROJECT_COUNT = 20;
 const DEFAULT_CONSULTANT_PASSWORD = 'SecureConsultantPass123!';
-const COS301_PASSWORD = 'rfbDqw@9RhHWVqtT';
+const COS301_PASSWORD = process.env.COS301_SEED_PASSWORD || 'rfbDqw@9RhHWVqtT';
 const BASE_COS301_EMAIL = 'cos301queries@cs.up.ac.za';
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {

@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
-import type { MouseEvent, ReactNode } from "react";
+import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 
 interface ModalProps {
 	readonly open: boolean;
@@ -16,28 +17,42 @@ export default function Modal({
 	labelledBy,
 	describedBy,
 }: ModalProps) {
-	if (!open) return null;
+	const dialogRef = useRef<HTMLDialogElement>(null);
 
-	const handleBackdropMouseDown = (event: MouseEvent<HTMLDivElement>) => {
-		if (event.target === event.currentTarget) onClose?.();
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		if (!dialog) return;
+
+		if (open) {
+			if (!dialog.open) dialog.showModal();
+		} else {
+			if (dialog.open) dialog.close();
+		}
+	}, [open]);
+
+	useEffect(() => {
+		const dialog = dialogRef.current;
+		if (!dialog) return;
+
+		const handleClose = () => onClose?.();
+		dialog.addEventListener("close", handleClose);
+		return () => dialog.removeEventListener("close", handleClose);
+	}, [onClose]);
+
+	const handleDialogClick = (event: React.MouseEvent<HTMLDialogElement>) => {
+		if (event.target === dialogRef.current) onClose?.();
 	};
 
 	return createPortal(
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6"
-			role="presentation"
-			onMouseDown={handleBackdropMouseDown}
+		<dialog
+			ref={dialogRef}
+			className="rounded-xl bg-white p-8 shadow-xl backdrop:bg-black/50"
+			aria-labelledby={labelledBy}
+			aria-describedby={describedBy}
+			onClick={handleDialogClick}
 		>
-			<div
-				className="w-full max-w-md rounded-xl bg-white p-8 shadow-xl"
-				role="dialog"
-				aria-modal="true"
-				aria-labelledby={labelledBy}
-				aria-describedby={describedBy}
-			>
-				{children}
-			</div>
-		</div>,
+			{children}
+		</dialog>,
 		document.body
 	);
 }

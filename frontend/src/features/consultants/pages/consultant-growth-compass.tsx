@@ -6,6 +6,7 @@ import { useSkillGrowth } from "../../../hooks/useSkillGrowth";
 
 export default function GrowthCompass() {
   const {data, isLoading, isError} = useSkillGrowth();
+  console.log("skill growth: ",data);
   return (
     <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
       <Sidebar items={consultantSidebarItems} />

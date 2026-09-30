@@ -194,11 +194,10 @@ export const getConsultantProfileByUserId = async (userId: string): Promise<Cons
 
 }
 
-export const getSkillGrowth = async (): Promise<SkillGrowthResponse> =>{
-    return await apiClient.get<SkillGrowthResponse>("consultants/me/skill-growth");
-    
-}
+export const getSkillGrowth = async (): Promise<SkillGrowthResponse> => {
+  return await apiClient.get<SkillGrowthResponse>("/consultants/me/skill-growth");
+};
 
-export const getTeamSkillDemand = async () : Promise<TeamSkillDemandResponse> => {
-  return await apiClient.get<TeamSkillDemandResponse>("consultant-managers/me/skill-demand")
-}
+export const getTeamSkillDemand = async (): Promise<TeamSkillDemandResponse> => {
+  return await apiClient.get<TeamSkillDemandResponse>("/consultant-managers/me/skill-demand");
+};

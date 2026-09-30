@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DateTime } from 'luxon';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TimeService, type LocalDate } from './time.service';
@@ -35,6 +35,7 @@ export interface CommitResult {
 
 @Injectable()
 export class WeekService {
+    private readonly logger = new Logger(WeekService.name);
     constructor(
         private readonly prisma: PrismaService,
         private readonly timeService: TimeService,
@@ -94,8 +95,16 @@ export class WeekService {
 
         const slots = dbWeek.slots.map((s: PrismaSlotWithTasks) => ({
             ...s,
+            start: this.normalizeDatabaseInstant(s.start),
+            end: this.normalizeDatabaseInstant(s.end),
             taskIds: s.slotTasks ? s.slotTasks.map((st) => st.taskId) : [],
         })) as unknown as Slot[];
+
+        const calendarEntries = dbWeek.calendarEntries.map((entry) => ({
+            ...entry,
+            start: this.normalizeDatabaseInstant(entry.start),
+            end: this.normalizeDatabaseInstant(entry.end),
+        })) as unknown as WeekContainer['calendarEntries'];
 
         const week: WeekContainer = {
             id: dbWeek.id,
@@ -110,7 +119,7 @@ export class WeekService {
 
             blocks,
             tasks: dbWeek.tasks as unknown as Task[],
-            calendarEntries: dbWeek.calendarEntries as unknown as WeekContainer['calendarEntries'],
+            calendarEntries,
             holidays,
             slots,
             metadata: {} as WeekContainer['metadata'],
@@ -132,6 +141,10 @@ export class WeekService {
                 allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
             } as unknown as ProjectBlock;
         });
+    }
+
+    private normalizeDatabaseInstant(value: unknown): string {
+        return value instanceof Date ? value.toISOString() : String(value);
     }
 
     // -----------------------------------------------------------------
@@ -167,6 +180,9 @@ export class WeekService {
             },
             orderBy: [{ startDate: "asc" }, { id: "asc" }],
         });
+        this.logger.debug(
+            `Seeding week ${weekStart} for ${consultantId}: ${placements.length} overlapping active placements`,
+        );
 
         if (placements.length === 0) return;
 
@@ -472,28 +488,80 @@ export class WeekService {
         if (task?.subtasks?.every(s => s.done)) task.status = 'Done';
     }
 
-    private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number): void {
-        const orig = week.tasks.find(t => t.id === taskId);
-        if (!orig) return;
+    private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number ): void {
+        const original = week.tasks.find((task) => task.id === taskId);
+        if (!original) return;
 
-        const originalTMax = orig.tMax;
-        const originalTMin = orig.tMin;
+        const originalTMin = original.tMin;
+        const originalTMax = original.tMax;
         const splitRatio = atMinutes / originalTMax;
+        const subtasks = (original.subtasks ?? []) as Array<{
+            id: string;
+            title?: string;
+            estimate?: number;
+            durationMinutes?: number;
+            done: boolean;
+        }>;
 
-        orig.tMax = atMinutes;
-        orig.tMin = Math.round(originalTMin * splitRatio);
+        const firstHalfSubtasks: typeof subtasks = [];
+        const secondHalfSubtasks: typeof subtasks = [];
+        const splitSubtaskIds = new Set(subtasks.map((subtask) => subtask.id));
+        let cursor = 0;
+
+        for (const subtask of subtasks) {
+            const duration = subtask.estimate ?? subtask.durationMinutes;
+
+            if (duration === undefined || duration <= 0) {
+            throw new BadRequestException(
+                `Cannot split task: subtask "${subtask.title ?? subtask.id}" needs an estimate.`,
+            );
+            }
+
+            const end = cursor + duration;
+            if (end <= atMinutes) {
+            firstHalfSubtasks.push(subtask);
+            } else if (cursor >= atMinutes) {
+            secondHalfSubtasks.push(subtask);
+            } else {
+            throw new BadRequestException(
+                `Split point falls inside subtask "${subtask.title ?? subtask.id}".`,
+            );
+            }
+            cursor = end;
+    }
+
+        week.slots = week.slots.flatMap((slot) => {
+            if (!slot.taskIds.includes(taskId)) return [slot];
+
+            const remainingTaskIds = slot.taskIds.filter((id) => id !== taskId);
+            if (remainingTaskIds.length === 0) return [];
+
+            return [{
+            ...slot,
+            taskIds: remainingTaskIds,
+            subtaskIds: slot.subtaskIds?.filter((id) => !splitSubtaskIds.has(id)),
+            }];
+        });
+
+        original.tMax = atMinutes;
+        original.tMin = Math.round(originalTMin * splitRatio);
+        original.subtasks = firstHalfSubtasks as Task["subtasks"];
+        original.placement = "unplaced";
+        original.unplacedReason = undefined;
 
         const secondHalf: Task = {
-            ...orig,
-            id: 'split-' + orig.id + '-' + Date.now(),
-            tMax: originalTMax - atMinutes,
+            ...original,
+            id: randomUUID(),
             tMin: Math.round(originalTMin * (1 - splitRatio)),
-            status: 'Ready',
-            placement: 'unplaced'
+            tMax: originalTMax - atMinutes,
+            status: "Ready",
+            placement: "unplaced",
+            unplacedReason: undefined,
+            subtasks: secondHalfSubtasks as Task["subtasks"],
         };
 
         week.tasks.push(secondHalf);
-    }
+        }
 
     private applyAcceptDeadlineMiss(week: WeekContainer, taskId: string): void {
         const task = week.tasks.find(t => t.id === taskId);
@@ -650,6 +718,8 @@ export class WeekService {
                 unplacedReason: t.unplacedReason,
                 carriedOver: t.carriedOver ?? false,
                 deadlineMissAccepted: t.deadlineMissAccepted ?? false,
+                deadline: t.deadline ? new Date(t.deadline) : null,
+                dependsOn: t.dependsOn ?? [],
             };
 
             await tx.schedulerTask.upsert({
@@ -658,8 +728,9 @@ export class WeekService {
                 create: { id: taskId, ...taskData }
             });
 
+            await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
+            
             if (t.subtasks && t.subtasks.length > 0) {
-                await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
                 await tx.schedulerSubtask.createMany({
                     data: t.subtasks.map((sub: any) => {
                         if (!sub.id) sub.id = randomUUID();
@@ -668,7 +739,7 @@ export class WeekService {
                             taskId: taskId,
                             title: sub.title ?? 'Subtask',
                             done: sub.done ?? false,
-                            estimate: sub.durationMinutes ?? 0
+                            estimate: sub.estimate ?? 0
                         };
                     })
                 });

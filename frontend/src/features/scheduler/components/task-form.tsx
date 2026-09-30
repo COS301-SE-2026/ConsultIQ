@@ -382,7 +382,8 @@ function TaskFormContent({ mode, initialProjectId, initialTask, projects, expect
                     )}
                     </div>
                     <footer className= "flex justify-end gap-2 border-t bg-slate-50 px-6 py-4">
-                        <button type="button" className= "rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200">
+                        <button type="button" className= "rounded-md bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
+                            onClick={onCancel}>
                             Cancel
                         </button>
                         <button type="submit" className= "rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80">

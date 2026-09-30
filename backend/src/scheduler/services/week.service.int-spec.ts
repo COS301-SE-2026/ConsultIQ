@@ -574,24 +574,50 @@ describe('WeekService - Integration-e2e-tests', () => {
     });
 
     describe('Allocation Contract & Block Seeding', () => {
-        it('seeds project blocks from active placements and successfully places tasks into them', async () => {
-            const consultant = await createConsultant(prisma, `alloc-${randomUUID()}@consultiq.com`);
-            const weekStartStr = '2026-11-09';
+    it('seeds project blocks from active placements and successfully places tasks into them', async () => {
+        const consultant = await createConsultant(prisma, `alloc-${randomUUID()}@consultiq.com`);
+        const weekStartStr = '2026-11-09';
 
-            const project = await createProjectWithPlacement(prisma, consultant.id, 100, '2026-11-01');
-            const week = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
+        const project = await createProjectWithPlacement(prisma, consultant.id, 100, '2026-11-01');
+        const week = await weekService.getWeek(consultant.id, weekStartStr as LocalDate);
 
-            expect(week.blocks.length).toBeGreaterThan(0);
-            const totalAllocatedMinutes = week.blocks.reduce((sum, b) => sum + b.allocatedMinutes, 0);
-            expect(totalAllocatedMinutes).toBe(2400);
-            const sortedBlocks = [...week.blocks].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
-            let overlap = false;
-            for (let i = 0; i < sortedBlocks.length - 1; i++) {
-                if (new Date(sortedBlocks[i].end) > new Date(sortedBlocks[i + 1].start)) {
-                    overlap = true;
-                }
+        expect(week.blocks.length).toBeGreaterThan(0);
+
+        const totalAllocatedMinutes = week.blocks.reduce((sum, b) => sum + b.allocatedMinutes, 0);
+
+        // allocatedMinutes must now equal the REAL working capacity that
+        // week (core hours minus unpaid lunch, minus any holidays) — not a
+        // flat weekly-contract-derived constant. That mismatch was the bug.
+        // Compute the true expected total independently via the same
+        // TimeService the seeding logic itself calls, so this stays correct
+        // even for weeks containing a public holiday.
+        const timeService = moduleRef.get(TimeService);
+        const holidayService = moduleRef.get(HolidayService);
+
+        const holidays = (await holidayService.getForWeek(weekStartStr as LocalDate)) ?? [];
+        const holidayDates = new Set(holidays.map((h) => h.date));
+
+        const workingWindows = timeService
+            .workingWindows(weekStartStr as LocalDate, 'Africa/Johannesburg')
+            .filter((w) => !holidayDates.has(timeService.localDate(w.start, 'Africa/Johannesburg')));
+
+        const expectedTotalMinutes = workingWindows.reduce(
+            (sum, w) => sum + Math.round((new Date(w.end).getTime() - new Date(w.start).getTime()) / 60000),
+            0,
+        );
+
+        // 100% allocation on a single project → the block(s) should account
+        // for essentially all real available working time that week.
+        expect(totalAllocatedMinutes).toBe(expectedTotalMinutes);
+
+        const sortedBlocks = [...week.blocks].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+        let overlap = false;
+        for (let i = 0; i < sortedBlocks.length - 1; i++) {
+            if (new Date(sortedBlocks[i].end) > new Date(sortedBlocks[i + 1].start)) {
+                overlap = true;
             }
-            expect(overlap).toBe(false);
+        }
+        expect(overlap).toBe(false);
 
             const newTaskChange: Change = {
                 type: 'create_task',

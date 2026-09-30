@@ -197,7 +197,7 @@ export class AuthService {
     }
   }
 
-  async createUser(dto: CreateUserDto) {
+  async createUser(dto: CreateUserDto, registeredByUserId?: string) {
     // Check if a user with this email already exists
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -232,18 +232,32 @@ export class AuthService {
         expiresAt: expiry,
       },
     });
+      let managerName: string | undefined;
+      let managerEmail: string | undefined;
 
+      if (String(dto.role) === 'CONSULTANT' && registeredByUserId) {
+        const manager = await this.prisma.user.findUnique({
+          where: { id: registeredByUserId },
+          select: { fullName: true, email: true },
+        });
+        managerName = manager?.fullName;
+        managerEmail = manager?.email;
+      }
     // Build the activation link — raw token goes in the URL, never the hash
     const frontendUrl =
       this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     const activationLink = `${frontendUrl}/activate?token=${rawToken}&email=${encodeURIComponent(user.email)}`;
+    
     // Send activation email, fire and forget, does not block response
     this.email
-      .sendActivationEmail(user.email, user.fullName, activationLink)
+      .sendActivationEmail(user.email, user.fullName, activationLink, {
+        managerName,
+        managerEmail,
+        isConsultant: String(dto.role) === 'CONSULTANT',
+      })
       .catch((err) => {
         console.error('Failed to send activation email:', err);
       });
-
     return {
       message:
         'Account created successfully. An activation email has been sent.',

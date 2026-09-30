@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
+import { Role } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/services/email.service';
 import { TokenService } from '../../common/services/token.service';
@@ -102,6 +103,7 @@ describe('AuthService', () => {
         MOCK_USER.email,
         MOCK_USER.fullName,
         expect.stringContaining('raw-token-abc123'),
+        { isConsultant: true, managerName: undefined, managerEmail: undefined },
       );
 
       expect(result.message).toContain('activation email has been sent');
@@ -124,6 +126,80 @@ describe('AuthService', () => {
       email.sendActivationEmail.mockRejectedValue(new Error('Email provider down'));
 
       await expect(service.createUser(dto)).resolves.toBeDefined();
+    });
+
+    it('does not mark isConsultant for a non-consultant role', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ ...MOCK_USER, role: 'PROJECT_MANAGER' } as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+
+      await service.createUser({ ...dto, role: 'PROJECT_MANAGER' as any });
+
+      expect(email.sendActivationEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('raw-token-abc123'),
+        { isConsultant: false, managerName: undefined, managerEmail: undefined },
+      );
+    });
+
+        it('looks up the registering manager and passes their name/email when a consultant is registered by someone', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(null) // existing-user check
+        .mockResolvedValueOnce({ fullName: 'Sipho CM', email: 'sipho@consultiq.com' } as any); // manager lookup
+      prisma.user.create.mockResolvedValue(MOCK_USER as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+
+      await service.createUser(dto, 'manager-user-id-123');
+
+      expect(prisma.user.findUnique).toHaveBeenNthCalledWith(2, {
+        where: { id: 'manager-user-id-123' },
+        select: { fullName: true, email: true },
+      });
+
+      expect(email.sendActivationEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('raw-token-abc123'),
+        {
+          isConsultant: true,
+          managerName: 'Sipho CM',
+          managerEmail: 'sipho@consultiq.com',
+        },
+      );
+    });
+
+    it('does not look up a manager when a non-consultant role is registered, even with a registeredByUserId', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce(null); // existing-user check only
+      prisma.user.create.mockResolvedValue({ ...MOCK_USER, role: Role.PROJECT_MANAGER } as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+
+      await service.createUser({ ...dto, role: Role.PROJECT_MANAGER as any }, 'manager-user-id-123');
+
+      expect(prisma.user.findUnique).toHaveBeenCalledTimes(1);
+      expect(email.sendActivationEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('raw-token-abc123'),
+        { isConsultant: false, managerName: undefined, managerEmail: undefined },
+      );
+    });
+
+    it('gracefully leaves manager fields undefined if the registering user cannot be found', async () => {
+      prisma.user.findUnique
+        .mockResolvedValueOnce(null) // existing-user check
+        .mockResolvedValueOnce(null); // manager lookup finds nobody
+      prisma.user.create.mockResolvedValue(MOCK_USER as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+
+      await service.createUser(dto, 'missing-manager-id');
+
+      expect(email.sendActivationEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('raw-token-abc123'),
+        { isConsultant: true, managerName: undefined, managerEmail: undefined },
+      );
     });
   });
 

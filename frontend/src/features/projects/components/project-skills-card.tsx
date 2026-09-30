@@ -13,6 +13,8 @@ interface ProjectSkillsCardProps {
   readonly editingIndex: number | null;
   readonly onSkillSave: (skill: ProjectSkillData) => void;
   readonly onEditSkill?: (skill: ProjectSkillData, idx: number) => void;
+  readonly onDeleteSkill?: (skill: ProjectSkillData, idx: number) => void;
+  readonly showSkillActions?: boolean;
   readonly isEditing?: boolean;
 }
 
@@ -20,7 +22,8 @@ const MAX_YEARS = 50;
 const MAX_SKILL_NAME_LENGTH = 100;
 
 export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill,
-  onCancelEdit, editingIndex, onSkillSave, onEditSkill, isEditing, }: ProjectSkillsCardProps) {
+  onCancelEdit, editingIndex, onSkillSave, onEditSkill, onDeleteSkill,
+  showSkillActions = false, isEditing, }: ProjectSkillsCardProps) {
 
   const [skillName, setSkillName] = useState(editingSkill?.name ?? "");
   const [competency, setCompetency] = useState(editingSkill?.competency ?? "INTERMEDIATE");
@@ -175,6 +178,8 @@ export default function ProjectSkillsCard({ skills, onSkillsChange, editingSkill
           {(!isEditing &&
             <ProjectSkillsTable skills={skills}
               onEditSkill={onEditSkill || (() => { })}
+              onDeleteSkill={onDeleteSkill}
+              isEditing={showSkillActions}
             />)}
         </div>
 

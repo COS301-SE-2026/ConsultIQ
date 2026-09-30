@@ -77,11 +77,17 @@ function ProjectSpecificationPage() {
   const updateForm = <K extends keyof ProjectFormData>(field: K, value: ProjectFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-  const handleEditSkill = (skill: ProjectSkillData) => {
-    const index = formData.skills.indexOf(skill);
-    if (index !== -1) {
-      setEditingIndex(index);
-    }
+  const handleEditSkill = (_skill: ProjectSkillData, index: number) => {
+    setEditingIndex(index);
+  };
+
+  const handleDeleteSkill = (_skill: ProjectSkillData, index: number) => {
+    updateForm("skills", formData.skills.filter((_, skillIndex) => skillIndex !== index));
+    setEditingIndex((currentIndex) => {
+      if (currentIndex === index) return null;
+      if (currentIndex !== null && currentIndex > index) return currentIndex - 1;
+      return currentIndex;
+    });
   };
 
   const handleCancelEditSkill = () => { setEditingIndex(null); }
@@ -212,6 +218,8 @@ function ProjectSpecificationPage() {
                 editingIndex={editingIndex}
                 onSkillSave={handleSaveSkill}
                 onEditSkill={handleEditSkill}
+                onDeleteSkill={handleDeleteSkill}
+                showSkillActions
               />
             </div>
           </div>

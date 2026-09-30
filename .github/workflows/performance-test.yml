@@ -1,6 +1,8 @@
 name: Performance Testing
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       target_mode:
@@ -27,18 +29,22 @@ on:
           - cache_warmcold
           - all
 
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  REGISTRY: ghcr.io                     
-  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend 
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
 
 jobs:
   performance-test-emulated:
-    name: Run k6 
-    if: ${{ github.event.inputs.target_mode == 'emulated_ephemeral' }}
+    name: Run k6
+    if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.target_mode == 'emulated_ephemeral' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: read     
-      packages: read     
+      contents: read
+      packages: read
     services:
       postgres:
         image: postgres:15
@@ -65,10 +71,10 @@ jobs:
           --health-retries 5
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
       - name: Set up Node.js
-        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b 
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -88,11 +94,11 @@ jobs:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
         run: npx --no-install prisma db push --accept-data-loss
 
-      - name: Seed ephemeral DB 
+      - name: Seed ephemeral DB
         working-directory: backend
         env:
           DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
-        run: npx --no-install ts-node prisma/seed-test.ts 
+        run: npx --no-install ts-node prisma/seed-test.ts
 
       - name: Verify seeded test-users.json exists
         run: |
@@ -118,12 +124,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull backend image 
+      - name: Pull backend image
         id: pull_image
         run: |
           IMAGE="${{ env.BACKEND_IMAGE }}:${{ steps.image_tag.outputs.tag }}"
           echo "Attempting to pull $IMAGE ..."
-          
+
           if docker pull "$IMAGE"; then
             echo "Successfully pulled Docker image."
             echo "USE_DOCKER=true" >> "$GITHUB_ENV"
@@ -132,7 +138,7 @@ jobs:
             echo "USE_DOCKER=false" >> "$GITHUB_ENV"
           fi
 
-      - name: Build backend from source 
+      - name: Build backend from source
         if: env.USE_DOCKER == 'false'
         working-directory: backend
         run: npm run build
@@ -191,7 +197,7 @@ jobs:
           }
 
       - name: Set up k6
-        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065 
+        uses: grafana/setup-k6-action@db07bd9765aac508ef18982e52ab937fe633a065
 
       - name: Run selected profile(s)
         working-directory: tests/load
@@ -224,7 +230,7 @@ jobs:
 
       - name: Upload k6 results
         if: always()
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: k6-performance-results-emulated-${{ github.run_id }}
           path: perf-results/

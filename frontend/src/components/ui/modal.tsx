@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef } from "react";
-import type { ReactNode, MouseEvent } from "react";
+import type { ReactNode } from "react";
 
 interface ModalProps {
 	readonly open: boolean;
@@ -39,9 +39,16 @@ export default function Modal({
 		return () => dialog.removeEventListener("close", handleClose);
 	}, [onClose]);
 
-	const handleDialogClick = (event: MouseEvent<HTMLDialogElement>) => {
-		if (event.target === dialogRef.current) onClose?.();
-	};
+	useEffect(() => {
+		if (!open) return;
+
+		const handlePointerDown = (event: PointerEvent) => {
+			if (event.target === dialogRef.current) onClose?.();
+		};
+
+		document.addEventListener("pointerdown", handlePointerDown);
+		return () => document.removeEventListener("pointerdown", handlePointerDown);
+	}, [open, onClose]);
 
 	return createPortal(
 		<dialog
@@ -49,7 +56,6 @@ export default function Modal({
 			className="rounded-xl bg-white p-8 shadow-xl backdrop:bg-black/50"
 			aria-labelledby={labelledBy}
 			aria-describedby={describedBy}
-			onClick={handleDialogClick}
 		>
 			{children}
 		</dialog>,

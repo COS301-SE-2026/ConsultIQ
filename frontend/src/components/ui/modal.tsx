@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
 import { useEffect, useRef } from "react";
-import type { ReactNode } from "react";
+import type { ReactNode, MouseEvent } from "react";
 
 interface ModalProps {
 	readonly open: boolean;
@@ -25,8 +25,8 @@ export default function Modal({
 
 		if (open) {
 			if (!dialog.open) dialog.showModal();
-		} else {
-			if (dialog.open) dialog.close();
+		} else if (dialog.open) {
+			dialog.close();
 		}
 	}, [open]);
 
@@ -39,7 +39,7 @@ export default function Modal({
 		return () => dialog.removeEventListener("close", handleClose);
 	}, [onClose]);
 
-	const handleDialogClick = (event: React.MouseEvent<HTMLDialogElement>) => {
+	const handleDialogClick = (event: MouseEvent<HTMLDialogElement>) => {
 		if (event.target === dialogRef.current) onClose?.();
 	};
 

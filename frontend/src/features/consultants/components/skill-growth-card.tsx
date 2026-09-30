@@ -214,7 +214,7 @@ export default function SkillGrowthCard({
               <h2 className="text-4xl font-bold text-brand-blue">{top.skillName}</h2>
             </div>
 
-            <p className="mt-6 max-w-2xl leading-relaxed text-brand-muted">
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-brand-muted">
               This skill creates the strongest match between your profile and current project demand across the tested pipeline.
             </p>
 

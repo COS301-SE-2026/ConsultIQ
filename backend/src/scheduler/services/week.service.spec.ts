@@ -297,6 +297,32 @@ describe('WeekService', () => {
             expect(mockWeek.tasks[1].subtasks).toHaveLength(1);
         });
 
+        it('retains shared slots and removes split subtask ids', () => {
+            mockWeek.tasks[0].tMax = 120;
+            mockWeek.tasks[0].subtasks = [
+                { id: 'sub-1', title: 'First half', estimate: 60, done: false },
+                { id: 'sub-2', title: 'Second half', estimate: 60, done: false },
+            ] as any;
+            mockWeek.slots = [{
+                id: 'shared-slot',
+                taskIds: ['task-1', 'task-2'],
+                subtaskIds: ['sub-1', 'unrelated-subtask'],
+            }] as any;
+
+            service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            });
+
+            expect(mockWeek.slots).toEqual([expect.objectContaining({
+                taskIds: ['task-2'],
+                subtaskIds: ['unrelated-subtask'],
+            })]);
+        });
+
         it('handles accept_deadline_miss (found and not found)', () => {
             service['applyChange'](mockWeek, { type: 'accept_deadline_miss', taskId: 'bad-id', origin: 'user', window: mockWindow });
 

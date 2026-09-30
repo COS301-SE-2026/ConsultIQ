@@ -30,11 +30,10 @@ import TaskBoard from "../components/task-board";
 import SplitTaskDialog from "../components/split-task-dialog";
 import {
     getSchedulerWeek, setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
-    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks
+    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks,moveBlock, resizeBlock, pinBlock, moveSlot 
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
-import { moveBlock, resizeBlock, pinBlock, moveSlot } from "../services/scheduler.service";
 interface SchedulerTaskTabProps {
     readonly loading: boolean;
     readonly error: string | null;

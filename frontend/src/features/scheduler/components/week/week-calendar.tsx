@@ -139,7 +139,7 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
 
     function changeStatus(taskId: string, status: TaskStatus) {
         if (onSetStatus) {
-            onSetStatus(taskId, { status, expectedVersion: week.version });
+            void onSetStatus(taskId, { status, expectedVersion: week.version });
         } else {
             handleSetStatus(taskId, status); // fixtures only: no backend
         }

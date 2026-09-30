@@ -735,6 +735,32 @@ describe('WeekService', () => {
             expect(result.blocks).toHaveLength(1);
         });
 
+        it('skips placement blocks for holiday working windows', async () => {
+            mockPrisma.schedulerWeek.findUnique.mockResolvedValueOnce({
+                id: 'W-HOLIDAY',
+                consultantId: 'C1',
+                timezone: 'UTC',
+                weekStart: new Date('2026-11-02T00:00:00Z'),
+                version: 1,
+                createdAt: new Date('2026-11-02T00:00:00Z'),
+                updatedAt: new Date('2026-11-02T00:00:00Z'),
+                lastCommittedAt: null,
+                blocks: [],
+                slots: [],
+                tasks: [],
+                calendarEntries: [],
+            });
+            (mockPrisma as any).projectPlacement.findMany.mockResolvedValueOnce([{id: 'PL-HOLIDAY', projectId: 'PROJ-1', allocation: 100, startDate: new Date('2026-11-01T00:00:00Z'), endDate: new Date('2026-11-30T00:00:00Z') }]);
+            (mockTimeService as any).workingWindows = jest.fn().mockReturnValue([{ start: '2026-11-02T08:00:00Z', end: '2026-11-02T16:00:00Z' }]);
+            (mockTimeService as any).localDate = jest.fn().mockReturnValue('2026-11-02');
+            (mockHolidayService as any).getForWeek.mockResolvedValueOnce([{ date: '2026-11-02' }]);
+            (mockPrisma as any).schedulerProjectBlock.findMany.mockResolvedValueOnce([]);
+
+            const result = await service.getWeek('C1', '2026-11-02' as LocalDate);
+            expect(mockPrisma.schedulerProjectBlock.createMany).not.toHaveBeenCalled();
+            expect(result.blocks).toEqual([]);
+        });
+
         it('durationMinutes and workingWindowInstantAt calculate correctly', () => {
             const dur = service['durationMinutes']('2026-11-02T08:00:00Z', '2026-11-02T10:00:00Z');
             expect(dur).toBe(120);

@@ -131,6 +131,36 @@ describe('TaskService', () => {
                 undefined
             );
         });
+
+        it('normalizes subtask ids and defaults during creation', async () => {
+            await service.create(mockConsultantId, mockWeekStart, {
+                projectId: 'proj-1',
+                title: 'Task with subtask',
+                tMin: 60,
+                tMax: 120,
+                urgency: 2,
+                complexity: 1,
+                subtasks: [{ title: 'First step' }],
+                dependsOn: [],
+            } as unknown as NewTask);
+
+            expect(weekService.commit).toHaveBeenCalledWith(
+                mockWeek,
+                expect.objectContaining({
+                    task: expect.objectContaining({
+                        subtasks: [{
+                            id: expect.any(String),
+                            taskId: '',
+                            title: 'First step',
+                            estimate: 0,
+                            done: false,
+                        }],
+                    }),
+                }),
+                expect.anything(),
+                undefined,
+            );
+        });
     });
 
     describe('Security & loadTaskContext Checks', () => {
@@ -178,6 +208,12 @@ describe('TaskService', () => {
             mockTask.tMax = 120;
 
             await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(/falls inside subtask/);
+        });
+
+        it('rejects splitting a task with a locked slot', async () => {
+            mockTask.tMax = 120;
+            mockWeek.slots[0].locked = true;
+            await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(/locked slots/);
         });
 
         it('dispatches a split_task commit if validation passes', async () => {

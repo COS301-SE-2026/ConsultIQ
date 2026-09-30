@@ -21,6 +21,9 @@ function SearchBar({ value, onChange, placeholder = "Search...", onFilterClick }
       >
         <Search size={18} style={{ color: "var(--color-text-secondary)", flexShrink: 0 }} />
         <input
+          id="consultant-search"
+          name="search"
+          autoComplete="off"
           type="text"
           placeholder={placeholder}
           value={value}

@@ -35,6 +35,7 @@ const mockPrismaService = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   consultantSkill: {
     create: jest.fn(),
@@ -130,7 +131,18 @@ describe('ConsultantService', () => {
           findFirst: jest.fn().mockResolvedValue(null),
         },
         consultantManager: { create: jest.fn().mockResolvedValue({}) },
-        skill: { upsert: jest.fn().mockResolvedValue({ id: 'skill-1' }) },
+        skill: {
+          upsert: jest.fn().mockResolvedValue({
+            id: 'skill-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'skill-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+        },
         consultantSkill: { create: jest.fn().mockResolvedValue({}) },
         consultantExperience: { create: jest.fn().mockResolvedValue({}) },
         ...overrideTx,
@@ -179,6 +191,20 @@ describe('ConsultantService', () => {
       const result = await service.createConsultantProfile(cmUserId, dto as any);
       expect(result.message).toBe('Consultant profile created successfully.');
       expect(result.consultantId).toBe('new-consultant-uuid');
+    });
+
+    it('should not create duplicate consultant skills with case-insensitive names', async () => {
+      const txMock = setupActiveConsultantProfile();
+
+      await service.createConsultantProfile(cmUserId, {
+        ...dto,
+        skills: [
+          { skillName: 'TypeScript', competencyLevel: 'EXPERT', yearsExperience: 4, confidenceLevel: 4 },
+          { skillName: 'typescript', competencyLevel: 'BEGINNER', yearsExperience: 1, confidenceLevel: 1 },
+        ],
+      } as any);
+
+      expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
     });
 
     it('should correctly map location fields when they are provided in the DTO', async () => {
@@ -535,6 +561,60 @@ describe('ConsultantService', () => {
       expect(result.skills[0].competencyLevel).toBe('EXPERT');
       expect(result.education).toEqual([]);
     });
+
+    it('should use displayName for cased skills and name for legacy skills', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: 'uuid-2',
+        phone: '0123456789',
+        idNumber: '9901015555081',
+        nationality: 'South African',
+        addressLine1: '123 South road',
+        addressLine2: null,
+        suburb: 'Hillbrow',
+        city: 'Johannesburg',
+        province: 'Gauteng',
+        postalCode: '2001',
+        costToCompany: 50000,
+        availability: 'AVAILABLE',
+        user: { fullName: 'Jane Smith', email: 'jane@consultiq.com' },
+        skills: [
+          {
+            id: 'skill-1',
+            skill: { name: 'typescript', displayName: 'TypeScript' },
+            competencyLevel: 'EXPERT',
+            yearsExperience: 4,
+            confidenceLevel: 4,
+          },
+          {
+            id: 'skill-2',
+            skill: { name: 'docker', displayName: null },
+            competencyLevel: 'INTERMEDIATE',
+            yearsExperience: 2,
+            confidenceLevel: 3,
+          },
+        ],
+        consultantExperiences: [],
+        certificates: [],
+        education: [],
+      });
+
+      const result = await service.getConsultantById('uuid-2');
+
+      expect(result.skills.map((skill) => skill.skillName)).toEqual([
+        'TypeScript',
+        'docker',
+      ]);
+    });
+  });
+
+  describe('withDisplayNames', () => {
+    it('returns the object unchanged when it has no skills', () => {
+      const projectWithoutSkills = { id: 'project-1' };
+
+      expect((service as any).withDisplayNames(projectWithoutSkills)).toBe(
+        projectWithoutSkills,
+      );
+    });
   });
 
   // ─── getConsultantByUserId ──────────────────────────────────────────────────
@@ -793,6 +873,7 @@ describe('ConsultantService', () => {
 
       expect(result.placementId).toBe('placement-1');
       expect(result.project.projectName).toBe('Project Alpha');
+      expect(result.project).not.toHaveProperty('budget');
       expect(result.project.skills).toHaveLength(1);
       expect(result.project.skills[0].skillName).toBe('TypeScript');
       expect(result.project.teamMembers).toHaveLength(1);
@@ -883,7 +964,6 @@ describe('ConsultantService', () => {
         where: expect.objectContaining({
           projectId: 'project-123',
           status: 'ACTIVE',
-          startDate: { lte: expect.any(Date) },
           consultant: expect.objectContaining({
             user: expect.objectContaining({ status: 'ACTIVE' })
           })
@@ -903,6 +983,25 @@ describe('ConsultantService', () => {
 
       expect(mappedConsultant.costToCompany).toBeUndefined();
 
+    });
+
+    it('includes active assignments whose scheduled start date is in the future', async () => {
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          ...mockPlacementData,
+          startDate: new Date('2030-01-01'),
+        },
+      ]);
+
+      const result = await service.getConsultantsByProject('project-123', 'PROJECT_MANAGER');
+
+      expect(result.consultants).toHaveLength(1);
+      expect(result.consultants[0].consultantId).toBe('consultant-1');
+      expect(mockPrismaService.projectPlacement.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.not.objectContaining({ startDate: expect.anything(), OR: expect.anything() }),
+        }),
+      );
     });
 
     it('should include costToCompany for roles other than PROJECT_MANAGER (ADMIN)', async () => {
@@ -945,7 +1044,16 @@ describe('ConsultantService', () => {
           create: jest.fn().mockResolvedValue({}),
         },
         skill: {
-          upsert: jest.fn().mockResolvedValue({ id: 'skill-uuid-1' }),
+          upsert: jest.fn().mockResolvedValue({
+            id: 'skill-uuid-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
+          update: jest.fn().mockResolvedValue({
+            id: 'skill-uuid-1',
+            name: 'typescript',
+            displayName: 'TypeScript',
+          }),
         },
         consultantExperience: {
           deleteMany: jest.fn().mockResolvedValue({}),
@@ -1016,6 +1124,22 @@ describe('ConsultantService', () => {
       expect(txMock.consultantSkill.deleteMany).toHaveBeenCalledWith({
         where: { consultantId },
       });
+      expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not create duplicate consultant skills with case-insensitive names', async () => {
+      mockPrismaService.consultant.findUnique.mockResolvedValue({
+        id: consultantId,
+      });
+      const txMock = createUpdateTxMock();
+
+      await service.updateConsultantProfile(consultantId, {
+        skills: [
+          { skillName: 'TypeScript', yearsExperience: 4, confidenceLevel: 4 },
+          { skillName: 'typescript', yearsExperience: 1, confidenceLevel: 1 },
+        ],
+      }, 'CONSULTANT_MANAGER', 'cm-manager-user-1');
+
       expect(txMock.consultantSkill.create).toHaveBeenCalledTimes(1);
     });
 

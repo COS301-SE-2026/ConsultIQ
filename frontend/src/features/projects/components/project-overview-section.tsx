@@ -88,13 +88,15 @@ export default function ProjectOverviewSection({
         className= "text-base text-white rounded border"
         />
       </div>
-      <div className = "flex flex-col gap-1">
-        <label htmlFor="budget" className="text-base font-semibold">Budget</label>
-        <input type="number" id="budget" value={isEditing ? budget : project.budget }
-        onChange={e => setBudget(Number(e.target.value))}
-        className= "text-base text-white rounded border"
-        />
-      </div> 
+      {isNonConsultant && (
+        <div className = "flex flex-col gap-1">
+          <label htmlFor="budget" className="text-base font-semibold">Budget</label>
+          <input type="number" id="budget" value={isEditing ? budget : project.budget }
+          onChange={e => setBudget(Number(e.target.value))}
+          className= "text-base text-white rounded border"
+          />
+        </div>
+      )}
      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
        <div className = "flex flex-col gap-1">
         <label htmlFor="start-date" className="text-base font-semibold">Start Date</label>
@@ -138,7 +140,7 @@ export default function ProjectOverviewSection({
         <Info label="Project Name" value={project.name} />
         <Info label="Client Name" value={project.clientName} />
         <Info label="Team Size" value={String(project.teamSize)} />
-        <Info label="Budget" value={`R${project.budget}`} />
+        {isNonConsultant && <Info label="Budget" value={`R${project.budget}`} />}
         <Info label="Start Date" value={formatDate(project.startDate)} />
         <Info label="End Date" value={formatDate(project.endDate)} />
         <Info label="Project Status" value={formatStatus(project.status)} />

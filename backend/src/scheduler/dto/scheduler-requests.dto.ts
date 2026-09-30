@@ -1,4 +1,5 @@
-import { IsString, IsInt, IsNotEmpty, IsOptional, IsArray, IsBoolean, IsObject } from 'class-validator';
+import { IsString, IsInt, IsNotEmpty, IsOptional, IsArray, IsBoolean, IsObject, IsDateString, Min, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import type { Change, Interval } from './scheduler.dto';
 
 export class ConcurrencyControlDto {
@@ -40,10 +41,17 @@ export class CreateTaskDto extends ConcurrencyControlDto {
     @IsInt()
     @IsOptional()
     complexity?: number;
+    
+   @IsDateString()
+    @IsOptional()
+    deadline?: string;
 
     @IsArray()
     @IsOptional()
-    subtasks?: any[];
+    @ValidateNested({ each: true })
+    @Type(() => SchedulerSubtaskDto)
+    @IsOptional()
+    subtasks?: SchedulerSubtaskDto[];
 
     @IsArray()
     @IsString({ each: true })
@@ -52,6 +60,10 @@ export class CreateTaskDto extends ConcurrencyControlDto {
 }
 
 export class UpdateTaskDto extends ConcurrencyControlDto {
+    @IsString()
+    @IsOptional()
+    projectId?: string;
+
     @IsString()
     @IsOptional()
     title?: string;
@@ -63,6 +75,29 @@ export class UpdateTaskDto extends ConcurrencyControlDto {
     @IsInt()
     @IsOptional()
     tMax?: number;
+
+    @IsInt()
+    @IsOptional()
+    urgency?: number;
+
+    @IsInt()
+    @IsOptional()
+    complexity?: number;
+
+    @IsDateString()
+    @IsOptional()
+    deadline?: string;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => SchedulerSubtaskDto)
+    @IsOptional()
+    subtasks?: SchedulerSubtaskDto[];
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    dependsOn?: string[];
 }
 
 export class SetTaskStatusDto extends ConcurrencyControlDto {
@@ -104,4 +139,22 @@ export class PinBlockDto extends ConcurrencyControlDto {
     @IsBoolean()
     @IsNotEmpty()
     pinned!: boolean;
+}
+
+export class SchedulerSubtaskDto {
+  @IsString()
+  @IsNotEmpty()
+  id!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  estimate?: number;
+
+  @IsBoolean()
+  done!: boolean;
 }

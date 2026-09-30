@@ -17,11 +17,13 @@ export interface ProjectBlockProps {
     readonly onResize?: (blockId: string, to: Interval) => void;
     readonly onClick?: () => void;
     readonly onSetStatus?: (taskId: string, status: TaskStatus) => void;
+    readonly onTogglePin?: (pinned: boolean) => void;
+
 }
 
-export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize, onSetStatus }: ProjectBlockProps) {
+export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize, onSetStatus, onTogglePin }: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
-    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: block.id });
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: `block:${block.id}` });
 
     const start = instantToLocalTime(block.start, timezone);
     const end = instantToLocalTime(block.end, timezone);
@@ -108,7 +110,17 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                 <span className="text-[8px] font-bold px-1 rounded" style={{ backgroundColor: "#FEF3C7", color: "#92400e" }} title="Carried over work">{'\u21A9'}</span>
             )}
 
-            {isPinned && <span className="text-[9px]" style={{ color: mutedColour }} title="Pinned" >{'\u{1F4CC}'}</span>}
+            <button
+                type="button"
+                className="pointer-events-auto text-[9px] leading-none"
+                style={{ color: mutedColour, opacity: isPinned ? 1 : 0.35 }}
+                aria-label={isPinned ? "Unpin block" : "Pin block"}
+                aria-pressed={isPinned}
+                title={isPinned ? "Unpin" : "Pin"}
+                onClick={() => onTogglePin?.(!isPinned)}
+            >
+                {"\u{1F4CC}"}
+            </button>
             {isResized && <span className="text-[9px]" style={{ color: mutedColour }} title="Resized by you">{'\u2195'}</span>}
         </div>
     );
@@ -141,7 +153,7 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                 style={{ cursor: isDragging ? "grabbing" : "grab" }}
             />
 
-            <div className="realtive h-full pointer-events-none">
+            <div className="relative h-full pointer-events-none">
                 {small ? (
                     <div className="px-1.5 flex items-center h-full gap-1 overflow-hidden">
                         <span className="text-[10px] font-bold truncate" style={{ color: titleColour }} >{project.name}</span>
@@ -162,8 +174,8 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                     <div className="px-2 py-1.5 flex flex-col gap-1 h-full">
                         <div className="flex items-start justify-between gap-1">
                             <div className="min-w-0">
-                                <span className="text-[11px] font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
-                                <span className="text-[9px] block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
+                                <span className="text-sm font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
+                                <span className="text-sm block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
                             </div>
                             {indicators}
                         </div>
@@ -195,7 +207,7 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
 
                         {displayHeight >= 120 && (
                             <div className="mt-auto">
-                                <span className="text-[9px]" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
+                                <span className="text-xs" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
                             </div>
                         )}
                     </div>

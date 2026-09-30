@@ -24,7 +24,7 @@ function friendlyError(err: unknown): string {
       case 401:
         return 'Incorrect email or password.';
       case 403:
-        return 'Your account is not yet activated. Check your inbox.';
+        return err.message || 'Your account is not yet activated.';
       case 429:
         return 'Too many login attempts. Please wait a minute and try again.';
       case 500:
@@ -112,6 +112,8 @@ export const LoginCard: React.FC = () => {
           </label>
           <input
             id="email"
+            name="email"
+            autoComplete="username"
             type="email"
             placeholder="email@example.com"
             value={email}
@@ -133,6 +135,8 @@ export const LoginCard: React.FC = () => {
           </label>
           <input
             id="password"
+            name="password"
+            autoComplete="current-password"
             type="password"
             placeholder="Enter password"
             value={password}

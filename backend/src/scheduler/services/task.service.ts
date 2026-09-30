@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService, CommitResult } from './week.service';
 import { TimeService, LocalDate } from './time.service';
 import { WeekContainer, Change, Interval, Task, ValidateContext, NewTask, Issue } from '../dto/scheduler.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TaskService {
@@ -24,10 +25,34 @@ export class TaskService {
         expectedVersion?: number,
     ): Promise<CommitResult> {
         const week = await this.weekService.getWeek(consultantId, weekStart);
+        const newTask: Task = {
+            id: randomUUID(),
+            weekId: week.id,
+            projectId: dto.projectId,
+            title: dto.title,
+            tMin: dto.tMin,
+            tMax: dto.tMax,
+            deadline: dto.deadline,
+            urgency: dto.urgency,
+            complexity: dto.complexity,
+            status: 'Ready',
+            dependsOn: dto.dependsOn ?? [],
+            carriedOver: false,
+            placement: 'unplaced',
+            subtasks: (dto.subtasks ?? []).map((sub) => ({
+            id: sub.id ?? randomUUID(),
+            taskId: '',
+            title: sub.title,
+            estimate: sub.estimate ?? 0,
+            done: sub.done ?? false,
+            })),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
 
         const change: Change = {
             type: 'create_task',
-            task: dto,
+            task: newTask,
             origin: 'user',
             window: this.getWeekWindow(week),
         } as Change;
@@ -61,7 +86,14 @@ export class TaskService {
             window: this.taskDayWindow(week, task),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
+        const changedEntityIds = [
+            taskId,
+            ...week.slots
+                .filter((slot) => slot.taskIds.includes(taskId))
+                .map((slot) => slot.id),
+        ];
+
+        const ctx: ValidateContext = { bumpedEntityIds: changedEntityIds, allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
@@ -123,6 +155,12 @@ export class TaskService {
             throw new BadRequestException('Split rejected: both halves must be at least 60 minutes.');
         }
 
+        const taskSlots = week.slots.filter((slot) => slot.taskIds.includes(taskId));
+
+        if (taskSlots.some((slot) => slot.locked)) {
+        throw new BadRequestException("Cannot split a task with locked slots.");
+        }
+
         this.assertSplitBoundaryClearOfSubtasks(task, atMinutes);
 
         const change: Change = {
@@ -130,10 +168,10 @@ export class TaskService {
             taskId,
             atMinutes,
             origin: 'user',
-            window: this.taskDayWindow(week, task),
+            window: this.getWeekWindow(week),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [taskId], allocations: [] };
+        const ctx: ValidateContext = { bumpedEntityIds: [taskId, ...taskSlots.map((slot) => slot.id)], allocations: []};
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 

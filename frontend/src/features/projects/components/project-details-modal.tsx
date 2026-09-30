@@ -191,7 +191,6 @@ export default function ProjectDetailsModal({
             description: p.description || "No description provided.",
             teamSize: p.teamSize,
             allocation: p.allocation,
-            budget: p.budget,
             startDate: p.startDate,
             endDate: p.endDate || "",
             status: p.status,
@@ -273,7 +272,7 @@ export default function ProjectDetailsModal({
       }
     };
 
-    fetchProjectDetails();
+    void fetchProjectDetails();
   }, [open, project, isConsultant]);
 
   useEffect(() => {
@@ -303,7 +302,7 @@ export default function ProjectDetailsModal({
       }
     }
 
-    fetchAssignedConsultants();
+    void fetchAssignedConsultants();
 
   }, [fullProject, targetConsultantId]);
 

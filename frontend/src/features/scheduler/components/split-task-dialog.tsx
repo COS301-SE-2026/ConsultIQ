@@ -62,11 +62,11 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
             open
             aria-labelledby="split-task-title"
             onCancel={onCancel}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4"
         >
             <section className="w-full max-w-md overflow-hidden rounded-lg bg-white shadow-xl">
-                <header className="bg-slate-900 px-6 py-4 text-white">
-                    <h2 id="split-task-title" className="text-base font-semibold">
+                <header className="bg-primary px-6 py-4 text-white">
+                    <h2 id="split-task-title" className="!text-white font-semibold">
                         Split task
                     </h2>
                     <p className="text-sm text-slate-300">{task.title}</p>
@@ -83,7 +83,7 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                         <>
                         <div className="space-y-2">
                             <label htmlFor="split-slider" 
-                                className="text-sm font-medium text-slate-700"
+                                className="text-sm font-medium text-primary"
                             >
                                 Split point: {formatDuration(atMinutes)} /{" "} {formatDuration(total - atMinutes)}
                             </label>
@@ -94,7 +94,7 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                                 step={5}
                                 value={atMinutes}
                                 onChange={(event) => setAtMinutes(Number(event.target.value))}
-                                className="w-full accent-slate-900"
+                                className="w-full accent-primary"
                             />
                         </div>
 
@@ -121,9 +121,9 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
                     )}
                 </div>
 
-                <footer className="flex justify-end gap-2 border-t bg-slate-50 px-6 py-4">
+                <footer className="flex justify-end gap-2 border border-gray-200 bg-slate-50 px-6 py-4">
                     <button type="button"
-                        className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                        className="rounded-md border border-primary px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                         onClick={onCancel}
                     >
                         Cancel
@@ -131,7 +131,7 @@ function SplitTaskDialogContent({ task, expectedVersion, onCancel, onConfirm } :
 
                     <button type="button"
                         disabled={disabled || invalid}
-                        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/80 disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => void onConfirm(task.id, {atMinutes, expectedVersion})}
                     >
                         Split task

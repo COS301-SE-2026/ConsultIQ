@@ -1,7 +1,7 @@
-import type {Slot, Task, TaskStatus} from "../../types/scheduler.types"
+import type { Slot, Task, TaskStatus } from "../../types/scheduler.types"
 import { instantToLocalTime } from "../../utils/scheduler.utils"
-
-export interface TaskSlotProps{
+import { useDraggable } from "@dnd-kit/core";
+export interface TaskSlotProps {
     readonly slot: Slot;
     readonly task: Task;
     readonly timezone: string;
@@ -11,14 +11,24 @@ export interface TaskSlotProps{
 
 }
 
-function weekday(instant: string, timeZone: string){
-    return new Date(instant).toLocaleDateString("en-GB",{weekday: "short", timeZone});
+function weekday(instant: string, timeZone: string) {
+    return new Date(instant).toLocaleDateString("en-GB", { weekday: "short", timeZone });
 }
 
-export default function TaskSlot({slot, task, timezone, color,selected=false, onSetStatus}: TaskSlotProps){
+export default function TaskSlot({ slot, task, timezone, color, selected = false, onSetStatus }: TaskSlotProps) {
+
+    const isAuditSlot = slot.locked && (slot.subtaskIds?.length ?? 0) > 0;
+    const movable = !isAuditSlot && task.status === "Ready";
+
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
+        id: `slot:${slot.id}`,
+        disabled: !movable,
+    });
+
+
     const days = [...new Set(
         [...task.slots]
-            .sort((a,b) => Date.parse(a.start) - Date.parse(b.start))
+            .sort((a, b) => Date.parse(a.start) - Date.parse(b.start))
             .map((s) => weekday(s.start, timezone)),
     )];
 
@@ -27,28 +37,45 @@ export default function TaskSlot({slot, task, timezone, color,selected=false, on
     const textColour = selected ? "rgba(255,255,255,0.9)" : color;
     const mutedColour = selected ? "rgba(255,255,255,0.6)" : "#6B7280";
 
-    function setStatus(e: React.MouseEvent, status: TaskStatus){
+    function setStatus(e: React.MouseEvent, status: TaskStatus) {
         e.stopPropagation();
         onSetStatus?.(task.id, status);
     }
 
-    return(
+    return (
         <div
+            ref={setNodeRef}
             className="px-1.5 py-1 rounded text-[9px] flex flex-col gap-0.5 overflow-hidden"
-            style={{ backgroundColor: selected ? "rgba(255,255,255,0.12)" : color + "12" }}
+            style={{
+                backgroundColor: selected ? "rgba(255,255,255,0.12)" : color + "12",
+                opacity: isDragging ? 0.4 : 1,
+            }}
         >
 
             <div className="flex items-center gap-1">
-                <span 
-                    className="truncate font-medium flex-1"
-                    style={{color: textColour, textDecoration: task.status === "Done" ? "line-through" : "none" }}
+                {movable && (
+                    <button
+                        ref={setActivatorNodeRef}
+                        {...listeners}
+                        {...attributes}
+                        type="button"
+                        aria-label={`Move ${task.title}`}
+                        className="pointer-events-auto touch-none shrink-0 leading-none"
+                        style={{ color: mutedColour, cursor: isDragging ? "grabbing" : "grab" }}
+                    >
+                        {"\u283F"}
+                    </button>
+                )}
+                <span
+                    className="text-xs truncate font-medium flex-1"
+                    style={{ color: textColour, textDecoration: task.status === "Done" ? "line-through" : "none" }}
                 >
                     {task.title}
                 </span>
 
-                {slot.locked ? (
+                {isAuditSlot ? (
                     <span title="Locked">{"\u{1F512}"}</span>
-                ):(
+                ) : (
                     <>
                         {task.status === "Ready" && (
                             <button className="pointer-events-auto" onClick={(e) => setStatus(e, "InProgress")} title="Start" style={{ color: textColour }}>{"\u25B6"}</button>
@@ -62,11 +89,11 @@ export default function TaskSlot({slot, task, timezone, color,selected=false, on
             </div>
 
             <div className="flex items-center justify-between gap-1" style={{ color: mutedColour }}>
-                <span>{instantToLocalTime(slot.start, timezone)} - {instantToLocalTime(slot.end, timezone)}</span>
+                <span className="text-xs">{instantToLocalTime(slot.start, timezone)} - {instantToLocalTime(slot.end, timezone)}</span>
                 {days.length > 1 && (
                     <span className="flex gap-1">
                         {days.map((d) => (
-                            <span key={d} style={{fontWeight: d === thisDay ? 700 : 400, opacity: d === thisDay ? 1 : 0.5}}>{d}</span>
+                            <span key={d} style={{ fontWeight: d === thisDay ? 700 : 400, opacity: d === thisDay ? 1 : 0.5 }}>{d}</span>
                         ))}
 
                     </span>

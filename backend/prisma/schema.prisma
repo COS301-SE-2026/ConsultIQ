@@ -282,6 +282,7 @@ model ConsultantManager {
 model Skill {
   id       String  @id @default(uuid())
   name     String  @unique
+  displayName String?
   category String
   tenantId String?
 
@@ -792,7 +793,7 @@ model SchedulerCalendarEntry {
 
 model PublicHoliday {
   id        String   @id @default(uuid())
-  date      DateTime @db.Date
+  date      DateTime @unique @db.Date
   name      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

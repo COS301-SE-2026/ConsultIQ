@@ -6,6 +6,7 @@ import { projectManagerSidebarItems } from "../../../components/layout/sidebar/s
 import { scoringApiService } from "../../scoring/services/scoring.service";
 import { placementService } from "../../scoring/services/placement.service";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
+import { toast } from "sonner";
 
 
 export default function ProjectScoringOverridePage() {
@@ -16,7 +17,6 @@ export default function ProjectScoringOverridePage() {
     const [showConfirmationModal, setshowConfirmationModal] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [errMessage, setErrMessage] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [isMatching, setIsMatching] = useState(false);
     const [project, setProject] = useState<ProjectPlacementContext | null>(null);
 
@@ -78,10 +78,7 @@ export default function ProjectScoringOverridePage() {
             setFactors(savedScoringFactors);
             setIsUsingDefaultWeights(false);
             setErrMessage(null);
-            setSuccessMessage("Configurations saved successfully!");
-            setTimeout(() => {
-                setSuccessMessage(null);
-            }, 3000);
+            toast.success("Configurations saved successfully!");
         } catch (err) {
             setErrMessage(err instanceof Error ? err.message : "Error saving override weights.");
         }
@@ -148,10 +145,6 @@ export default function ProjectScoringOverridePage() {
                             {errMessage}
                         </div>
                     )}
-                    {successMessage && (
-                        <div className="mb-4 w-full rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-semibold text-green-700 transition-opacity sm:p-41">
-                            {successMessage}
-                        </div>)}
                     {isLoading ? (
                         <div className="text-slate-500 font-medium animate-pulse">
                             Loading scoring configuration...

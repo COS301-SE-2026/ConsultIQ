@@ -102,14 +102,63 @@ describe('TaskService', () => {
 
     describe('create', () => {
         it('dispatches a create_task commit', async () => {
-            const dto = { title: 'New Task' } as NewTask;
+            const dto: NewTask = {
+                projectId: 'proj-1',
+                title: 'New Task',
+                tMin: 60,
+                tMax: 120,
+                urgency: 2,
+                complexity: 1,
+                subtasks: [],
+                dependsOn: [],
+            };
             await service.create(mockConsultantId, mockWeekStart, dto);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
-                expect.objectContaining({ type: 'create_task', task: dto }),
+                expect.objectContaining({
+                    type: 'create_task',
+                    task: expect.objectContaining({
+                        id: expect.any(String),
+                        weekId: mockWeekId,
+                        ...dto,
+                        status: 'Ready',
+                        placement: 'unplaced',
+                        carriedOver: false,
+                    }),
+                }),
                 expect.objectContaining({ bumpedEntityIds: [] }),
                 undefined
+            );
+        });
+
+        it('normalizes subtask ids and defaults during creation', async () => {
+            await service.create(mockConsultantId, mockWeekStart, {
+                projectId: 'proj-1',
+                title: 'Task with subtask',
+                tMin: 60,
+                tMax: 120,
+                urgency: 2,
+                complexity: 1,
+                subtasks: [{ title: 'First step' }],
+                dependsOn: [],
+            } as unknown as NewTask);
+
+            expect(weekService.commit).toHaveBeenCalledWith(
+                mockWeek,
+                expect.objectContaining({
+                    task: expect.objectContaining({
+                        subtasks: [{
+                            id: expect.any(String),
+                            taskId: '',
+                            title: 'First step',
+                            estimate: 0,
+                            done: false,
+                        }],
+                    }),
+                }),
+                expect.anything(),
+                undefined,
             );
         });
     });
@@ -161,6 +210,12 @@ describe('TaskService', () => {
             await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(/falls inside subtask/);
         });
 
+        it('rejects splitting a task with a locked slot', async () => {
+            mockTask.tMax = 120;
+            mockWeek.slots[0].locked = true;
+            await expect(service.split(mockConsultantId, mockTaskId, 60)).rejects.toThrow(/locked slots/);
+        });
+
         it('dispatches a split_task commit if validation passes', async () => {
             mockTask.tMax = 120;
             await service.split(mockConsultantId, mockTaskId, 60, 2);
@@ -168,7 +223,7 @@ describe('TaskService', () => {
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'split_task', taskId: mockTaskId, atMinutes: 60 }),
-                expect.objectContaining({ bumpedEntityIds: [mockTaskId] }),
+                expect.objectContaining({ bumpedEntityIds: [mockTaskId, 'slot-1'] }),
                 2
             );
         });
@@ -364,6 +419,19 @@ describe('TaskService', () => {
                 expect.objectContaining({ type: 'delete_task', taskId: mockTaskId }),
                 expect.anything(),
                 undefined
+            );
+        });
+
+        it('includes attached slot ids when deleting a task', async () => {
+            mockWeek.slots = [{ id: 'slot-1', taskIds: [mockTaskId] } as any];
+
+            await service.deleteTask(mockConsultantId, mockTaskId);
+
+            expect(weekService.commit).toHaveBeenCalledWith(
+                mockWeek,
+                expect.objectContaining({ type: 'delete_task', taskId: mockTaskId }),
+                expect.objectContaining({ bumpedEntityIds: [mockTaskId, 'slot-1'] }),
+                undefined,
             );
         });
 

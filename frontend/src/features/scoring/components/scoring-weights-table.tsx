@@ -44,6 +44,12 @@ function ViewInfo({ label, description }: { readonly label: string; readonly des
 export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsingDefaultWeights, onSave, onRevertToDefaultWeights, onRunMatch, isMatching }: ScoringWeightTableProps) {
     const [factors, setFactors] = useState<ScoringFactor[]>(initialFactors ?? []);
     const [isSaving, setIsSaving] = useState(false);
+    const [prevInitialFactors, setPrevInitialFactors] = useState(initialFactors);
+
+    if (initialFactors !== prevInitialFactors) {
+        setPrevInitialFactors(initialFactors);
+        setFactors(initialFactors ?? []);
+    }
 
     const totalActiveWeight = factors.filter(factor => factor.isActive).reduce((sum, factor) => sum + factor.weight, 0);
     const isValidSum = totalActiveWeight === 100;
@@ -146,7 +152,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 </div>
                 <div className="flex gap-3">
                     <button type="button" disabled={!isValidSum || isSaving}
-                        onClick={() => { setIsSaving(true); onSave(factors).finally(() => setIsSaving(false)); }}
+                        onClick={() => { setIsSaving(true); void onSave(factors).then(() => setIsSaving(false), () => setIsSaving(false)); }}
                         className="h-10 w-full rounded-lg bg-[#002D62] text-sm font-bold text-white shadow-sm disabled:bg-slate-200 disabled:text-slate-400 sm:h-8 sm:w-25">
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>

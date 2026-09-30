@@ -381,6 +381,55 @@ describe('WeekService', () => {
             expect(res).toEqual(mockWindow);
         });
 
+        it('handles move_slot and locks the moved slot', () => {
+            mockWeek.slots = [{ id: 'slot-1', taskIds: [], start: 'A', end: 'B', locked: false } as any];
+
+            service['applyChange'](mockWeek, {
+                type: 'move_slot',
+                slotId: 'slot-1',
+                to: { start: 'C', end: 'D' },
+                tags: ['extended-hours'],
+                origin: 'user',
+                window: mockWindow,
+            });
+
+            expect(mockWeek.slots[0]).toEqual(expect.objectContaining({
+                start: 'C',
+                end: 'D',
+                locked: true,
+                tags: ['extended-hours'],
+            }));
+        });
+
+        it('rejects an unknown change type', () => {
+            expect(() => service['applyChange'](mockWeek, { type: 'unknown-change' } as any))
+                .toThrow(/unhandled change type/);
+        });
+
+        it('rejects splitting when a subtask has no estimate', () => {
+            mockWeek.tasks[0].subtasks = [{ id: 'sub-1', title: 'Missing estimate', done: false }] as any;
+
+            expect(() => service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            })).toThrow(/needs an estimate/);
+        });
+
+        it('rejects splitting through the middle of a subtask', () => {
+            mockWeek.tasks[0].subtasks = [{ id: 'sub-1', title: 'Long subtask', estimate: 90, done: false }] as any;
+
+            expect(() => service['applyChange'](mockWeek, {
+                type: 'split_task',
+                taskId: 'task-1',
+                atMinutes: 60,
+                origin: 'user',
+                window: mockWindow,
+            })).toThrow(/Split point falls inside subtask/);
+        });
+
         it('handles move_block', () => {
             mockWeek.blocks = [{ id: 'block-1', start: 'A', end: 'B' } as any];
             service['applyChange'](mockWeek, {
@@ -717,6 +766,12 @@ describe('WeekService', () => {
                     allocation: 100,
                     startDate: new Date('2026-11-01T00:00:00Z'),
                     endDate: new Date('2026-11-30T00:00:00Z')
+                }, {
+                    id: 'PL-OPEN',
+                    projectId: 'PROJ-2',
+                    allocation: 50,
+                    startDate: new Date('2026-11-01T00:00:00Z'),
+                    endDate: null,
                 }])
             };
 

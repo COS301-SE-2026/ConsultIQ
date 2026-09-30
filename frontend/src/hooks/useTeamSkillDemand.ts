@@ -9,28 +9,34 @@ export function useTeamSkillDemand() {
     const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
-            let cancelled = false;
-            setIsLoading(true);
+        let cancelled = false;
+        setIsLoading(true);
+        setIsError(false);
+
+        getTeamSkillDemand().then((res) => {
+            if (!cancelled) setData(res);
             setIsError(false);
-    
-            getTeamSkillDemand().then((res) => {
-                if(!cancelled) setData(res);
-            })
+        })
             .catch(() => {
-                if(!cancelled) setIsError(true);
+                if (!cancelled) setIsError(true);
             })
             .finally(() => {
-                if(!cancelled) setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             });
-    
-            return () => {
-                cancelled=true;
-            };
-    
-        },[reloadKey]);
 
-        const refetch = useCallback(() => setReloadKey((k) => k + 1), []);
+        return () => {
+            cancelled = true;
+        };
 
-     return {data, isLoading, isError, refetch};
+    }, [reloadKey]);
+
+    const refetch = useCallback(() => {
+        setIsLoading(true);
+        setIsError(false);
+        setReloadKey((k) => k + 1)
+
+    }, []);
+
+    return { data, isLoading, isError, refetch };
 }
 

@@ -16,6 +16,7 @@ export function useSkillGrowth(){
         getSkillGrowth().then((res) => {
            
             if(!cancelled) setData(res);
+            setIsError(false);
         })
         .catch(() => {
             if(!cancelled) setIsError(true);
@@ -30,7 +31,13 @@ export function useSkillGrowth(){
 
     },[reloadKey]);
 
-    const refetch = useCallback(() => setReloadKey((k) => k + 1), []);
+    const refetch = useCallback(() => {
+        setIsLoading(true);
+        setIsError(false);
+        setReloadKey((k) => k + 1)
+
+    },[]);
+
 
     return {data, isLoading, isError, refetch};
 }

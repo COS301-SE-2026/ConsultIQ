@@ -152,7 +152,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 </div>
                 <div className="flex gap-3">
                     <button type="button" disabled={!isValidSum || isSaving}
-                        onClick={() => { setIsSaving(true); onSave(factors).finally(() => setIsSaving(false)); }}
+                        onClick={() => { setIsSaving(true); void onSave(factors).then(() => setIsSaving(false), () => setIsSaving(false)); }}
                         className="h-10 w-full rounded-lg bg-[#002D62] text-sm font-bold text-white shadow-sm disabled:bg-slate-200 disabled:text-slate-400 sm:h-8 sm:w-25">
                         {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>

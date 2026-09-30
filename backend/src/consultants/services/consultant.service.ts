@@ -32,6 +32,7 @@ import {
   ProjectConsultantsResponseDto,
 } from '../dto/consultant-placement.dto';
 import { EncryptionPrismaClient } from '../../common/encryption/services/client-extension.service';
+import { upsertSkillCatalogueEntry } from '../../common/utils/skill-catalogue.util';
 
 @Injectable()
 export class ConsultantService {
@@ -160,24 +161,11 @@ export class ConsultantService {
           },
         });
 
-        // Create skills
-        for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          const skillRecord = await tx.skill.upsert({
-            where: { name: normalizedName },
-            update: {},
-            create: { name: normalizedName, category: 'General' },
-          });
-          await tx.consultantSkill.create({
-            data: {
-              consultantId: consultant.id,
-              skillId: skillRecord.id,
-              competencyLevel: skill.competencyLevel as CompetencyLevel,
-              yearsExperience: skill.yearsExperience,
-              confidenceLevel: skill.confidenceLevel,
-            },
-          });
-        }
+        await this.createConsultantSkills(
+          tx,
+          consultant.id,
+          dto.skills,
+        );
 
         await this.createExperienceRecords(tx, consultant.id, dto.experiences);
         await this.createCertificateRecords(
@@ -218,7 +206,7 @@ export class ConsultantService {
     experiences: any[],
   ): Promise<void> {
     // Create experiences
-    for (const exp of experiences) {
+    await Promise.all(experiences.map(async (exp) => {
       await tx.consultantExperience.create({
         data: {
           consultantId,
@@ -231,7 +219,53 @@ export class ConsultantService {
           description: exp.description,
         },
       });
+    }));
+  }
+
+  private async createConsultantSkills(
+    tx: any,
+    consultantId: string,
+    skills: {
+      skillName: string;
+      competencyLevel?: string;
+      yearsExperience: number;
+      confidenceLevel: number;
+    }[],
+  ): Promise<void> {
+    const uniqueSkills = new Map<string, (typeof skills)[number]>();
+    for (const skill of skills) {
+      const normalizedName = skill.skillName.trim().toLowerCase();
+      if (!uniqueSkills.has(normalizedName)) {
+        uniqueSkills.set(normalizedName, skill);
+      }
     }
+
+    const skillRecords = await Promise.all(
+      Array.from(uniqueSkills.values(), async (skill) => ({
+        skill,
+        skillRecord: await upsertSkillCatalogueEntry(tx, skill.skillName),
+      })),
+    );
+
+    await Promise.all(
+      skillRecords.map(async ({ skill, skillRecord }) => {
+        await tx.consultantSkill.create({
+          data: {
+            consultantId,
+            skillId: skillRecord.id,
+            competencyLevel:
+              skill.competencyLevel !== undefined
+                ? (skill.competencyLevel as CompetencyLevel)
+                : this.inferCompetencyLevel(
+                    skill.yearsExperience,
+                    skill.confidenceLevel,
+                  ),
+            yearsExperience: skill.yearsExperience,
+            confidenceLevel: skill.confidenceLevel,
+          },
+        });
+      }),
+    );
   }
 
   private async createCertificateRecords(
@@ -239,7 +273,7 @@ export class ConsultantService {
     consultantId: string,
     certifications: any[],
   ): Promise<void> {
-    for (const cert of certifications) {
+    await Promise.all(certifications.map(async (cert) => {
       await tx.certificate.create({
         data: {
           consultantId,
@@ -249,7 +283,7 @@ export class ConsultantService {
           endDate: cert.endDate ? new Date(cert.endDate) : null,
         },
       });
-    }
+    }));
   }
 
   private async createEducationRecords(
@@ -257,7 +291,7 @@ export class ConsultantService {
     consultantId: string,
     education: any[],
   ): Promise<void> {
-    for (const edu of education) {
+    await Promise.all(education.map(async (edu) => {
       await tx.consultantEducation.create({
         data: {
           consultantId,
@@ -267,7 +301,7 @@ export class ConsultantService {
           endDate: edu.endDate ? new Date(edu.endDate) : null,
         },
       });
-    }
+    }));
   }
 
   async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
@@ -332,7 +366,11 @@ export class ConsultantService {
 
         include: {
           user: { select: { fullName: true, email: true } },
-          skills: { include: { skill: { select: { name: true } } } },
+          skills: {
+            include: {
+              skill: { select: { name: true, displayName: true } },
+            },
+          },
           certificates: { select: { title: true } },
           consultantExperiences: { select: { startDate: true, endDate: true } },
         },
@@ -363,7 +401,9 @@ export class ConsultantService {
         province: c.province,
         postalCode: c.postalCode,
         availabilityStatus: c.availability,
-        primarySkills: c.skills.map((cs) => cs.skill.name),
+        primarySkills: this.withDisplayNames(c).skills.map(
+          (cs) => cs.skill.name,
+        ),
         phone: c.phone,
         idNumber: c.idNumber,
         experienceYears: Math.floor(experienceYears),
@@ -437,7 +477,11 @@ export class ConsultantService {
         consultant: {
           include: {
             user: { select: { fullName: true, email: true } },
-            skills: { include: { skill: { select: { name: true } } } },
+            skills: {
+              include: {
+                skill: { select: { name: true, displayName: true } },
+              },
+            },
           },
         },
       },
@@ -457,7 +501,9 @@ export class ConsultantService {
           email: c.user.email,
           phone: c.phone,
           city: c.city,
-          primarySkills: c.skills.map((cs) => cs.skill.name),
+          primarySkills: this.withDisplayNames(c).skills.map(
+            (cs) => cs.skill.name,
+          ),
 
           placementStatus: placement.status,
           allocation: placement.allocation,
@@ -593,30 +639,11 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const skill of dto.skills) {
-          const normalizedName = skill.skillName.trim().toLowerCase();
-          const skillRecord = await tx.skill.upsert({
-            where: { name: normalizedName },
-            update: {},
-            create: { name: normalizedName, category: 'General' },
-          });
-
-          // Recompute competency level server-side
-          const competencyLevel = this.inferCompetencyLevel(
-            skill.yearsExperience,
-            skill.confidenceLevel,
-          );
-
-          await tx.consultantSkill.create({
-            data: {
-              consultantId: resolvedConsultantId,
-              skillId: skillRecord.id,
-              competencyLevel,
-              yearsExperience: skill.yearsExperience,
-              confidenceLevel: skill.confidenceLevel,
-            },
-          });
-        }
+        await this.createConsultantSkills(
+          tx,
+          resolvedConsultantId,
+          dto.skills,
+        );
       }
 
       if (dto.experiences !== undefined) {
@@ -624,8 +651,8 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const exp of dto.experiences) {
-          await tx.consultantExperience.create({
+        await Promise.all(dto.experiences.map((exp) =>
+          tx.consultantExperience.create({
             data: {
               consultantId: resolvedConsultantId,
               jobTitle: exp.jobTitle,
@@ -640,8 +667,8 @@ export class ConsultantService {
               endDate: exp.endDate ? new Date(exp.endDate) : null,
               description: exp.description,
             },
-          });
-        }
+          }),
+        ));
       }
 
       if (dto.certifications !== undefined) {
@@ -649,16 +676,16 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const cert of dto.certifications) {
-          await tx.certificate.create({
+        await Promise.all(dto.certifications.map((cert) =>
+          tx.certificate.create({
             data: {
               consultantId: resolvedConsultantId,
               title: cert.title,
               issuingBody: cert.issuingBody,
               startDate: cert.startDate ? new Date(cert.startDate) : null,
             },
-          });
-        }
+          }),
+        ));
       }
 
       if (dto.education !== undefined) {
@@ -666,8 +693,8 @@ export class ConsultantService {
           where: { consultantId: resolvedConsultantId },
         });
 
-        for (const edu of dto.education) {
-          await tx.consultantEducation.create({
+        await Promise.all(dto.education.map((edu) =>
+          tx.consultantEducation.create({
             data: {
               consultantId: resolvedConsultantId,
               institution: edu.institution,
@@ -676,8 +703,8 @@ export class ConsultantService {
               endDate: edu.endDate ? new Date(edu.endDate) : null,
               fileName: edu.fileName ?? null,
             },
-          });
-        }
+          }),
+        ));
       }
     });
 
@@ -761,7 +788,7 @@ export class ConsultantService {
           competencyLevel: true,
           yearsExperience: true,
           confidenceLevel: true,
-          skill: { select: { name: true } },
+          skill: { select: { name: true, displayName: true } },
         },
       },
       certificates: {
@@ -821,9 +848,9 @@ export class ConsultantService {
       pictureUrl: consultant.pictureData
         ? `data:${consultant.pictureMimeType};base64,${Buffer.from(consultant.pictureData).toString('base64')}`
         : null,
-      skills: consultant.skills.map((cs: any) => ({
+      skills: this.withDisplayNames(consultant).skills.map((cs: any) => ({
         id: cs.id,
-        skillName: cs.skill.name,
+        skillName: cs.skill.displayName ?? cs.skill.name,
         competencyLevel: cs.competencyLevel,
         yearsExperience: cs.yearsExperience,
         confidenceLevel: cs.confidenceLevel,
@@ -935,7 +962,12 @@ export class ConsultantService {
           include: {
             skills: {
               include: {
-                skill: true,
+                skill: {
+                  select: {
+                    name: true,
+                    displayName: true,
+                  }
+                }
               },
             },
             placements: {
@@ -1061,5 +1093,31 @@ export class ConsultantService {
     const pictureUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
 
     return { pictureUrl, message: 'Profile picture uploaded successfully.' };
+  }
+
+  private withDisplayNames<
+    T extends {
+      skills?: {
+        skill: {
+          name: string;
+          displayName?: string | null;
+        };
+      }[];
+    },
+  >(project: T): T {
+    if (!project?.skills) {
+      return project;
+    }
+
+    return {
+      ...project,
+      skills: project.skills.map((ps) => ({
+        ...ps,
+        skill: {
+          ...ps.skill,
+          name: ps.skill.displayName ?? ps.skill.name,
+        },
+      })),
+    };
   }
 }

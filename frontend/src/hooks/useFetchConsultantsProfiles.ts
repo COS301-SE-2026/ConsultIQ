@@ -52,6 +52,7 @@ export interface ConsultantProfileDto {
   city: string;
   province: string;
   postalCode?: string;
+  costToCompany?: number;
   latitude?: number;
   longitude?: number;
   placeId?: string;
@@ -82,6 +83,7 @@ const mapDtoToProfile = (data: ConsultantProfileDto) => {
     city: data.city,
     province: data.province,
     postalCode: data.postalCode || "",
+    costToCompany: data.costToCompany ?? 0,
     latitude: data.latitude ??  undefined,
     longitude: data.longitude ?? undefined,
     placeId: data.placeId ||  "",

@@ -170,7 +170,9 @@ function ConsultantProfileViewPage() {
               phone={profile.phone}
               idNumber={profile.idNumber}
               nationality={profile.nationality}
+              costToCompany={profile.costToCompany}
               canEdit={canEdit}
+              canEditCost={user?.role === "CONSULTANT"}
               onSave={async (data) => {
                 await save({
                   fullname: data.fullName,
@@ -178,6 +180,7 @@ function ConsultantProfileViewPage() {
                   phone: data.phone,
                   idNumber: data.idNumber,
                   nationality: data.nationality,
+                  ...(data.costToCompany !== undefined && { costToCompany: data.costToCompany }),
                 });
                 await refetch();
               }}

@@ -63,6 +63,13 @@ function getCurrentWeekStart(timeZone: string) : string {
 }
 
 function SchedulerTaskTab({loading, error, week, progress, projects, onEdit, onSetStatus, onSchedule, onDelete,onSplit}: SchedulerTaskTabProps) {
+    const [now, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {setNow(Date.now());}, 60_000);
+        return () => window.clearInterval(timer);
+    }, []);
+
     if (loading) { return <p className="p-4">Loading week...</p>; }
 
     if (error) { return <p role="alert" className="p-4 text-red-700">{error}</p>; }
@@ -74,7 +81,7 @@ function SchedulerTaskTab({loading, error, week, progress, projects, onEdit, onS
             <TaskBoard
                 tasks={week.tasks}
                 projects={projects}
-                now={Date.now()}
+                now={now}
                 expectedVersion={week.version}
                 subtaskProgressByTaskId={progress}
                 onEditTask={onEdit}

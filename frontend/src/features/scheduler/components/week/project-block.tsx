@@ -1,11 +1,17 @@
-import type { Interval, ProjectBlock as ProjectBlockType, Task, TaskStatus } from "../../types/scheduler.types";
+import type { Interval, ProjectBlock as ProjectBlockType, Task } from "../../types/scheduler.types";
 import type { ProjectSummary } from "../../types/scheduler.fixtures";
-import { blockTop, blockHeight, instantToLocalTime, priorityScore, ROW_HEIGHT_PX, timeToMinutes, DAY_START_HOUR, DAY_END_HOUR } from "../../utils/scheduler.utils";
-import { useState, type PointerEvent as ReactPointerEvent, } from "react";
+import {
+    blockTop,
+    blockHeight,
+    instantToLocalTime,
+    ROW_HEIGHT_PX,
+    timeToMinutes,
+    DAY_START_HOUR,
+    DAY_END_HOUR,
+} from "../../utils/scheduler.utils";
+import { useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import ResizeHandle from "./resize-handle";
-import BatchSlot from "./batch-slot";
-import TaskSlot from "./task-slot";
-import { useDraggable } from "@dnd-kit/core"
 import { getProjectColour } from "./project-colour";
 
 export interface ProjectBlockProps {
@@ -16,27 +22,36 @@ export interface ProjectBlockProps {
     readonly selected?: boolean;
     readonly onResize?: (blockId: string, to: Interval) => void;
     readonly onClick?: () => void;
-    readonly onSetStatus?: (taskId: string, status: TaskStatus) => void;
     readonly onTogglePin?: (pinned: boolean) => void;
-
 }
 
-export default function ProjectBlock({ block, tasks, project, timezone, selected = false, onClick, onResize, onSetStatus, onTogglePin }: ProjectBlockProps) {
+const MIN_BLOCK_MINUTES = 60;
+
+export default function ProjectBlock({
+    block,
+    tasks,
+    project,
+    timezone,
+    selected = false,
+    onClick,
+    onResize,
+    onTogglePin,
+}: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
-    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: `block:${block.id}` });
+    const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
+        id: `block:${block.id}`,
+    });
 
     const start = instantToLocalTime(block.start, timezone);
     const end = instantToLocalTime(block.end, timezone);
     const top = blockTop(start);
     const height = blockHeight(start, end);
     const hours = (Date.parse(block.end) - Date.parse(block.start)) / 3_600_000;
-
-    const [preview, setPreview] = useState({ top: 0, bottom: 0 });
     const durationMin = hours * 60;
-    const MIN_MIN = 60;
-
     const startMin = timeToMinutes(start);
     const endMin = timeToMinutes(end);
+
+    const [preview, setPreview] = useState({ top: 0, bottom: 0 });
 
     function deltaMinutes(fromY: number, toY: number) {
         return Math.round((((toY - fromY) / ROW_HEIGHT_PX) * 60) / 15) * 15;
@@ -44,8 +59,8 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
 
     function clamp(edge: "top" | "bottom", mins: number) {
         return edge === "top"
-            ? Math.max(DAY_START_HOUR * 60 - startMin, Math.min(mins, durationMin - MIN_MIN))
-            : Math.min(DAY_END_HOUR * 60 - endMin, Math.max(mins, -(durationMin - MIN_MIN)));
+            ? Math.max(DAY_START_HOUR * 60 - startMin, Math.min(mins, durationMin - MIN_BLOCK_MINUTES))
+            : Math.min(DAY_END_HOUR * 60 - endMin, Math.max(mins, -(durationMin - MIN_BLOCK_MINUTES)));
     }
 
     function startResize(e: ReactPointerEvent, edge: "top" | "bottom") {
@@ -79,68 +94,31 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
     const displayTop = top + (preview.top / 60) * ROW_HEIGHT_PX;
     const displayHeight = height + ((preview.bottom - preview.top) / 60) * ROW_HEIGHT_PX;
 
-
-    const blockTasks = tasks.filter((t) => t.status !== "Done"
-        && t.slots.some((s) => s.blockId === block.id))
-        .sort((a, b) => priorityScore(b) - priorityScore(a));
-
-    const blockSlots = [
-        ...new Map(
-            tasks.flatMap((t) => t.slots)
-                .filter((s) => s.blockId === block.id)
-                .map((s) => [s.id, s]),
-        ).values(),
-
-    ].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
-
-
-    const hasCarryover = blockTasks.some((t) => t.carriedOver);
+    const hasCarryover = tasks.some(
+        (t) => t.carriedOver && t.status !== "Done" && t.slots.some((s) => s.blockId === block.id),
+    );
     const isPinned = block.mobility === "pinned";
     const isResized = !!block.userSized;
 
-    const small = displayHeight < 44;
-    const medium = displayHeight >= 44 && displayHeight < 90;
-
-    const titleColour = selected ? "#fff" : color;
-    const mutedColour = selected ? "rgba(255,255,255,0.6)" : "#6B7280";
-
-    const indicators = (
-        <div className="flex items-center gap-0.5 shrink-0">
-            {hasCarryover && (
-                <span className="text-[8px] font-bold px-1 rounded" style={{ backgroundColor: "#FEF3C7", color: "#92400e" }} title="Carried over work">{'\u21A9'}</span>
-            )}
-
-            <button
-                type="button"
-                className="pointer-events-auto text-[9px] leading-none"
-                style={{ color: mutedColour, opacity: isPinned ? 1 : 0.35 }}
-                aria-label={isPinned ? "Unpin block" : "Pin block"}
-                aria-pressed={isPinned}
-                title={isPinned ? "Unpin" : "Pin"}
-                onClick={() => onTogglePin?.(!isPinned)}
-            >
-                {"\u{1F4CC}"}
-            </button>
-            {isResized && <span className="text-[9px]" style={{ color: mutedColour }} title="Resized by you">{'\u2195'}</span>}
-        </div>
-    );
-
+    const textColour = selected ? "#fff" : color;
+    const mutedColour = selected ? "rgba(255,255,255,0.75)" : "#6B7280";
 
     return (
         <div
             ref={setNodeRef}
-            className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none "
+            className="absolute left-0.5 right-0.5 rounded-md overflow-hidden select-none"
             style={{
                 top: displayTop,
                 height: Math.max(displayHeight, 18),
                 backgroundColor: selected ? color : lightColor,
                 borderLeft: `3px solid ${color}`,
-                boxShadow: selected ? `0 2px 12px ${color}50` : "0 1px 3px rgba(0,0,0,0.05)",
+                boxShadow: selected ? `0 2px 12px ${color}50` : "none",
                 zIndex: selected ? 5 : 2,
                 transition: "opacity 0.15s, box-shadow 0.15s",
                 opacity: isDragging ? 0.35 : 1,
             }}
         >
+            {/* Covers the whole block: click/Enter selects, Space starts a keyboard drag */}
             <button
                 ref={setActivatorNodeRef}
                 {...listeners}
@@ -153,66 +131,46 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                 style={{ cursor: isDragging ? "grabbing" : "grab" }}
             />
 
-            <div className="relative h-full pointer-events-none">
-                {small ? (
-                    <div className="px-1.5 flex items-center h-full gap-1 overflow-hidden">
-                        <span className="text-[10px] font-bold truncate" style={{ color: titleColour }} >{project.name}</span>
-                        {indicators}
-                    </div>
-                ) : medium ? (
-                    <div className="px-2 py-1 flex flex-col justify-between h-full">
-                        <div className="flex items-center justify-between gap-1">
-                            <span className="text-[10px] font-bold truncate" style={{ color: titleColour }}>{project.name}</span>
-                            {indicators}
-                        </div>
-                        {blockTasks[0] && (
-                            <span className="text-[9px] truncate" style={{ color: mutedColour }}>{'\u25B6'} {blockTasks[0].title}</span>
+            {/* Caption row at the bottom, where slots rarely reach */}
+            <div className="relative h-full flex flex-col justify-end pointer-events-none">
+                <div className="flex items-center gap-1 px-2 py-1 min-w-0">
+                    <span className="text-[10px] font-semibold truncate" style={{ color: textColour }}>
+                        {hours.toFixed(1)}h · {project.name}
+                    </span>
+                    {project.clientName && (
+                        <span className="text-[10px] truncate" style={{ color: mutedColour }}>
+                            · {project.clientName}
+                        </span>
+                    )}
+
+                    <span className="ml-auto flex items-center gap-1 shrink-0">
+                        {hasCarryover && (
+                            <span
+                                className="text-[8px] font-bold px-1 rounded"
+                                style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
+                                title="Carried over work"
+                            >
+                                {"\u21A9"}
+                            </span>
                         )}
-                    </div>
-                ) : (
-
-                    <div className="px-2 py-1.5 flex flex-col gap-1 h-full">
-                        <div className="flex items-start justify-between gap-1">
-                            <div className="min-w-0">
-                                <span className="text-sm font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
-                                <span className="text-sm block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
-                            </div>
-                            {indicators}
-                        </div>
-
-
-                        {blockSlots.slice(0, 3).map((s) =>
-                            s.kind === "batch" ? (
-                                <BatchSlot
-                                    key={s.id}
-                                    slot={s}
-                                    tasks={tasks}
-                                    color={color}
-                                    selected={selected}
-                                />
-                            ) : (
-                                <TaskSlot
-                                    key={s.id}
-                                    slot={s}
-                                    task={tasks.find((t) => t.id === s.taskIds[0])!}
-                                    timezone={timezone}
-                                    color={color}
-                                    selected={selected}
-                                    onSetStatus={onSetStatus}
-                                />
-                            ),
+                        {isResized && (
+                            <span className="text-[9px]" style={{ color: mutedColour }} title="Resized by you">
+                                {"\u2195"}
+                            </span>
                         )}
-
-
-
-                        {displayHeight >= 120 && (
-                            <div className="mt-auto">
-                                <span className="text-xs" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
-                            </div>
-                        )}
-                    </div>
-
-                )}
+                        <button
+                            type="button"
+                            className="pointer-events-auto text-[9px] leading-none"
+                            style={{ opacity: isPinned ? 1 : 0.35 }}
+                            aria-label={isPinned ? "Unpin block" : "Pin block"}
+                            aria-pressed={isPinned}
+                            title={isPinned ? "Unpin" : "Pin"}
+                            onClick={() => onTogglePin?.(!isPinned)}
+                        >
+                            {"\u{1F4CC}"}
+                        </button>
+                    </span>
+                </div>
             </div>
 
             <ResizeHandle edge="top" onPointerDown={(e) => startResize(e, "top")} />

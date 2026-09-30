@@ -6,7 +6,7 @@ import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
 import { randomUUID } from 'node:crypto';
-import { SCHEDULER_RULES } from './scheduler-rules.constant';
+
 
 import {
     WeekContainer,
@@ -129,19 +129,40 @@ export class WeekService {
         return week;
     }
 
+    // private resolveBlocks(dbWeek: {
+    //     blocks: PrismaBlock[];
+    // }): ProjectBlock[] {
+    //     return dbWeek.blocks.map((b) => {
+    //         if (b.userSized || b.allocation == null) {
+    //             return b as unknown as ProjectBlock;
+    //         }
+    //         return {
+    //             ...b,
+    //             allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
+    //         } as unknown as ProjectBlock;
+    //     });
+    // }
+
     private resolveBlocks(dbWeek: {
-        blocks: PrismaBlock[];
-    }): ProjectBlock[] {
-        return dbWeek.blocks.map((b) => {
-            if (b.userSized || b.allocation == null) {
-                return b as unknown as ProjectBlock;
-            }
-            return {
-                ...b,
-                allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
-            } as unknown as ProjectBlock;
-        });
-    }
+    blocks: PrismaBlock[];
+}): ProjectBlock[] {
+    return dbWeek.blocks.map((b) => {
+        // Prisma returns Dates; the placer compares ISO strings
+        const block = {
+            ...b,
+            start: this.normalizeDatabaseInstant(b.start),
+            end: this.normalizeDatabaseInstant(b.end),
+        };
+
+        if (b.userSized || b.allocation == null) {
+            return block as unknown as ProjectBlock;
+        }
+        return {
+            ...block,
+            allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
+        } as unknown as ProjectBlock;
+    });
+}
 
     private normalizeDatabaseInstant(value: unknown): string {
         return value instanceof Date ? value.toISOString() : String(value);
@@ -249,9 +270,7 @@ export class WeekService {
                     weekId,
                     projectId: placement.projectId,
                     placementId: placement.id,
-                    allocatedMinutes: Math.round(
-                        (SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * placement.allocation / 100) / 5,
-                    ),
+                    allocatedMinutes: blockMinutes,
                     start: new Date(start),
                     end: new Date(end),
                     mobility: "fluid",
@@ -571,14 +590,33 @@ export class WeekService {
         }
     }
 
+    // private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
+    //     const slot = week.slots.find((s) => s.id === slotId);
+    //     if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
+    //     slot.start = to.start;
+    //     slot.end = to.end;
+    //     slot.locked = true;
+    //     if (tags) slot.tags = tags;
+    // }
+
     private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
-        const slot = week.slots.find((s) => s.id === slotId);
-        if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
-        slot.start = to.start;
-        slot.end = to.end;
-        slot.locked = true;
-        if (tags) slot.tags = tags;
-    }
+    const slot = week.slots.find((s) => s.id === slotId);
+    if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
+    slot.start = to.start;
+    slot.end = to.end;
+    slot.locked = true;
+    if (tags) slot.tags = tags;
+
+    // Re-home the slot to whichever block of the same project now contains it
+    const task = week.tasks.find((t) => slot.taskIds.includes(t.id));
+    const target = week.blocks.find(
+        (b) =>
+            b.projectId === task?.projectId &&
+            new Date(b.start).getTime() <= new Date(to.start).getTime() &&
+            new Date(to.end).getTime() <= new Date(b.end).getTime(),
+    );
+    if (target) slot.blockId = target.id;
+}
 
     private applyPlaceUnplacedChange(week: WeekContainer, taskIds: string[]): void {
         for (const t of week.tasks) {

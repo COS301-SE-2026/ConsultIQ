@@ -249,9 +249,7 @@ export class WeekService {
                     weekId,
                     projectId: placement.projectId,
                     placementId: placement.id,
-                    allocatedMinutes: Math.round(
-                        (SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * placement.allocation / 100) / 5,
-                    ),
+                    allocatedMinutes: blockMinutes,
                     start: new Date(start),
                     end: new Date(end),
                     mobility: "fluid",

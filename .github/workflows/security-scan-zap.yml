@@ -16,10 +16,6 @@ concurrency:
   group: zap-${{ github.ref }}
   cancel-in-progress: true
 
-concurrency:
-  group: zap-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   zap-authenticated:
     name: ZAP API scan (${{ matrix.role }})

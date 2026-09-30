@@ -30,6 +30,11 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
         icon: Users
     },
     {
+        label: "Skill Advisor",
+        path: "/manager-skill-advisor",
+        icon:TrendingUp
+    },
+    {
         label: "Help",
         path: "/help-page",
         icon: HelpCircle

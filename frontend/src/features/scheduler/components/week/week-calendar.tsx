@@ -1,5 +1,27 @@
+import { useState } from "react";
+import { fromZonedTime } from "date-fns-tz";
+import {
+    DndContext,
+    type DragEndEvent,
+    type DragMoveEvent,
+    KeyboardSensor,
+    MouseSensor,
+    TouchSensor,
+    useSensor,
+    useSensors,
+} from "@dnd-kit/core";
 import TimeAxis from "./time-axis";
 import Dayheader from "./day-header";
+import DayColumn from "./day-column";
+import ProjectBlock from "./project-block";
+import TaskSlot from "./task-slot";
+import BatchSlot from "./batch-slot";
+import CalendarEntry from "./calendar-entry";
+import NowIndicator from "./now-indicator";
+import DropGhost from "./drag-ghost";
+import OutOfHoursConfirmDialog from "./out-of-hours-dialog";
+import CalendarEntryForm from "../calendar-entry-form";
+import { getProjectColour } from "./project-colour";
 import { holidayWeek, FIXTURE_PROJECTS, type ProjectSummary } from "../../types/scheduler.fixtures";
 import type {
     WeekContainer,
@@ -10,55 +32,28 @@ import type {
     ProjectBlock as ProjectBlockData,
     SetTaskStatusDto,
 } from "../../types/scheduler.types";
-import CalendarEntryForm from "../calendar-entry-form";
 import {
-    localDate,
     instantToLocalTime,
     instantToLocalDate,
     timeToMinutes,
     minutesToTime,
     ROW_HEIGHT_PX,
     blockTop,
+    blockHeight,
     isIntervalOutOfHours,
     DAY_START_HOUR,
     DAY_END_HOUR,
-    isWeekendInstant
+    isWeekendInstant,
+} from "../../utils/scheduler.utils";
 
-} from "../../utils/scheduler.utils"
-import ProjectBlock from "./project-block";
-import { getProjectColour } from "./project-colour";
-import { useState } from "react";
-import CalendarEntry from "./calendar-entry"
-import { fromZonedTime } from "date-fns-tz"
-import NowIndicator from "./now-indicator";
-import DropGhost from "./drag-ghost";
-import {
-    DndContext,
-    type DragEndEvent,
-    type DragMoveEvent,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    useSensor,
-    useSensors,
-
-} from "@dnd-kit/core";
-import DayColumn from "./day-column";
-import OutOfHoursConfirmDialog from "./out-of-hours-dialog";
-
-const DAY_Names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-function addDays(date: string, days: number): string {
-    const d = new Date(date + "T00:00:00Z");
-    d.setUTCDate(d.getUTCDate() + days);
-    return d.toISOString().slice(0, 10);
-}
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 interface GhostState {
     date: string;
     startMin: number;
     durationMin: number;
     colour: string;
+    slotId?: string;
 }
 
 interface AwaitingConfirmation {
@@ -67,6 +62,7 @@ interface AwaitingConfirmation {
     to: Interval;
 }
 
+type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
 
 export interface WeekCalendarProps {
     readonly weekData?: WeekContainer;
@@ -80,23 +76,27 @@ export interface WeekCalendarProps {
     readonly onSetStatus?: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
 }
 
+function addDays(date: string, days: number): string {
+    const d = new Date(date + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().slice(0, 10);
+}
+
 function scrollToCoreHours(el: HTMLDivElement | null) {
     if (el) el.scrollTop = blockTop("08:00");
 }
 
-type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
-
-function withBlock(w: WeekContainer, blockId: string, patch: Partial<ProjectBlockData>): WeekContainer {
-    return { ...w, blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) };
-}
-
-
+// "slot:abc" -> { kind: "slot", id: "abc" }
 function parseDragId(dragId: string) {
     const i = dragId.indexOf(":");
     return { kind: dragId.slice(0, i) as "block" | "slot", id: dragId.slice(i + 1) };
 }
 
+function withBlock(w: WeekContainer, blockId: string, patch: Partial<ProjectBlockData>): WeekContainer {
+    return { ...w, blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) };
+}
 
+// A batch slot appears on every task in the batch, so update it everywhere
 function withSlot(w: WeekContainer, slotId: string, to: Interval): WeekContainer {
     return {
         ...w,
@@ -107,42 +107,39 @@ function withSlot(w: WeekContainer, slotId: string, to: Interval): WeekContainer
     };
 }
 
-export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested = false, onCreateEntryDone, onMoveBlock, onMoveSlot, onPinBlock, onResizeBlock, onSetStatus }: WeekCalendarProps) {
+export default function WeekCalendar({
+    weekData = holidayWeek,
+    projects = FIXTURE_PROJECTS,
+    createEntryRequested = false,
+    onCreateEntryDone,
+    onMoveBlock,
+    onResizeBlock,
+    onPinBlock,
+    onMoveSlot,
+    onSetStatus,
+}: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
     const [ghost, setGhost] = useState<GhostState | null>(null);
     const [awaiting, setAwaiting] = useState<AwaitingConfirmation | null>(null);
-    const [showWeekend, setShowWeekend] = useState(week?.metadata?.hasWeekend);
+    const [showWeekend, setShowWeekend] = useState(week.metadata.hasWeekend);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-        useSensor(KeyboardSensor, { keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] }, }),
-    )
+        useSensor(KeyboardSensor, {
+            keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] },
+        }),
+    );
 
     const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
+
+    // ─── Calendar entries (local only until the calendar-entry service is connected) ───
 
     function closeEntryForm() {
         setEntryForm(null);
         onCreateEntryDone?.();
-    }
-
-
-    function handleSetStatus(taskId: string, status: TaskStatus) {
-        setWeek((w) => ({
-            ...w,
-            tasks: w.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
-
-        }));
-    }
-
-    function changeStatus(taskId: string, status: TaskStatus) {
-        if (onSetStatus) {
-            void onSetStatus(taskId, { status, expectedVersion: week.version });
-        } else {
-            handleSetStatus(taskId, status); // fixtures only: no backend
-        }
     }
 
     function handleSaveEntry(dto: CalendarEntryDto) {
@@ -166,39 +163,46 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
         closeEntryForm();
     }
 
+    // ─── Task status ───
+
+    function handleSetStatus(taskId: string, status: TaskStatus) {
+        setWeek((w) => ({
+            ...w,
+            tasks: w.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
+        }));
+    }
+
+    function changeStatus(taskId: string, status: TaskStatus) {
+        if (onSetStatus) {
+            void onSetStatus(taskId, { status, expectedVersion: week.version });
+        } else {
+            handleSetStatus(taskId, status); // fixtures only: no backend
+        }
+    }
+
+    // ─── Manual placement ───
 
     function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save?: Promise<boolean>) {
         const previous = week;
         setWeek(patch(previous));
-        save?.then((ok) => {
-            if (!ok) setWeek(previous);
-        }).catch(() => setWeek(previous));
+        save
+            ?.then((ok) => {
+                if (!ok) setWeek(previous);
+            })
+            .catch(() => setWeek(previous));
     }
 
     function applyChange(c: AwaitingConfirmation, confirmedOverride = false) {
-    if (c.kind === "slot") {
-        applyOptimistic(
-            (w) => withSlot(w, c.id, c.to),
-            onMoveSlot?.(c.id, c.to, confirmedOverride),
-        );
-    } else if (c.kind === "move") {
-        applyOptimistic(
-            (w) => withBlock(w, c.id, c.to),
-            onMoveBlock?.(c.id, c.to, confirmedOverride),
-        );
-    } else {
-        applyOptimistic(
-            (w) => withBlock(w, c.id, { ...c.to, userSized: true }),
-            onResizeBlock?.(c.id, c.to, confirmedOverride),
-        );
-    }
-}
-
-    function handleTogglePin(blockId: string, pinned: boolean) {
-        applyOptimistic(
-            (w) => withBlock(w, blockId, { mobility: pinned ? "pinned" : "fluid" }),
-            onPinBlock?.(blockId, pinned),
-        );
+        if (c.kind === "slot") {
+            applyOptimistic((w) => withSlot(w, c.id, c.to), onMoveSlot?.(c.id, c.to, confirmedOverride));
+        } else if (c.kind === "move") {
+            applyOptimistic((w) => withBlock(w, c.id, c.to), onMoveBlock?.(c.id, c.to, confirmedOverride));
+        } else {
+            applyOptimistic(
+                (w) => withBlock(w, c.id, { ...c.to, userSized: true }),
+                onResizeBlock?.(c.id, c.to, confirmedOverride),
+            );
+        }
     }
 
     function requestChange(c: AwaitingConfirmation) {
@@ -208,63 +212,89 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
         else applyChange(c);
     }
 
-    function dragSubject(dragId: string) {
-    const { kind, id } = parseDragId(dragId);
-    if (kind === "slot") {
-        const task = week.tasks.find((t) => t.slots.some((s) => s.id === id))!;
-        const slot = task.slots.find((s) => s.id === id)!;
-        return { start: slot.start, end: slot.end, projectId: task.projectId };
+    function handleTogglePin(blockId: string, pinned: boolean) {
+        applyOptimistic(
+            (w) => withBlock(w, blockId, { mobility: pinned ? "pinned" : "fluid" }),
+            onPinBlock?.(blockId, pinned),
+        );
     }
-    const b = week.blocks.find((x) => x.id === id)!;
-    return { start: b.start, end: b.end, projectId: b.projectId };
-}
 
-function snappedStart(dragId: string, deltaY: number) {
-    const subject = dragSubject(dragId);
-    const originalMin = timeToMinutes(instantToLocalTime(subject.start, week.timezone));
-    const durationMin = (Date.parse(subject.end) - Date.parse(subject.start)) / 60_000;
-    const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
-    const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
-    return { startMin, durationMin, colour: getProjectColour(subject.projectId).color };
-}
+    // ─── Dragging ───
+
+    function dragSubject(dragId: string) {
+        const { kind, id } = parseDragId(dragId);
+        if (kind === "slot") {
+            const task = week.tasks.find((t) => t.slots.some((s) => s.id === id))!;
+            const slot = task.slots.find((s) => s.id === id)!;
+            return { start: slot.start, end: slot.end, projectId: task.projectId };
+        }
+        const b = week.blocks.find((x) => x.id === id)!;
+        return { start: b.start, end: b.end, projectId: b.projectId };
+    }
+
+    function snappedStart(dragId: string, deltaY: number) {
+        const subject = dragSubject(dragId);
+        const originalMin = timeToMinutes(instantToLocalTime(subject.start, week.timezone));
+        const durationMin = (Date.parse(subject.end) - Date.parse(subject.start)) / 60_000;
+        const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
+        const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
+        return { startMin, durationMin, colour: getProjectColour(subject.projectId).color };
+    }
+
+    // Same rule as the backend: a slot can't share any time with another slot or entry
+    function ghostClashes(g: GhostState): boolean {
+        if (!g.slotId) return false; // blocks can sit under slots and entries
+        const start = fromZonedTime(`${g.date}T${minutesToTime(g.startMin)}:00`, week.timezone).getTime();
+        const end = start + g.durationMin * 60_000;
+        const others = [...week.tasks.flatMap((t) => t.slots), ...week.entries].filter((e) => e.id !== g.slotId);
+        return others.some((e) => Date.parse(e.start) < end && start < Date.parse(e.end));
+    }
 
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
         if (!over) {
             if (ghost) setGhost(null);
             return;
         }
-
-        const next = { date: String(over.id), ...snappedStart(String(active.id), delta.y) };
+        const { kind, id } = parseDragId(String(active.id));
+        const next: GhostState = {
+            date: String(over.id),
+            ...snappedStart(String(active.id), delta.y),
+            slotId: kind === "slot" ? id : undefined,
+        };
         if (ghost?.date === next.date && ghost.startMin === next.startMin) return;
         setGhost(next);
-
     }
 
     function handleDragEnd({ active, over, delta }: DragEndEvent) {
-    setGhost(null);
-    if (!over) return;
+        setGhost(null);
+        if (!over) return;
 
-    const { kind, id } = parseDragId(String(active.id));
-    const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
-    const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
-    const end = new Date(start.getTime() + durationMin * 60_000);
+        const { kind, id } = parseDragId(String(active.id));
+        const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
+        const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
+        const end = new Date(start.getTime() + durationMin * 60_000);
 
-    requestChange({
-        kind: kind === "slot" ? "slot" : "move",
-        id,
-        to: { start: start.toISOString(), end: end.toISOString() },
-    });
-}
+        requestChange({
+            kind: kind === "slot" ? "slot" : "move",
+            id,
+            to: { start: start.toISOString(), end: end.toISOString() },
+        });
+    }
+
+    // ─── Derived data ───
 
     const today = instantToLocalDate(new Date().toISOString(), week.timezone);
 
-    const days = DAY_Names.map((name, i) => {
+    // A batch slot appears on every task in the batch, so de-duplicate by id
+    const allSlots = [...new Map(week.tasks.flatMap((t) => t.slots).map((s) => [s.id, s])).values()];
+
+    const days = DAY_NAMES.map((name, i) => {
         const date = addDays(week.weekStart, i);
         const holiday = week.holidays.find((h) => h.date === date);
 
-        const minutes = week.tasks.flatMap((t) => t.slots)
-            .filter((s) => localDate(s.start, week.timezone) === date)
-            .reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60000, 0);
+        const minutes = allSlots
+            .filter((s) => instantToLocalDate(s.start, week.timezone) === date)
+            .reduce((sum, s) => sum + (Date.parse(s.end) - Date.parse(s.start)) / 60_000, 0);
 
         return {
             name,
@@ -274,25 +304,23 @@ function snappedStart(dragId: string, deltaY: number) {
             isHoliday: !!holiday,
             holidayName: holiday?.name,
             totalHours: minutes / 60,
-
         };
     }).filter((d) => showWeekend || !d.isWeekend);
 
     return (
         <div className="flex flex-col gap-2 w-full min-w-0 flex-1 min-h-0">
             <button
+                type="button"
                 className="self-start px-3 py-1 text-sm rounded border border-slate-300"
                 onClick={() => setShowWeekend((s) => !s)}
             >
                 {showWeekend ? "Hide weekend" : "Show weekend"}
             </button>
 
-
-            <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
+            <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200">
                 <div style={{ minWidth: 64 + days.length * 112 }}>
-
-                    {/*Header row*/}
-                    <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
+                    {/* Header row: sticks to the top while scrolling */}
+                    <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200">
                         <div className="w-16 flex-none sticky left-0 bg-white" />
                         {days.map((d) => (
                             <Dayheader
@@ -306,21 +334,22 @@ function snappedStart(dragId: string, deltaY: number) {
                             />
                         ))}
                     </div>
+
                     <DndContext
+                        sensors={sensors}
                         onDragMove={handleDragMove}
                         onDragEnd={handleDragEnd}
                         onDragCancel={() => setGhost(null)}
-                        sensors={sensors}
                     >
-
                         <div className="flex">
                             <TimeAxis />
                             {days.map((d) => (
                                 <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
+                                    {/* Project blocks: the background for each project's time */}
                                     {week.blocks
                                         .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
                                         .map((b) => {
-                                            const project = projects.find((item) => item.id === b.projectId) ?? {
+                                            const project = projects.find((p) => p.id === b.projectId) ?? {
                                                 id: b.projectId,
                                                 name: b.projectId,
                                                 clientName: "",
@@ -335,13 +364,50 @@ function snappedStart(dragId: string, deltaY: number) {
                                                     selected={selectedBlockId === b.id}
                                                     onClick={() => setSelectedBlockId(b.id)}
                                                     onResize={(blockId, to) => requestChange({ kind: "resize", id: blockId, to })}
-                                                    onSetStatus={changeStatus}
                                                     onTogglePin={(pinned) => handleTogglePin(b.id, pinned)}
                                                 />
                                             );
                                         })}
 
-                                    {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
+                                    {/* Slots: drawn at their real times, on top of the blocks */}
+                                    {allSlots
+                                        .filter((s) => instantToLocalDate(s.start, week.timezone) === d.date)
+                                        .map((s) => {
+                                            const task = week.tasks.find((t) => s.taskIds.includes(t.id));
+                                            if (!task) return null;
+                                            const colour = getProjectColour(task.projectId).color;
+                                            const start = instantToLocalTime(s.start, week.timezone);
+                                            const end = instantToLocalTime(s.end, week.timezone);
+
+                                            return (
+                                                <div
+                                                    key={s.id}
+                                                    className="absolute left-2 right-1 rounded-md overflow-hidden bg-white shadow-sm"
+                                                    style={{
+                                                        top: blockTop(start),
+                                                        height: Math.max(blockHeight(start, end), 18),
+                                                        borderLeft: `3px solid ${colour}`,
+                                                        zIndex: 6,
+                                                    }}
+                                                >
+                                                    {s.kind === "batch" ? (
+                                                        <BatchSlot slot={s} tasks={week.tasks} color={colour} />
+                                                    ) : (
+                                                        <TaskSlot
+                                                            slot={s}
+                                                            task={task}
+                                                            timezone={week.timezone}
+                                                            color={colour}
+                                                            onSetStatus={changeStatus}
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+
+                                    {/* Calendar entries: always on top of slots */}
+                                    {week.entries
+                                        .filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
                                         .map((e) => (
                                             <CalendarEntry
                                                 key={e.id}
@@ -349,30 +415,31 @@ function snappedStart(dragId: string, deltaY: number) {
                                                 timezone={week.timezone}
                                                 onClick={() => setEntryForm({ mode: "edit", entry: e })}
                                             />
-
-
                                         ))}
+
                                     {ghost?.date === d.date && (
-                                        <DropGhost startMin={ghost.startMin} durationMin={ghost.durationMin} colour={ghost.colour} />
+                                        <DropGhost
+                                            startMin={ghost.startMin}
+                                            durationMin={ghost.durationMin}
+                                            colour={ghostClashes(ghost) ? "#DC2626" : ghost.colour}
+                                        />
                                     )}
 
                                     <NowIndicator date={d.date} timezone={week.timezone} />
-
-
                                 </DayColumn>
-
                             ))}
                         </div>
                     </DndContext>
                 </div>
-
             </div>
-
 
             {awaiting && (
                 <OutOfHoursConfirmDialog
                     isWeekend={isWeekendInstant(awaiting.to.start, week.timezone)}
-                    onConfirm={() => { applyChange(awaiting, true); setAwaiting(null); }}
+                    onConfirm={() => {
+                        applyChange(awaiting, true);
+                        setAwaiting(null);
+                    }}
                     onCancel={() => setAwaiting(null)}
                 />
             )}
@@ -389,11 +456,6 @@ function snappedStart(dragId: string, deltaY: number) {
                     onClose={closeEntryForm}
                 />
             )}
-
         </div>
-
     );
-
-
-
 }

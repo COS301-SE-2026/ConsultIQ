@@ -373,7 +373,7 @@ export default function SchedulerPage() {
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <nav className="flex flex-none items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
                         <div className="flex">
-                            {([["calendar", "Calendar"], ["tasks", "Tasks"], ["notifications", "Notifications"]] as const).map(([key, label]) => (
+                            {([["calendar", "Calendar"], ["tasks", "Tasks"]] as const).map(([key, label]) => (
                                 <button key={key} type="button" role="tab"
                                     aria-selected={activeTab === key}
                                     onClick={() => setActiveTab(key)}
@@ -385,13 +385,6 @@ export default function SchedulerPage() {
                         </div>
 
                         <div className="my-2 flex items-center gap-2">
-                            <button type="button"
-                                onClick={() => setCreatingEntry(true)}
-                                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                            >
-                                + Event
-                            </button>
-
                             <button type="button"
                                 onClick={() => OpenCreateTask()}
                                 className="my-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"

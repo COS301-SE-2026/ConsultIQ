@@ -50,19 +50,37 @@ export class ValidatorService {
 
         allEvents.sort((a, b) => a.start - b.start);
 
-        for (let i = 0; i < allEvents.length - 1; i++) {
-            const current = allEvents[i];
-            const next = allEvents[i + 1];
+        // for (let i = 0; i < allEvents.length - 1; i++) {
+        //     const current = allEvents[i];
+        //     const next = allEvents[i + 1];
 
-            if (current.end > next.start) {
+        //     if (current.end > next.start) {
+        //         const overlapIssue = {
+        //             level: 'violation',
+        //             code: 'OVERLAPPING_EVENTS',
+        //             message: 'Overlap detected between ' + current.type + ' ' + current.id + ' and ' + next.type + ' ' + next.id + '.'
+        //         } as unknown as Issue;
+
+        //         issues.push(overlapIssue);
+        //     }
+        // }
+
+        // Compare each event with the one that ends latest so far, not just its neighbour
+        let furthest = allEvents[0];
+        for (let i = 1; i < allEvents.length; i++) {
+            const next = allEvents[i];
+
+            if (furthest.end > next.start) {
                 const overlapIssue = {
                     level: 'violation',
                     code: 'OVERLAPPING_EVENTS',
-                    message: 'Overlap detected between ' + current.type + ' ' + current.id + ' and ' + next.type + ' ' + next.id + '.'
+                    message: 'Overlap detected between ' + furthest.type + ' ' + furthest.id + ' and ' + next.type + ' ' + next.id + '.'
                 } as unknown as Issue;
 
                 issues.push(overlapIssue);
             }
+
+            if (next.end > furthest.end) furthest = next;
         }
 
         const hasViolations = issues.some(issue => issue.level === 'violation');

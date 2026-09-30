@@ -96,12 +96,27 @@ export class PlacerService {
 
     // --- Interval Math Helpers ---
 
-    private getOverlap(a: Interval, b: Interval): Interval | null {
-        const start = a.start > b.start ? a.start : b.start;
-        const end = a.end < b.end ? a.end : b.end;
-        if (start < end) return { start, end };
-        return null;
-    }
+    // private getOverlap(a: Interval, b: Interval): Interval | null {
+    //     const start = a.start > b.start ? a.start : b.start;
+    //     const end = a.end < b.end ? a.end : b.end;
+    //     if (start < end) return { start, end };
+    //     return null;
+    // }
+
+    // Accepts ISO strings (any format or offset) or Date objects
+private ms(value: string | Date): number {
+    return new Date(value).getTime();
+}
+
+private getOverlap(a: Interval, b: Interval): Interval | null {
+    const start = Math.max(this.ms(a.start), this.ms(b.start));
+    const end = Math.min(this.ms(a.end), this.ms(b.end));
+    if (start >= end) return null;
+    return {
+        start: start === this.ms(a.start) ? a.start : b.start,
+        end: end === this.ms(a.end) ? a.end : b.end,
+    };
+}
 
     private intersectMulti(sources: Interval[], targets: Interval[]): Interval[] {
         const result: Interval[] = [];
@@ -114,21 +129,37 @@ export class PlacerService {
         return result;
     }
 
-    private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
-        const overlap = this.getOverlap(source, obstacle);
-        if (!overlap) return [source]; // No overlap, return source unchanged
+    // private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
+    //     const overlap = this.getOverlap(source, obstacle);
+    //     if (!overlap) return [source]; // No overlap, return source unchanged
 
-        const results: Interval[] = [];
-        // Keep part before obstacle
-        if (source.start < overlap.start) {
-            results.push({ start: source.start, end: overlap.start });
-        }
-        // Keep part after obstacle
-        if (source.end > overlap.end) {
-            results.push({ start: overlap.end, end: source.end });
-        }
-        return results;
+    //     const results: Interval[] = [];
+    //     // Keep part before obstacle
+    //     if (source.start < overlap.start) {
+    //         results.push({ start: source.start, end: overlap.start });
+    //     }
+    //     // Keep part after obstacle
+    //     if (source.end > overlap.end) {
+    //         results.push({ start: overlap.end, end: source.end });
+    //     }
+    //     return results;
+    // }
+
+    private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
+    const overlap = this.getOverlap(source, obstacle);
+    if (!overlap) return [source]; // No overlap, return source unchanged
+
+    const results: Interval[] = [];
+    // Keep part before obstacle
+    if (this.ms(source.start) < this.ms(overlap.start)) {
+        results.push({ start: source.start, end: overlap.start });
     }
+    // Keep part after obstacle
+    if (this.ms(source.end) > this.ms(overlap.end)) {
+        results.push({ start: overlap.end, end: source.end });
+    }
+    return results;
+}
 
     private subtractMulti(sources: Interval[], obstacles: Interval[]): Interval[] {
         let current = [...sources];

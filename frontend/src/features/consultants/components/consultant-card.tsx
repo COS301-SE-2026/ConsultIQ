@@ -14,6 +14,8 @@ export interface Consultant {
   status: ConsultantStatus;
 }
 
+const MAX_SKILLS_PREVIEW = 6;
+
 interface ConsultantCardProps {
   consultant: Consultant;
   onViewDetails?: (id: string) => void;
@@ -37,6 +39,12 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
   } = consultant;
 
   const isAvailable = status === "Available";
+  const visibleSkills = skills.slice(0, MAX_SKILLS_PREVIEW);
+  const hasHiddenSkills = skills.length > MAX_SKILLS_PREVIEW;
+  const formattedRate = ratePerHour.toLocaleString("en-ZA", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   return (
     <div
@@ -124,7 +132,7 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
           style={{ color: "var(--color-accent)", fontSize: "var(--text-h4)" }}
         >
           <Banknote size={24} className="shrink-0" />
-          <span className="font-semibold">R {ratePerHour} </span>
+          <span className="font-semibold">R {formattedRate}</span>
         </div>
       </div>
 
@@ -133,10 +141,10 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
 
       {/*Skills*/}
       <div className="flex flex-wrap gap-2" style={{ marginBottom: "28px" }}>
-        {skills.map((skill) => (
+        {visibleSkills.map((skill, index) => (
           <span
-            key={skill}
-            className="rounded-md border"
+            key={`${skill}-${index}`}
+            className="max-w-full truncate rounded-md border"
             style={{
               padding: "5px 14px",
               borderColor: "var(--color-border)",
@@ -147,6 +155,21 @@ function ConsultantCard({ consultant, onViewDetails }: ConsultantCardProps) {
             {skill}
           </span>
         ))}
+        {hasHiddenSkills && (
+          <span
+            className="rounded-md border"
+            title={`${skills.length - MAX_SKILLS_PREVIEW} more skills`}
+            aria-label={`${skills.length - MAX_SKILLS_PREVIEW} more skills`}
+            style={{
+              padding: "5px 14px",
+              borderColor: "var(--color-border)",
+              color: "var(--color-text-secondary)",
+              fontSize: "var(--text-h4)",
+            }}
+          >
+            ...
+          </span>
+        )}
       </div>
 
      

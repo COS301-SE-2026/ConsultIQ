@@ -41,7 +41,7 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
 
                 <td className="py-5 px-6 text-center">
                     <div className="inline-flex items-center gap-2 text-sm font-bold text-slate-800" >
-                        <span className={`h-3 w-3 rounded-full ${availability == "Available" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                        <span className={`h-3 w-3 rounded-full ${availability === "Available" ? "bg-emerald-500" : "bg-red-500"}`} />
                         {availability}
                     </div>
                 </td>

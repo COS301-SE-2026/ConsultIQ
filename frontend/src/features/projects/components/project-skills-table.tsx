@@ -29,7 +29,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
     <div className="w-full overflow-x-auto">
       <div className="min-w-[620px]">
         <div className="mt-6 border-t pt-6 flex flex-col">
-          <div className="grid grid-cols-5 text-sm font-semibold mb-4 px-2 ">
+          <div className={`grid ${isEditing ? "grid-cols-5" : "grid-cols-4"} text-sm font-semibold mb-4 px-2`}>
             <span>Skill</span>
             <span>Competency</span>
             <span>Years</span>
@@ -42,7 +42,7 @@ export default function ProjectSkillsTable({ skills, onEditSkill, isEditing, onD
           currentSkills.map((skill, index) => (
             <div
               key={skill.id ?? `${startIndex + index}-${skill.name}`}
-              className="grid grid-cols-5 py-3 border-t text-base px-2 shrink-0"
+              className={`grid ${isEditing ? "grid-cols-5" : "grid-cols-4"} py-3 border-t text-base px-2 shrink-0`}
             >
               <span className="truncate pr-2">{skill.name}</span>
               <span className="truncate pr-2">{skill.competency}</span>

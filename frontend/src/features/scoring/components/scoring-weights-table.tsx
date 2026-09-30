@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckCircle, AlertCircle, RotateCcw, Info, Loader2 } from "lucide-react";
 
 export interface ScoringFactor {
@@ -44,10 +44,12 @@ function ViewInfo({ label, description }: { readonly label: string; readonly des
 export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsingDefaultWeights, onSave, onRevertToDefaultWeights, onRunMatch, isMatching }: ScoringWeightTableProps) {
     const [factors, setFactors] = useState<ScoringFactor[]>(initialFactors ?? []);
     const [isSaving, setIsSaving] = useState(false);
+    const [prevInitialFactors, setPrevInitialFactors] = useState(initialFactors);
 
-    useEffect(() => {
+    if (initialFactors !== prevInitialFactors) {
+        setPrevInitialFactors(initialFactors);
         setFactors(initialFactors ?? []);
-    }, [initialFactors]);
+    }
 
     const totalActiveWeight = factors.filter(factor => factor.isActive).reduce((sum, factor) => sum + factor.weight, 0);
     const isValidSum = totalActiveWeight === 100;

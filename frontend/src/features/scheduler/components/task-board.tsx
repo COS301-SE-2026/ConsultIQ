@@ -131,7 +131,7 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                                                 onSchedule={onSchedule}
                                                 onResolveDeadline={() => {}}
                                                 onDeferToNextWeek={() => {}}
-                                                onDismiss={() => {}}
+                                                onDismiss={onDelete}
                                                 onDragStart={(draggedTask, event) => {
                                                 event.dataTransfer.setData("text/plain", draggedTask.id);
                                                 event.dataTransfer.effectAllowed = "move";

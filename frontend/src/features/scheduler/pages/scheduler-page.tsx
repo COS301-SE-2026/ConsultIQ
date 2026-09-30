@@ -6,6 +6,7 @@ import UnderutilisationCard, { type ActionSuggestion } from "../components/under
 import { ReasonCode, 
     type Task, 
     type SchedulerWeekResponse, 
+    type WeekContainer,
     type SetTaskStatusDto,
     type SplitTaskDto } from "../types/scheduler.types";
 import {
@@ -29,6 +30,19 @@ import { getSchedulerWeek , setSchedulerTaskStatus, toCalendarWeek, createSchedu
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
 
+interface SchedulerTaskTabProps {
+    readonly loading: boolean;
+    readonly error: string | null;
+    readonly week: WeekContainer | null;
+    readonly progress: Record<string, { completed: number; total: number }>;
+    readonly projects: BacklogProjectOption[];
+    readonly onEdit: (task: Task) => void;
+    readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto,) => void | Promise<void>;
+    readonly onSchedule: (taskId: string) => void | Promise<void>;
+    readonly onDelete: (taskId: string) => void | Promise<void>;
+    readonly onSplit: (task: Task) => void;
+}
+
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 const projectColors = ["#2563eb", "#059669", "#d97706"];
@@ -46,6 +60,33 @@ function getCurrentWeekStart(timeZone: string) : string {
     date.setUTCDate(date.getUTCDate() - daysSinceMonday);
 
     return date.toISOString().slice(0, 10);
+}
+
+function SchedulerTaskTab({loading, error, week, progress, projects, onEdit, onSetStatus, onSchedule, onDelete,onSplit}: SchedulerTaskTabProps) {
+    if (loading) { return <p className="p-4">Loading week...</p>; }
+
+    if (error) { return <p role="alert" className="p-4 text-red-700">{error}</p>; }
+
+    if (!week) { return null; }
+
+    return (
+        <div className="h-full min-h-0 min-w-0 overflow-hidden">
+            <TaskBoard
+                tasks={week.tasks}
+                projects={projects}
+                now={Date.now()}
+                expectedVersion={week.version}
+                subtaskProgressByTaskId={progress}
+                onEditTask={onEdit}
+                onSetStatus={onSetStatus}
+                onToggleSubtask={() => {}}
+                onSchedule={onSchedule}
+                onSendToBacklog={() => {}}
+                onDelete={onDelete}
+                onSplit={onSplit}
+            />
+        </div>
+    );
 }
 
 export default function SchedulerPage() {
@@ -252,7 +293,9 @@ export default function SchedulerPage() {
 
         try {
             const result = await placeUnplacedTasks([taskId], apiWeek.version);
-
+            console.log(
+        result.value.tasks.find((task) => task.id === taskId),
+    );
             if(!result.ok) {
                 setLoadedWeek((current) => ({ ...current, error:  result.violations.map((issue) => issue.message).join(" ")}));
                 return;
@@ -332,28 +375,18 @@ export default function SchedulerPage() {
                             )}
 
                         {activeTab === "tasks" && (
-                            weekLoading ? (
-                            <p className="p-4">Loading week…</p>
-                            ) :  weekError ? (
-                                <p role="alert" className="p-4 text-red-700">{weekError}</p>
-                            ) :  serverWeek ? (
-                            <div className="h-full min-h-0 min-w-0 overflow-hidden">
-                                <TaskBoard
-                                tasks={serverWeek.tasks}
-                                projects={projects}
-                                now={Date.now()}
-                                expectedVersion={serverWeek.version}
-                                subtaskProgressByTaskId={serverSubtaskProgressByTaskId}
-                                onEditTask={openEditTask}
-                                onSetStatus={handleSetStatus}
-                                onToggleSubtask={() => {}}
-                                onSchedule={handleScheduleTask}
-                                onSendToBacklog={() => {}}
-                                onDelete={handleDeleteTask}
-                                onSplit={setSplitTask}
-                                />
-                            </div>
-                        ) : null
+                        <SchedulerTaskTab
+                            loading={weekLoading}
+                            error={weekError}
+                            week={serverWeek}
+                            progress={serverSubtaskProgressByTaskId}
+                            projects={projects}
+                            onEdit={openEditTask}
+                            onSetStatus={handleSetStatus}
+                            onSchedule={handleScheduleTask}
+                            onDelete={handleDeleteTask}
+                            onSplit={setSplitTask}
+                        />
                     )}
 
                         {activeTab == "notifications" && (

@@ -793,7 +793,7 @@ model SchedulerCalendarEntry {
 
 model PublicHoliday {
   id        String   @id @default(uuid())
-  date      DateTime @db.Date
+  date      DateTime @unique @db.Date
   name      String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

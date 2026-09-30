@@ -40,7 +40,7 @@ export default function TaskSlot({slot, task, timezone, color,selected=false, on
 
             <div className="flex items-center gap-1">
                 <span 
-                    className="truncate font-medium flex-1"
+                    className="text-xs truncate font-medium flex-1"
                     style={{color: textColour, textDecoration: task.status === "Done" ? "line-through" : "none" }}
                 >
                     {task.title}
@@ -62,7 +62,7 @@ export default function TaskSlot({slot, task, timezone, color,selected=false, on
             </div>
 
             <div className="flex items-center justify-between gap-1" style={{ color: mutedColour }}>
-                <span>{instantToLocalTime(slot.start, timezone)} - {instantToLocalTime(slot.end, timezone)}</span>
+                <span className="text-xs">{instantToLocalTime(slot.start, timezone)} - {instantToLocalTime(slot.end, timezone)}</span>
                 {days.length > 1 && (
                     <span className="flex gap-1">
                         {days.map((d) => (

@@ -162,8 +162,8 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
                     <div className="px-2 py-1.5 flex flex-col gap-1 h-full">
                         <div className="flex items-start justify-between gap-1">
                             <div className="min-w-0">
-                                <span className="text-[11px] font-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
-                                <span className="text-[9px] block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
+                                <span className="text-smfont-bold leading-tight block truncate" style={{ color: titleColour }}>{project.name}</span>
+                                <span className="text-sm block truncate" style={{ color: mutedColour }}>{project.clientName}</span>
                             </div>
                             {indicators}
                         </div>
@@ -195,7 +195,7 @@ export default function ProjectBlock({ block, tasks, project, timezone, selected
 
                         {displayHeight >= 120 && (
                             <div className="mt-auto">
-                                <span className="text-[9px]" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
+                                <span className="text-xs" style={{ color: mutedColour }}>{hours.toFixed(1)}h &middot; {project.clientName} </span>
                             </div>
                         )}
                     </div>

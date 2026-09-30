@@ -6,7 +6,9 @@ import type {
     Interval,
     TaskStatus,
     CalendarEntry as CalendarEntryData,
-    CalendarEntryDto
+    CalendarEntryDto,
+    ProjectBlock as ProjectBlockData,
+    SetTaskStatusDto,
 } from "../../types/scheduler.types";
 import CalendarEntryForm from "../calendar-entry-form";
 import {
@@ -60,26 +62,52 @@ interface GhostState {
 }
 
 interface AwaitingConfirmation {
-    kind: "move" | "resize";
-    blockId: string;
+    kind: "move" | "resize" | "slot";
+    id: string;
     to: Interval;
 }
 
 
 export interface WeekCalendarProps {
-   readonly weekData?: WeekContainer;
-   readonly projects?: ProjectSummary[];
-   readonly createEntryRequested?: boolean;
-   readonly onCreateEntryDone?: () => void;
+    readonly weekData?: WeekContainer;
+    readonly projects?: ProjectSummary[];
+    readonly createEntryRequested?: boolean;
+    readonly onCreateEntryDone?: () => void;
+    readonly onMoveBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onResizeBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onPinBlock?: (blockId: string, pinned: boolean) => Promise<boolean>;
+    readonly onMoveSlot?: (slotId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onSetStatus?: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {
     if (el) el.scrollTop = blockTop("08:00");
 }
 
-type EntryFormState = {mode : "create"} | {mode: "edit"; entry:CalendarEntryData} | null;
+type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
 
-export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested= false, onCreateEntryDone }: WeekCalendarProps) {
+function withBlock(w: WeekContainer, blockId: string, patch: Partial<ProjectBlockData>): WeekContainer {
+    return { ...w, blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) };
+}
+
+
+function parseDragId(dragId: string) {
+    const i = dragId.indexOf(":");
+    return { kind: dragId.slice(0, i) as "block" | "slot", id: dragId.slice(i + 1) };
+}
+
+
+function withSlot(w: WeekContainer, slotId: string, to: Interval): WeekContainer {
+    return {
+        ...w,
+        tasks: w.tasks.map((t) => ({
+            ...t,
+            slots: t.slots.map((s) => (s.id === slotId ? { ...s, ...to } : s)),
+        })),
+    };
+}
+
+export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested = false, onCreateEntryDone, onMoveBlock, onMoveSlot, onPinBlock, onResizeBlock, onSetStatus }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
@@ -90,30 +118,16 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-        useSensor(KeyboardSensor, {keyboardCodes: {start: ["Space"], cancel: ["Escape"], end:["Space", "Enter"]},}),
+        useSensor(KeyboardSensor, { keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] }, }),
     )
 
     const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
 
-    function closeEntryForm(){
+    function closeEntryForm() {
         setEntryForm(null);
         onCreateEntryDone?.();
     }
 
-
-    function handleResize(blockId: string, to: Interval) {
-        setWeek((w) => ({
-            ...w,
-            blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...to, userSized: true } : b)),
-        }));
-    }
-
-    function handleMoveBlock(blockId: string, to: Interval) {
-        setWeek((w) => ({
-            ...w,
-            blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...to } : b)),
-        }));
-    }
 
     function handleSetStatus(taskId: string, status: TaskStatus) {
         setWeek((w) => ({
@@ -121,6 +135,14 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
             tasks: w.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
 
         }));
+    }
+
+    function changeStatus(taskId: string, status: TaskStatus) {
+        if (onSetStatus) {
+            void onSetStatus(taskId, { status, expectedVersion: week.version });
+        } else {
+            handleSetStatus(taskId, status); // fixtures only: no backend
+        }
     }
 
     function handleSaveEntry(dto: CalendarEntryDto) {
@@ -145,9 +167,38 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     }
 
 
-    function applyChange(c: AwaitingConfirmation) {
-        if (c.kind === "move") handleMoveBlock(c.blockId, c.to);
-        else handleResize(c.blockId, c.to);
+    function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save?: Promise<boolean>) {
+        const previous = week;
+        setWeek(patch(previous));
+        save?.then((ok) => {
+            if (!ok) setWeek(previous);
+        }).catch(() => setWeek(previous));
+    }
+
+    function applyChange(c: AwaitingConfirmation, confirmedOverride = false) {
+    if (c.kind === "slot") {
+        applyOptimistic(
+            (w) => withSlot(w, c.id, c.to),
+            onMoveSlot?.(c.id, c.to, confirmedOverride),
+        );
+    } else if (c.kind === "move") {
+        applyOptimistic(
+            (w) => withBlock(w, c.id, c.to),
+            onMoveBlock?.(c.id, c.to, confirmedOverride),
+        );
+    } else {
+        applyOptimistic(
+            (w) => withBlock(w, c.id, { ...c.to, userSized: true }),
+            onResizeBlock?.(c.id, c.to, confirmedOverride),
+        );
+    }
+}
+
+    function handleTogglePin(blockId: string, pinned: boolean) {
+        applyOptimistic(
+            (w) => withBlock(w, blockId, { mobility: pinned ? "pinned" : "fluid" }),
+            onPinBlock?.(blockId, pinned),
+        );
     }
 
     function requestChange(c: AwaitingConfirmation) {
@@ -157,14 +208,25 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
         else applyChange(c);
     }
 
-    function snappedStart(blockId: string, deltaY: number) {
-        const b = week.blocks.find((x) => x.id === blockId)!;
-        const originalMin = timeToMinutes(instantToLocalTime(b.start, week.timezone));
-        const durationMin = (Date.parse(b.end) - Date.parse(b.start)) / 60_000;
-        const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
-        const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
-        return { startMin, durationMin, colour: getProjectColour(b.projectId).color }
+    function dragSubject(dragId: string) {
+    const { kind, id } = parseDragId(dragId);
+    if (kind === "slot") {
+        const task = week.tasks.find((t) => t.slots.some((s) => s.id === id))!;
+        const slot = task.slots.find((s) => s.id === id)!;
+        return { start: slot.start, end: slot.end, projectId: task.projectId };
     }
+    const b = week.blocks.find((x) => x.id === id)!;
+    return { start: b.start, end: b.end, projectId: b.projectId };
+}
+
+function snappedStart(dragId: string, deltaY: number) {
+    const subject = dragSubject(dragId);
+    const originalMin = timeToMinutes(instantToLocalTime(subject.start, week.timezone));
+    const durationMin = (Date.parse(subject.end) - Date.parse(subject.start)) / 60_000;
+    const moved = originalMin + Math.round(((deltaY / ROW_HEIGHT_PX) * 60) / 15) * 15;
+    const startMin = Math.max(DAY_START_HOUR * 60, Math.min(DAY_END_HOUR * 60 - durationMin, moved));
+    return { startMin, durationMin, colour: getProjectColour(subject.projectId).color };
+}
 
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
         if (!over) {
@@ -179,17 +241,20 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     }
 
     function handleDragEnd({ active, over, delta }: DragEndEvent) {
-        setGhost(null);
-        if (!over) return;
-        const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
-        const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
-        const end = new Date(start.getTime() + durationMin * 60_000);
-        requestChange({
-            kind: "move",
-            blockId: String(active.id),
-            to: { start: start.toISOString(), end: end.toISOString() },
-        });
-    }
+    setGhost(null);
+    if (!over) return;
+
+    const { kind, id } = parseDragId(String(active.id));
+    const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
+    const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
+    const end = new Date(start.getTime() + durationMin * 60_000);
+
+    requestChange({
+        kind: kind === "slot" ? "slot" : "move",
+        id,
+        to: { start: start.toISOString(), end: end.toISOString() },
+    });
+}
 
     const today = instantToLocalDate(new Date().toISOString(), week.timezone);
 
@@ -221,46 +286,46 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
             >
                 {showWeekend ? "Hide weekend" : "Show weekend"}
             </button>
-          
 
-                <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
-                    <div style={{ minWidth: 64 + days.length * 112 }}>
 
-                        {/*Header row*/}
-                        <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
-                            <div className="w-16 flex-none sticky left-0 bg-white" />
+            <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
+                <div style={{ minWidth: 64 + days.length * 112 }}>
+
+                    {/*Header row*/}
+                    <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
+                        <div className="w-16 flex-none sticky left-0 bg-white" />
+                        {days.map((d) => (
+                            <Dayheader
+                                key={d.date}
+                                dayOfWeek={d.name}
+                                date={d.date.slice(8, 10)}
+                                isToday={d.isToday}
+                                isHoliday={d.isHoliday}
+                                holidayName={d.holidayName}
+                                totalHours={d.totalHours}
+                            />
+                        ))}
+                    </div>
+                    <DndContext
+                        onDragMove={handleDragMove}
+                        onDragEnd={handleDragEnd}
+                        onDragCancel={() => setGhost(null)}
+                        sensors={sensors}
+                    >
+
+                        <div className="flex">
+                            <TimeAxis />
                             {days.map((d) => (
-                                <Dayheader
-                                    key={d.date}
-                                    dayOfWeek={d.name}
-                                    date={d.date.slice(8, 10)}
-                                    isToday={d.isToday}
-                                    isHoliday={d.isHoliday}
-                                    holidayName={d.holidayName}
-                                    totalHours={d.totalHours}
-                                />
-                            ))}
-                        </div>
-                        <DndContext
-                            onDragMove={handleDragMove}
-                            onDragEnd={handleDragEnd}
-                            onDragCancel={() => setGhost(null)}
-                            sensors={sensors}
-                        >
-
-                            <div className="flex">
-                                <TimeAxis />
-                                {days.map((d) => (
-                                    <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
-                                        {week.blocks
-                                            .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
-                                            .map((b) => {
-                                                const project = projects.find((item) => item.id === b.projectId) ?? {
-                                                    id: b.projectId,
-                                                    name: b.projectId,
-                                                    clientName: "",
-                                                };
-                                                return (
+                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
+                                    {week.blocks
+                                        .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
+                                        .map((b) => {
+                                            const project = projects.find((item) => item.id === b.projectId) ?? {
+                                                id: b.projectId,
+                                                name: b.projectId,
+                                                clientName: "",
+                                            };
+                                            return (
                                                 <ProjectBlock
                                                     key={b.id}
                                                     block={b}
@@ -269,44 +334,45 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
                                                     timezone={week.timezone}
                                                     selected={selectedBlockId === b.id}
                                                     onClick={() => setSelectedBlockId(b.id)}
-                                                    onResize={(blockId, to) => requestChange({ kind: "resize", blockId, to })}
-                                                    onSetStatus={handleSetStatus}
+                                                    onResize={(blockId, to) => requestChange({ kind: "resize", id: blockId, to })}
+                                                    onSetStatus={changeStatus}
+                                                    onTogglePin={(pinned) => handleTogglePin(b.id, pinned)}
                                                 />
                                             );
                                         })}
-                                       
-                                        {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
-                                            .map((e) => (
-                                                <CalendarEntry
-                                                    key={e.id}
-                                                    entry={e}
-                                                    timezone={week.timezone}
-                                                    onClick={() => setEntryForm({ mode: "edit", entry: e })}
-                                                />
+
+                                    {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
+                                        .map((e) => (
+                                            <CalendarEntry
+                                                key={e.id}
+                                                entry={e}
+                                                timezone={week.timezone}
+                                                onClick={() => setEntryForm({ mode: "edit", entry: e })}
+                                            />
 
 
-                                            ))}
-                                        {ghost?.date === d.date && (
-                                            <DropGhost startMin={ghost.startMin} durationMin={ghost.durationMin} colour={ghost.colour} />
-                                        )}
+                                        ))}
+                                    {ghost?.date === d.date && (
+                                        <DropGhost startMin={ghost.startMin} durationMin={ghost.durationMin} colour={ghost.colour} />
+                                    )}
 
-                                        <NowIndicator date={d.date} timezone={week.timezone} />
+                                    <NowIndicator date={d.date} timezone={week.timezone} />
 
 
-                                    </DayColumn>
+                                </DayColumn>
 
-                                ))}
-                            </div>
-                        </DndContext>
-                    </div>
-
+                            ))}
+                        </div>
+                    </DndContext>
                 </div>
+
+            </div>
 
 
             {awaiting && (
                 <OutOfHoursConfirmDialog
                     isWeekend={isWeekendInstant(awaiting.to.start, week.timezone)}
-                    onConfirm={() => { applyChange(awaiting); setAwaiting(null); }}
+                    onConfirm={() => { applyChange(awaiting, true); setAwaiting(null); }}
                     onCancel={() => setAwaiting(null)}
                 />
             )}

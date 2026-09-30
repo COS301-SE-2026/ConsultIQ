@@ -22,6 +22,7 @@ import CVUpload from "../features/cv-parsing/pages/cv-upload-page"
 import ProfileCreationEntry from "../features/cv-parsing/pages/profile-creation-entry.tsx"
 import CVExtractionReview from "../features/cv-parsing/pages/cv-extraction-review.tsx";
 import SchedulerPage from "../features/scheduler/pages/scheduler-page.tsx";
+import ManagerSkillShortage from "../features/consultants/pages/manager-skill-shortage-page.tsx";
 import GrowthCompass from "../features/consultants/pages/consultant-growth-compass.tsx";
 
 // Project pages (Added missing imports)
@@ -115,6 +116,7 @@ function AnimatedRoutes() {
                     <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage mode="project" /></PageTransition>} />
                     <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
                     <Route path="/schedule" element={<PageTransition><SchedulerPage /></PageTransition>} />
+                    <Route path="/manager-skill-advisor" element={<PageTransition><ManagerSkillShortage /></PageTransition>} />
                     <Route path="/skill-growth" element={<PageTransition><GrowthCompass/></PageTransition>} />
 
                 </Route>

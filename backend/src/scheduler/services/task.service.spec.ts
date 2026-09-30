@@ -102,12 +102,31 @@ describe('TaskService', () => {
 
     describe('create', () => {
         it('dispatches a create_task commit', async () => {
-            const dto = { title: 'New Task' } as NewTask;
+            const dto: NewTask = {
+                projectId: 'proj-1',
+                title: 'New Task',
+                tMin: 60,
+                tMax: 120,
+                urgency: 2,
+                complexity: 1,
+                subtasks: [],
+                dependsOn: [],
+            };
             await service.create(mockConsultantId, mockWeekStart, dto);
 
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
-                expect.objectContaining({ type: 'create_task', task: dto }),
+                expect.objectContaining({
+                    type: 'create_task',
+                    task: expect.objectContaining({
+                        id: expect.any(String),
+                        weekId: mockWeekId,
+                        ...dto,
+                        status: 'Ready',
+                        placement: 'unplaced',
+                        carriedOver: false,
+                    }),
+                }),
                 expect.objectContaining({ bumpedEntityIds: [] }),
                 undefined
             );
@@ -168,7 +187,7 @@ describe('TaskService', () => {
             expect(weekService.commit).toHaveBeenCalledWith(
                 mockWeek,
                 expect.objectContaining({ type: 'split_task', taskId: mockTaskId, atMinutes: 60 }),
-                expect.objectContaining({ bumpedEntityIds: [mockTaskId] }),
+                expect.objectContaining({ bumpedEntityIds: [mockTaskId, 'slot-1'] }),
                 2
             );
         });

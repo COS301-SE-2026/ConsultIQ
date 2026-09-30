@@ -4,7 +4,12 @@ import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult,
     type CreateTaskDto, type UpdateTaskDto} from "../types/scheduler.types";
 
 export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
-  const slots = api.slots.map(({ weekId: _weekId, tags: _tags, ...slot }) => slot);
+  const slots = api.slots.map((slot) => {
+    const calendarSlot = { ...slot };
+    Reflect.deleteProperty(calendarSlot, "weekId");
+    Reflect.deleteProperty(calendarSlot, "tags");
+    return calendarSlot;
+  });
   const weekEnd = new Date(`${api.weekStart}T00:00:00Z`);
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
 
@@ -18,14 +23,18 @@ export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
       ...block,
       placementId: block.placementId ?? block.id,
     })),
-    tasks: api.tasks.map(({ weekId: _weekId, createdAt: _createdAt, updatedAt: _updatedAt, ...task }) => ({
-      ...task,
-      urgency: task.urgency as Task["urgency"],
-      complexity: task.complexity as Task["complexity"],
-      carriedOver: task.carriedOver ?? false,
-      slots: slots.filter((slot) => slot.taskIds.includes(task.id)),
-      subtasks: task.subtasks.map(({ id, title, estimate, done }) => ({ id, title, estimate, done })),
-    })),
+    tasks: api.tasks.map((task) => {
+    const calendarTask = { ...task };
+    Reflect.deleteProperty(calendarTask, "weekId");
+    Reflect.deleteProperty(calendarTask, "createdAt");
+    Reflect.deleteProperty(calendarTask, "updatedAt");
+
+    return {
+      ...calendarTask, urgency: calendarTask.urgency as Task["urgency"],
+      complexity: calendarTask.complexity as Task["complexity"], carriedOver: calendarTask.carriedOver ?? false,
+      slots: slots.filter((slot) => slot.taskIds.includes(task.id)), subtasks: task.subtasks.map(({ id, title, estimate, done }) => ({ id, title, estimate, done })),
+      };
+    }),
     entries: api.calendarEntries.map((entry) => ({
       id: entry.id,
       type: (entry.type === "ad-hoc" ? "adhoc" : entry.type) as CalendarEntry["type"],

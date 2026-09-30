@@ -1,4 +1,4 @@
-import { type ProjectBlock, type WeekContainer, type WeekMetadata, SCHEDULER_RULES } from "../../types/scheduler.types"
+import { type WeekContainer, type WeekMetadata, SCHEDULER_RULES } from "../../types/scheduler.types"
 import type { ProjectSummary } from "../../types/scheduler.fixtures"
 import { getProjectColour } from "../week/project-colour"
 import { Button } from "../../../../components/ui/button"

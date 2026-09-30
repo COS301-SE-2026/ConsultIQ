@@ -283,7 +283,12 @@ describe('WeekService', () => {
 
         it('handles split_task (found and not found)', () => {
             service['applyChange'](mockWeek, { type: 'split_task', taskId: 'bad-id', atMinutes: 90, origin: 'user', window: mockWindow });
-            service['applyChange'](mockWeek, { type: 'split_task', taskId: 'task-1', atMinutes: 90, origin: 'user', window: mockWindow });
+            mockWeek.tasks[0].tMax = 120;
+            mockWeek.tasks[0].subtasks = [
+                { id: 'sub-1', title: 'First half', estimate: 60, done: false },
+                { id: 'sub-2', title: 'Second half', estimate: 60, done: false },
+            ] as any;
+            service['applyChange'](mockWeek, { type: 'split_task', taskId: 'task-1', atMinutes: 60, origin: 'user', window: mockWindow });
             expect(mockWeek.tasks).toHaveLength(2);
         });
 
@@ -490,7 +495,7 @@ describe('WeekService', () => {
             expect((unblindedTask as any)._tempBlinded).toBeUndefined();
         });
 
-        it('persists subtasks with durationMinutes mapping correctly', async () => {
+        it('persists subtask estimates correctly', async () => {
             const testWeek = {
                 ...createMockWeek(),
                 tasks: [{
@@ -501,7 +506,7 @@ describe('WeekService', () => {
                     tMax: 60,
                     status: 'Ready',
                     placement: 'placed',
-                    subtasks: [{ id: 'sub-1', title: 'Sub 1', done: false, durationMinutes: 30 }]
+                    subtasks: [{ id: 'sub-1', title: 'Sub 1', done: false, estimate: 30 }]
                 } as any],
                 slots: [],
                 calendarEntries: []

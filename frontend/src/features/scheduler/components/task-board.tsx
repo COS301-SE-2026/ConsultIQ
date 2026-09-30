@@ -1,5 +1,5 @@
 import { useState, type DragEvent } from "react";
-import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto, DeferToNextWeekDto } from "../types/scheduler.types";
+import type { SetTaskStatusDto, Task, TaskStatus, ToggleSubtaskDto } from "../types/scheduler.types";
 import { STATUS_LABELS, getNextStatus } from "./scheduler-utils";
 import TaskCard from "./task-card";
 import BacklogTaskCard from "./backlog-task-card";
@@ -130,7 +130,7 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                                                 expectedVersion={expectedVersion}
                                                 onSchedule={onSchedule}
                                                 onResolveDeadline={() => {}}
-                                                onDeferToNextWeek={(_taskId: string, _dto: DeferToNextWeekDto) => {}}
+                                                onDeferToNextWeek={() => {}}
                                                 onDismiss={() => {}}
                                                 onDragStart={(draggedTask, event) => {
                                                 event.dataTransfer.setData("text/plain", draggedTask.id);

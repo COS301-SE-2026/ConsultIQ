@@ -102,6 +102,7 @@ describe('AuthService', () => {
         MOCK_USER.email,
         MOCK_USER.fullName,
         expect.stringContaining('raw-token-abc123'),
+        { isConsultant: true, managerName: undefined, managerEmail: undefined },
       );
 
       expect(result.message).toContain('activation email has been sent');
@@ -124,6 +125,21 @@ describe('AuthService', () => {
       email.sendActivationEmail.mockRejectedValue(new Error('Email provider down'));
 
       await expect(service.createUser(dto)).resolves.toBeDefined();
+    });
+    
+    it('does not mark isConsultant for a non-consultant role', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ ...MOCK_USER, role: 'PROJECT_MANAGER' } as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
+
+      await service.createUser({ ...dto, role: 'PROJECT_MANAGER' as any });
+
+      expect(email.sendActivationEmail).toHaveBeenCalledWith(
+        MOCK_USER.email,
+        MOCK_USER.fullName,
+        expect.stringContaining('raw-token-abc123'),
+        { isConsultant: false, managerName: undefined, managerEmail: undefined },
+      );
     });
   });
 

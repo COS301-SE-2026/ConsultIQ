@@ -282,6 +282,7 @@ model ConsultantManager {
 model Skill {
   id       String  @id @default(uuid())
   name     String  @unique
+  displayName String?
   category String
   tenantId String?
 

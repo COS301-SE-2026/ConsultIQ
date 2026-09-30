@@ -1,6 +1,6 @@
 import TimeAxis from "./time-axis";
 import Dayheader from "./day-header";
-import { holidayWeek, FIXTURE_PROJECTS } from "../../types/scheduler.fixtures";
+import { holidayWeek, FIXTURE_PROJECTS, type ProjectSummary } from "../../types/scheduler.fixtures";
 import type {
     WeekContainer,
     Interval,
@@ -68,6 +68,7 @@ interface AwaitingConfirmation {
 
 export interface WeekCalendarProps {
    readonly weekData?: WeekContainer;
+   readonly projects?: ProjectSummary[];
    readonly createEntryRequested?: boolean;
    readonly onCreateEntryDone?: () => void;
 }
@@ -78,13 +79,13 @@ function scrollToCoreHours(el: HTMLDivElement | null) {
 
 type EntryFormState = {mode : "create"} | {mode: "edit"; entry:CalendarEntryData} | null;
 
-export default function WeekCalendar({ weekData = holidayWeek, createEntryRequested= false, onCreateEntryDone }: WeekCalendarProps) {
+export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested= false, onCreateEntryDone }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
     const [ghost, setGhost] = useState<GhostState | null>(null);
     const [awaiting, setAwaiting] = useState<AwaitingConfirmation | null>(null);
-    const [showWeekend, setShowWeekend] = useState(week.metadata.hasWeekend);
+    const [showWeekend, setShowWeekend] = useState(week?.metadata?.hasWeekend);
 
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -253,21 +254,27 @@ export default function WeekCalendar({ weekData = holidayWeek, createEntryReques
                                     <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
                                         {week.blocks
                                             .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
-                                            .map((b) => (
+                                            .map((b) => {
+                                                const project = projects.find((item) => item.id === b.projectId) ?? {
+                                                    id: b.projectId,
+                                                    name: b.projectId,
+                                                    clientName: "",
+                                                };
+                                                return (
                                                 <ProjectBlock
                                                     key={b.id}
                                                     block={b}
                                                     tasks={week.tasks}
-                                                    project={FIXTURE_PROJECTS.find((p) => p.id === b.projectId)!}
+                                                    project={project}
                                                     timezone={week.timezone}
                                                     selected={selectedBlockId === b.id}
                                                     onClick={() => setSelectedBlockId(b.id)}
                                                     onResize={(blockId, to) => requestChange({ kind: "resize", blockId, to })}
                                                     onSetStatus={handleSetStatus}
                                                 />
-                                            ))
-                                        }
-
+                                            );
+                                        })}
+                                       
                                         {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
                                             .map((e) => (
                                                 <CalendarEntry

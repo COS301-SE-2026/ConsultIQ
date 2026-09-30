@@ -18,6 +18,7 @@ const mockTx = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   projectSkill: {
     create: jest.fn(),
@@ -39,6 +40,7 @@ const mockPrismaService = {
   },
   skill: {
     upsert: jest.fn(),
+    update: jest.fn(),
   },
   projectSkill: {
     create: jest.fn(),
@@ -277,6 +279,31 @@ describe('ProjectService', () => {
           data: expect.objectContaining({ status: ProjectStatus.OPEN }),
         }),
       );
+    });
+  });
+
+  describe('getProjectById - skill display names', () => {
+    it('uses displayName when available and falls back to the normalized name', async () => {
+      const project = {
+        id: 'project-1',
+        projectName: 'Display Name Project',
+        skills: [
+          {
+            id: 'project-skill-1',
+            skill: { name: 'typescript', displayName: 'TypeScript' },
+          },
+          {
+            id: 'project-skill-2',
+            skill: { name: 'docker', displayName: null },
+          },
+        ],
+      };
+      mockPrismaService.project.findUnique.mockResolvedValue(project);
+
+      const result = await service.getProjectById(project.id);
+
+      expect(result.skills[0].skill.name).toBe('TypeScript');
+      expect(result.skills[1].skill.name).toBe('docker');
     });
   });
 
@@ -692,7 +719,11 @@ describe('ProjectService', () => {
       expect(mockTx.skill.upsert).toHaveBeenCalledWith({
         where: { name: 'docker' },
         update: {},
-        create: { name: 'docker', category: 'General' },
+        create: {
+          name: 'docker',
+          displayName: 'Docker',
+          category: 'General',
+        },
       });
       expect(mockTx.projectSkill.create).toHaveBeenCalledWith({
         data: {

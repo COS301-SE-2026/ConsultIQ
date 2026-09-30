@@ -6,7 +6,15 @@
 10035	FAIL	.*
 10038	FAIL	.*
 10043	FAIL	.*
+# Accepted warnings
 10202	WARN	.*
-10049	WARN	.*
 10063	WARN	.*
+# Ignored, with justification
+# 10049 Non-Storable Content: expected for 401/404 responses on a JSON API
+10049	IGNORE	.*
+# 90005 Sec-Fetch-Dest missing: browser request header check, not relevant to a JSON API
+90005	IGNORE	.*
+# 40025 Proxy Disclosure: hosting platform edge proxy, not controllable by the app
+40025	IGNORE	.*
+# 90003 Sub Resource Integrity: no HTML served by the API
 90003	IGNORE	.*

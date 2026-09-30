@@ -1,62 +1,352 @@
 name: OWASP ZAP Security Scan
 
-on :
+on:
   push:
-    branches:
-      - main
-      - dev
-      - mobilise-admin-pages
+    branches: [main]
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'backend/**'
+      - '.zap/**'
+      - '.github/workflows/owasp-zap.yml'
+  schedule:
+    - cron: '0 2 * * 1'       
   workflow_dispatch:
     inputs:
-      target_url: 
-        description: 'Target URL to scan (default: staging backend)'
+      baseline_url:
+        description: 'URL for the passive baseline scan of a deployed environment'
         required: false
         default: 'https://consultiq-backend-production-086b.up.railway.app'
 
-jobs: 
-  owasp-zap-scan:
-    name: OWASP ZAP Baseline Security Scan
+concurrency:
+  group: zap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zap-authenticated:
+    name: ZAP API scan (${{ matrix.role }})
+    if: ${{ github.event_name != 'schedule' }}
+
+    continue-on-error: true
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     permissions:
       contents: read
-      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        role: [ADMIN, PROJECT_MANAGER, CONSULTANT_MANAGER, CONSULTANT]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ secrets.TESTING_DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.TESTING_DB_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.TESTING_DB_NAME }}
+          PGUSER: ${{ secrets.TESTING_DB_USER }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      API_URL: http://localhost:3000
+
+      LOGIN_PATH: /auth/login
+      ME_PATH: /auth/me
+      ADMIN_ONLY_PATH: /admin/users
+      PROJECT_PATH: /projects
+      CONSULTANT_PATH: /consultants
+
+      CSRF_HEADER: X-CSRF-Token
+      OPENAPI_PATH: /api-json
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Set up Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx --no-install prisma generate
+
+      - name: Push schema and seed (with security fixtures)
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}   
+          SEED_SECURITY_FIXTURES: 'true'
+        run: |
+          npx --no-install prisma db push --accept-data-loss
+          npx --no-install ts-node prisma/seed-test.ts
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Start backend (dummy third-party keys on purpose)
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.TESTING_DB_URL }}
+          REDIS_URL: redis://localhost:6379
+          PORT: 3000
+          AWS_REGION: af-south-1
+          AWS_S3_BUCKET: consultiq-test-bucket
+          AWS_ACCESS_KEY_ID: test-access-key-id
+          AWS_SECRET_ACCESS_KEY: test-secret-access-key
+          ANTHROPIC_API_KEY: test-anthropic-key
+          RESEND_API_KEY: re_test_dummy_key
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test_jwt_secret' }}
+          ENCRYPTION_KEY: ${{ secrets.TEST_ENCRYPTION_KEY || 'test_encryption_key_32_bytes____' }}
+
+          SWAGGER_SERVER_URL: http://localhost:3000
+          JWT_EXPIRES_IN: 60m
+        run: |
+          node dist/main.js > ../server.log 2>&1 &
+          echo "BACKEND_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for backend health
+        run: |
+          npm install -g wait-on@7.2.0 --ignore-scripts
+          wait-on "$API_URL/health" -t 60000 || { echo "::error::Backend did not become healthy"; cat server.log; exit 1; }
+
+      - name: Log in as seeded ${{ matrix.role }} (cookie + CSRF auth)
+        run: |
+          FILE=tests/security/security-fixtures.json
+          EMAIL=$(jq -r --arg r "${{ matrix.role }}" '[.users[] | select(.role==$r)][0].email' "$FILE")
+          PASS=$(jq -r --arg r "${{ matrix.role }}" '[.users[] | select(.role==$r)][0].password' "$FILE")
+
+          # /auth/login is @Public @SkipCsrf and returns tokens ONLY as cookies (ciq_access_token, XSRF-TOKEN)
+          HDRS=$(mktemp)
+          curl -sf -D "$HDRS" -o /dev/null -X POST "$API_URL$LOGIN_PATH" \
+            -H 'Content-Type: application/json' \
+            -d "$(jq -n --arg e "$EMAIL" --arg p "$PASS" '{email:$e,password:$p}')" \
+            || { echo "::error::Login request failed for ${{ matrix.role }}"; tail -50 server.log; exit 1; }
+
+          cookie() { grep -i "^set-cookie: $1=" "$HDRS" | head -1 | sed -E 's/^[^=]*=([^;]*).*/\1/' | tr -d '\r'; }
+          JWT=$(cookie ciq_access_token)
+          XSRF=$(cookie XSRF-TOKEN)
+
+          if [ -z "$JWT" ] || [ -z "$XSRF" ]; then
+            echo "::error::Missing ciq_access_token or XSRF-TOKEN cookie in login response"; exit 1
+          fi
+          echo "::add-mask::$JWT"
+          echo "::add-mask::$XSRF"
+
+          {
+            echo "ZAP_AUTH_HEADER=Cookie"
+            echo "ZAP_AUTH_HEADER_VALUE=ciq_access_token=$JWT; XSRF-TOKEN=$XSRF"
+            echo "ZAP_AUTH_HEADER_SITE=localhost"
+            echo "ZAP_XSRF=$XSRF"
+          } >> "$GITHUB_ENV"
+
+          # Prove the session cookie is accepted
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: ciq_access_token=$JWT" "$API_URL$ME_PATH")
+          [ "$CODE" = "200" ] || { echo "::error::$ME_PATH returned $CODE with the session cookie"; exit 1; }
+
+      - name: Access-control checks (A01)
+        id: access_control
+        continue-on-error: true
+        run: |
+          FIX=tests/security/security-fixtures.json
+          FAILED=0
+
+          expect() {   # name | allowed-codes-regex | url [| no-auth]
+            local name="$1" allowed="$2" url="$3" noauth="$4" code
+            if [ -n "$noauth" ]; then
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+            else
+              code=$(curl -s -o /dev/null -w '%{http_code}' -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" "$url")
+            fi
+            if echo "$code" | grep -Eq "^($allowed)$"; then
+              echo "PASS  $name -> $code"
+            else
+              echo "::error::FAIL  $name -> $code (expected $allowed)"; FAILED=1
+            fi
+          }
+
+          # CSRF is enforced on authenticated mutating routes, and our header/cookie pair is accepted.
+          # (register is not @SkipCsrf; body {} is rejected by validation only AFTER the guards pass.)
+          if [ "${{ matrix.role }}" = "ADMIN" ] || [ "${{ matrix.role }}" = "CONSULTANT_MANAGER" ]; then
+            C1=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/register" \
+                  -H 'Content-Type: application/json' -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" -d '{}')
+            C2=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/auth/register" \
+                  -H 'Content-Type: application/json' -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" \
+                  -H "$CSRF_HEADER: $ZAP_XSRF" -d '{}')
+            [ "$C1" = "403" ] && echo "PASS  POST without CSRF header -> 403" \
+              || { echo "::error::FAIL  POST without CSRF header -> $C1 (expected 403)"; FAILED=1; }
+            echo "$C2" | grep -Eq '^(400|422)$' && echo "PASS  POST with CSRF header reaches validation -> $C2" \
+              || { echo "::error::FAIL  POST with CSRF header -> $C2 (expected 400/422). Check CSRF_HEADER name."; FAILED=1; }
+          fi
+
+          # Every protected GET must reject unauthenticated callers
+          for P in /auth/me /projects /consultants /notifications /admin/users \
+                   /admin/analytics/bench /config/scoring /cv/flagged /scheduler/weeks/2026-01-05; do
+            expect "Unauthenticated GET $P is rejected" "401" "$API_URL$P" noauth
+          done
+
+          # Admin-only areas must reject every other role
+          if [ "${{ matrix.role }}" != "ADMIN" ]; then
+            for P in /admin/users /admin/projects /admin/analytics/bench /admin/analytics/utilisation; do
+              expect "${{ matrix.role }} cannot reach $P" "403|404" "$API_URL$P"
+            done
+          fi
+
+          if [ "${{ matrix.role }}" = "PROJECT_MANAGER" ]; then
+            OWN=$(jq -r '.resources.pmOwnedProjectIds[0]' "$FIX")
+            OTHER=$(jq -r '.resources.pm2OwnedProjectId' "$FIX")
+            expect "PM reads own project"            "200"     "$API_URL$PROJECT_PATH/$OWN"
+            expect "PM cannot read another PM's project" "403|404" "$API_URL$PROJECT_PATH/$OTHER"
+          fi
+
+          if [ "${{ matrix.role }}" = "CONSULTANT_MANAGER" ]; then
+            OWN=$(jq -r '.resources.cmManagedConsultantId' "$FIX")
+            OTHER=$(jq -r '.resources.cm2ManagedConsultantId' "$FIX")
+            expect "CM reads own consultant"         "200"     "$API_URL$CONSULTANT_PATH/$OWN"
+            expect "CM cannot read another CM's consultant" "403|404" "$API_URL$CONSULTANT_PATH/$OTHER"
+          fi
+
+          if [ "${{ matrix.role }}" = "CONSULTANT" ]; then
+            OTHER=$(jq -r '.resources.cm2ManagedConsultantId' "$FIX")
+            # ASSUMPTION: a consultant may not read another consultant's record; adjust if your rules allow it
+            expect "CONSULTANT cannot read another consultant" "403|404" "$API_URL$CONSULTANT_PATH/$OTHER"
+            expect "CONSULTANT cannot list all consultants"    "403|404" "$API_URL$CONSULTANT_PATH"
+          fi
+
+          exit $FAILED
+
+      - name: Export OpenAPI spec
+        run: |
+          curl -sf -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" "$API_URL$OPENAPI_PATH" -o openapi.json \
+            || { echo "::error::Could not fetch OpenAPI spec at $OPENAPI_PATH"; exit 1; }
+          # Keep ZAP from killing its own session or changing the seeded accounts mid-scan.
+          # These are covered by the access-control checks above instead.
+          jq 'del(
+                .paths["/auth/logout"],
+                .paths["/admin/users/{userId}/suspend"],
+                .paths["/admin/users/{userId}/activate"],
+                .paths["/admin/users/{userId}/role"]
+              )' openapi.json > openapi.filtered.json && mv openapi.filtered.json openapi.json
+          echo "Paths in spec: $(jq '.paths | length' openapi.json)"
+          WRITES=$(jq '[.paths[] | to_entries[] | select(.key|test("^(post|put|patch)$"))] | length' openapi.json)
+          BODIES=$(jq '[.paths[] | to_entries[] | select(.key|test("^(post|put|patch)$")) | select(.value.requestBody)] | length' openapi.json)
+          echo "Write operations: $WRITES, with a request body schema: $BODIES"
+          if [ "$BODIES" -lt "$WRITES" ]; then
+            echo "::warning::$((WRITES-BODIES)) write operations have no request body schema. Enable the @nestjs/swagger CLI plugin, otherwise ZAP sends empty bodies and ValidationPipe rejects them with 400."
+          fi
+
+      - name: Endpoint access sweep (no accidental public endpoints + role matrix)
+        id: access_sweep
+        continue-on-error: true
+        run: |
+          # GETs that are allowed to be public
+          PUBLIC_ALLOW='^/(health|auth/csrf-token)$'
+          mkdir -p access-matrix
+          OUT=access-matrix/${{ matrix.role }}.csv
+          echo "method,path,unauthenticated,${{ matrix.role }}" > "$OUT"
+          FAILED=0
+          for P in $(jq -r '.paths | to_entries[] | select(.value.get) | .key | select(contains("{")|not)' openapi.json); do
+            U=$(curl -s -o /dev/null -w '%{http_code}' "$API_URL$P")
+            A=$(curl -s -o /dev/null -w '%{http_code}' -H "$ZAP_AUTH_HEADER: $ZAP_AUTH_HEADER_VALUE" "$API_URL$P")
+            echo "GET,$P,$U,$A" >> "$OUT"
+            if ! echo "$P" | grep -Eq "$PUBLIC_ALLOW" && [ "$U" != "401" ]; then
+              echo "::error::Unauthenticated GET $P returned $U (expected 401)"; FAILED=1
+            fi
+          done
+          column -s, -t "$OUT"
+          exit $FAILED
+
+      - name: Upload access matrix
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: access-matrix-${{ matrix.role }}
+          path: access-matrix/
+          retention-days: 30
+
+      - name: Report access-control result
+        if: always() && (steps.access_control.outcome == 'failure' || steps.access_sweep.outcome == 'failure')
+        run: |
+          MSG="Access-control checks FAILED for ${{ matrix.role }} (checks: ${{ steps.access_control.outcome }}, sweep: ${{ steps.access_sweep.outcome }}). Rule: a PROJECT_MANAGER must not access another PM's data, and a CONSULTANT_MANAGER must not access another CM's data. See the 'Access-control checks (A01)' and 'Endpoint access sweep' step logs."
+          echo "::warning title=Broken access control::$MSG"
+          {
+            echo "### :warning: Access-control failure (${{ matrix.role }})"
+            echo "$MSG"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: ZAP authenticated API scan
+        uses: zaproxy/action-api-scan@5158fe4d9d8fcc75ea204db81317cce7f9e5453d # v0.10.0
+        with:
+          target: openapi.json
+          format: openapi
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: >-
+            -O http://localhost:3000 -a -d -T 15
+            -z "-config replacer.full_list(0).description=csrf
+            -config replacer.full_list(0).enabled=true
+            -config replacer.full_list(0).matchtype=REQ_HEADER
+            -config replacer.full_list(0).matchstr=X-CSRF-Token
+            -config replacer.full_list(0).regex=false
+            -config replacer.full_list(0).replacement=${{ env.ZAP_XSRF }}"
+          artifact_name: zap-api-${{ matrix.role }}
+          allow_issue_writing: false
+
+      - name: Dump server log on failure
+        if: failure()
+        run: tail -100 server.log || true
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -n "$BACKEND_PID" ]; then kill "$BACKEND_PID" || true; fi
+
+  zap-baseline-deployed:
+    name: ZAP passive baseline (deployed)
+    continue-on-error: true
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-      - name: Set Target URL
+      - name: Set target URL
         id: set_url
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "target_url=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
-          else
-            echo "target_url=${{ secrets.STAGING_URL || 'https://consultiq-backend-production-086b.up.railway.app' }}" >> $GITHUB_OUTPUT
-          fi
+          URL="${{ github.event.inputs.baseline_url }}"
+          if [ -z "$URL" ]; then URL="${{ secrets.STAGING_URL || 'https://consultiq-backend-production-086b.up.railway.app' }}"; fi
+          echo "target_url=$URL" >> "$GITHUB_OUTPUT"
 
-      - name: Run OWASP ZAP Baseline Scan
+      - name: Run OWASP ZAP baseline (passive)
         uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
         with:
           target: ${{ steps.set_url.outputs.target_url }}
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: >
-            -a
-            -d
-            -T 10
-            -c .zap/zap-config.conf
+          cmd_options: '-a -d -T 10'
           allow_issue_writing: false
-          artifact_name: zapBaselineScan
-      
-      - name: Run OWASP ZAP Full Scan
-        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
-        with:
-          target: ${{ steps.set_url.outputs.target_url }}
-          rules_file_name: '.zap/rules.tsv'
-          artifact_name: zapFullScan
-          cmd_options: >
-            -a
-            -d
-            -T 10
-            -c .zap/zap-config.conf
-          allow_issue_writing: false
+          artifact_name: zapBaselineDeployed

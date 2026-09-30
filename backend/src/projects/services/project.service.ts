@@ -20,6 +20,7 @@ import { CompetencyLevel, ProjectStatus, Prisma } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { RedisUtilityService } from '../../common/services/redis-utility.service';
+import { upsertSkillCatalogueEntry } from '../../common/utils/skill-catalogue.util';
 
 @Injectable()
 export class ProjectService {
@@ -234,30 +235,41 @@ export class ProjectService {
       });
 
 
-      for(const skill of dto.skills) {
-        const normalizedSkillName = skill.name.trim().toLowerCase();
-        const skillRecord = await tx.skill.upsert({
-          where: { name: normalizedSkillName },
-          update: {},
-          create: { name: normalizedSkillName, category: 'General' },
-        });
+      const uniqueSkills = new Map<string, (typeof dto.skills)[number]>();
+      for (const skill of dto.skills) {
+        const normalizedName = skill.name.trim().toLowerCase();
+        if (!uniqueSkills.has(normalizedName)) {
+          uniqueSkills.set(normalizedName, skill);
+        }
+      }
 
-        const existingProjectSkill = await tx.projectSkill.findFirst({
-          where: { projectId: project.id, skillId: skillRecord.id },
-        });
+      const skills = Array.from(uniqueSkills.values());
+      const skillRecords = await Promise.all(
+        skills.map((skill) => upsertSkillCatalogueEntry(tx, skill.name)),
+      );
+      const existingProjectSkills = await Promise.all(
+        skillRecords.map((skillRecord) =>
+          tx.projectSkill.findFirst({
+            where: { projectId: project.id, skillId: skillRecord.id },
+          }),
+        ),
+      );
 
-        if (!existingProjectSkill) {
-          await tx.projectSkill.create({
+      await Promise.all(
+        skills.map((skill, index) => {
+          if (existingProjectSkills[index]) return Promise.resolve();
+
+          return tx.projectSkill.create({
             data: {
               projectId: project.id,
-              skillId: skillRecord.id,
+              skillId: skillRecords[index].id,
               competency: skill.competency as CompetencyLevel,
               mandatory: skill.mandatory,
               years: skill.years,
             },
           });
-        }
-      }
+        }),
+      );
       return { projectId: project.id };
     });
   }
@@ -312,7 +324,7 @@ export class ProjectService {
   }
 
   private async findProjectById(projectId: string) {
-    return this.prisma.project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: projectId, status: { not: ProjectStatus.ARCHIVED } },
       include: {
         skills: {
@@ -322,6 +334,7 @@ export class ProjectService {
         },
       },
     });
+    return project ? this.withDisplayNames(project) : null;
   }
 
   private async findProjectStatusById(projectId: string) {
@@ -463,52 +476,74 @@ export class ProjectService {
   ) {
     if (!skills || skills.length === 0) return;
 
+    const uniqueSkills = new Map<string, UpdateProjectSkillDto>();
     for (const skillInput of skills) {
-      const skillRecord = await this.upsertSkillCatalogEntry(
-        tx,
-        skillInput.name,
-      );
-
-      const existingProjectSkill = await tx.projectSkill.findFirst({
-        where: {
-          projectId: projectId,
-          skillId: skillRecord.id,
-        },
-      });
-
-      if (existingProjectSkill) {
-        await tx.projectSkill.update({
-          where: { id: existingProjectSkill.id },
-          data: {
-            //  skillId: skillRecord.id,
-            competency: skillInput.competency as CompetencyLevel,
-            years: skillInput.years,
-            mandatory: skillInput.mandatory,
-          },
-        });
-      } else {
-        await tx.projectSkill.create({
-          data: {
-            projectId,
-            skillId: skillRecord.id,
-            competency: skillInput.competency as CompetencyLevel,
-            years: skillInput.years,
-            mandatory: skillInput.mandatory,
-          },
-        });
-      }
+      uniqueSkills.set(skillInput.name.trim().toLowerCase(), skillInput);
     }
+
+    const uniqueSkillInputs = Array.from(uniqueSkills.values());
+    const skillRecords = await Promise.all(
+      uniqueSkillInputs.map((skillInput) =>
+        upsertSkillCatalogueEntry(tx, skillInput.name),
+      ),
+    );
+    const existingProjectSkills = await Promise.all(
+      skillRecords.map((skillRecord) =>
+        tx.projectSkill.findFirst({
+          where: { projectId, skillId: skillRecord.id },
+        }),
+      ),
+    );
+
+    await Promise.all(
+      uniqueSkillInputs.map((skillInput, index) => {
+        const skillRecord = skillRecords[index];
+        const existingProjectSkill = existingProjectSkills[index];
+        const data = {
+          competency: skillInput.competency as CompetencyLevel,
+          years: skillInput.years,
+          mandatory: skillInput.mandatory,
+        };
+
+        if (existingProjectSkill) {
+          return tx.projectSkill.update({
+            where: { id: existingProjectSkill.id },
+            data,
+          });
+        }
+
+        return tx.projectSkill.create({
+          data: { projectId, skillId: skillRecord.id, ...data },
+        });
+      }),
+    );
   }
 
-  private async upsertSkillCatalogEntry(
-    tx: Prisma.TransactionClient,
-    name: string,
-  ) {
-    const normalizedSkillName = name.trim().toLowerCase();
-    return tx.skill.upsert({
-      where: { name: normalizedSkillName },
-      update: {},
-      create: { name: normalizedSkillName, category: 'General' },
-    });
+  private withDisplayNames<
+    T extends {
+      skills?: {
+        skill: {
+          name: string;
+          displayName?: string | null;
+        };
+      }[];
+    },
+  >(project: T): T {
+    if (!project?.skills) {
+      return project;
+    }
+
+    return {
+      ...project,
+      skills: project.skills.map((projectSkill) => ({
+        ...projectSkill,
+        skill: {
+          ...projectSkill.skill,
+          name:
+            projectSkill.skill.displayName ??
+            projectSkill.skill.name,
+        },
+      })),
+    };
   }
 }

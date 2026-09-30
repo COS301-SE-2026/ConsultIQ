@@ -1,20 +1,20 @@
 /**
  * @file seed.ts
  * @description Seeds ConsultIQ with:
- *   1. All RBAC Permissions and RoleDefinitions
- *   2. Permission assignments per role
- *   3. Bootstrap Admin & Reserved Users
- *   4. Categorized Skills
- *   5. Completed Consultant Profiles (Alice & COS301 Consultant)
- *   6. Completed Projects & Project Requirements
- *   7. Auto-generates 15 Consultants with valid SA IDs & accurate Geo-coordinates
- *   8. Auto-generates 8 Projects with mathematically perfectly aligned budgets
- *   9. Assigns all seeded projects to the COS301 Project Manager
- *   10. Public Holidays (South Africa)
+ *   1. Role definitions
+ *   2. Bootstrap Admin & Reserved Users (PM, CM, Consultant, COS301 accounts)
+ *   3. Categorized Skills
+ *   4. Completed Consultant Profiles (Alice & COS301 Consultant)
+ *   5. 100 generated Consultants with valid SA IDs & accurate geo-coordinates
+ *   6. A base project plus 20 generated Projects with aligned budgets
+ *   7. Assignment of all seeded projects to the COS301 Project Manager
+ *   8. Public Holidays (South Africa)
+ *   9. Consultant user accounts without profiles
  */
 
 import {
     PrismaClient,
+    Prisma,
     Role,
     UserStatus,
     CompetencyLevel,
@@ -27,13 +27,20 @@ import {
     CvParsingMethod
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 const prisma = new PrismaClient();
 
 // =============================================================================
 // 1. Data Generators & Constants
 // =============================================================================
+
+const BATCH_SIZE = 10;
+const GENERATED_CONSULTANT_COUNT = 100;
+const GENERATED_PROJECT_COUNT = 20;
+const DEFAULT_CONSULTANT_PASSWORD = 'SecureConsultantPass123!';
+const COS301_PASSWORD = 'rfbDqw@9RhHWVqtT';
+const BASE_COS301_EMAIL = 'cos301queries@cs.up.ac.za';
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
     [Role.SUPER_ADMIN]: 'Super Administrator with unrestricted system access.',
@@ -92,13 +99,19 @@ const SA_GEO_LOCATIONS = [
     { addressLine1: "Main Rd", suburb: "Claremont", city: "Cape Town", province: "Western Cape", postalCode: "7708", latitude: -33.983300, longitude: 18.463800, placeId: "ChIJZ3Vw_5h9zRQRq-2yq5w2g4o", formattedAddress: "Main Rd, Claremont, Cape Town, 7708, South Africa" },
 ];
 
+type GeoLocation = (typeof SA_GEO_LOCATIONS)[number];
+type Skill = { id: string; name: string };
+type PublicHolidayEntry = { date: Date; name: string };
+
+const roleIds = new Map<Role, string>();
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
 const randomItem = <T>(arr: T[]): T => arr[crypto.randomInt(0, arr.length)];
 const randomInt = (min: number, max: number): number => crypto.randomInt(min, max + 1);
-const getRandomLocation = () => SA_GEO_LOCATIONS[crypto.randomInt(0, SA_GEO_LOCATIONS.length)];
+const getRandomLocation = (): GeoLocation => randomItem(SA_GEO_LOCATIONS);
 
 const randomSample = <T>(arr: T[], count: number): T[] => {
     const shuffled = [...arr];
@@ -108,6 +121,35 @@ const randomSample = <T>(arr: T[], count: number): T[] => {
     }
     return shuffled.slice(0, count);
 };
+
+async function runInBatches<T>(
+    items: T[],
+    worker: (item: T) => Promise<unknown>,
+    batchSize: number = BATCH_SIZE,
+): Promise<void> {
+    const batches: T[][] = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+        batches.push(items.slice(i, i + batchSize));
+    }
+    await batches.reduce<Promise<void>>(
+        (chain, batch) => chain.then(() => Promise.all(batch.map(worker))).then(() => undefined),
+        Promise.resolve(),
+    );
+}
+
+function locationFields(loc: GeoLocation) {
+    return {
+        addressLine1: loc.addressLine1,
+        suburb: loc.suburb,
+        city: loc.city,
+        province: loc.province,
+        postalCode: loc.postalCode,
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        placeId: loc.placeId,
+        formattedAddress: loc.formattedAddress,
+    };
+}
 
 // Valid South African ID Generator
 function generateValidSAID(birthDate: Date, isMale: boolean): string {
@@ -120,7 +162,7 @@ function generateValidSAID(birthDate: Date, isMale: boolean): string {
 
     let sum = 0;
     for (let i = 0; i < baseId.length; i++) {
-        let digit = parseInt(baseId.charAt(i), 10);
+        let digit = Number.parseInt(baseId.charAt(i), 10);
         if (i % 2 !== 0) {
             digit *= 2;
             if (digit > 9) digit -= 9;
@@ -133,9 +175,14 @@ function generateValidSAID(birthDate: Date, isMale: boolean): string {
 }
 
 function generateRandomDate(startYear: number, endYear: number): Date {
-    const start = new Date(startYear, 0, 1);
-    const end = new Date(endYear, 11, 31);
-    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+    const start = new Date(startYear, 0, 1).getTime();
+    const end = new Date(endYear, 11, 31).getTime();
+    return new Date(start + crypto.randomInt(0, end - start));
+}
+
+function randomPhone(): string {
+    const prefix = randomItem(['071', '072', '073', '078', '079', '082', '083', '084']);
+    return `${prefix} ${randomInt(100, 999)} ${randomInt(1000, 9999)}`;
 }
 
 // Financial/Duration Math Helper for Seeding
@@ -172,8 +219,15 @@ function getEasterSunday(year: number): Date {
     return new Date(Date.UTC(year, month, day));
 }
 
-function getSAHolidaysForYear(year: number) {
-    const fixedHolidays = [
+function getObservedDate(holidayDate: Date): Date {
+    const substitute = new Date(holidayDate);
+    const isChristmas = holidayDate.getUTCMonth() === 11 && holidayDate.getUTCDate() === 25;
+    substitute.setUTCDate(substitute.getUTCDate() + (isChristmas ? 2 : 1));
+    return substitute;
+}
+
+function getSAHolidaysForYear(year: number): PublicHolidayEntry[] {
+    const baseHolidays: PublicHolidayEntry[] = [
         { date: new Date(Date.UTC(year, 0, 1)), name: "New Year's Day" },
         { date: new Date(Date.UTC(year, 2, 21)), name: "Human Rights Day" },
         { date: new Date(Date.UTC(year, 3, 27)), name: "Freedom Day" },
@@ -187,104 +241,96 @@ function getSAHolidaysForYear(year: number) {
     ];
 
     const easter = getEasterSunday(year);
-
     const goodFriday = new Date(easter);
     goodFriday.setUTCDate(easter.getUTCDate() - 2);
-    fixedHolidays.push({ date: goodFriday, name: "Good Friday" });
-
     const familyDay = new Date(easter);
     familyDay.setUTCDate(easter.getUTCDate() + 1);
-    fixedHolidays.push({ date: familyDay, name: "Family Day" });
+    baseHolidays.push({ date: goodFriday, name: "Good Friday" }, { date: familyDay, name: "Family Day" });
 
-    const finalHolidays: Array<{ date: Date, name: string }> = [];
+    const sundayObservances = baseHolidays
+        .filter((h) => h.date.getUTCDay() === 0)
+        .map((h) => ({ date: getObservedDate(h.date), name: `${h.name} (Observed)` }));
 
-    for (const h of fixedHolidays) {
-        finalHolidays.push(h);
-        if (h.date.getUTCDay() === 0) {
-            const substitute = new Date(h.date);
-            if (h.date.getUTCMonth() === 11 && h.date.getUTCDate() === 25) {
-                substitute.setUTCDate(substitute.getUTCDate() + 2);
-            } else {
-                substitute.setUTCDate(substitute.getUTCDate() + 1);
-            }
-            finalHolidays.push({ date: substitute, name: `${h.name} (Observed)` });
-        }
-    }
-    return finalHolidays;
+    return [...baseHolidays, ...sundayObservances];
 }
 
-async function main() {
-    console.log('Starting ConsultIQ database seed...\n');
+// =============================================================================
+// 2. Seed Steps
+// =============================================================================
 
-    // --- Step 2: Role Definitions ---
+async function seedRoleDefinitions(): Promise<void> {
     console.log('Seeding role definitions...');
-    for (const role of Object.values(Role)) {
-        await prisma.roleDefinition.upsert({
-            where: { name: role },
-            update: { description: ROLE_DESCRIPTIONS[role] },
-            create: { name: role, description: ROLE_DESCRIPTIONS[role] },
-        });
+    const records = await Promise.all(
+        Object.values(Role).map((role) =>
+            prisma.roleDefinition.upsert({
+                where: { name: role },
+                update: { description: ROLE_DESCRIPTIONS[role] },
+                create: { name: role, description: ROLE_DESCRIPTIONS[role] },
+            })
+        )
+    );
+    for (const record of records) {
+        roleIds.set(record.name as Role, record.id);
     }
+}
 
-    // --- Helper: Seed User Account ---
-    async function seedUser(email: string, fullName: string, plainPassword: string, roleEnum: Role) {
-        const roleRecord = await prisma.roleDefinition.findUnique({ where: { name: roleEnum } });
-        const passwordHash = await bcrypt.hash(plainPassword, 12);
-        return prisma.user.upsert({
-            where: { email },
-            update: { fullName, role: roleEnum, roleId: roleRecord?.id, status: UserStatus.ACTIVE },
-            create: {
-                email, fullName, passwordHash, role: roleEnum, roleId: roleRecord?.id,
-                status: UserStatus.ACTIVE, failedAttempts: 0, isLocked: false,
-            },
-        });
-    }
+async function seedUser(email: string, fullName: string, plainPassword: string, roleEnum: Role) {
+    const roleId = roleIds.get(roleEnum);
+    const passwordHash = await bcrypt.hash(plainPassword, 12);
+    return prisma.user.upsert({
+        where: { email },
+        update: { fullName, role: roleEnum, roleId, status: UserStatus.ACTIVE },
+        create: {
+            email, fullName, passwordHash, role: roleEnum, roleId,
+            status: UserStatus.ACTIVE, failedAttempts: 0, isLocked: false,
+        },
+    });
+}
 
-    // --- Step 4: Bootstrap & Reserved Users ---
+async function seedReservedUsers() {
     console.log('Seeding reserved user accounts...');
-    const adminUser = await seedUser(
-        process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@consultiq.dev',
-        process.env.BOOTSTRAP_ADMIN_FULL_NAME || 'System Administrator',
-        process.env.BOOTSTRAP_ADMIN_PASSWORD || 'SecureAdminPass123!',
-        Role.ADMIN
-    );
-    const pmUser = await seedUser(
-        process.env.BOOTSTRAP_PM_EMAIL || 'pm@consultiq.dev',
-        process.env.BOOTSTRAP_PM_FULL_NAME || 'Jane Project',
-        process.env.BOOTSTRAP_PM_PASSWORD || 'SecurePMPass123!',
-        Role.PROJECT_MANAGER
-    );
-    const cmUser = await seedUser(
-        process.env.BOOTSTRAP_CM_EMAIL || 'cm@consultiq.dev',
-        process.env.BOOTSTRAP_CM_FULL_NAME || 'John Manager',
-        process.env.BOOTSTRAP_CM_PASSWORD || 'SecureCMPass123!',
-        Role.CONSULTANT_MANAGER
-    );
-    const consultantUser = await seedUser(
-        process.env.BOOTSTRAP_CONSULTANT_EMAIL || 'alice.consultant@consultiq.dev',
-        process.env.BOOTSTRAP_CONSULTANT_FULL_NAME || 'Alice Consultant',
-        process.env.BOOTSTRAP_CONSULTANT_PASSWORD || 'SecureConsultantPass123!',
-        Role.CONSULTANT
-    );
 
-    // --- COS301 Specific Users ---
-    const baseCos301 = 'cos301queries@cs.up.ac.za';
+    const [adminUser, pmUser, cmUser, consultantUser] = await Promise.all([
+        seedUser(
+            process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@consultiq.dev',
+            process.env.BOOTSTRAP_ADMIN_FULL_NAME || 'System Administrator',
+            process.env.BOOTSTRAP_ADMIN_PASSWORD || 'SecureAdminPass123!',
+            Role.ADMIN
+        ),
+        seedUser(
+            process.env.BOOTSTRAP_PM_EMAIL || 'pm@consultiq.dev',
+            process.env.BOOTSTRAP_PM_FULL_NAME || 'Jane Project',
+            process.env.BOOTSTRAP_PM_PASSWORD || 'SecurePMPass123!',
+            Role.PROJECT_MANAGER
+        ),
+        seedUser(
+            process.env.BOOTSTRAP_CM_EMAIL || 'cm@consultiq.dev',
+            process.env.BOOTSTRAP_CM_FULL_NAME || 'John Manager',
+            process.env.BOOTSTRAP_CM_PASSWORD || 'SecureCMPass123!',
+            Role.CONSULTANT_MANAGER
+        ),
+        seedUser(
+            process.env.BOOTSTRAP_CONSULTANT_EMAIL || 'alice.consultant@consultiq.dev',
+            process.env.BOOTSTRAP_CONSULTANT_FULL_NAME || 'Alice Consultant',
+            process.env.BOOTSTRAP_CONSULTANT_PASSWORD || 'SecureConsultantPass123!',
+            Role.CONSULTANT
+        ),
+    ]);
 
-    const cos301PmEmail = `pm-${baseCos301}`;
-    const cos301PmUser = await seedUser(cos301PmEmail, 'COS301 Project Manager', 'rfbDqw@9RhHWVqtT', Role.PROJECT_MANAGER);
+    // COS301 specific users
+    const [cos301PmUser, cos301CmUser, , cos301CnUser] = await Promise.all([
+        seedUser(`pm-${BASE_COS301_EMAIL}`, 'COS301 Project Manager', COS301_PASSWORD, Role.PROJECT_MANAGER),
+        seedUser(`cm-${BASE_COS301_EMAIL}`, 'COS301 Consultant Manager', COS301_PASSWORD, Role.CONSULTANT_MANAGER),
+        seedUser(`ad-${BASE_COS301_EMAIL}`, 'COS301 Admin', COS301_PASSWORD, Role.ADMIN),
+        seedUser(`cn-${BASE_COS301_EMAIL}`, 'COS301 Consultant', COS301_PASSWORD, Role.CONSULTANT),
+    ]);
 
-    const cos301CmEmail = `cm-${baseCos301}`;
-    const cos301CmUser = await seedUser(cos301CmEmail, 'COS301 Consultant Manager', 'rfbDqw@9RhHWVqtT', Role.CONSULTANT_MANAGER);
+    return { adminUser, pmUser, cmUser, consultantUser, cos301PmUser, cos301CmUser, cos301CnUser };
+}
 
-    const cos301AdEmail = `ad-${baseCos301}`;
-    const cos301AdUser = await seedUser(cos301AdEmail, 'COS301 Admin', 'rfbDqw@9RhHWVqtT', Role.ADMIN);
-
-    const cos301CnEmail = `cn-${baseCos301}`;
-    const cos301CnUser = await seedUser(cos301CnEmail, 'COS301 Consultant', 'rfbDqw@9RhHWVqtT', Role.CONSULTANT);
-
-    // --- Step 5: Skills ---
+async function seedSkills(): Promise<Skill[]> {
     console.log('Seeding extended skills pool...');
-    const skillRecords = await Promise.all(
+    return Promise.all(
         EXTENDED_SKILLS.map((skill) =>
             prisma.skill.upsert({
                 where: { name: skill.name },
@@ -293,396 +339,401 @@ async function main() {
             })
         )
     );
+}
 
-    // --- Step 6: Profiles for Alice & COS301 Consultant ---
+interface CvInput {
+    userId: string;
+    consultantId: string;
+    fileName: string;
+    minSize: number;
+    maxSize: number;
+    rawText: string;
+    parsedData: Prisma.InputJsonValue;
+}
+
+function createCvFile(input: CvInput) {
+    const { userId, consultantId, fileName, minSize, maxSize, rawText, parsedData } = input;
+    const s3Key = `cv-uploads/${userId}/${fileName}`;
+    return prisma.cvFile.create({
+        data: {
+            userId,
+            consultantId,
+            fileName,
+            mimeType: 'application/pdf',
+            fileSize: randomInt(minSize, maxSize),
+            s3Key,
+            s3Url: `https://consultiq-assets.s3.af-south-1.amazonaws.com/${s3Key}`,
+            uploadStatus: UploadStatus.UPLOADED,
+            extractionStatus: ExtractionStatus.COMPLETED,
+            parsingMethod: CvParsingMethod.AI_ASSISTED,
+            rawText,
+            parsedData,
+        },
+    });
+}
+
+function linkConsultantToManager(managerUserId: string, consultantId: string) {
+    return prisma.consultantManager.upsert({
+        where: { userId_consultantId: { userId: managerUserId, consultantId } },
+        update: {},
+        create: { userId: managerUserId, consultantId },
+    });
+}
+
+interface FixedConsultantInput {
+    userId: string;
+    managerUserId: string;
+    location: GeoLocation;
+    birthDate: Date;
+    isMale: boolean;
+    phone: string;
+    costToCompany: number;
+    cvFileName: string;
+    cvRawText: string;
+    cvParsedData: Prisma.InputJsonValue;
+}
+
+async function seedFixedConsultant(input: FixedConsultantInput): Promise<void> {
+    const profile = await prisma.consultant.upsert({
+        where: { userId: input.userId },
+        update: {},
+        create: {
+            userId: input.userId,
+            ...locationFields(input.location),
+            phone: input.phone,
+            idNumber: generateValidSAID(input.birthDate, input.isMale),
+            nationality: 'South African',
+            costToCompany: input.costToCompany,
+            availability: ConsultantAvailability.AVAILABLE,
+        },
+    });
+
+    await linkConsultantToManager(input.managerUserId, profile.id);
+    await createCvFile({
+        userId: input.userId,
+        consultantId: profile.id,
+        fileName: input.cvFileName,
+        minSize: 150000,
+        maxSize: 3000000,
+        rawText: input.cvRawText,
+        parsedData: input.cvParsedData,
+    });
+}
+
+async function seedFixedConsultants(
+    users: Awaited<ReturnType<typeof seedReservedUsers>>,
+): Promise<void> {
     console.log('Seeding profiles for Alice and COS301 Consultant...');
 
-    // 6a. Alice
-    const aliceBirthDate = generateRandomDate(1990, 1998);
-    const aliceLoc = SA_GEO_LOCATIONS[0];
-    const aliceProfile = await prisma.consultant.upsert({
-        where: { userId: consultantUser.id },
-        update: {},
-        create: {
-            userId: consultantUser.id,
-            addressLine1: aliceLoc.addressLine1,
-            suburb: aliceLoc.suburb,
-            city: aliceLoc.city,
-            province: aliceLoc.province,
-            postalCode: aliceLoc.postalCode,
-            latitude: aliceLoc.latitude,
-            longitude: aliceLoc.longitude,
-            placeId: aliceLoc.placeId,
-            formattedAddress: aliceLoc.formattedAddress,
-            phone: '082 123 4567',
-            idNumber: generateValidSAID(aliceBirthDate, false),
-            nationality: 'South African',
-            costToCompany: 8500.0,
-            availability: ConsultantAvailability.AVAILABLE,
+    await seedFixedConsultant({
+        userId: users.consultantUser.id,
+        managerUserId: users.cmUser.id,
+        location: SA_GEO_LOCATIONS[0],
+        birthDate: generateRandomDate(1990, 1998),
+        isMale: false,
+        phone: '082 123 4567',
+        costToCompany: 8500,
+        cvFileName: 'Alice_Consultant_CV_2026.pdf',
+        cvRawText: 'Senior Data Engineer and AWS Architect. Graduated from University of Pretoria.',
+        cvParsedData: {
+            skills: ["AWS", "Node.js", "Python"],
+            education: ["University of Pretoria"],
+            experience: ["Senior Backend Developer"],
         },
     });
 
-    await prisma.consultantManager.upsert({
-        where: { userId_consultantId: { userId: cmUser.id, consultantId: aliceProfile.id } },
-        update: {}, create: { userId: cmUser.id, consultantId: aliceProfile.id },
-    });
-
-    const aliceCvName = 'Alice_Consultant_CV_2026.pdf';
-    await prisma.cvFile.create({
-        data: {
-            userId: consultantUser.id,
-            consultantId: aliceProfile.id,
-            fileName: aliceCvName,
-            mimeType: 'application/pdf',
-            fileSize: randomInt(150000, 3000000),
-            s3Key: 'cv-uploads/' + consultantUser.id + '/' + aliceCvName,
-            s3Url: 'https://consultiq-assets.s3.af-south-1.amazonaws.com/cv-uploads/' + consultantUser.id + '/' + aliceCvName,
-            uploadStatus: UploadStatus.UPLOADED,
-            extractionStatus: ExtractionStatus.COMPLETED,
-            parsingMethod: CvParsingMethod.AI_ASSISTED,
-            rawText: `Senior Data Engineer and AWS Architect. Graduated from University of Pretoria.`,
-            parsedData: { skills: ["AWS", "Node.js", "Python"], education: ["University of Pretoria"], experience: ["Senior Backend Developer"] }
-        }
-    });
-
-    // 6b. COS301 Consultant
-    const cos301BirthDate = generateRandomDate(1995, 2000);
-    const cos301Loc = SA_GEO_LOCATIONS[1];
-    const cos301Profile = await prisma.consultant.upsert({
-        where: { userId: cos301CnUser.id },
-        update: {},
-        create: {
-            userId: cos301CnUser.id,
-            addressLine1: cos301Loc.addressLine1,
-            suburb: cos301Loc.suburb,
-            city: cos301Loc.city,
-            province: cos301Loc.province,
-            postalCode: cos301Loc.postalCode,
-            latitude: cos301Loc.latitude,
-            longitude: cos301Loc.longitude,
-            placeId: cos301Loc.placeId,
-            formattedAddress: cos301Loc.formattedAddress,
-            phone: '071 987 6543',
-            idNumber: generateValidSAID(cos301BirthDate, true),
-            nationality: 'South African',
-            costToCompany: 4500.0, //Daily Rate (R 4,500/day)
-            availability: ConsultantAvailability.AVAILABLE,
+    await seedFixedConsultant({
+        userId: users.cos301CnUser.id,
+        managerUserId: users.cos301CmUser.id,
+        location: SA_GEO_LOCATIONS[1],
+        birthDate: generateRandomDate(1995, 2000),
+        isMale: true,
+        phone: '071 987 6543',
+        costToCompany: 4500,
+        cvFileName: 'COS301_Consultant_CV.pdf',
+        cvRawText: 'Junior Developer skilled in TypeScript and React.',
+        cvParsedData: {
+            skills: ["TypeScript", "React"],
+            education: ["University of Pretoria"],
+            experience: ["Junior Developer"],
         },
     });
+}
 
-    await prisma.consultantManager.upsert({
-        where: { userId_consultantId: { userId: cos301CmUser.id, consultantId: cos301Profile.id } },
-        update: {}, create: { userId: cos301CmUser.id, consultantId: cos301Profile.id },
-    });
+// --- Generated consultants ---
 
-    const cos301CvName = 'COS301_Consultant_CV.pdf';
-    await prisma.cvFile.create({
-        data: {
-            userId: cos301CnUser.id,
-            consultantId: cos301Profile.id,
-            fileName: cos301CvName,
-            mimeType: 'application/pdf',
-            fileSize: randomInt(150000, 3000000),
-            s3Key: 'cv-uploads/' + cos301CnUser.id + '/' + cos301CvName,
-            s3Url: 'https://consultiq-assets.s3.af-south-1.amazonaws.com/cv-uploads/' + cos301CnUser.id + '/' + cos301CvName,
-            uploadStatus: UploadStatus.UPLOADED,
-            extractionStatus: ExtractionStatus.COMPLETED,
-            parsingMethod: CvParsingMethod.AI_ASSISTED,
-            rawText: `Junior Developer skilled in TypeScript and React.`,
-            parsedData: { skills: ["TypeScript", "React"], education: ["University of Pretoria"], experience: ["Junior Developer"] }
-        }
-    });
+interface ConsultantIdentity {
+    firstName: string;
+    lastName: string;
+    email: string;
+}
 
-    // --- Step 7: 100 Additional Consultants ---
-    console.log('Generating 100 additional consultants with matching daily rates...');
-    const generatedEmails = new Set();
-
-    for (let i = 1; i <= 100; i++) {
+function buildConsultantIdentities(count: number): ConsultantIdentity[] {
+    const usedEmails = new Set<string>();
+    return Array.from({ length: count }, () => {
         const firstName = randomItem(MOCK_DATA.firstNames);
         const lastName = randomItem(MOCK_DATA.lastNames);
-        const fullName = firstName + ' ' + lastName;
+        const base = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`;
 
-        let email = firstName.toLowerCase() + '.' + lastName.toLowerCase() + '@consultiq.dev';
+        let email = `${base}@consultiq.dev`;
         let counter = 1;
-        while (generatedEmails.has(email)) {
-            email = firstName.toLowerCase() + '.' + lastName.toLowerCase() + counter + '@consultiq.dev';
+        while (usedEmails.has(email)) {
+            email = `${base}${counter}@consultiq.dev`;
             counter++;
         }
-        generatedEmails.add(email);
+        usedEmails.add(email);
 
-        const loc = getRandomLocation();
-        const birthDate = generateRandomDate(1985, 2000);
-        const isMale = crypto.randomInt(0, 2) === 1;
-        const validIdNumber = generateValidSAID(birthDate, isMale);
+        return { firstName, lastName, email };
+    });
+}
 
-        const phonePrefix = randomItem(['071', '072', '073', '078', '079', '082', '083', '084']);
-        const phoneNumber = phonePrefix + ' ' + String(randomInt(100, 999)) + ' ' + String(randomInt(1000, 9999));
+async function ensureEducation(consultantId: string) {
+    const existing = await prisma.consultantEducation.findFirst({ where: { consultantId } });
+    if (existing) return existing;
 
-        const cUser = await seedUser(email, fullName, 'SecureConsultantPass123!', Role.CONSULTANT);
+    return prisma.consultantEducation.create({
+        data: {
+            consultantId,
+            institution: randomItem(MOCK_DATA.universities),
+            qualification: randomItem(MOCK_DATA.degrees),
+            startDate: new Date(`${randomInt(2010, 2018)}-01-15`),
+            endDate: new Date(`${randomInt(2014, 2021)}-11-30`),
+        },
+    });
+}
 
-        const cProfile = await prisma.consultant.upsert({
-            where: { userId: cUser.id },
-            update: {},
-            create: {
-                userId: cUser.id,
-                addressLine1: loc.addressLine1,
-                suburb: loc.suburb,
-                city: loc.city,
-                province: loc.province,
-                postalCode: loc.postalCode,
-                latitude: loc.latitude,
-                longitude: loc.longitude,
-                placeId: loc.placeId,
-                formattedAddress: loc.formattedAddress,
-                phone: phoneNumber,
-                idNumber: validIdNumber,
-                nationality: 'South African',
-                costToCompany: randomInt(3000, 15000),
-                availability: ConsultantAvailability.AVAILABLE,
-            },
-        });
+async function ensureExperience(consultantId: string) {
+    const existing = await prisma.consultantExperience.findFirst({ where: { consultantId } });
+    if (existing) return existing;
 
-        await prisma.consultantManager.upsert({
-            where: { userId_consultantId: { userId: cmUser.id, consultantId: cProfile.id } },
-            update: {},
-            create: { userId: cmUser.id, consultantId: cProfile.id },
-        });
+    return prisma.consultantExperience.create({
+        data: {
+            consultantId,
+            jobTitle: randomItem(MOCK_DATA.jobTitles),
+            companyName: randomItem(MOCK_DATA.companies),
+            jobType: JobType.FULL_TIME,
+            workModel: randomItem(Object.values(WorkModel)),
+            startDate: new Date(`${randomInt(2018, 2022)}-02-01`),
+            description: 'Worked on scalable infrastructure and core product features.',
+        },
+    });
+}
 
-        const cSkills = randomSample(skillRecords, randomInt(2, 5));
-        for (const skill of cSkills) {
-            await prisma.consultantSkill.upsert({
-                where: { consultantId_skillId: { consultantId: cProfile.id, skillId: skill.id } },
-                update: {},
-                create: {
-                    consultantId: cProfile.id,
-                    skillId: skill.id,
-                    competencyLevel: randomItem(Object.values(CompetencyLevel)),
-                    yearsExperience: randomInt(1, 10),
-                    confidenceLevel: randomInt(5, 10),
-                },
-            });
-        }
+function assignConsultantSkill(consultantId: string, skillId: string) {
+    return prisma.consultantSkill.upsert({
+        where: { consultantId_skillId: { consultantId, skillId } },
+        update: {},
+        create: {
+            consultantId,
+            skillId,
+            competencyLevel: randomItem(Object.values(CompetencyLevel)),
+            yearsExperience: randomInt(1, 10),
+            confidenceLevel: randomInt(5, 10),
+        },
+    });
+}
 
-        const existingEdu = await prisma.consultantEducation.findFirst({ where: { consultantId: cProfile.id } });
-        let assignedEdu = existingEdu;
-        if (!existingEdu) {
-            assignedEdu = await prisma.consultantEducation.create({
-                data: {
-                    consultantId: cProfile.id,
-                    institution: randomItem(MOCK_DATA.universities),
-                    qualification: randomItem(MOCK_DATA.degrees),
-                    startDate: new Date(`${randomInt(2010, 2018)}-01-15`),
-                    endDate: new Date(`${randomInt(2014, 2021)}-11-30`),
-                },
-            });
-        }
+async function ensureGeneratedCv(
+    userId: string,
+    consultantId: string,
+    identity: ConsultantIdentity,
+    skills: Skill[],
+    education: { institution: string; qualification: string },
+    experience: { jobTitle: string; companyName: string },
+): Promise<void> {
+    const existing = await prisma.cvFile.findFirst({ where: { consultantId } });
+    if (existing) return;
 
-        const existingExp = await prisma.consultantExperience.findFirst({ where: { consultantId: cProfile.id } });
-        let assignedExp = existingExp;
-        if (!existingExp) {
-            assignedExp = await prisma.consultantExperience.create({
-                data: {
-                    consultantId: cProfile.id,
-                    jobTitle: randomItem(MOCK_DATA.jobTitles),
-                    companyName: randomItem(MOCK_DATA.companies),
-                    jobType: JobType.FULL_TIME,
-                    workModel: randomItem(Object.values(WorkModel)),
-                    startDate: new Date(`${randomInt(2018, 2022)}-02-01`),
-                    description: `Worked on scalable infrastructure and core product features.`,
-                },
-            });
-        }
+    const fileName = `${identity.firstName}_${identity.lastName}_Resume.pdf`.replace(/\s+/g, '_');
+    const skillNames = skills.map((s) => s.name);
 
-        const fileName = `${firstName}_${lastName}_Resume.pdf`.replace(/\s+/g, '_');
-        const existingCv = await prisma.cvFile.findFirst({ where: { consultantId: cProfile.id } });
-        if (!existingCv) {
-            await prisma.cvFile.create({
-                data: {
-                    userId: cUser.id,
-                    consultantId: cProfile.id,
-                    fileName: fileName,
-                    mimeType: 'application/pdf',
-                    fileSize: randomInt(200000, 4500000),
-                    s3Key: 'cv-uploads/' + cUser.id + '/' + fileName,
-                    s3Url: 'https://consultiq-assets.s3.af-south-1.amazonaws.com/cv-uploads/' + cUser.id + '/' + fileName,
-                    uploadStatus: UploadStatus.UPLOADED,
-                    extractionStatus: ExtractionStatus.COMPLETED,
-                    parsingMethod: CvParsingMethod.AI_ASSISTED,
-                    rawText: `Experienced ${assignedExp?.jobTitle} with a strong background in ${cSkills.map(s => s.name).join(', ')}. Holds a ${assignedEdu?.qualification} from ${assignedEdu?.institution}. Proven track record at ${assignedExp?.companyName}.`,
-                    parsedData: {
-                        skills: cSkills.map(s => s.name),
-                        education: assignedEdu ? [assignedEdu.institution + ' - ' + assignedEdu.qualification] : [],
-                        experience: assignedExp ? [assignedExp.jobTitle + ' at ' + assignedExp.companyName] : []
-                    }
-                }
-            });
-        }
-    }
+    await createCvFile({
+        userId,
+        consultantId,
+        fileName,
+        minSize: 200000,
+        maxSize: 4500000,
+        rawText: `Experienced ${experience.jobTitle} with a strong background in ${skillNames.join(', ')}. Holds a ${education.qualification} from ${education.institution}. Proven track record at ${experience.companyName}.`,
+        parsedData: {
+            skills: skillNames,
+            education: [`${education.institution} - ${education.qualification}`],
+            experience: [`${experience.jobTitle} at ${experience.companyName}`],
+        },
+    });
+}
 
-    // --- Step 8: Base Alice Project ---
-    console.log('Seeding base project with aligned financial math...');
-    const baseProjectLoc = SA_GEO_LOCATIONS[4];
+async function seedGeneratedConsultant(
+    identity: ConsultantIdentity,
+    cmUserId: string,
+    skillRecords: Skill[],
+): Promise<void> {
+    const fullName = `${identity.firstName} ${identity.lastName}`;
+    const cUser = await seedUser(identity.email, fullName, DEFAULT_CONSULTANT_PASSWORD, Role.CONSULTANT);
 
-    const baseStartDate = new Date('2026-08-01');
-    const baseEndDate = new Date('2026-12-31');
-    const baseWorkingDays = getWorkingDays(baseStartDate, baseEndDate);
-    const baseTeamSize = 4;
-    const baseTargetDailyRate = 9500;
-    const baseCalculatedBudget = baseTargetDailyRate * baseWorkingDays * baseTeamSize;
-
-    let baseProject = await prisma.project.findFirst({ where: { projectName: 'ConsultIQ Engine Upgrade' } });
-    if (!baseProject) {
-        baseProject = await prisma.project.create({
-            data: {
-                projectName: 'ConsultIQ Engine Upgrade',
-                clientName: 'Internal R&D',
-                addressLine1: baseProjectLoc.addressLine1,
-                suburb: baseProjectLoc.suburb,
-                city: baseProjectLoc.city,
-                province: baseProjectLoc.province,
-                postalCode: baseProjectLoc.postalCode,
-                latitude: baseProjectLoc.latitude,
-                longitude: baseProjectLoc.longitude,
-                placeId: baseProjectLoc.placeId,
-                formattedAddress: baseProjectLoc.formattedAddress,
-                startDate: baseStartDate,
-                endDate: baseEndDate,
-                description: 'Upgrade the core engine of ConsultIQ to enhance performance and scalability.',
-                teamSize: baseTeamSize,
-                allocation: 100,
-                budget: baseCalculatedBudget,
-                status: ProjectStatus.OPEN,
-            },
-        });
-    }
-
-    await prisma.projectManager.upsert({
-        where: { userId_projectId: { userId: pmUser.id, projectId: baseProject.id } },
-        update: {}, create: { userId: pmUser.id, projectId: baseProject.id },
+    const cProfile = await prisma.consultant.upsert({
+        where: { userId: cUser.id },
+        update: {},
+        create: {
+            userId: cUser.id,
+            ...locationFields(getRandomLocation()),
+            phone: randomPhone(),
+            idNumber: generateValidSAID(generateRandomDate(1985, 2000), crypto.randomInt(0, 2) === 1),
+            nationality: 'South African',
+            costToCompany: randomInt(3000, 15000),
+            availability: ConsultantAvailability.AVAILABLE,
+        },
     });
 
-    // --- Step 9: 20 Additional OPEN Projects ---
-    console.log('Generating 20 additional OPEN projects with accurate geo-locations & budgets...');
-    for (let i = 1; i <= 20; i++) {
-        const projectName = randomItem(MOCK_DATA.projectPrefixes) + ' ' + randomItem(MOCK_DATA.projectSuffixes) + ' ' + i;
-        const clientName = randomItem(MOCK_DATA.clients);
-        const loc = getRandomLocation();
+    const cSkills = randomSample(skillRecords, randomInt(2, 5));
+    const [education, experience] = await Promise.all([
+        ensureEducation(cProfile.id),
+        ensureExperience(cProfile.id),
+        linkConsultantToManager(cmUserId, cProfile.id),
+        ...cSkills.map((skill) => assignConsultantSkill(cProfile.id, skill.id)),
+    ]);
 
-        let p = await prisma.project.findFirst({ where: { projectName } });
+    await ensureGeneratedCv(cUser.id, cProfile.id, identity, cSkills, education, experience);
+}
 
-        if (!p) {
-            const now = new Date('2026-09-30');
-            const dayOffset = randomInt(-30, 7);
-            const startDate = new Date(now);
-            startDate.setDate(now.getDate() + dayOffset);
+async function seedGeneratedConsultants(cmUserId: string, skillRecords: Skill[]): Promise<void> {
+    console.log(`Generating ${GENERATED_CONSULTANT_COUNT} additional consultants with matching daily rates...`);
+    const identities = buildConsultantIdentities(GENERATED_CONSULTANT_COUNT);
+    await runInBatches(identities, (identity) => seedGeneratedConsultant(identity, cmUserId, skillRecords));
+}
 
-            const durationMonths = randomInt(2, 6);
+// --- Projects ---
 
-            const endDate = new Date(startDate);
-            endDate.setMonth(endDate.getMonth() + durationMonths);
+function linkProjectToManager(userId: string, projectId: string) {
+    return prisma.projectManager.upsert({
+        where: { userId_projectId: { userId, projectId } },
+        update: {},
+        create: { userId, projectId },
+    });
+}
 
-            const workingDays = getWorkingDays(startDate, endDate);
-            const teamSize = randomInt(2, 10);
-            const targetDailyRate = randomInt(4000, 12000);
-            const calculatedBudget = targetDailyRate * workingDays * teamSize;
+async function seedBaseProject(pmUserId: string): Promise<void> {
+    console.log('Seeding base project with aligned financial math...');
 
-            p = await prisma.project.create({
-                data: {
-                    projectName,
-                    clientName,
-                    description: `Strategic initiative to implement ${projectName} for ${clientName}.`,
-                    addressLine1: loc.addressLine1,
-                    suburb: loc.suburb,
-                    city: loc.city,
-                    province: loc.province,
-                    postalCode: loc.postalCode,
-                    latitude: loc.latitude,
-                    longitude: loc.longitude,
-                    placeId: loc.placeId,
-                    formattedAddress: loc.formattedAddress,
-                    startDate: startDate,
-                    endDate: endDate,
-                    teamSize: teamSize,
-                    allocation: randomItem([30, 50, 80, 100]),
-                    budget: calculatedBudget,
-                    status: ProjectStatus.OPEN,
-                },
-            });
-        }
+    const startDate = new Date('2026-08-01');
+    const endDate = new Date('2026-12-31');
+    const teamSize = 4;
+    const targetDailyRate = 9500;
+    const budget = targetDailyRate * getWorkingDays(startDate, endDate) * teamSize;
 
-        await prisma.projectManager.upsert({
-            where: { userId_projectId: { userId: pmUser.id, projectId: p.id } },
-            update: {},
-            create: { userId: pmUser.id, projectId: p.id },
-        });
+    const existing = await prisma.project.findFirst({ where: { projectName: 'ConsultIQ Engine Upgrade' } });
+    const baseProject = existing ?? await prisma.project.create({
+        data: {
+            projectName: 'ConsultIQ Engine Upgrade',
+            clientName: 'Internal R&D',
+            ...locationFields(SA_GEO_LOCATIONS[4]),
+            startDate,
+            endDate,
+            description: 'Upgrade the core engine of ConsultIQ to enhance performance and scalability.',
+            teamSize,
+            allocation: 100,
+            budget,
+            status: ProjectStatus.OPEN,
+        },
+    });
 
-        const pSkills = randomSample(skillRecords, randomInt(1, 4));
-        for (const skill of pSkills) {
-            await prisma.projectSkill.upsert({
-                where: { projectId_skillId: { projectId: p.id, skillId: skill.id } },
-                update: {},
-                create: {
-                    projectId: p.id,
-                    skillId: skill.id,
-                    competency: randomItem(Object.values(CompetencyLevel)),
-                    years: randomInt(1, 5),
-                    mandatory: randomItem([true, true, false]),
-                },
-            });
-        }
-    }
+    await linkProjectToManager(pmUserId, baseProject.id);
+}
 
-    // --- Step 10: Assign all seeded projects to the COS301 PM ---
-    console.log(`\nLocating ${cos301PmEmail} to assign all generated projects...`);
+function buildGeneratedProjectData(projectName: string): Prisma.ProjectCreateInput {
+    const clientName = randomItem(MOCK_DATA.clients);
+
+    const startDate = new Date('2026-09-30');
+    startDate.setDate(startDate.getDate() + randomInt(-30, 7));
+
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + randomInt(2, 6));
+
+    const teamSize = randomInt(2, 10);
+    const targetDailyRate = randomInt(4000, 12000);
+
+    return {
+        projectName,
+        clientName,
+        description: `Strategic initiative to implement ${projectName} for ${clientName}.`,
+        ...locationFields(getRandomLocation()),
+        startDate,
+        endDate,
+        teamSize,
+        allocation: randomItem([30, 50, 80, 100]),
+        budget: targetDailyRate * getWorkingDays(startDate, endDate) * teamSize,
+        status: ProjectStatus.OPEN,
+    };
+}
+
+function assignProjectSkill(projectId: string, skillId: string) {
+    return prisma.projectSkill.upsert({
+        where: { projectId_skillId: { projectId, skillId } },
+        update: {},
+        create: {
+            projectId,
+            skillId,
+            competency: randomItem(Object.values(CompetencyLevel)),
+            years: randomInt(1, 5),
+            mandatory: randomItem([true, true, false]),
+        },
+    });
+}
+
+async function seedGeneratedProject(index: number, pmUserId: string, skillRecords: Skill[]): Promise<void> {
+    const projectName = `${randomItem(MOCK_DATA.projectPrefixes)} ${randomItem(MOCK_DATA.projectSuffixes)} ${index}`;
+
+    const existing = await prisma.project.findFirst({ where: { projectName } });
+    const project = existing ?? await prisma.project.create({ data: buildGeneratedProjectData(projectName) });
+
+    const pSkills = randomSample(skillRecords, randomInt(1, 4));
+    await Promise.all([
+        linkProjectToManager(pmUserId, project.id),
+        ...pSkills.map((skill) => assignProjectSkill(project.id, skill.id)),
+    ]);
+}
+
+async function seedGeneratedProjects(pmUserId: string, skillRecords: Skill[]): Promise<void> {
+    console.log(`Generating ${GENERATED_PROJECT_COUNT} additional OPEN projects with accurate geo-locations & budgets...`);
+    const indexes = Array.from({ length: GENERATED_PROJECT_COUNT }, (_, i) => i + 1);
+    await runInBatches(indexes, (index) => seedGeneratedProject(index, pmUserId, skillRecords));
+}
+
+async function assignAllProjectsToCos301Pm(cos301PmUserId: string): Promise<void> {
+    console.log(`\nLocating ${`pm-${BASE_COS301_EMAIL}`} to assign all generated projects...`);
     const allProjects = await prisma.project.findMany();
-    let assignedCount = 0;
+    await runInBatches(allProjects, (project) => linkProjectToManager(cos301PmUserId, project.id));
+    console.log(`Successfully linked ${allProjects.length} projects to pm-${BASE_COS301_EMAIL}!`);
+}
 
-    for (const project of allProjects) {
-        await prisma.projectManager.upsert({
-            where: {
-                userId_projectId: {
-                    userId: cos301PmUser.id,
-                    projectId: project.id,
-                },
-            },
-            update: {},
-            create: {
-                userId: cos301PmUser.id,
-                projectId: project.id,
-            },
-        });
-        assignedCount++;
+// --- Public holidays ---
+
+async function upsertHoliday(holiday: PublicHolidayEntry): Promise<void> {
+    const existing = await prisma.publicHoliday.findFirst({ where: { date: holiday.date } });
+    if (existing) {
+        await prisma.publicHoliday.update({ where: { id: existing.id }, data: { name: holiday.name } });
+    } else {
+        await prisma.publicHoliday.create({ data: { date: holiday.date, name: holiday.name } });
     }
-    console.log(`Successfully linked ${assignedCount} projects to ${cos301PmEmail}!`);
+}
 
-    // --- Step 11: Public Holidays ---
+async function seedPublicHolidays(): Promise<void> {
     console.log('Seeding South African Public Holidays...');
     const seedYears = [2025, 2026, 2027];
-    let holidayCount = 0;
 
-    for (const year of seedYears) {
-        const holidays = getSAHolidaysForYear(year);
-        for (const holiday of holidays) {
-            const existingHoliday = await prisma.publicHoliday.findFirst({
-                where: { date: holiday.date }
-            });
-
-            if (existingHoliday) {
-                await prisma.publicHoliday.update({
-                    where: { id: existingHoliday.id },
-                    data: { name: holiday.name }
-                });
-            } else {
-                await prisma.publicHoliday.create({
-                    data: { date: holiday.date, name: holiday.name }
-                });
-            }
-            holidayCount++;
-        }
+    // De-duplicate by date (later entries win) so concurrent upserts can never race on the same date.
+    const byDate = new Map<number, PublicHolidayEntry>();
+    for (const holiday of seedYears.flatMap(getSAHolidaysForYear)) {
+        byDate.set(holiday.date.getTime(), holiday);
     }
-    console.log('Seeded ' + holidayCount + ' public holidays for years ' + seedYears.join(', ') + '.');
+    const holidays = [...byDate.values()];
 
-    // --- Step 12: Consultants without Profiles (Reserved Names) ---
+    await runInBatches(holidays, upsertHoliday);
+    console.log(`Seeded ${holidays.length} public holidays for years ${seedYears.join(', ')}.`);
+}
+
+// --- Consultants without profiles ---
+
+async function seedUnprofiledConsultants(): Promise<void> {
     console.log('Seeding consultants with user accounts only (no consultant profiles)...');
 
     const unprofiledConsultants = [
@@ -694,42 +745,65 @@ async function main() {
         { fullName: 'Francois van der Merwe', email: 'francois.vdm@consultiq.dev' },
     ];
 
-    for (const unprofiled of unprofiledConsultants) {
-        await seedUser(
-            unprofiled.email,
-            unprofiled.fullName,
-            'SecureConsultantPass123!',
-            Role.CONSULTANT
-        );
-    }
+    await Promise.all(
+        unprofiledConsultants.map((c) =>
+            seedUser(c.email, c.fullName, DEFAULT_CONSULTANT_PASSWORD, Role.CONSULTANT)
+        )
+    );
     console.log(`Seeded ${unprofiledConsultants.length} consultants with user accounts only.`);
+}
 
-    // --- Summary ---
-    const counts = {
-        roles: await prisma.roleDefinition.count(),
-        users: await prisma.user.count(),
-        skills: await prisma.skill.count(),
-        consultants: await prisma.consultant.count(),
-        projects: await prisma.project.count(),
-        cvs: await prisma.cvFile.count(),
-        holidays: await prisma.publicHoliday.count(),
-    };
+// --- Summary ---
+
+async function printSummary(): Promise<void> {
+    const [roles, users, skills, consultants, projects, cvs, holidays] = await Promise.all([
+        prisma.roleDefinition.count(),
+        prisma.user.count(),
+        prisma.skill.count(),
+        prisma.consultant.count(),
+        prisma.project.count(),
+        prisma.cvFile.count(),
+        prisma.publicHoliday.count(),
+    ]);
 
     console.log('\n Seed process complete!');
     console.log('   Final database counts:');
-    console.log(`   Roles       : ${counts.roles}`);
-    console.log(`   Users       : ${counts.users}`);
-    console.log(`   Skills      : ${counts.skills}`);
-    console.log(`   Consultants : ${counts.consultants}`);
-    console.log(`   Projects    : ${counts.projects}`);
-    console.log(`   CV Files    : ${counts.cvs}`);
-    console.log(`   Holidays    : ${counts.holidays}\n`);
+    console.log(`   Roles       : ${roles}`);
+    console.log(`   Users       : ${users}`);
+    console.log(`   Skills      : ${skills}`);
+    console.log(`   Consultants : ${consultants}`);
+    console.log(`   Projects    : ${projects}`);
+    console.log(`   CV Files    : ${cvs}`);
+    console.log(`   Holidays    : ${holidays}\n`);
+}
+
+// =============================================================================
+// 3. Entry Point
+// =============================================================================
+
+async function main(): Promise<void> {
+    console.log('Starting ConsultIQ database seed...\n');
+
+    await seedRoleDefinitions();
+    const users = await seedReservedUsers();
+    const skillRecords = await seedSkills();
+
+    await seedFixedConsultants(users);
+    await seedGeneratedConsultants(users.cmUser.id, skillRecords);
+
+    await seedBaseProject(users.pmUser.id);
+    await seedGeneratedProjects(users.pmUser.id, skillRecords);
+    await assignAllProjectsToCos301Pm(users.cos301PmUser.id);
+
+    await seedPublicHolidays();
+    await seedUnprofiledConsultants();
+    await printSummary();
 }
 
 main()
     .catch((error) => {
         console.error('Seed failed:', error);
-        process.exit(1);
+        process.exitCode = 1;
     })
     .finally(async () => {
         await prisma.$disconnect();

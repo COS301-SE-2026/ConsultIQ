@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
-export class EmailService {
+export class EmailService  implements OnModuleInit {
   private readonly resend: Resend;
   private readonly fromEmail: string;
+  private readonly logger = new Logger(EmailService.name);
+  private cvTemplateBase64: string | null = null;
 
   constructor(private readonly config: ConfigService) {
     this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
@@ -13,14 +17,37 @@ export class EmailService {
       this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
   }
 
+  onModuleInit() {
+    try {
+      const templatePath = path.join(__dirname, '..', 'assets', 'ConsultIQ_CV_Template.pdf');
+      this.cvTemplateBase64 = fs.readFileSync(templatePath).toString('base64');
+    } catch (err) {
+      this.logger.error('Failed to load CV template for email attachment:', err);
+      this.cvTemplateBase64 = null;
+    }
+  }
+
   async sendActivationEmail(
     to: string,
     fullName: string,
     activationLink: string,
+    options?: {
+      managerName?: string;
+      managerEmail?: string;
+      isConsultant?: boolean;
+    },
   ): Promise<void> {
+    const { managerName, managerEmail, isConsultant } = options ?? {};
+    const attachTemplate = !!isConsultant && !!this.cvTemplateBase64;
+
+    if (isConsultant && !this.cvTemplateBase64) {
+      this.logger.warn('CV template unavailable — sending activation email without attachment.');
+    }
+
     await this.resend.emails.send({
       from: `ConsultIQ <${this.fromEmail}>`,
       to,
+      replyTo: managerEmail,
       subject: 'Activate your ConsultIQ account',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -32,9 +59,18 @@ export class EmailService {
                     color: white; text-decoration: none; border-radius: 4px; margin: 16px 0;">
             Activate Account
           </a>
+           ${isConsultant ? `
+            <p>Once your account is active, please send your CV to
+              ${managerEmail ? `<a href="mailto:${managerEmail}">${managerEmail}</a>` : 'your consultant manager'}
+              so your profile can be created.</p>
+            ` : ''}
+            ${managerEmail ? `<p>Questions? Contact your consultant manager at <a href="mailto:${managerEmail}">${managerEmail}</a>.</p>` : ''}
           <p>If you were not expecting this email, ignore it.</p>
         </div>
       `,
+      attachments: attachTemplate
+        ? [{ filename: 'ConsultIQ_CV_Template.pdf', content: this.cvTemplateBase64! }]
+        : undefined,
     });
   }
 

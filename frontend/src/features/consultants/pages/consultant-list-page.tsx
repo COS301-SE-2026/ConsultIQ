@@ -14,6 +14,8 @@ import { UserCircle2, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import useUnreadNotificationsCount from "../../../hooks/useUnreadNotificationsCount";
 
+const SERVER_PAGE_SIZE = 50;
+
 function ConsultantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [consultants, setConsultants] = useState<Consultant[]>([]);
@@ -31,14 +33,29 @@ function ConsultantsPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [consultantsResponse, pendingResponse, flaggedResponse] = await Promise.all([
-          getConsultants(1, 50),
+        const [firstConsultantsPage, pendingResponse, flaggedResponse] = await Promise.all([
+          getConsultants(1, SERVER_PAGE_SIZE),
           getPendingProfiles(),
           cvParsingService.getFlagged(),
         ]);
 
+        const consultantPages = await Promise.all(
+          Array.from(
+            {
+              length: Math.max(
+                0,
+                Math.ceil(firstConsultantsPage.total / SERVER_PAGE_SIZE) - 1,
+              ),
+            },
+            (_, index) => getConsultants(index + 2, SERVER_PAGE_SIZE),
+          ),
+        );
+        const allConsultants = [
+          ...firstConsultantsPage.consultants,
+          ...consultantPages.flatMap((page) => page.consultants),
+        ];
 
-        const mapped = consultantsResponse.consultants.map((dto) => {
+        const mapped = allConsultants.map((dto) => {
           const parts = dto.fullName.split(" ");
           return {
             id: dto.id,

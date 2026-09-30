@@ -6,7 +6,8 @@ import type {
     Interval,
     TaskStatus,
     CalendarEntry as CalendarEntryData,
-    CalendarEntryDto
+    CalendarEntryDto,
+    ProjectBlock as ProjectBlockData,
 } from "../../types/scheduler.types";
 import CalendarEntryForm from "../calendar-entry-form";
 import {
@@ -67,19 +68,27 @@ interface AwaitingConfirmation {
 
 
 export interface WeekCalendarProps {
-   readonly weekData?: WeekContainer;
-   readonly projects?: ProjectSummary[];
-   readonly createEntryRequested?: boolean;
-   readonly onCreateEntryDone?: () => void;
+    readonly weekData?: WeekContainer;
+    readonly projects?: ProjectSummary[];
+    readonly createEntryRequested?: boolean;
+    readonly onCreateEntryDone?: () => void;
+    readonly onMoveBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onResizeBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onPinBlock?: (blockId: string, pinned: boolean) => Promise<boolean>;
+    readonly onMoveSlot?: (slotId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {
     if (el) el.scrollTop = blockTop("08:00");
 }
 
-type EntryFormState = {mode : "create"} | {mode: "edit"; entry:CalendarEntryData} | null;
+type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
 
-export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested= false, onCreateEntryDone }: WeekCalendarProps) {
+function withBlock(w: WeekContainer, blockId: string, patch: Partial<ProjectBlockData>): WeekContainer {
+    return { ...w, blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...patch } : b)) };
+}
+
+export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTURE_PROJECTS, createEntryRequested = false, onCreateEntryDone, onMoveBlock, onMoveSlot, onPinBlock, onResizeBlock }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
     const [entryForm, setEntryForm] = useState<EntryFormState>(null);
@@ -90,30 +99,16 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     const sensors = useSensors(
         useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
         useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
-        useSensor(KeyboardSensor, {keyboardCodes: {start: ["Space"], cancel: ["Escape"], end:["Space", "Enter"]},}),
+        useSensor(KeyboardSensor, { keyboardCodes: { start: ["Space"], cancel: ["Escape"], end: ["Space", "Enter"] }, }),
     )
 
     const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
 
-    function closeEntryForm(){
+    function closeEntryForm() {
         setEntryForm(null);
         onCreateEntryDone?.();
     }
 
-
-    function handleResize(blockId: string, to: Interval) {
-        setWeek((w) => ({
-            ...w,
-            blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...to, userSized: true } : b)),
-        }));
-    }
-
-    function handleMoveBlock(blockId: string, to: Interval) {
-        setWeek((w) => ({
-            ...w,
-            blocks: w.blocks.map((b) => (b.id === blockId ? { ...b, ...to } : b)),
-        }));
-    }
 
     function handleSetStatus(taskId: string, status: TaskStatus) {
         setWeek((w) => ({
@@ -145,9 +140,33 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
     }
 
 
-    function applyChange(c: AwaitingConfirmation) {
-        if (c.kind === "move") handleMoveBlock(c.blockId, c.to);
-        else handleResize(c.blockId, c.to);
+    function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save?: Promise<boolean>) {
+        const previous = week;
+        setWeek(patch(previous));
+        save?.then((ok) => {
+            if (!ok) setWeek(previous);
+        });
+    }
+
+    function applyChange(c: AwaitingConfirmation, confirmedOverride = false) {
+        if (c.kind === "move") {
+            applyOptimistic(
+                (w) => withBlock(w, c.blockId, c.to),
+                onMoveBlock?.(c.blockId, c.to, confirmedOverride),
+            );
+        } else {
+            applyOptimistic(
+                (w) => withBlock(w, c.blockId, { ...c.to, userSized: true }),
+                onResizeBlock?.(c.blockId, c.to, confirmedOverride),
+            );
+        }
+    }
+
+    function handleTogglePin(blockId: string, pinned: boolean) {
+        applyOptimistic(
+            (w) => withBlock(w, blockId, { mobility: pinned ? "pinned" : "fluid" }),
+            onPinBlock?.(blockId, pinned),
+        );
     }
 
     function requestChange(c: AwaitingConfirmation) {
@@ -221,46 +240,46 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
             >
                 {showWeekend ? "Hide weekend" : "Show weekend"}
             </button>
-          
 
-                <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
-                    <div style={{ minWidth: 64 + days.length * 112 }}>
 
-                        {/*Header row*/}
-                        <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
-                            <div className="w-16 flex-none sticky left-0 bg-white" />
+            <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200 max-h-[70vh]">
+                <div style={{ minWidth: 64 + days.length * 112 }}>
+
+                    {/*Header row*/}
+                    <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200" >
+                        <div className="w-16 flex-none sticky left-0 bg-white" />
+                        {days.map((d) => (
+                            <Dayheader
+                                key={d.date}
+                                dayOfWeek={d.name}
+                                date={d.date.slice(8, 10)}
+                                isToday={d.isToday}
+                                isHoliday={d.isHoliday}
+                                holidayName={d.holidayName}
+                                totalHours={d.totalHours}
+                            />
+                        ))}
+                    </div>
+                    <DndContext
+                        onDragMove={handleDragMove}
+                        onDragEnd={handleDragEnd}
+                        onDragCancel={() => setGhost(null)}
+                        sensors={sensors}
+                    >
+
+                        <div className="flex">
+                            <TimeAxis />
                             {days.map((d) => (
-                                <Dayheader
-                                    key={d.date}
-                                    dayOfWeek={d.name}
-                                    date={d.date.slice(8, 10)}
-                                    isToday={d.isToday}
-                                    isHoliday={d.isHoliday}
-                                    holidayName={d.holidayName}
-                                    totalHours={d.totalHours}
-                                />
-                            ))}
-                        </div>
-                        <DndContext
-                            onDragMove={handleDragMove}
-                            onDragEnd={handleDragEnd}
-                            onDragCancel={() => setGhost(null)}
-                            sensors={sensors}
-                        >
-
-                            <div className="flex">
-                                <TimeAxis />
-                                {days.map((d) => (
-                                    <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
-                                        {week.blocks
-                                            .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
-                                            .map((b) => {
-                                                const project = projects.find((item) => item.id === b.projectId) ?? {
-                                                    id: b.projectId,
-                                                    name: b.projectId,
-                                                    clientName: "",
-                                                };
-                                                return (
+                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
+                                    {week.blocks
+                                        .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
+                                        .map((b) => {
+                                            const project = projects.find((item) => item.id === b.projectId) ?? {
+                                                id: b.projectId,
+                                                name: b.projectId,
+                                                clientName: "",
+                                            };
+                                            return (
                                                 <ProjectBlock
                                                     key={b.id}
                                                     block={b}
@@ -271,42 +290,43 @@ export default function WeekCalendar({ weekData = holidayWeek, projects = FIXTUR
                                                     onClick={() => setSelectedBlockId(b.id)}
                                                     onResize={(blockId, to) => requestChange({ kind: "resize", blockId, to })}
                                                     onSetStatus={handleSetStatus}
+                                                    onTogglePin={(pinned) => handleTogglePin(b.id, pinned)}
                                                 />
                                             );
                                         })}
-                                       
-                                        {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
-                                            .map((e) => (
-                                                <CalendarEntry
-                                                    key={e.id}
-                                                    entry={e}
-                                                    timezone={week.timezone}
-                                                    onClick={() => setEntryForm({ mode: "edit", entry: e })}
-                                                />
+
+                                    {week.entries.filter((e) => instantToLocalDate(e.start, week.timezone) === d.date)
+                                        .map((e) => (
+                                            <CalendarEntry
+                                                key={e.id}
+                                                entry={e}
+                                                timezone={week.timezone}
+                                                onClick={() => setEntryForm({ mode: "edit", entry: e })}
+                                            />
 
 
-                                            ))}
-                                        {ghost?.date === d.date && (
-                                            <DropGhost startMin={ghost.startMin} durationMin={ghost.durationMin} colour={ghost.colour} />
-                                        )}
+                                        ))}
+                                    {ghost?.date === d.date && (
+                                        <DropGhost startMin={ghost.startMin} durationMin={ghost.durationMin} colour={ghost.colour} />
+                                    )}
 
-                                        <NowIndicator date={d.date} timezone={week.timezone} />
+                                    <NowIndicator date={d.date} timezone={week.timezone} />
 
 
-                                    </DayColumn>
+                                </DayColumn>
 
-                                ))}
-                            </div>
-                        </DndContext>
-                    </div>
-
+                            ))}
+                        </div>
+                    </DndContext>
                 </div>
+
+            </div>
 
 
             {awaiting && (
                 <OutOfHoursConfirmDialog
                     isWeekend={isWeekendInstant(awaiting.to.start, week.timezone)}
-                    onConfirm={() => { applyChange(awaiting); setAwaiting(null); }}
+                    onConfirm={() => { applyChange(awaiting, true); setAwaiting(null); }}
                     onCancel={() => setAwaiting(null)}
                 />
             )}

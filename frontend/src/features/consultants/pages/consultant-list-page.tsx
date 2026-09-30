@@ -80,7 +80,7 @@ function ConsultantsPage() {
       }
     };
 
-    fetchData();
+    void fetchData();
   }, []);
 
   const handleSearchChange = (query: string) => {

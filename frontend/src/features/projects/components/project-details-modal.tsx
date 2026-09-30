@@ -272,7 +272,7 @@ export default function ProjectDetailsModal({
       }
     };
 
-    fetchProjectDetails();
+    void fetchProjectDetails();
   }, [open, project, isConsultant]);
 
   useEffect(() => {
@@ -302,7 +302,7 @@ export default function ProjectDetailsModal({
       }
     }
 
-    fetchAssignedConsultants();
+    void fetchAssignedConsultants();
 
   }, [fullProject, targetConsultantId]);
 

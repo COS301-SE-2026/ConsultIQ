@@ -279,6 +279,7 @@ describe('WeekService', () => {
             service['applyChange'](mockWeek, { type: 'toggle_subtask', taskId: 'task-1', subtaskId: 'sub-1', origin: 'user', window: mockWindow });
             expect((mockWeek.tasks[0] as any).subtasks[0].done).toBe(true);
             expect(mockWeek.tasks[0].status).toBe('Done');
+            expect((mockWeek.tasks[0] as any).subtasks.every((subtask: any) => subtask.done)).toBe(true);
         });
 
         it('handles split_task (found and not found)', () => {
@@ -290,6 +291,10 @@ describe('WeekService', () => {
             ] as any;
             service['applyChange'](mockWeek, { type: 'split_task', taskId: 'task-1', atMinutes: 60, origin: 'user', window: mockWindow });
             expect(mockWeek.tasks).toHaveLength(2);
+            expect(mockWeek.tasks[0].tMax).toBe(60);
+            expect(mockWeek.tasks[0].subtasks).toHaveLength(1);
+            expect(mockWeek.tasks[1].tMax).toBe(60);
+            expect(mockWeek.tasks[1].subtasks).toHaveLength(1);
         });
 
         it('handles accept_deadline_miss (found and not found)', () => {

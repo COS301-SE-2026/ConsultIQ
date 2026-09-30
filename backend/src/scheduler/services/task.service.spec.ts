@@ -422,6 +422,19 @@ describe('TaskService', () => {
             );
         });
 
+        it('includes attached slot ids when deleting a task', async () => {
+            mockWeek.slots = [{ id: 'slot-1', taskIds: [mockTaskId] } as any];
+
+            await service.deleteTask(mockConsultantId, mockTaskId);
+
+            expect(weekService.commit).toHaveBeenCalledWith(
+                mockWeek,
+                expect.objectContaining({ type: 'delete_task', taskId: mockTaskId }),
+                expect.objectContaining({ bumpedEntityIds: [mockTaskId, 'slot-1'] }),
+                undefined,
+            );
+        });
+
         it('setStatus dispatches set_status commit', async () => {
             await service.setStatus(mockConsultantId, mockTaskId, 'InProgress');
             expect(weekService.commit).toHaveBeenCalledWith(

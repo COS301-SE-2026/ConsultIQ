@@ -44,6 +44,12 @@ function ViewInfo({ label, description }: { readonly label: string; readonly des
 export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsingDefaultWeights, onSave, onRevertToDefaultWeights, onRunMatch, isMatching }: ScoringWeightTableProps) {
     const [factors, setFactors] = useState<ScoringFactor[]>(initialFactors ?? []);
     const [isSaving, setIsSaving] = useState(false);
+    const [prevInitialFactors, setPrevInitialFactors] = useState(initialFactors);
+
+    if (initialFactors !== prevInitialFactors) {
+        setPrevInitialFactors(initialFactors);
+        setFactors(initialFactors ?? []);
+    }
 
     const totalActiveWeight = factors.filter(factor => factor.isActive).reduce((sum, factor) => sum + factor.weight, 0);
     const isValidSum = totalActiveWeight === 100;

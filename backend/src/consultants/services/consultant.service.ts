@@ -454,19 +454,10 @@ export class ConsultantService {
     projectId: string,
     userRole: string,
   ): Promise<ProjectConsultantsResponseDto> {
-    const now = new Date();
-
     const placements = await this.encryptionPrisma.projectPlacement.findMany({
       where: {
-        projectId: projectId,
+        projectId,
         status: 'ACTIVE',
-
-        startDate: {
-          lte: now,
-        },
-
-        OR: [{ endDate: null }, { endDate: { gte: now } }],
-
         consultant: {
           user: {
             status: 'ACTIVE',
@@ -1017,7 +1008,6 @@ export class ConsultantService {
         endDate: placement.project.endDate,
         teamSize: placement.project.teamSize,
         allocation: placement.project.allocation,
-        budget: placement.project.budget,
         skills: placement.project.skills.map((ps) => ({
           skillName: ps.skill.name,
           competency: ps.competency,

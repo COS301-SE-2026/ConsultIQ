@@ -48,7 +48,7 @@ export default function ManagerSkillShortage() {
                                 </div>
                             )}
 
-                            {isLoading && !data ? (
+                            {isLoading && !data && (
                                 <div
                                     className="h-64 animate-pulse rounded-lg border border-gray-200 bg-white"
                                     aria-busy="true"
@@ -56,12 +56,13 @@ export default function ManagerSkillShortage() {
                                 >
                                     <span className="sr-only">Loading skill demand</span>
                                 </div>
-                            ) : data ? (
+                            )}
+                            
+                            { data && (
                                 <SkillShortageTable
-                                    teamSize={data?.teamSize ?? 0}
                                     skills={data?.skills ?? []}
                                 />
-                            ) : null}
+                            )}
 
                         </section>
                     </div>

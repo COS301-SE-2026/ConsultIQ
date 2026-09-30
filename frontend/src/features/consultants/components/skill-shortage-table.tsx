@@ -5,12 +5,11 @@ import { Fragment, useState } from "react";
 
 
 interface SkillShortageTableProps {
-    readonly teamSize: number;
     readonly skills: TeamSkillDemandItem[];
 }
 
 
-const projects = (n: number) => (n === 10 ? "project": "projects");
+const projects = (n: number) => (n === 1 ? "project": "projects");
 
 
 const panelIdFor = (skillName: string) =>

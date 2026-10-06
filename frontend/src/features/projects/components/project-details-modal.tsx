@@ -163,6 +163,7 @@ export default function ProjectDetailsModal({
     }
     setFullProject(projectToUpdate);
     onUpdate(projectToUpdate);
+    toast.success("Project updated successfully.");
     } catch (error) {
       toast.error("Failed to update project" + error);
     } finally {
@@ -217,6 +218,9 @@ export default function ProjectDetailsModal({
               years: s.years,
               mandatory: s.mandatory,
             })),
+
+            // detail endpoint doesn't return gapSeverity, keep the value already shown in the list
+            gapSeverity: project.gapSeverity,
           };
 
           setFullProject(mappedProject);
@@ -262,6 +266,9 @@ export default function ProjectDetailsModal({
             years: ps.years,
             mandatory: ps.mandatory,
           })),
+
+          // detail endpoint doesn't return gapSeverity, keep the value already shown in the list
+          gapSeverity: project.gapSeverity,
         };
         setFullProject(mappedProject);
 

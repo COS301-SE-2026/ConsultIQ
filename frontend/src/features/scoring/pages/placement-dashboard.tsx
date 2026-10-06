@@ -217,15 +217,15 @@ export default function PlacementDashboard() {
                     className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
                     style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                         Placement Dashboard
                     </h1>
                     <div className="text-left sm:text-right">
                         <p className="text-lg font-medium text-slate-500 lg:text-lg">{project?.projectName}</p>
-                        {matchRunStatus?.status === "IN_PROGRESS" && (
+                        {/* {matchRunStatus?.status === "IN_PROGRESS" && (
                             <p className="text-sm text-slate-400">Scoring in progress: {matchRunStatus.progress}%</p>
-                        )}
+                        )} */}
                     </div>
                    </div>
                 </header>

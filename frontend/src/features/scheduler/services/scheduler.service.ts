@@ -79,6 +79,10 @@ export function setSchedulerTaskStatus(taskId: string, dto: SetTaskStatusDto){
     return apiClient.patch<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/status`, dto);
 }
 
+export function toggleSchedulerSubtask(taskId: string, subtaskId: string, expectedVersion: number){
+    return apiClient.patch<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/subtasks/${subtaskId}`, { expectedVersion });
+}
+
 export function createSchedulerTask(weekStart: string, dto: CreateTaskDto){
     return apiClient.post<SchedulerCommitResult>(`/scheduler/weeks/${weekStart}/tasks`, dto);
 }

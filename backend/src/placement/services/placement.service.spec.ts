@@ -39,39 +39,47 @@ const mockNotificationService = {
   createAndSendNotification: jest.fn(),
 };
 
+type MockProject = {
+  id: string;
+  teamSize: number;
+  endDate?: Date;
+  budget?: number;
+};
+
+type MockConsultant = {
+  id: string;
+  capacity: number;
+  availability?: string;
+  costToCompany?: number;
+  userId?: string;
+};
+
+const DEFAULT_PROJECT: MockProject = {
+  id: 'project-1',
+  teamSize: 10,
+  endDate: new Date('2026-12-01'),
+  budget: 1_000_000,
+};
+
+const DEFAULT_CONSULTANT: MockConsultant = {
+  id: 'consultant-1',
+  capacity: 100,
+  costToCompany: 100,
+  userId: 'consultant-user-1',
+};
+
 interface PlacementMockOptions {
   isManager?: boolean;
-  project?: {
-    id: string;
-    teamSize: number;
-    endDate?: Date;
-    budget?: number;
-  } | null;
-  consultant?: {
-    id: string;
-    capacity: number;
-    availability?: string;
-    costToCompany?: number;
-    userId?: string;
-  } | null;
+  project?: MockProject | null;
+  consultant?: MockConsultant | null;
   existingPlacement?: object | null;
   activePlacementCount?: number;
 }
 
 function setupPlacementMocks({
   isManager = true,
-  project = {
-    id: 'project-1',
-    teamSize: 10,
-    endDate: new Date('2026-12-01'),
-    budget: 1_000_000,
-  },
-  consultant = {
-    id: 'consultant-1',
-    capacity: 100,
-    costToCompany: 100,
-    userId: 'consultant-user-1',
-  },
+  project = DEFAULT_PROJECT,
+  consultant = DEFAULT_CONSULTANT,
   existingPlacement = null,
   activePlacementCount = 0,
 }: PlacementMockOptions = {}) {
@@ -131,6 +139,56 @@ describe('PlacementService', () => {
       expect(mockPrismaService.project.findUnique).not.toHaveBeenCalled();
     });
 
+    it('should throw BadRequestException if neither the placement DTO nor the project has an end date', async () => {
+
+      setupPlacementMocks({
+        project: {
+          id: 'project-1',
+          teamSize: 10,
+          budget: 1_000_000,
+
+        } as any,
+      });
+
+      const dtoWithoutEndDate = {
+        consultantId: 'consultant-1',
+        startDate: '2026-06-01',
+        allocation: 50,
+
+      };
+
+      await expect(
+        service.createPlacement('project-1', dtoWithoutEndDate, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.createPlacement('project-1', dtoWithoutEndDate, 'user-123'),
+      ).rejects.toThrow('A project or placement end date is required to calculate budget feasibility.');
+
+      expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if the consultant is missing a costToCompany value', async () => {
+      setupPlacementMocks({
+        consultant: {
+          id: 'consultant-1',
+          capacity: 100,
+          userId: 'consultant-user-1',
+          costToCompany: null,
+        } as any,
+      });
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(BadRequestException);
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow('Consultant Cost To Company is required for budget calculation.');
+
+      expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
+    });
+
     it('should throw NotFoundException if the project does not exist', async () => {
       mockPrismaService.projectManager.findUnique.mockResolvedValue({
         userId: 'user-123',
@@ -169,25 +227,12 @@ describe('PlacementService', () => {
     });
 
     it('should throw ConflictException if the consultant is already placed on the project', async () => {
-      mockPrismaService.projectManager.findUnique.mockResolvedValue({
-        userId: 'user-123',
-        projectId: 'project-1',
-      });
-
-      mockPrismaService.project.findUnique.mockResolvedValue({
-        id: 'project-1',
-        teamSize: 10,
-      });
-
-      mockPrismaService.consultant.findUnique.mockResolvedValue({
-        id: 'consultant-1',
-        costToCompany: 100,
-      });
-
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
-        id: 'placement-1',
-        projectId: 'project-1',
-        consultantId: 'consultant-1',
+      setupPlacementMocks({
+        existingPlacement: {
+          id: 'placement-1',
+          projectId: 'project-1',
+          consultantId: 'consultant-1',
+        },
       });
 
       await expect(
@@ -198,31 +243,16 @@ describe('PlacementService', () => {
     });
 
     it('should ignore terminated placement history when checking for duplicates', async () => {
-      mockPrismaService.projectManager.findUnique.mockResolvedValue({
-        userId: 'user-123',
-        projectId: 'project-1',
+      setupPlacementMocks({
+        consultant: { ...DEFAULT_CONSULTANT, availability: 'AVAILABLE' },
       });
-      mockPrismaService.project.findUnique.mockResolvedValue({
-        id: 'project-1',
-        teamSize: 10,
-        endDate: new Date('2026-12-01'),
-        budget: 1_000_000,
-      });
-      mockPrismaService.consultant.findUnique.mockResolvedValue({
-        id: 'consultant-1',
-        capacity: 100,
-        availability: 'AVAILABLE',
-        costToCompany: 100,
-      });
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
+
       mockPrismaService.consultant.update.mockResolvedValue({
         id: 'consultant-1',
         capacity: 50,
         availability: 'AVAILABLE',
       });
-      mockPrismaService.projectPlacement.create.mockResolvedValue({
-        id: 'placement-2',
-      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-2' });
 
       await service.createPlacement('project-1', dto, 'user-123');
 
@@ -235,6 +265,7 @@ describe('PlacementService', () => {
       });
       expect(mockPrismaService.projectPlacement.create).toHaveBeenCalled();
     });
+
 
     it('should throw BadRequestException if the end date is before the start date', async () => {
       const invalidDto = {
@@ -429,39 +460,18 @@ describe('PlacementService', () => {
     });
 
     it('should allow a placement when the requested allocation exactly matches remaining capacity', async () => {
-      mockPrismaService.projectManager.findUnique.mockResolvedValue({
-        userId: 'user-123',
-        projectId: 'project-1',
+      setupPlacementMocks({
+        consultant: { ...DEFAULT_CONSULTANT, capacity: 50 },
       });
 
-      mockPrismaService.project.findUnique.mockResolvedValue({
-        id: 'project-1',
-        teamSize: 10,
-        endDate: new Date('2026-12-01'),
-        budget: 1_000_000,
-      });
-
-      mockPrismaService.consultant.findUnique.mockResolvedValue({
-        id: 'consultant-1',
-        capacity: 50,
-        costToCompany: 100,
-      });
-
-      mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
       mockPrismaService.consultant.update.mockResolvedValue({
         id: 'consultant-1',
         capacity: 0,
-        availability: 'UNAVAILABLE'
-      })
-      mockPrismaService.projectPlacement.create.mockResolvedValue({
-        id: 'placement-2',
+        availability: 'UNAVAILABLE',
       });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-2' });
 
-      const result = await service.createPlacement(
-        'project-1',
-        dto,
-        'user-123',
-      );
+      const result = await service.createPlacement('project-1', dto, 'user-123');
 
       expect(result).toEqual({
         message: 'Placement created successfully.',

@@ -10,7 +10,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { PlacementStatus, AuditAction } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { NotificationService } from '../../notification/service/notification.service';
-import { availableMemory } from 'process';
 
 const mockPrismaService = {
   projectManager: {
@@ -42,16 +41,37 @@ const mockNotificationService = {
 
 interface PlacementMockOptions {
   isManager?: boolean;
-  project?: { id: string; teamSize: number } | null;
-  consultant?: { id: string; capacity: number; availability?: string } | null;
+  project?: {
+    id: string;
+    teamSize: number;
+    endDate?: Date;
+    budget?: number;
+  } | null;
+  consultant?: {
+    id: string;
+    capacity: number;
+    availability?: string;
+    costToCompany?: number;
+    userId?: string;
+  } | null;
   existingPlacement?: object | null;
   activePlacementCount?: number;
 }
 
 function setupPlacementMocks({
   isManager = true,
-  project = { id: 'project-1', teamSize: 10 },
-  consultant = { id: 'consultant-1', capacity: 100 },
+  project = {
+    id: 'project-1',
+    teamSize: 10,
+    endDate: new Date('2026-12-01'),
+    budget: 1_000_000,
+  },
+  consultant = {
+    id: 'consultant-1',
+    capacity: 100,
+    costToCompany: 100,
+    userId: 'consultant-user-1',
+  },
   existingPlacement = null,
   activePlacementCount = 0,
 }: PlacementMockOptions = {}) {
@@ -90,6 +110,7 @@ describe('PlacementService', () => {
 
     jest.clearAllMocks();
     mockPrismaService.projectPlacement.count.mockResolvedValue(0);
+    mockPrismaService.projectPlacement.findMany.mockResolvedValue([]);
   });
 
   describe('createPlacement', () => {
@@ -134,6 +155,8 @@ describe('PlacementService', () => {
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
         teamSize: 10,
+        endDate: new Date('2026-12-01'),
+        budget: 1_000_000,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue(null);
@@ -158,6 +181,7 @@ describe('PlacementService', () => {
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
+        costToCompany: 100,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue({
@@ -181,11 +205,14 @@ describe('PlacementService', () => {
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
         teamSize: 10,
+        endDate: new Date('2026-12-01'),
+        budget: 1_000_000,
       });
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 100,
         availability: 'AVAILABLE',
+        costToCompany: 100,
       });
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
       mockPrismaService.consultant.update.mockResolvedValue({
@@ -306,6 +333,99 @@ describe('PlacementService', () => {
         message: 'Placement created successfully.',
         placementId: 'placement-1',
       });
+
+      expect(mockPrismaService.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        { isolationLevel: 'Serializable' },
+      );
+    });
+
+    it('should reject a placement that exceeds the project budget', async () => {
+      setupPlacementMocks({
+        project: {
+          id: 'project-1',
+          teamSize: 10,
+          endDate: new Date('2026-12-01'),
+          budget: 9_000,
+        },
+        consultant: {
+          id: 'consultant-1',
+          capacity: 100,
+          costToCompany: 100,
+          userId: 'consultant-user-1',
+        },
+      });
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
+      expect(mockPrismaService.consultant.update).not.toHaveBeenCalled();
+    });
+
+    it('should allow a placement when projected cost exactly equals the budget', async () => {
+      setupPlacementMocks({
+        project: {
+          id: 'project-1',
+          teamSize: 10,
+          endDate: new Date('2026-12-01'),
+          budget: 9_150,
+        },
+        consultant: {
+          id: 'consultant-1',
+          capacity: 100,
+          costToCompany: 100,
+          userId: 'consultant-user-1',
+        },
+      });
+      mockPrismaService.consultant.update.mockResolvedValue({
+        id: 'consultant-1',
+        capacity: 50,
+        availability: 'AVAILABLE',
+      });
+      mockPrismaService.projectPlacement.create.mockResolvedValue({
+        id: 'placement-budget-boundary',
+      });
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).resolves.toEqual({
+        message: 'Placement created successfully.',
+        placementId: 'placement-budget-boundary',
+      });
+    });
+
+    it('should include existing active placement spend in the budget check', async () => {
+      setupPlacementMocks({
+        project: {
+          id: 'project-1',
+          teamSize: 10,
+          endDate: new Date('2026-12-01'),
+          budget: 10_000,
+        },
+        consultant: {
+          id: 'consultant-1',
+          capacity: 100,
+          costToCompany: 100,
+          userId: 'consultant-user-1',
+        },
+      });
+      mockPrismaService.projectPlacement.findMany.mockResolvedValue([
+        {
+          startDate: new Date('2026-01-01'),
+          endDate: new Date('2026-02-01'),
+          allocation: 100,
+          consultant: { costToCompany: 100 },
+          project: { endDate: new Date('2026-12-01') },
+        },
+      ]);
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
     });
 
     it('should allow a placement when the requested allocation exactly matches remaining capacity', async () => {
@@ -317,11 +437,14 @@ describe('PlacementService', () => {
       mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
         teamSize: 10,
+        endDate: new Date('2026-12-01'),
+        budget: 1_000_000,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 50,
+        costToCompany: 100,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
@@ -359,15 +482,18 @@ describe('PlacementService', () => {
         projectId: 'project-1',
       });
 
-      mockPrismaService.project.findUnique.mockResolvedValue({ 
+      mockPrismaService.project.findUnique.mockResolvedValue({
         id: 'project-1',
         teamSize: 10,
+        endDate: new Date('2026-12-31'),
+        budget: 1_000_000,
       });
 
       mockPrismaService.consultant.findUnique.mockResolvedValue({
         id: 'consultant-1',
         capacity: 100,
         availability: 'AVAILABLE',
+        costToCompany: 100,
       });
 
       mockPrismaService.projectPlacement.findFirst.mockResolvedValue(null);
@@ -403,8 +529,8 @@ describe('PlacementService', () => {
         id: 'consultant-1', capacity: 50, availability: 'AVAILABLE'
       });
 
-      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-1'});
-  
+      mockPrismaService.projectPlacement.create.mockResolvedValue({ id: 'placement-1' });
+
 
       await service.createPlacement('project-1', dto, 'user-123');
 

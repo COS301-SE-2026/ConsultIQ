@@ -3,8 +3,8 @@ import { toast } from "sonner";
 import { Button } from "../../../../components/ui/button";
 import { Card } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
-import { Trash2, User } from "lucide-react";
-import { ImageDropzone } from "../image-dropzone";
+// import { Trash2, User } from "lucide-react";
+// import { ImageDropzone } from "../image-dropzone";
 import { useConsultantProfile } from "../../pages/consultant-profile.context";
 
 export type CostRateType = "DAILY" | "MONTHLY";
@@ -26,8 +26,8 @@ export default function ProfileInfoForm() {
   const [idError, setIdError] = useState("");
   const [nationalityError, setNationalityError] = useState("");
   const [costError, setCostError] = useState("");
-  const [uploadedPhoto, setUploadedPhoto] = useState<File | undefined>();
-  const [previewProfilePhoto, setPreviewProfilePhoto] = useState<string | null>(null);
+  const [uploadedPhoto, ] = useState<File | undefined>();
+  //const [previewProfilePhoto, setPreviewProfilePhoto] = useState<string | null>(null);
 
   function validateSAID(id: string): boolean {
     if (!/^\d{13}$/.test(id)) return false;
@@ -99,16 +99,16 @@ export default function ProfileInfoForm() {
   };
 
 
-  const handleRemovePhoto = () => {
-    setUploadedPhoto(undefined);
+  // const handleRemovePhoto = () => {
+  //   setUploadedPhoto(undefined);
 
-    if (previewProfilePhoto) {
-      URL.revokeObjectURL(previewProfilePhoto);
-    }
+  //   if (previewProfilePhoto) {
+  //     URL.revokeObjectURL(previewProfilePhoto);
+  //   }
 
-    setPreviewProfilePhoto(null);
+  //   setPreviewProfilePhoto(null);
 
-  };
+  // };
 
 const dailyCostToCompany = costRateType === "MONTHLY" ? (enteredCost / AVERAGE_DAYS_PER_MONTH)  : enteredCost;
 const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && enteredCost >=0;
@@ -119,15 +119,15 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
         <h2 className="text-3xl font-bold mb-8" style={{ color: "var(--color-primary)" }}>
           Personal Information
         </h2>
-        <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
+        {/* <p className="text-lg font-semibold mb-3" style={{ color: "var(--color-text-primary)" }}>
           Upload consultant profile photo
-        </p>
+        </p> */}
 
         {/* Profile Photo Upload */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 mb-6">
-          <div className="relative shrink-0 w-[160px] h-[160px] ">
-            <div className="w-full h-full rounded-full bg-[var(--color-primary)] flex items-center overflow-hidden justify-center">
-              {previewProfilePhoto ? (
+        {/* <div className="flex flex-col sm:flex-row items-center sm:items-end gap-8 mb-6"> */}
+          {/* <div className="relative shrink-0 w-[160px] h-[160px] "> */}
+            {/* <div className="w-full h-full rounded-full bg-[var(--color-primary)] flex items-center overflow-hidden justify-center"> */}
+              {/* {previewProfilePhoto ? (
                 <>
                   <img
                     src={previewProfilePhoto}
@@ -138,11 +138,11 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
 
               ) : (
                 <User className="w-1/2 h-1/2 text-white" />
-              )}
+              )} */}
 
-            </div>
+            {/* </div> */}
 
-            {previewProfilePhoto && (
+            {/* {previewProfilePhoto && (
               <button
                 type="button"
                 onClick={handleRemovePhoto}
@@ -151,11 +151,11 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
               >
                 <Trash2 className="w-6 h-6 text-gray-700" />
               </button>
-            )}
-          </div>
+            )} */}
+          {/* </div> */}
 
           {/* Upload Area */}
-          <div className="flex-1 w-full">
+          {/* <div className="flex-1 w-full">
             <ImageDropzone onFileSelect={(file) => {
 
               setUploadedPhoto(file);
@@ -172,8 +172,8 @@ const hasValidCost = costToCompany !== "" && Number.isFinite(enteredCost) && ent
 
             }}
             />
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
           <div className="flex flex-col gap-3">

@@ -77,13 +77,13 @@ const{count: unreadCount} = useUnreadNotificationCount();
         </header>
           <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
             {error && (
-              <div className="mb-4 w-full rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 sm:p-4">
+              <div className="mb-4 w-full max-w-5xl rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 sm:p-4">
                 Error: {error}
               </div>
             )}
 
             {successMessage && (
-              <div className="mb-4 w-full rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-semibold text-green-700 transition-opacity sm:p-41">
+              <div className="mb-4 w-full max-w-5xl rounded-lg border border-green-200 bg-green-50 p-3 text-sm font-semibold text-green-700 transition-opacity sm:p-4">
                 {successMessage}
               </div>
             )}

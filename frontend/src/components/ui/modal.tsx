@@ -53,7 +53,7 @@ export default function Modal({
 	return createPortal(
 		<dialog
 			ref={dialogRef}
-			className="rounded-xl bg-white p-8 shadow-xl backdrop:bg-black/50"
+			className="fixed inset-0 m-auto rounded-xl bg-white p-8 shadow-xl backdrop:bg-black/50"
 			aria-labelledby={labelledBy}
 			aria-describedby={describedBy}
 		>

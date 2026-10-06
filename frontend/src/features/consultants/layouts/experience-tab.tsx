@@ -39,7 +39,6 @@ export default function ExperienceTab({ onComplete }: Props) {
   return (
     <div className="space-y-8">
       <ExperienceForm onAdd={handleAddExperience} />
-      <div className="h-6" />
       <ExperienceList
         experiences={experiences}
         onRemove={handleRemoveExperience}

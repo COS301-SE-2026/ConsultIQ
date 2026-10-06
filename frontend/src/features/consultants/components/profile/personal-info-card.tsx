@@ -14,8 +14,7 @@ interface PersonalInfoCardProps {
   readonly nationality?: string;
   readonly costToCompany?: number;
   readonly canEdit?:boolean;
-  readonly canEditCost?: boolean;
-  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string; costToCompany?: number }) => Promise<void> | void;
+  readonly onSave?: (data: { fullName: string; email: string; phone: string; idNumber?: string; nationality?: string }) => Promise<void> | void;
 }
 
 
@@ -28,7 +27,6 @@ export default function PersonalInfoCard({
   nationality,
   costToCompany = 0,
   canEdit,
-  canEditCost = false,
   onSave,
 }: PersonalInfoCardProps) {
 
@@ -38,8 +36,6 @@ export default function PersonalInfoCard({
    const [phoneNumber, setPhoneNumber] = useState(phone);
    const [localIdNumber, setLocalIdNumber] = useState(idNumber);
    const [nationalityStatus, setNationalityStatus] = useState(nationality);
-   const [costToCompanyState, setCostToCompanyState] = useState(String(costToCompany));
-   const [costError, setCostError] = useState("");
 
    const [phoneError, setPhoneError] = useState("");
    const [idError, setIdError] = useState("");
@@ -55,8 +51,6 @@ export default function PersonalInfoCard({
     setPhoneNumber(phone);
     setLocalIdNumber(idNumber);
     setNationalityStatus(nationality);
-    setCostToCompanyState(String(costToCompany));
-    setCostError("");
   };
 
    const handleCancel = () => {
@@ -66,21 +60,11 @@ export default function PersonalInfoCard({
     setPhoneNumber(phone);
     setLocalIdNumber(idNumber);
     setNationalityStatus(nationality);
-    setCostToCompanyState(String(costToCompany));
-    setCostError("");
    }
 
    const handleSave = async () => {
 
      let isValid = true;
-
-     const parsedCost = Number(costToCompanyState);
-     if (canEditCost && (!costToCompanyState.trim() || !Number.isFinite(parsedCost) || parsedCost < 0)) {
-       setCostError("Cost to company must be a valid non-negative amount.");
-       isValid = false;
-     } else {
-       setCostError("");
-     }
 
      const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
 
@@ -139,7 +123,7 @@ export default function PersonalInfoCard({
     setIsSaving(true);
     try {
       const normalizedPhone = phoneNumber.replace(/^\+27/,"0").replace(/\D/g,"");
-      await onSave?.({ fullName: fullNameState, email: emailState, phone: normalizedPhone, idNumber: localIdNumber, nationality: nationalityStatus, ...(canEditCost && { costToCompany: parsedCost }) });
+      await onSave?.({ fullName: fullNameState, email: emailState, phone: normalizedPhone, idNumber: localIdNumber, nationality: nationalityStatus });
       setIsEditing(false);
       toast.success("Personal information has been updated successfully");
     } catch (err) {
@@ -205,22 +189,7 @@ export default function PersonalInfoCard({
               {nationalityError && <span className="text-red-500 text-xs mt-1 block">{nationalityError}</span>}
             </div>
 
-            {canEditCost && (
-              <div>
-                <label className="text-sm font-medium" htmlFor="form-cost-to-company">Cost to Company (R)</label>
-                <Input
-                  id="form-cost-to-company"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={costToCompanyState}
-                  onChange={(e) => { setCostToCompanyState(e.target.value); setCostError(""); }}
-                />
-                {costError && <span className="text-red-500 text-xs mt-1 block">{costError}</span>}
-              </div>
-            )}
-
-            {!canEditCost && (
+            
               <div>
                 <label className="text-sm font-medium" htmlFor="form-cost-to-company-readonly">
                   Cost to Company (R)
@@ -232,7 +201,6 @@ export default function PersonalInfoCard({
                   disabled
                 />
               </div>
-            )}
 
         </>
         ):(

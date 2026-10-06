@@ -7,12 +7,13 @@ interface DayColumnProps {
     readonly isHoliday: boolean;
     readonly children: ReactNode;
     readonly isWeekend?: boolean;
+    readonly isPast?: boolean;
 }
 
-export default function DayColumn({ date, isHoliday, children, isWeekend = false }: DayColumnProps) {
-    const { setNodeRef } = useDroppable({ id: date, disabled: isHoliday });
+export default function DayColumn({ date, isHoliday, children, isWeekend = false, isPast = false }: DayColumnProps) {
+    const { setNodeRef } = useDroppable({ id: date, disabled: isHoliday || isPast });
     return (
-        <div ref={setNodeRef} className={`relative flex-1 min-w-0 border-l border-slate-200 ${isWeekend ? "bg-slate-50" : ""}`}>
+        <div ref={setNodeRef} className={`relative flex-1 min-w-0 border-l border-slate-200 ${isWeekend || isPast ? "bg-slate-50" : ""}`}>
             {!isWeekend && (
                 <>
                     <div className="absolute inset-x-0 top-0 bg-slate-50 pointer-events-auto" style={{ height: blockTop("08:00") }} />

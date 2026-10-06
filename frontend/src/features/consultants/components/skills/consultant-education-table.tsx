@@ -50,37 +50,38 @@ export default function EducationTable({
           <colgroup>
             <col style={{ width: "25%" }} />
             <col style={{ width: "25%" }} />
-            <col style={{ width: "15%" }} />
             <col style={{ width: "25%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "25%" }} />
           </colgroup>
 
 
           <thead>
             <tr className="border-b text-sm font-semibold text-gray-700">
               <th
-                className="p-2"
+                className="px-4 py-2 text-left"
               >
                 Institution
               </th>
 
               <th
-                className="p-2"
+                className="px-4 py-2 text-left"
               >
                 Qualification
               </th>
 
               <th
-                className="p-2"
+                className="px-4 py-2 text-left"
               >
                 Year Obtained
               </th>
 
-              <th
+              <th className="px-4 py-2" aria-label="Actions" />
+
+              {/* <th
                 className="p-2"
               >
                 Certificate
-              </th>
+              </th> */}
             </tr>
           </thead>
 
@@ -93,27 +94,27 @@ export default function EducationTable({
                   className="border-b"
                 >
 
-                  <td className="p-4 truncate" title={item.institution}>
+                  <td className="px-4 py-4 truncate" title={item.institution}>
                     {item.institution}
                   </td>
 
-                  <td className="p-4 truncate" title={item.qualification}>
+                  <td className="px-4 py-4 truncate" title={item.qualification}>
                     {item.qualification}
                   </td>
 
-                  <td className="p-4 truncate">
+                  <td className="px-4 py-4 truncate">
                     {item.endYear}
                   </td>
 
-                  <td className="p-4 truncate">
+                  {/* <td className="p-4 truncate">
                     {item.fileName ? (
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, padding: "16px 8px" }} title={item.fileName}>{item.fileName}</span>
                     ) : (
                       <span className="text-gray-400 text-xs">No file</span>
                     )}
-                  </td>
+                  </td> */}
 
-                  <td className="p-4 text-center">
+                  <td className="px-4 py-4 text-center">
                     <Button
                       variant="default"
                       onClick={() => onRemove(item.id)}
@@ -130,7 +131,7 @@ export default function EducationTable({
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-500 border-t">
+                <td colSpan={4} className="py-4 text-center text-gray-500 border-t">
                   No education added yet.
                 </td>
               </tr>

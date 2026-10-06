@@ -9,6 +9,7 @@ import {
     type SchedulerWeekResponse,
     type WeekContainer,
     type SetTaskStatusDto,
+    type ToggleSubtaskDto,
     type SchedulerCommitResult,
     type Interval,
     type SplitTaskDto
@@ -29,7 +30,7 @@ import SchedulerHeader from "../components/scheduler-header/scheduler-header";
 import TaskBoard from "../components/task-board";
 import SplitTaskDialog from "../components/split-task-dialog";
 import {
-    getSchedulerWeek, setSchedulerTaskStatus, toCalendarWeek, createSchedulerTask,
+    getSchedulerWeek, setSchedulerTaskStatus, toggleSchedulerSubtask, toCalendarWeek, createSchedulerTask,
     updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks,moveBlock, resizeBlock, pinBlock, moveSlot 
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
@@ -42,6 +43,7 @@ interface SchedulerTaskTabProps {
     readonly projects: BacklogProjectOption[];
     readonly onEdit: (task: Task) => void;
     readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto,) => void | Promise<void>;
+    readonly onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
     readonly onSchedule: (taskId: string) => void | Promise<void>;
     readonly onDelete: (taskId: string) => void | Promise<void>;
     readonly onSplit: (task: Task) => void;
@@ -66,7 +68,7 @@ function getCurrentWeekStart(timeZone: string): string {
     return date.toISOString().slice(0, 10);
 }
 
-function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, onSetStatus, onSchedule, onDelete, onSplit }: SchedulerTaskTabProps) {
+function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, onSetStatus, onToggleSubtask, onSchedule, onDelete, onSplit }: SchedulerTaskTabProps) {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -90,7 +92,7 @@ function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, on
                 subtaskProgressByTaskId={progress}
                 onEditTask={onEdit}
                 onSetStatus={onSetStatus}
-                onToggleSubtask={() => { }}
+                onToggleSubtask={onToggleSubtask}
                 onSchedule={onSchedule}
                 onSendToBacklog={() => { }}
                 onDelete={onDelete}
@@ -354,6 +356,10 @@ export default function SchedulerPage() {
     const handleMoveSlot = (slotId: string, to: Interval, confirmedOverride: boolean) =>
         commitPlacement((v) => moveSlot({ slotId, to, confirmedOverride, expectedVersion: v }));
 
+    const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
+        await commitPlacement((v) => toggleSchedulerSubtask(taskId, subtaskId, v));
+    };
+
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
@@ -361,7 +367,8 @@ export default function SchedulerPage() {
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
                 <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
                     <SchedulerHeader
-                        week={week}
+                        weekStart={selectedWeekStart}
+                        week={serverWeek}
                         projects={projects.map(({ id, label, clientName, allocation }) => ({
                             id, name: label, clientName, allocation: allocation ?? 0
                         }))}
@@ -429,6 +436,7 @@ export default function SchedulerPage() {
                                 projects={projects}
                                 onEdit={openEditTask}
                                 onSetStatus={handleSetStatus}
+                                onToggleSubtask={handleToggleSubtask}
                                 onSchedule={handleScheduleTask}
                                 onDelete={handleDeleteTask}
                                 onSplit={setSplitTask}

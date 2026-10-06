@@ -74,7 +74,9 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                          <ComplexityBars level={task.complexity}/>
                     </span>
                     <span>{formatDuration(task.tMin)}–{formatDuration(task.tMax)}</span>
-                    <span>{subtaskProgress.completed}/{subtaskProgress.total}</span>
+                    {task.subtasks.length > 0 && (
+                        <span>{subtaskProgress.completed}/{subtaskProgress.total}</span>
+                    )}
                 </div>
 
                 {overdue && (

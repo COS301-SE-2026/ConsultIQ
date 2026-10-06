@@ -133,8 +133,15 @@ export default function WeekCalendar({
         }),
     );
 
+
     const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
 
+    // Earliest minute of the day a drop may start: now (rounded up to 15 min) today, midnight otherwise
+    function earliestStartMin(date: string): number {
+        if (date !== today) return DAY_START_HOUR * 60;
+        const nowMin = timeToMinutes(instantToLocalTime(new Date().toISOString(), week.timezone));
+        return Math.ceil(nowMin / 15) * 15;
+    }
     // ─── Calendar entries (local only until the calendar-entry service is connected) ───
 
     function closeEntryForm() {
@@ -250,15 +257,25 @@ export default function WeekCalendar({
         return others.some((e) => Date.parse(e.start) < end && start < Date.parse(e.end));
     }
 
+    // Where the dragged item would land, or null if it can't land there
+    function dropTarget(dragId: string, date: string, deltaY: number) {
+        const snapped = snappedStart(dragId, deltaY);
+        const startMin = Math.max(snapped.startMin, earliestStartMin(date));
+        if (startMin + snapped.durationMin > DAY_END_HOUR * 60) return null; // would run past midnight
+        return { ...snapped, startMin };
+    }
+
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
-        if (!over) {
+        const target = over ? dropTarget(String(active.id), String(over.id), delta.y) : null;
+        if (!over || !target) {
             if (ghost) setGhost(null);
             return;
         }
+
         const { kind, id } = parseDragId(String(active.id));
         const next: GhostState = {
             date: String(over.id),
-            ...snappedStart(String(active.id), delta.y),
+            ...target,
             slotId: kind === "slot" ? id : undefined,
         };
         if (ghost?.date === next.date && ghost.startMin === next.startMin) return;
@@ -267,12 +284,12 @@ export default function WeekCalendar({
 
     function handleDragEnd({ active, over, delta }: DragEndEvent) {
         setGhost(null);
-        if (!over) return;
+        const target = over ? dropTarget(String(active.id), String(over.id), delta.y) : null;
+        if (!over || !target) return;
 
         const { kind, id } = parseDragId(String(active.id));
-        const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
-        const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
-        const end = new Date(start.getTime() + durationMin * 60_000);
+        const start = fromZonedTime(`${over.id}T${minutesToTime(target.startMin)}:00`, week.timezone);
+        const end = new Date(start.getTime() + target.durationMin * 60_000);
 
         requestChange({
             kind: kind === "slot" ? "slot" : "move",
@@ -301,6 +318,7 @@ export default function WeekCalendar({
             date,
             isWeekend: i >= 5,
             isToday: date === today,
+            isPast: date < today,
             isHoliday: !!holiday,
             holidayName: holiday?.name,
             totalHours: minutes / 60,
@@ -344,7 +362,7 @@ export default function WeekCalendar({
                         <div className="flex">
                             <TimeAxis />
                             {days.map((d) => (
-                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
+                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend} isPast={d.isPast}>
                                     {/* Project blocks: the background for each project's time */}
                                     {week.blocks
                                         .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)

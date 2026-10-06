@@ -139,13 +139,15 @@ function ProjectLegend({ projects, contractedMinutes }: ProjectLegendprops) {
 
 
 export interface SchedulerHeaderProps {
-    readonly week: WeekContainer;
+    readonly weekStart: string;
+    readonly week: WeekContainer | null;
     readonly projects: SchedulerHeaderProject[];
     readonly onPrevWeek?: () => void;
     readonly onNextWeek?: () => void;
 }
 
 export default function SchedulerHeader({
+    weekStart,
     week,
     projects,
     onPrevWeek,
@@ -157,14 +159,23 @@ export default function SchedulerHeader({
         <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-4">
 
             <div className="justify-self-start">
-                <WeekNavigator weekStart={week.weekStart} onPrevWeek={onPrevWeek} onNextWeek={onNextWeek} />
+                <WeekNavigator weekStart={weekStart} onPrevWeek={onPrevWeek} onNextWeek={onNextWeek} />
             </div>
 
 
             <div className="flex flex-col items-center gap-2 min-w-0">
-                <HoursSummary metadata={week.metadata} />
-                <ProjectLegend projects={projects} contractedMinutes={week.metadata.contractedMinutes} />
-
+                {week ? (
+                    <>
+                        <HoursSummary metadata={week.metadata} />
+                        <ProjectLegend projects={projects} contractedMinutes={week.metadata.contractedMinutes} />
+                    </>
+                ) : (
+                    <div className="w-52 flex flex-col gap-1.5 animate-pulse" aria-live="polite">
+                        <span className="h-3 w-full rounded bg-slate-100" />
+                        <span className="h-2 w-full rounded-full bg-slate-100" />
+                        <span className="sr-only">Loading capacity…</span>
+                    </div>
+                )}
             </div>
         </div>
     );

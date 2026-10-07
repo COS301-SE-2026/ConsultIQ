@@ -512,6 +512,135 @@ describe('WeekService', () => {
         });
     });
 
+    describe('update_task rescheduling (applyUpdateTask)', () => {
+        let week: WeekContainer;
+
+        // task-1 owns one slot outright and shares a batch slot with task-2
+        beforeEach(() => {
+            week = {
+                id: 'W1',
+                blocks: [],
+                calendarEntries: [],
+                tasks: [
+                    {
+                        id: 'task-1', projectId: 'proj-1', tMax: 120, status: 'Ready',
+                        deadline: '2026-09-30T15:00:00Z', placement: 'placed', unplacedReason: 'DAY_SPAN_LIMIT',
+                    },
+                    { id: 'task-2', projectId: 'proj-1', tMax: 10, status: 'Ready', placement: 'placed' },
+                ],
+                slots: [
+                    { id: 'own', kind: 'task', taskIds: ['task-1'], locked: false },
+                    { id: 'shared', kind: 'batch', taskIds: ['task-1', 'task-2'], locked: false },
+                    { id: 'other', kind: 'task', taskIds: ['task-2'], locked: false },
+                ],
+            } as unknown as WeekContainer;
+        });
+
+        const update = (patch: Partial<Task>) =>
+            service['applyChange'](week, {
+                type: 'update_task', taskId: 'task-1', patch, origin: 'user', window: mockWindow,
+            } as Change);
+
+        const task1 = () => week.tasks.find((t) => t.id === 'task-1')!;
+        const slotIds = () => week.slots.map((s) => s.id);
+
+        const expectReleased = () => {
+            expect(slotIds()).toEqual(['shared', 'other']);
+            expect(week.slots.find((s) => s.id === 'shared')!.taskIds).toEqual(['task-2']);
+            expect(week.slots.find((s) => s.id === 'other')!.taskIds).toEqual(['task-2']);
+            expect(task1().placement).toBe('unplaced');
+            expect(task1().unplacedReason).toBeUndefined();
+        };
+
+        const expectKept = () => {
+            expect(slotIds()).toEqual(['own', 'shared', 'other']);
+            expect(week.slots.find((s) => s.id === 'shared')!.taskIds).toEqual(['task-1', 'task-2']);
+            expect(task1().placement).toBe('placed');
+            expect(task1().unplacedReason).toBe('DAY_SPAN_LIMIT');
+        };
+
+        it.each([
+            ['tMax changes', { tMax: 180 }],
+            ['projectId changes', { projectId: 'proj-2' }],
+            ['deadline moves', { deadline: '2026-10-01T15:00:00Z' }],
+            ['deadline is cleared', { deadline: undefined }],
+        ])('releases the task\'s slots when %s', (_label, patch) => {
+            update(patch as Partial<Task>);
+
+            expectReleased();
+            expect(task1()).toMatchObject(patch);
+        });
+
+        it('releases the slots when a deadline is added to a task without one', () => {
+            delete (task1() as any).deadline;
+
+            update({ deadline: '2026-10-01T15:00:00Z' } as Partial<Task>);
+
+            expectReleased();
+        });
+
+        it('keeps the slots when no scheduling field is in the patch', () => {
+            update({ title: 'Renamed', urgency: 3 } as Partial<Task>);
+
+            expectKept();
+            expect(task1().title).toBe('Renamed');
+        });
+
+        it('keeps the slots when a scheduling field is sent with its current value', () => {
+            update({ tMax: 120, projectId: 'proj-1' } as Partial<Task>);
+
+            expectKept();
+        });
+
+        it('compares deadlines as instants, not strings', () => {
+            // Same moment as 2026-09-30T15:00:00Z, written with an offset
+            update({ deadline: '2026-09-30T17:00:00+02:00' } as Partial<Task>);
+
+            expectKept();
+        });
+
+        it('treats a Date and an ISO string for the same instant as unchanged', () => {
+            (task1() as any).deadline = new Date('2026-09-30T15:00:00Z');
+
+            update({ deadline: '2026-09-30T15:00:00.000Z' } as Partial<Task>);
+
+            expectKept();
+        });
+
+        it.each(['InProgress', 'Done'])('keeps the slots of a %s task', (status) => {
+            (task1() as any).status = status;
+
+            update({ tMax: 180 } as Partial<Task>);
+
+            expectKept();
+        });
+
+        it('uses the status after the patch is applied', () => {
+            (task1() as any).status = 'InProgress';
+
+            update({ status: 'Ready', tMax: 180 } as Partial<Task>);
+
+            expectReleased();
+        });
+
+        it('keeps the slots when the task has a locked slot', () => {
+            (week.slots[0] as any).locked = true;
+
+            update({ tMax: 180 } as Partial<Task>);
+
+            expectKept();
+        });
+
+        it('ignores locked slots that belong to other tasks', () => {
+            (week.slots[2] as any).locked = true;
+
+            update({ tMax: 180 } as Partial<Task>);
+
+            expect(slotIds()).toEqual(['shared', 'other']);
+            expect(task1().placement).toBe('unplaced');
+        });
+    });
+
     describe('Endpoints (replan & dryRun)', () => {
         const mockDbWeek = { id: 'W1', consultantId: 'C1', weekStart: mockDate, timezone: 'UTC', version: 1, createdAt: mockDate, updatedAt: mockDate, tasks: [], calendarEntries: [], slots: [], blocks: [] };
 

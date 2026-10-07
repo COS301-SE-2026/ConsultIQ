@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
 import { TimeService, LocalDate, Instant } from './time.service';
 import { WeekContainer, Task, NewTask } from '../dto/scheduler.dto';
+import { SCHEDULER_RULES } from './scheduler-rules.constant';
 
 describe('TaskService', () => {
     let service: TaskService;
@@ -79,6 +80,7 @@ describe('TaskService', () => {
         const timeServiceMock = {
             localDate: jest.fn().mockReturnValue('2026-09-21'),
             localDateToInstant: jest.fn((date) => `${date}T00:00:00Z` as Instant),
+            atLocal: jest.fn(),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -410,6 +412,64 @@ describe('TaskService', () => {
                 expect.anything(),
                 undefined
             );
+        });
+
+        describe('deadline normalization', () => {
+            const localEndOfDay = '2026-09-25T17:00:00+02:00';
+
+            beforeEach(() => {
+                (timeService.atLocal as jest.Mock).mockReturnValue(localEndOfDay);
+            });
+
+            const sentPatch = () => (weekService.commit as jest.Mock).mock.calls[0][1].patch;
+
+            it('turns a date-only deadline into the end of core hours in the week\'s timezone', async () => {
+                await service.update(mockConsultantId, mockTaskId, { deadline: '2026-09-25' } as Partial<Task>);
+
+                expect(timeService.atLocal).toHaveBeenCalledWith(
+                    '2026-09-25', SCHEDULER_RULES.CORE_HOURS_END, 'Africa/Johannesburg',
+                );
+                expect(sentPatch().deadline).toBe(localEndOfDay);
+            });
+
+            it('passes a full ISO deadline through unchanged', async () => {
+                await service.update(mockConsultantId, mockTaskId, { deadline: '2026-09-25T10:30:00Z' } as Partial<Task>);
+
+                expect(timeService.atLocal).not.toHaveBeenCalled();
+                expect(sentPatch().deadline).toBe('2026-09-25T10:30:00Z');
+            });
+
+            it('keeps a cleared deadline in the patch so it is removed', async () => {
+                await service.update(mockConsultantId, mockTaskId, { deadline: undefined } as Partial<Task>);
+
+                expect(timeService.atLocal).not.toHaveBeenCalled();
+                expect(sentPatch()).toHaveProperty('deadline', undefined);
+            });
+
+            it('keeps the other fields of the patch', async () => {
+                await service.update(mockConsultantId, mockTaskId, { deadline: '2026-09-25', title: 'Due Friday' } as Partial<Task>);
+
+                expect(sentPatch()).toEqual({ deadline: localEndOfDay, title: 'Due Friday' });
+            });
+
+            it('sends the patch untouched when it has no deadline', async () => {
+                const dto = { title: 'No deadline change' } as Partial<Task>;
+
+                await service.update(mockConsultantId, mockTaskId, dto);
+
+                expect(timeService.atLocal).not.toHaveBeenCalled();
+                expect(sentPatch()).toBe(dto);
+            });
+
+            it('normalizes a date-only deadline on create too', async () => {
+                await service.create(mockConsultantId, mockWeekStart, {
+                    projectId: 'proj-1', title: 'New', tMin: 60, tMax: 60, urgency: 1, complexity: 1,
+                    deadline: '2026-09-25',
+                } as NewTask);
+
+                const created = (weekService.commit as jest.Mock).mock.calls[0][1].task;
+                expect(created.deadline).toBe(localEndOfDay);
+            });
         });
 
         it('deleteTask dispatches delete_task commit', async () => {

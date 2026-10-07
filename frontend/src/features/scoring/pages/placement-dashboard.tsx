@@ -5,6 +5,8 @@ import { useState, useEffect, useMemo } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 import type { MatchRunStatus } from "../services/placement.service";
+import { scoringApiService } from "../services/scoring.service";
+import type { ScoringFactor } from "../components/scoring-weights-table";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
 import { useLocation } from "react-router-dom";
 import { placementService } from "../services/placement.service";
@@ -34,7 +36,8 @@ export default function PlacementDashboard() {
 
     const { projectId, runId } = useParams<{ projectId: string; runId: string }>();
     const [project, setProject] = useState<ProjectPlacementContext | null>(null);
-    const [projectScoringBasis] = useState<'Override' | 'Default'>('Override');
+    const [projectScoringBasis, setProjectScoringBasis] = useState<'Override' | 'Default'>('Default');
+    const [scoringFactors, setScoringFactors] = useState<ScoringFactor[]>([]);
 
     const [stats, setStats] = useState<MatchRunStats | null>(null);
     const [rawMatchData, setRawMatchData] = useState<RawMatchResult[]>(location.state?.rawMatchData ?? []);
@@ -124,6 +127,28 @@ export default function PlacementDashboard() {
         void loadProject();
     }, [projectId]);
 
+    useEffect(() => {
+        const loadScoringConfig = async () => {
+            if (!projectId) return;
+
+            try {
+                const [globalConfigs, projectOverrides] = await Promise.all([scoringApiService.getGlobalConfig(), scoringApiService.getProjectOverrideConfig(projectId)]);
+
+                if(projectOverrides.length > 0){
+                    setScoringFactors(projectOverrides);
+                    setProjectScoringBasis("Override");
+                } else {
+                    setScoringFactors(globalConfigs);
+                    setProjectScoringBasis("Default");
+                }
+            } catch (error) {
+                console.error("Failed to load scoring factors", error);
+            }
+        };
+
+        void loadScoringConfig();
+    }, [projectId]);
+
 
     const projectMatched = stats?.totalMatched ?? recommendations.length;
     const projectPlaced = stats?.totalPlaced ?? recommendations.filter(r => r.isPlaced === true).length;
@@ -194,6 +219,7 @@ export default function PlacementDashboard() {
             <>
                 <MatchStatsGrid
                     scoringBasis={projectScoringBasis}
+                    scoringFactors={scoringFactors}
                     totalEvaluated={projectTotalEvaluated}
                     matched={projectPlaced}
                     excluded={projectExcluded}

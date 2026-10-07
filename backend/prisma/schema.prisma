@@ -640,6 +640,7 @@ enum CalendarEntryType {
   personal
   leave
   ad_hoc @map("ad-hoc")
+  lunch
 }
 
 enum CalendarEntryOrigin {

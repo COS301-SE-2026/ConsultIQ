@@ -37,7 +37,7 @@ function formatHours(start: string, end: string): string {
     return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(2).replace(/0$/, "")}h`;
 }
 
-export default function BlockDetailPanel({ block, projectLabel, clientName, tasks, now, expectedVersion, onExpand, onClose, onNextBlock, onAddTask, onAutoRollover, onEditTask, onSetStatus, onToggleSubtask, onSendToBacklog, onDeleteTask, onSplitTask, onDragStart }: BlockDetailPanelProps) {
+export default function BlockDetailPanel({ block, projectLabel, clientName, tasks, now, expectedVersion, onExpand, onClose, onNextBlock, onAddTask, onAutoRollover, onEditTask, onSetStatus, onToggleSubtask, onDeleteTask, onSplitTask, onDragStart }: BlockDetailPanelProps) {
     const [tab, setTab] = useState<Tab>("all");
 
     if(!block){
@@ -160,7 +160,6 @@ export default function BlockDetailPanel({ block, projectLabel, clientName, task
                             onEdit={onEditTask}
                             onSetStatus={onSetStatus}
                             onToggleSubtask={onToggleSubtask}
-                            onSendToBacklog={onSendToBacklog}
                             onDelete={onDeleteTask}
                             onSplit={onSplitTask}
                             onDragStart={onDragStart}

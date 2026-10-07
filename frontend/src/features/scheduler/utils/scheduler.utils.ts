@@ -1,12 +1,17 @@
 import type {Interval, Task} from "../types/scheduler.types";
+import { ReasonCode } from "../types/scheduler.types";
 
 export type LocalDate = string; // nosonar
 export type LocalTime = string; // nosonar
 
 export const DAY_START_HOUR=0;
 export const DAY_END_HOUR=24;
-export const CORE_START_HOUR=8;
+export const CORE_START_HOUR=7;
 export const CORE_END_HOUR=16;
+
+
+export const CORE_START_TIME: LocalTime = `${String(CORE_START_HOUR).padStart(2, "0")}:00`;
+export const CORE_END_TIME: LocalTime = `${String(CORE_END_HOUR).padStart(2, "0")}:00`;
 
 export const TOTAL_DAY_MINUTES=24 * 60;
 export const ROW_HEIGHT_PX=64;
@@ -72,11 +77,51 @@ export function blockHeight(start: LocalTime, end: LocalTime): number{
     return ((timeToMinutes(end)- timeToMinutes(start))/ 60) * ROW_HEIGHT_PX;
 }
 
-export function priorityScore(task: Task, now = Date.now()): number {
-    const hoursToDeadline = task.deadline 
-        ? (Date.parse(task.deadline) - now) / 3_600_000 : Infinity;
+// export function priorityScore(task: Task, now = Date.now()): number {
+//     const hoursToDeadline = task.deadline 
+//         ? (Date.parse(task.deadline) - now) / 3_600_000 : Infinity;
     
-    return task.urgency + task.complexity + 1  / Math.max(hoursToDeadline, 1);
+//     return task.urgency + task.complexity + 1  / Math.max(hoursToDeadline, 1);
+// }
+
+export function  priorityScore(task: Task, now = Date.now()): number {
+        const urgencyWeight = 0.25;
+        const complexityWeight = 0.15;
+        const deadlineWeight = 0.60;
+
+        let deadlineScore = 0;
+
+        if (task.deadline) {
+            const nowTime = new Date(now).getTime();
+            const deadlineTime = new Date(task.deadline).getTime();
+
+            const hoursToDeadline =
+                (deadlineTime - nowTime) / 3_600_000;
+
+            if (hoursToDeadline <= 1) {
+                deadlineScore = 1;
+            } else if (hoursToDeadline <= 8) {
+                deadlineScore = 0.9;
+            } else if (hoursToDeadline <= 24) {
+                deadlineScore = 0.75;
+            } else if (hoursToDeadline <= 72) {
+                deadlineScore = 0.5;
+            } else if (hoursToDeadline <= 168) {
+                deadlineScore = 0.25;
+            } else {
+                deadlineScore = 0.1;
+            }
+        }
+
+        const MAX_URGENCY= 5;
+        const MAX_COMPLEXITY= 5;
+
+
+        return (
+            (task.urgency / MAX_URGENCY) * urgencyWeight +
+            (task.complexity / MAX_COMPLEXITY) * complexityWeight +
+            deadlineScore * deadlineWeight
+        );
 }
 
 export function isIntervalOutOfHours(interval: Interval, timeZone: string): boolean{
@@ -101,3 +146,9 @@ export function formatRange(weekStart: string){
     const dayMonth= (d: Date) => d.toLocaleDateString("en-GB", {day: "numeric", month: "long", timeZone: "UTC"});
     return `${dayMonth(start)} – ${dayMonth(end)} ${end.getUTCFullYear()}`;
 }
+
+export const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
+  [ReasonCode.CONTAINER_FULL]: "No room left in this project's allocation this week.",
+  [ReasonCode.DAY_SPAN_LIMIT]: "Would need to spread across too many days to fit.",
+  [ReasonCode.DEADLINE_INFEASIBLE]: "Can't finish before its deadline with the time left.",
+};

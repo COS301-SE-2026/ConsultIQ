@@ -14,7 +14,6 @@ interface TaskCardProps {
     readonly onEdit: (task: Task) => void;
     readonly onSetStatus: (taskId : string, dto : SetTaskStatusDto) => void | Promise<void>;
     readonly onToggleSubtask: (taskId: string, subtaskId : string, dto: ToggleSubtaskDto) => void | Promise<void>;
-    readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
     readonly onDelete: (taskId: string) => void | Promise<void>;
     readonly onSplit: (task: Task) => void;
     readonly onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;  
@@ -28,7 +27,7 @@ function stopAndRun(action: () => void) {
 }
 
 export default function TaskCard({ task, now, expectedVersion, subtaskProgress, nextStatus, timeZone,
-  onEdit, onSetStatus, onToggleSubtask, onSendToBacklog, onDelete, onSplit, onDragStart, } : TaskCardProps){
+  onEdit, onSetStatus, onToggleSubtask, onDelete, onSplit, onDragStart, } : TaskCardProps){
 
   const [subtasksExpanded, setSubtasksExpanded] = useState(false);
   const startTime = getStartTime(task, timeZone);
@@ -50,7 +49,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
             <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded bg-primary px-2 py-1 text-xs font-bold text-white">
-                        P{task.urgency}
+                        P{5-task.urgency}
                     </span>
 
                     <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
@@ -137,13 +136,6 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                         {nextStatus.label}
                     </button>
                 )}
-
-                <button type="button"
-                    className="rounded-2xl border border-primary px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                    onClick={() => void onSendToBacklog(task.id)}
-                >
-                    ↓ BL
-                </button>
 
                 <button type="button"
                     className="rounded-2xl border border-primary px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"

@@ -16,14 +16,12 @@ import { Button } from "../../../components/ui/button";
 
 const TYPE_OPTIONS: { value: CalendarEntryType; label: string }[] = [
     { value: "meeting", label: "Meeting" },
-    { value: "lunch", label: "Lunch" },
-    { value: "admin", label: "Admin" },
     { value: "training", label: "Training" },
     { value: "travel", label: "Travel" },
     { value: "personal", label: "Personal" },
     { value: "leave", label: "Leave" },
     { value: "adhoc", label: "Ad-hoc" },
-    { value: "other", label: "Other" },
+    { value: "lunch", label: "Lunch" },
 
 ]
 

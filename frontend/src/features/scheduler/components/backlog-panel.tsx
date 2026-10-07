@@ -22,6 +22,7 @@ interface BacklogPanelProps {
     readonly onAddTask: () => void;
     readonly onSchedule: (taskId: string) => void | Promise<void>;
     readonly onResolveDeadline: (task: Task) => void;
+    readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
     readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
     readonly onDismiss: (taskId: string) => void | Promise<void>;
     readonly onDragStart?: (task: Task, event: DragEvent<HTMLButtonElement>) => void;
@@ -42,7 +43,7 @@ function sortTasks(tasks: Task[], mode: SortMode): Task[] {
 
 
 
-export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, collapsed, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
+export default function BacklogPanel({tasks, unplacedSummaries, projects, now, expectedVersion, collapsed, onToggleCollapse, onAddTask, onSchedule, onResolveDeadline, onAcceptDeadlineMiss,onDeferToNextWeek, onDismiss, onDragStart} : BacklogPanelProps){
 
     const [activeProject, setActiveProject] = useState("all");
     const [sortMode, setSortMode] = useState<SortMode>("priority");
@@ -150,6 +151,7 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                                     expectedVersion={expectedVersion}
                                     onSchedule={onSchedule}
                                     onResolveDeadline={onResolveDeadline}
+                                    onAcceptDeadlineMiss={onAcceptDeadlineMiss}
                                     onDeferToNextWeek={onDeferToNextWeek}
                                     onDismiss={onDismiss}
                                     onDragStart={onDragStart}
@@ -173,6 +175,7 @@ export default function BacklogPanel({tasks, unplacedSummaries, projects, now, e
                                     expectedVersion={expectedVersion}
                                     onSchedule={onSchedule}
                                     onResolveDeadline={onResolveDeadline}
+                                    onAcceptDeadlineMiss={onAcceptDeadlineMiss}
                                     onDeferToNextWeek={onDeferToNextWeek}
                                     onDismiss={onDismiss}
                                     onDragStart={onDragStart}

@@ -1,7 +1,7 @@
 import { apiClient } from "../../../lib/api-client";
 import {SCHEDULER_RULES, type SchedulerWeekResponse, type SchedulerCommitResult, type CalendarEntry, type WeekContainer,
     type CreateTaskDto, type UpdateTaskDto, type SetTaskStatusDto, type Task,
-    type MoveSlotDto, type MoveBlockDto, type ResizeBlockDto, type PinBlockDto
+    type MoveSlotDto, type MoveBlockDto, type ResizeBlockDto, type PinBlockDto, type CalendarEntryDto
   } from "../types/scheduler.types";
 
 export function toCalendarWeek(api: SchedulerWeekResponse): WeekContainer {
@@ -106,6 +106,14 @@ export function placeUnplacedTasks(taskIds: string[], expectedVersion: number) {
   return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/place-unplaced", { taskIds, expectedVersion });
 }
 
+export function deferTasksToNextWeek(taskIds: string[], expectedVersion: number) {
+  return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/defer", { taskIds, expectedVersion });
+}
+
+export function acceptDeadlineMiss(taskId: string, expectedVersion: number) {
+  return apiClient.post<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/accept-deadline-miss`, { expectedVersion });
+}
+
 export function moveSlot({slotId, ...body}:MoveSlotDto) {
   return apiClient.patch<SchedulerCommitResult>(`/scheduler/slots/${slotId}/move`, body);
 }
@@ -124,3 +132,28 @@ export function pinBlock({blockId, ...body}:PinBlockDto) {
 
 
 
+function toApiEntry(dto: CalendarEntryDto) {
+  // The id travels in the URL, not the body
+  const { type, ...rest } = dto;
+  Reflect.deleteProperty(rest, "id");
+  return { ...rest, type: type === "adhoc" ? "ad-hoc" : type };
+}
+
+export function createCalendarEntry(weekStart: string, dto: CalendarEntryDto) {
+  return apiClient.post<SchedulerCommitResult>(`/scheduler/weeks/${weekStart}/calendar-entries`, toApiEntry(dto));
+}
+
+export function updateCalendarEntry(weekStart: string, entryId: string, dto: CalendarEntryDto) {
+  return apiClient.patch<SchedulerCommitResult>(`/scheduler/weeks/${weekStart}/calendar-entries/${entryId}`, toApiEntry(dto));
+}
+
+export function deleteCalendarEntry(entryId: string, expectedVersion: number) {
+  return apiClient.delete<SchedulerCommitResult>(`/scheduler/calendar-entries/${entryId}`, {
+    body: JSON.stringify({ expectedVersion }),
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export function dismissSchedulerIssue(weekStart: string, code: string) {
+    return apiClient.post<void>(`/scheduler/weeks/${weekStart}/issues/${encodeURIComponent(code)}/dismiss`, {});
+}

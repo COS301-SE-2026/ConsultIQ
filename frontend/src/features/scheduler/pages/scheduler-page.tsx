@@ -35,6 +35,7 @@ import {
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 interface SchedulerTaskTabProps {
     readonly loading: boolean;
     readonly error: string | null;
@@ -103,6 +104,7 @@ function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, on
 }
 
 export default function SchedulerPage() {
+    const { count: unreadCount } = useUnreadNotificationCount();
     const [activeTab, setActiveTab] = useState<SchedulerTab>("calendar");
 
     const [dismissed, setDismissed] = useState<string[]>([]);
@@ -362,7 +364,7 @@ export default function SchedulerPage() {
 
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-            <Sidebar items={consultantSidebarItems} />
+            <Sidebar items={consultantSidebarItems} notificationCount={unreadCount}/>
 
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
                 <header className=" flex-none border-b border-slate-200 bg-white px-6 ">

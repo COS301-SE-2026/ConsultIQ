@@ -144,6 +144,7 @@ export default function ProjectOverviewSection({
         <Info label="Start Date" value={formatDate(project.startDate)} />
         <Info label="End Date" value={formatDate(project.endDate)} />
         <Info label="Project Status" value={formatStatus(project.status)} />
+        <Info label="Allocation" value={String(project.allocation)} />
       </div>
       <div className="mt-8">
         <p className="text-lg font-semibold mb-2">Description</p>

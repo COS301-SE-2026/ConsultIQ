@@ -1,10 +1,10 @@
 import type { DragEvent } from "react";
 import { AlertTriangle, Calendar, GripVertical, Zap, X } from "lucide-react";
-import type { DeferToNextWeekDto, ReasonCode, Task, UnplacedTaskSummary } from "../types/scheduler.types";
+import type { DeferToNextWeekDto, Task, UnplacedTaskSummary } from "../types/scheduler.types";
 import { ReasonCode as Reason } from "../types/scheduler.types";
 import { ComplexityBars} from "./primitives";
-import { formatDuration, formatEstimateRange, REASON_MESSAGE } from "./scheduler-utils"
-
+import { formatDuration, formatEstimateRange } from "./scheduler-utils"
+import { REASON_MESSAGE } from "../utils/scheduler.utils"
 interface BacklogTaskCardProps {
     readonly task: Task;
     readonly projectLabel: string;

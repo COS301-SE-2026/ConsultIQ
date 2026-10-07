@@ -1,5 +1,4 @@
 import type { Interval, ProjectBlock as ProjectBlockType, Task } from "../../types/scheduler.types";
-import type { ProjectSummary } from "../../types/scheduler.fixtures";
 import {
     blockTop,
     blockHeight,

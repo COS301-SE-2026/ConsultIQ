@@ -13,10 +13,6 @@ const COLUMNS: { key: BoardColumn; label: string; dot: string }[] = [
   { key: "Done", label: "Done", dot: "border-emerald-500" },
 ];
 
-interface TaskBoardProject{
-    id: string;
-    label: string;
-}
 
 interface TaskBoardProject {
   id: string;
@@ -33,7 +29,8 @@ interface TaskBoardProps {
   readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
   readonly onToggleSubtask: (taskId: string, subtaskId: string, dto: ToggleSubtaskDto) => void | Promise<void>;
   readonly onSchedule: (taskId: string) => void | Promise<void>;
-  readonly onSendToBacklog: (taskId: string) => void | Promise<void>;
+  readonly onDeferToNextWeek: (taskId: string) => void | Promise<void>;
+  readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
   readonly onDelete: (taskId: string) => void | Promise<void>;
   readonly onSplit: (task: Task) => void;
 }
@@ -42,7 +39,7 @@ function columnFor(task: Task) : BoardColumn{
     return task.placement === "unplaced" ? "Backlog" : task.status;
 }
 
-export default function TaskBoard({ tasks,projects,  now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask,onSchedule,  onSendToBacklog, onDelete, onSplit }: TaskBoardProps) {
+export default function TaskBoard({ tasks, projects, now, expectedVersion, subtaskProgressByTaskId, onEditTask, onSetStatus, onToggleSubtask, onSchedule,onDeferToNextWeek, onAcceptDeadlineMiss, onDelete, onSplit }: TaskBoardProps) {
     const [dragOverColumn, setDragOverColumn] = useState<BoardColumn | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [projectFilter, setProjectFilter] = useState("all");
@@ -66,12 +63,13 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
         const from = columnFor(task);
         if(from === target) return;
 
-        if(target === "Backlog"){
-            void onSendToBacklog(taskId);
-        } else if (from === "Backlog") {
+        // Tasks only land in the backlog when the scheduler can't place them
+        if (target === "Backlog") return;
+
+        if (from === "Backlog") {
             if (target === "Ready") void onSchedule(taskId);
-            } else {
-                void onSetStatus(taskId, {status: target as TaskStatus, expectedVersion});
+        } else {
+            void onSetStatus(taskId, { status: target as TaskStatus, expectedVersion });
         }
     }
 
@@ -98,12 +96,13 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                 </select>
             </div>
         <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
-            <div className="grid h-full min-h-0 min-w-[900px] grid-cols-4 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-w-0">
+            <div className="grid h-full min-h-0 min-w-225 grid-cols-4 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-w-0">
                 {COLUMNS.map(({ key, label, dot }) => {
                     const columnTasks = byColumn.get(key) ?? [];
                     return (
                         <div key={key}
                             onDragOver={(e) => {
+                                if (key === "Backlog") return; // not a drop target
                                 e.preventDefault();
                                 setDragOverColumn(key);
                             }}
@@ -128,9 +127,11 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                                                 projectColor={project?.color ?? "#64748b"}
                                                 now={now}
                                                 expectedVersion={expectedVersion}
+                                                unplacedSummary={task.unplacedReason ? { reason: task.unplacedReason } : undefined}
                                                 onSchedule={onSchedule}
-                                                onResolveDeadline={() => {}}
-                                                onDeferToNextWeek={() => {}}
+                                                onResolveDeadline={onEditTask}
+                                                onAcceptDeadlineMiss={onAcceptDeadlineMiss}
+                                                onDeferToNextWeek={(taskId) => onDeferToNextWeek(taskId)}
                                                 onDismiss={onDelete}
                                                 onDragStart={(draggedTask, event) => {
                                                 event.dataTransfer.setData("text/plain", draggedTask.id);
@@ -151,7 +152,6 @@ export default function TaskBoard({ tasks,projects,  now, expectedVersion, subta
                                             onEdit={onEditTask}
                                             onSetStatus={onSetStatus}
                                             onToggleSubtask={onToggleSubtask}
-                                            onSendToBacklog={onSendToBacklog}
                                             onDelete={onDelete}
                                             onSplit={onSplit}
                                             onDragStart={(draggedTask, event) => {

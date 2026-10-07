@@ -5,6 +5,9 @@ export const SCHEDULER_RULES = {
     MICRO_TASK_THRESHOLD: 15,
     BUFFER_TARGET_PERCENTAGE: 0,
 
+    URGENCY_MAX: 4,     // 1 Low … 4 Critical
+    COMPLEXITY_MAX: 5,
+
     // Labor law & capacity limits (Configurable per region, defaults to ZA)
     DAILY_MAX_MINUTES: 480,          // 8 hours per day
     CONTRACT_SOFT_CAP_MINUTES: 2400, // 40 hours per week

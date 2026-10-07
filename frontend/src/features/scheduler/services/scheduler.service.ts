@@ -106,6 +106,14 @@ export function placeUnplacedTasks(taskIds: string[], expectedVersion: number) {
   return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/place-unplaced", { taskIds, expectedVersion });
 }
 
+export function deferTasksToNextWeek(taskIds: string[], expectedVersion: number) {
+  return apiClient.post<SchedulerCommitResult>("/scheduler/tasks/defer", { taskIds, expectedVersion });
+}
+
+export function acceptDeadlineMiss(taskId: string, expectedVersion: number) {
+  return apiClient.post<SchedulerCommitResult>(`/scheduler/tasks/${taskId}/accept-deadline-miss`, { expectedVersion });
+}
+
 export function moveSlot({slotId, ...body}:MoveSlotDto) {
   return apiClient.patch<SchedulerCommitResult>(`/scheduler/slots/${slotId}/move`, body);
 }

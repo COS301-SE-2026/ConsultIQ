@@ -129,40 +129,26 @@ export class WeekService {
         return week;
     }
 
-    // private resolveBlocks(dbWeek: {
-    //     blocks: PrismaBlock[];
-    // }): ProjectBlock[] {
-    //     return dbWeek.blocks.map((b) => {
-    //         if (b.userSized || b.allocation == null) {
-    //             return b as unknown as ProjectBlock;
-    //         }
-    //         return {
-    //             ...b,
-    //             allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
-    //         } as unknown as ProjectBlock;
-    //     });
-    // }
-
     private resolveBlocks(dbWeek: {
-    blocks: PrismaBlock[];
-}): ProjectBlock[] {
-    return dbWeek.blocks.map((b) => {
-        // Prisma returns Dates; the placer compares ISO strings
-        const block = {
-            ...b,
-            start: this.normalizeDatabaseInstant(b.start),
-            end: this.normalizeDatabaseInstant(b.end),
-        };
+        blocks: PrismaBlock[];
+    }): ProjectBlock[] {
+        return dbWeek.blocks.map((b) => {
+            // Prisma returns Dates; the placer compares ISO strings
+            const block = {
+                ...b,
+                start: this.normalizeDatabaseInstant(b.start),
+                end: this.normalizeDatabaseInstant(b.end),
+            };
 
-        if (b.userSized || b.allocation == null) {
-            return block as unknown as ProjectBlock;
-        }
-        return {
-            ...block,
-            allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
-        } as unknown as ProjectBlock;
-    });
-}
+            if (b.userSized || b.allocation == null) {
+                return block as unknown as ProjectBlock;
+            }
+            return {
+                ...block,
+                allocatedMinutes: this.placerService.blockMinutes(b.allocation as AllocationSummary),
+            } as unknown as ProjectBlock;
+        });
+    }
 
     private normalizeDatabaseInstant(value: unknown): string {
         return value instanceof Date ? value.toISOString() : String(value);
@@ -488,9 +474,42 @@ export class WeekService {
         return change.window;
     }
 
+    // private applyUpdateTask(week: WeekContainer, taskId: string, patch: Partial<Task>): void {
+    //     const idx = week.tasks.findIndex(t => t.id === taskId);
+    //     if (idx > -1) week.tasks[idx] = { ...week.tasks[idx], ...patch } as Task;
+    // }
+
     private applyUpdateTask(week: WeekContainer, taskId: string, patch: Partial<Task>): void {
         const idx = week.tasks.findIndex(t => t.id === taskId);
-        if (idx > -1) week.tasks[idx] = { ...week.tasks[idx], ...patch } as Task;
+        if (idx === -1) return;
+
+        const before = week.tasks[idx];
+        const after = { ...before, ...patch } as Task;
+        week.tasks[idx] = after;
+
+        // Fields that change how much time a task needs or where it may go
+        const schedulingFields: (keyof Task)[] = ['tMax', 'deadline', 'projectId'];
+        const toMs = (value: unknown) => (value ? new Date(value as string).getTime() : null);
+
+        const schedulingChanged = schedulingFields.some((field) => {
+            if (!(field in patch)) return false;
+            // Compare deadlines as instants: the DB gives a Date, the form sends an ISO string
+            if (field === 'deadline') return toMs(patch.deadline) !== toMs(before.deadline);
+            return patch[field] !== before[field];
+        });
+
+        // In-progress tasks and manually placed (locked) slots keep their time
+        const hasLockedSlot = week.slots.some((s) => s.locked && s.taskIds.includes(taskId));
+        if (!schedulingChanged || after.status !== 'Ready' || hasLockedSlot) return;
+
+        // Release the task's slots so the placer schedules it again from scratch
+        week.slots = week.slots.flatMap((s) => {
+            if (!s.taskIds.includes(taskId)) return [s];
+            const remaining = s.taskIds.filter((id) => id !== taskId);
+            return remaining.length > 0 ? [{ ...s, taskIds: remaining }] : [];
+        });
+        after.placement = 'unplaced';
+        after.unplacedReason = undefined;
     }
 
     private applyDeleteTask(week: WeekContainer, taskId: string): void {
@@ -513,7 +532,7 @@ export class WeekService {
         if (task?.subtasks?.every(s => s.done)) task.status = 'Done';
     }
 
-    private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number ): void {
+    private applySplitTask(week: WeekContainer, taskId: string, atMinutes: number): void {
         const original = week.tasks.find((task) => task.id === taskId);
         if (!original) return;
 
@@ -537,23 +556,23 @@ export class WeekService {
             const duration = subtask.estimate ?? subtask.durationMinutes;
 
             if (duration === undefined || duration <= 0) {
-            throw new BadRequestException(
-                `Cannot split task: subtask "${subtask.title ?? subtask.id}" needs an estimate.`,
-            );
+                throw new BadRequestException(
+                    `Cannot split task: subtask "${subtask.title ?? subtask.id}" needs an estimate.`,
+                );
             }
 
             const end = cursor + duration;
             if (end <= atMinutes) {
-            firstHalfSubtasks.push(subtask);
+                firstHalfSubtasks.push(subtask);
             } else if (cursor >= atMinutes) {
-            secondHalfSubtasks.push(subtask);
+                secondHalfSubtasks.push(subtask);
             } else {
-            throw new BadRequestException(
-                `Split point falls inside subtask "${subtask.title ?? subtask.id}".`,
-            );
+                throw new BadRequestException(
+                    `Split point falls inside subtask "${subtask.title ?? subtask.id}".`,
+                );
             }
             cursor = end;
-    }
+        }
 
         week.slots = week.slots.flatMap((slot) => {
             if (!slot.taskIds.includes(taskId)) return [slot];
@@ -562,9 +581,9 @@ export class WeekService {
             if (remainingTaskIds.length === 0) return [];
 
             return [{
-            ...slot,
-            taskIds: remainingTaskIds,
-            subtaskIds: slot.subtaskIds?.filter((id) => !splitSubtaskIds.has(id)),
+                ...slot,
+                taskIds: remainingTaskIds,
+                subtaskIds: slot.subtaskIds?.filter((id) => !splitSubtaskIds.has(id)),
             }];
         });
 
@@ -586,7 +605,7 @@ export class WeekService {
         };
 
         week.tasks.push(secondHalf);
-        }
+    }
 
     private applyAcceptDeadlineMiss(week: WeekContainer, taskId: string): void {
         const task = week.tasks.find(t => t.id === taskId);
@@ -596,33 +615,24 @@ export class WeekService {
         }
     }
 
-    // private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
-    //     const slot = week.slots.find((s) => s.id === slotId);
-    //     if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
-    //     slot.start = to.start;
-    //     slot.end = to.end;
-    //     slot.locked = true;
-    //     if (tags) slot.tags = tags;
-    // }
-
     private applyMoveSlot(week: WeekContainer, slotId: string, to: Interval, tags?: string[]): void {
-    const slot = week.slots.find((s) => s.id === slotId);
-    if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
-    slot.start = to.start;
-    slot.end = to.end;
-    slot.locked = true;
-    if (tags) slot.tags = tags;
+        const slot = week.slots.find((s) => s.id === slotId);
+        if (!slot) throw new NotFoundException('Task slot ' + slotId + ' not found');
+        slot.start = to.start;
+        slot.end = to.end;
+        slot.locked = true;
+        if (tags) slot.tags = tags;
 
-    // Re-home the slot to whichever block of the same project now contains it
-    const task = week.tasks.find((t) => slot.taskIds.includes(t.id));
-    const target = week.blocks.find(
-        (b) =>
-            b.projectId === task?.projectId &&
-            new Date(b.start).getTime() <= new Date(to.start).getTime() &&
-            new Date(to.end).getTime() <= new Date(b.end).getTime(),
-    );
-    if (target) slot.blockId = target.id;
-}
+        // Re-home the slot to whichever block of the same project now contains it
+        const task = week.tasks.find((t) => slot.taskIds.includes(t.id));
+        const target = week.blocks.find(
+            (b) =>
+                b.projectId === task?.projectId &&
+                new Date(b.start).getTime() <= new Date(to.start).getTime() &&
+                new Date(to.end).getTime() <= new Date(b.end).getTime(),
+        );
+        if (target) slot.blockId = target.id;
+    }
 
     private applyPlaceUnplacedChange(week: WeekContainer, taskIds: string[]): void {
         for (const t of week.tasks) {
@@ -656,7 +666,7 @@ export class WeekService {
         if (existingIdx > -1) {
             week.calendarEntries[existingIdx] = { ...week.calendarEntries[existingIdx], ...dto } as CalendarEntry;
         } else {
-            const newEntry = {...dto, id: dto.id ?? randomUUID()} as CalendarEntry;
+            const newEntry = { ...dto, id: dto.id ?? randomUUID() } as CalendarEntry;
             week.calendarEntries.push(newEntry);
         }
     }
@@ -774,7 +784,7 @@ export class WeekService {
             });
 
             await tx.schedulerSubtask.deleteMany({ where: { taskId: taskId } });
-            
+
             if (t.subtasks && t.subtasks.length > 0) {
                 await tx.schedulerSubtask.createMany({
                     data: t.subtasks.map((sub: any) => {

@@ -15,15 +15,6 @@ import {
     type SplitTaskDto,
     type CalendarEntryDto,
 } from "../types/scheduler.types";
-import {
-    designWeek,
-    holidayWeek,
-    leaveWeek,
-    batchWeek,
-    emptyWeek,
-    underusedWeek
-
-} from "../types/scheduler.fixtures";
 import { getProjectColour } from "../components/week/project-colour";
 import { type BacklogProjectOption } from "../components/backlog-panel";
 import TaskForm, { type TaskSubmission } from "../components/task-form";
@@ -33,11 +24,13 @@ import TaskBoard from "../components/task-board";
 import SplitTaskDialog from "../components/split-task-dialog";
 import {
     getSchedulerWeek, setSchedulerTaskStatus, toggleSchedulerSubtask, toCalendarWeek, createSchedulerTask,
-    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks,moveBlock, resizeBlock, pinBlock, moveSlot,
-    createCalendarEntry, updateCalendarEntry, deleteCalendarEntry 
+    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks, moveBlock, resizeBlock, pinBlock, moveSlot,
+    deferTasksToNextWeek, acceptDeadlineMiss,
+    createCalendarEntry, updateCalendarEntry, deleteCalendarEntry
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
+import { REASON_MESSAGE } from "../components/backlog-task-card";
 interface SchedulerTaskTabProps {
     readonly loading: boolean;
     readonly error: string | null;
@@ -50,9 +43,10 @@ interface SchedulerTaskTabProps {
     readonly onSchedule: (taskId: string) => void | Promise<void>;
     readonly onDelete: (taskId: string) => void | Promise<void>;
     readonly onSplit: (task: Task) => void;
+    readonly onDeferToNextWeek: (taskId: string) => void | Promise<void>;
+    readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
 }
 
-const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
 
 
@@ -76,7 +70,7 @@ function shiftWeek(weekStart: string, weeks: number): string {
     return date.toISOString().slice(0, 10);
 }
 
-function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, onSetStatus, onToggleSubtask, onSchedule, onDelete, onSplit }: SchedulerTaskTabProps) {
+function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, onSetStatus, onToggleSubtask, onSchedule, onDelete, onSplit, onDeferToNextWeek, onAcceptDeadlineMiss }: SchedulerTaskTabProps) {
     const [now, setNow] = useState(() => Date.now());
 
     useEffect(() => {
@@ -102,7 +96,8 @@ function SchedulerTaskTab({ loading, error, week, progress, projects, onEdit, on
                 onSetStatus={onSetStatus}
                 onToggleSubtask={onToggleSubtask}
                 onSchedule={onSchedule}
-                onSendToBacklog={() => { }}
+                onDeferToNextWeek={onDeferToNextWeek}
+                onAcceptDeadlineMiss={onAcceptDeadlineMiss}
                 onDelete={onDelete}
                 onSplit={onSplit}
             />
@@ -190,13 +185,12 @@ export default function SchedulerPage() {
         }
     }
 
-   
+
     const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
     const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
     const [splitTask, setSplitTask] = useState<Task | null>(null);
     const [createEntryRequested, setCreateEntryRequested] = useState(false);
 
-    //const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
     // The underutilised issue has its own card, so leave it out of the banner
     const schedulerIssues = weekIssues.filter((i) => i.code !== ReasonCode.UNDERUTILISED);
 
@@ -246,48 +240,55 @@ export default function SchedulerPage() {
         if (!result.ok) {
             throw new Error(result.violations.map((issue) => issue.message).join(" "));
         }
+        
         setLoadedWeek({ weekStart: selectedWeekStart, week: result.value });
-
         setTaskForm(null);
+
+        // Find the saved task: for a new task, it's the id that wasn't in the week before
+        const previousIds = new Set(apiWeek.tasks.map((task) => task.id));
+        const savedTask = submission.mode === "create"
+            ? result.value.tasks.find((task) => !previousIds.has(task.id))
+            : result.value.tasks.find((task) => task.id === submission.taskId);
+
+        // Other tasks that were placed before but got bumped to make room
+        const previouslyUnplaced = new Set(
+            apiWeek.tasks.filter((task) => task.placement === "unplaced").map((task) => task.id),
+        );
+        const bumpedTasks = result.value.tasks.filter((task) =>
+            task.id !== savedTask?.id && task.placement === "unplaced" && !previouslyUnplaced.has(task.id),
+        );
+
+        const savedTaskUnplaced = savedTask?.placement === "unplaced";
+        if (!savedTaskUnplaced && bumpedTasks.length === 0) return;
+
+        setActiveTab("tasks");
+
+        if (savedTaskUnplaced && savedTask) {
+            const reason = savedTask.unplacedReason as ReasonCode | undefined;
+            toast.warning(`"${savedTask.title}" couldn't be scheduled`, {
+                description: `${(reason && REASON_MESSAGE[reason]) ?? "There's no room for it this week."} You'll find it in the Backlog (task tab).`,
+                duration: 10_000,
+                closeButton: true,
+            });
+        }
+
+        if (bumpedTasks.length > 0) {
+            toast.warning(
+                bumpedTasks.length === 1
+                    ? `"${bumpedTasks[0].title}" was moved to the Backlog (task tab) to make room.`
+                    : `${bumpedTasks.length} tasks were moved to the Backlog (task tab) to make room.`,
+            );
+        }
     }
+
 
     async function handleSetStatus(taskId: string, dto: SetTaskStatusDto) {
-        if (!apiWeek) return;
-
-        try {
-            const result = await setSchedulerTaskStatus(taskId, { ...dto, expectedVersion: apiWeek.version });
-
-            if (!result.ok) {
-                setLoadedWeek((current) => ({ ...current, error: result.violations.map((issue) => issue.message).join(" ") }));
-                return;
-            }
-
-            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
-        } catch (error) {
-            setLoadedWeek((current) => ({ ...current, error: error instanceof Error ? error.message : "Could not update task status." }))
-        }
-
+        await commitPlacement((v) => setSchedulerTaskStatus(taskId, { ...dto, expectedVersion: v }));
     }
 
+
     async function handleDeleteTask(taskId: string) {
-        if (!apiWeek) return;
-
-        try {
-            const result = await deleteSchedulerTask(taskId, apiWeek.version);
-
-            if (!result.ok) {
-                setLoadedWeek((current) => ({
-                    ...current, error: result.violations.map((issue) => issue.message).join(" ")
-                }));
-                return;
-            }
-
-            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
-        } catch (error) {
-            setLoadedWeek((current) => ({
-                ...current, error: error instanceof Error ? error.message : "Could not delete task."
-            }))
-        }
+        await commitPlacement((v) => deleteSchedulerTask(taskId, v));
     }
 
     async function handleConfirmSplit(taskId: string, dto: SplitTaskDto) {
@@ -307,22 +308,7 @@ export default function SchedulerPage() {
     }
 
     async function handleScheduleTask(taskId: string) {
-        if (!apiWeek) return;
-
-        try {
-            const result = await placeUnplacedTasks([taskId], apiWeek.version);
-            console.log(
-                result.value.tasks.find((task) => task.id === taskId),
-            );
-            if (!result.ok) {
-                setLoadedWeek((current) => ({ ...current, error: result.violations.map((issue) => issue.message).join(" ") }));
-                return;
-            }
-
-            setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
-        } catch (error) {
-            setLoadedWeek((current) => ({ ...current, error: error instanceof Error ? error.message : "Could not schedule task." }));
-        }
+        await commitPlacement((v) => placeUnplacedTasks([taskId], v));
     }
 
     async function commitPlacement(
@@ -339,6 +325,22 @@ export default function SchedulerPage() {
             }
 
             setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
+
+            const previouslyUnplaced = new Set(
+                apiWeek.tasks.filter((task) => task.placement === "unplaced").map((task) => task.id),
+            );
+            const newlyUnplaced = result.value.tasks.filter(
+                (task) => task.placement === "unplaced" && !previouslyUnplaced.has(task.id),
+            );
+            if (newlyUnplaced.length > 0 && activeTab !== "tasks") {
+                toast.warning(
+                    newlyUnplaced.length === 1
+                        ? `"${newlyUnplaced[0].title}" no longer fits and was moved to the Backlog.`
+                        : `${newlyUnplaced.length} tasks no longer fit and were moved to the Backlog.`,
+                    {duration: 10_000, action: { label: "View tasks", onClick: () => setActiveTab("tasks") } },
+                );
+            }
+
             if (result.warnings.length > 0) {
                 toast.warning(result.warnings.map((issue) => issue.message).join(" "));
             }
@@ -363,6 +365,14 @@ export default function SchedulerPage() {
 
     const handleToggleSubtask = async (taskId: string, subtaskId: string) => {
         await commitPlacement((v) => toggleSchedulerSubtask(taskId, subtaskId, v));
+    };
+
+    const handleDeferToNextWeek = async (taskId: string) => {
+        await commitPlacement((v) => deferTasksToNextWeek([taskId], v));
+    };
+
+    const handleAcceptDeadlineMiss = async (taskId: string) => {
+        await commitPlacement((v) => acceptDeadlineMiss(taskId, v));
     };
 
     async function handleSaveEntry(dto: CalendarEntryDto) {
@@ -396,8 +406,6 @@ export default function SchedulerPage() {
                         projects={projects.map(({ id, label, clientName, allocation }) => ({
                             id, name: label, clientName, allocation: allocation ?? 0
                         }))}
-                        // onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
-                        // onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
                         onPrevWeek={() => setSelectedWeekStart((w) => shiftWeek(w, -1))}
                         onNextWeek={() => setSelectedWeekStart((w) => shiftWeek(w, 1))}
                     />
@@ -418,7 +426,7 @@ export default function SchedulerPage() {
                         </div>
 
                         <div className="my-2 flex items-center gap-2">
-                              <button type="button"
+                            <button type="button"
                                 onClick={openCreateEntry}
                                 className="my-2 rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
                             >
@@ -476,6 +484,8 @@ export default function SchedulerPage() {
                                 onSchedule={handleScheduleTask}
                                 onDelete={handleDeleteTask}
                                 onSplit={setSplitTask}
+                                onDeferToNextWeek={handleDeferToNextWeek}
+                                onAcceptDeadlineMiss={handleAcceptDeadlineMiss}
                             />
                         )}
 

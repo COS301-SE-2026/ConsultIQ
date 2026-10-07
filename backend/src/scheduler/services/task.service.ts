@@ -5,6 +5,7 @@ import { WeekService, CommitResult } from './week.service';
 import { TimeService, LocalDate } from './time.service';
 import { WeekContainer, Change, Interval, Task, ValidateContext, NewTask, Issue } from '../dto/scheduler.dto';
 import { randomUUID } from 'crypto';
+import { SCHEDULER_RULES } from './scheduler-rules.constant';
 
 @Injectable()
 export class TaskService {
@@ -32,7 +33,8 @@ export class TaskService {
             title: dto.title,
             tMin: dto.tMin,
             tMax: dto.tMax,
-            deadline: dto.deadline,
+            deadline: this.normalizeDeadline(dto.deadline, week.timezone),
+            //deadline: dto.deadline,
             urgency: dto.urgency,
             complexity: dto.complexity,
             status: 'Ready',
@@ -40,11 +42,11 @@ export class TaskService {
             carriedOver: false,
             placement: 'unplaced',
             subtasks: (dto.subtasks ?? []).map((sub) => ({
-            id: sub.id ?? randomUUID(),
-            taskId: '',
-            title: sub.title,
-            estimate: sub.estimate ?? 0,
-            done: sub.done ?? false,
+                id: sub.id ?? randomUUID(),
+                taskId: '',
+                title: sub.title,
+                estimate: sub.estimate ?? 0,
+                done: sub.done ?? false,
             })),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
@@ -61,18 +63,31 @@ export class TaskService {
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
+      private normalizeDeadline(deadline: string | undefined, timezone: string): string | undefined {
+        if (!deadline) return deadline;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
+            return this.timeService.atLocal(deadline, SCHEDULER_RULES.CORE_HOURS_END, timezone);
+        }
+        return deadline;
+    }
+
+
     public async update(consultantId: string, taskId: string, dto: Partial<Task>, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId, consultantId);
+        const { week } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'update_task',
             taskId,
-            patch: dto,
+            patch: 'deadline' in dto
+                ? { ...dto, deadline: this.normalizeDeadline(dto.deadline as string | undefined, week.timezone) }
+                : dto,
             origin: 'user',
-            window: this.taskDayWindow(week, task),
+            // Whole week, so an edited task can move to any day it now fits
+            window: this.getWeekWindow(week),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [taskId], allocations: [] };
+        const slotIds = week.slots.filter((s) => s.taskIds.includes(taskId)).map((s) => s.id);
+        const ctx: ValidateContext = { bumpedEntityIds: [taskId, ...slotIds], allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
@@ -158,7 +173,7 @@ export class TaskService {
         const taskSlots = week.slots.filter((slot) => slot.taskIds.includes(taskId));
 
         if (taskSlots.some((slot) => slot.locked)) {
-        throw new BadRequestException("Cannot split a task with locked slots.");
+            throw new BadRequestException("Cannot split a task with locked slots.");
         }
 
         this.assertSplitBoundaryClearOfSubtasks(task, atMinutes);
@@ -171,18 +186,18 @@ export class TaskService {
             window: this.getWeekWindow(week),
         } as Change;
 
-        const ctx: ValidateContext = { bumpedEntityIds: [taskId, ...taskSlots.map((slot) => slot.id)], allocations: []};
+        const ctx: ValidateContext = { bumpedEntityIds: [taskId, ...taskSlots.map((slot) => slot.id)], allocations: [] };
         return this.weekService.commit(week, change, ctx, expectedVersion);
     }
 
     public async acceptDeadlineMiss(consultantId: string, taskId: string, expectedVersion?: number): Promise<CommitResult> {
-        const { week, task } = await this.loadTaskContext(taskId, consultantId);
+        const { week } = await this.loadTaskContext(taskId, consultantId);
 
         const change: Change = {
             type: 'accept_deadline_miss',
             taskId,
             origin: 'user',
-            window: this.taskDayWindow(week, task),
+            window: this.getWeekWindow(week),
         } as Change;
 
         const ctx: ValidateContext = { bumpedEntityIds: [taskId], allocations: [] };

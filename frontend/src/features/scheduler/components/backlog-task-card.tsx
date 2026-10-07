@@ -9,11 +9,12 @@ interface BacklogTaskCardProps {
     readonly task: Task;
     readonly projectLabel: string;
     readonly projectColor: string;
-    readonly unplacedSummary?: UnplacedTaskSummary;
+    readonly unplacedSummary?: Pick<UnplacedTaskSummary, "reason"> & Partial<UnplacedTaskSummary>;
     readonly now: number;
     readonly expectedVersion: number;
     readonly onSchedule: (taskId: string) => void | Promise<void>;
     readonly onResolveDeadline: (task: Task) => void;
+    readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
     readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
     readonly onDismiss: (taskId: string) => void | Promise<void>;
     readonly onDragStart?: (task: Task, event : DragEvent<HTMLButtonElement>) => void;
@@ -63,40 +64,55 @@ function DeadlineLabel({ deadline, now } : { readonly deadline?: string; readonl
     )
 }
 
-const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
+export const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
   [Reason.CONTAINER_FULL]: "No room left in this project's allocation this week.",
   [Reason.DAY_SPAN_LIMIT]: "Would need to spread across too many days to fit.",
   [Reason.DEADLINE_INFEASIBLE]: "Can't finish before its deadline with the time left.",
 };
 
-function UnplacedReason({ task, summary, onResolveDeadline, onDeferToNextWeek, expectedVersion } :{
+function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, expectedVersion }: {
     readonly task: Task;
-    readonly summary: UnplacedTaskSummary; 
-    readonly onResolveDeadline : (task: Task) => void;
-    readonly onDeferToNextWeek : (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
+    readonly summary: Pick<UnplacedTaskSummary, "reason"> & Partial<UnplacedTaskSummary>;
+    readonly onResolveDeadline: (task: Task) => void;
+    readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
+    readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
     readonly expectedVersion: number;
-}){
-    
+}) {
     const isDeadlineIssue = summary.reason === Reason.DEADLINE_INFEASIBLE;
     const message = REASON_MESSAGE[summary.reason] ?? summary.reason;
+    const buttonClass = "rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100";
 
     return (
         <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
             <p className="flex items-start gap-1.5 text-xs text-amber-800">
-                <AlertTriangle size={14} className="mt-0.5 shrink-0"/>
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                 {message}
             </p>
-            <p className="mt-1 text-xs text-amber-700">
-                Needs {formatDuration(summary.neededMinutes)}, only{" "} {formatDuration(summary.availableMinutes)} available.
-            </p>
-            <button type="button"
-                className="mt-2 rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
-                onClick={() => isDeadlineIssue ? onResolveDeadline(task) : void onDeferToNextWeek(task.id, {taskIds: [task.id], expectedVersion}) }
-            >
-                {isDeadlineIssue ? "Resolve deadline" : "Push to next week"}
-            </button>
+            {summary.neededMinutes !== undefined && summary.availableMinutes !== undefined && (
+                <p className="mt-1 text-xs text-amber-700">
+                    Needs {formatDuration(summary.neededMinutes)}, only {formatDuration(summary.availableMinutes)} available.
+                </p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+                {isDeadlineIssue ? (
+                    <>
+                        <button type="button" className={buttonClass} onClick={() => onResolveDeadline(task)}>
+                            Change deadline
+                        </button>
+                        <button type="button" className={buttonClass} onClick={() => void onAcceptDeadlineMiss(task.id)}>
+                            Accept late finish
+                        </button>
+                    </>
+                ) : (
+                    <button type="button" className={buttonClass}
+                        onClick={() => void onDeferToNextWeek(task.id, { taskIds: [task.id], expectedVersion })}
+                    >
+                        Push to next week
+                    </button>
+                )}
+            </div>
         </div>
-    )
+    );
 }
 function stopAndRun(action: () => void) {
     return (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -106,7 +122,7 @@ function stopAndRun(action: () => void) {
 }
 
 export default function BacklogTaskCard({task, projectLabel, projectColor, unplacedSummary, now,
-  expectedVersion, onSchedule, onResolveDeadline, onDeferToNextWeek, onDismiss, onDragStart}: BacklogTaskCardProps) {
+  expectedVersion, onSchedule, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, onDismiss, onDragStart}: BacklogTaskCardProps) {
 
     return (
         <article className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm" style={{borderLeftWidth: 4, borderLeftColor: projectColor}}>
@@ -136,6 +152,7 @@ export default function BacklogTaskCard({task, projectLabel, projectColor, unpla
                     task={task}
                     summary={unplacedSummary}
                     onResolveDeadline={onResolveDeadline}
+                    onAcceptDeadlineMiss={onAcceptDeadlineMiss}
                     onDeferToNextWeek={onDeferToNextWeek}
                     expectedVersion={expectedVersion}
                 />

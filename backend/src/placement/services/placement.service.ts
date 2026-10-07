@@ -7,9 +7,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePlacementDto } from '../dto/create-placement.dto';
-import { PlacementStatus, AuditAction } from '@prisma/client';
+import { PlacementStatus, AuditAction, Prisma } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { NotificationService } from '../../notification/service/notification.service';
+
 @Injectable()
 export class PlacementService {
   constructor(
@@ -43,7 +44,13 @@ export class PlacementService {
 
     const consultant = await this.prisma.consultant.findUnique({
       where: { id: dto.consultantId },
-      select: { id: true, capacity: true, availability: true, userId: true },
+      select: {
+        id: true,
+        capacity: true,
+        availability: true,
+        userId: true,
+        costToCompany: true,
+      },
     });
     if (!consultant) {
       throw new NotFoundException(
@@ -66,7 +73,6 @@ export class PlacementService {
     }
 
     // -------- Team Size Check --------
-
     const activePlacements = await this.prisma.projectPlacement.count({
       where: {
         projectId,
@@ -74,7 +80,7 @@ export class PlacementService {
       },
     });
 
-    if(activePlacements >= project.teamSize) {
+    if (activePlacements >= project.teamSize) {
       throw new ConflictException(
         `Cannot place consultant: project team size limit of ${project.teamSize} has been reached.`,
       );
@@ -96,7 +102,26 @@ export class PlacementService {
       );
     }
 
+    // -------- Budget Feasibility Check --------
+    const budgetEndDate = endDate ?? project.endDate;
+    if (!budgetEndDate) {
+      throw new BadRequestException(
+        'A project or placement end date is required to calculate budget feasibility.',
+      );
+    }
+
+
     const placement = await this.prisma.$transaction(async (tx) => {
+      await this.validateBudgetFeasibility(
+        tx,
+        projectId,
+        consultant.costToCompany,
+        dto.allocation,
+        startDate,
+        budgetEndDate,
+        project.budget,
+      );
+
       const updatedConsultant = await tx.consultant.update({
         where: { id: dto.consultantId },
         data: {
@@ -125,7 +150,7 @@ export class PlacementService {
       }
 
       return placement;
-    });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await this.auditLog.log({
       action: AuditAction.PLACEMENT_CREATED,
@@ -148,9 +173,7 @@ export class PlacementService {
       consultant.userId,
       'New Placement Assigned',
       `You have been assigned to project ${project.projectName} ${stringDate}.`,
-      //`/projects/${projectId}`,
     );
-
 
     return {
       message: 'Placement created successfully.',
@@ -159,12 +182,68 @@ export class PlacementService {
   }
 
   /**
-    Computes a consultant's remaining capacity (as a percentage, 0-100) for a
-    given period, by summing the allocation of all ACTIVE placements that
-    overlap that period and subtracting from 100.
-    A null endDate is treated as open-ended (overlaps everything from its
-    startDate onward).
-   **/
+   * Computes whether the project has sufficient lifetime budget for this placement.
+   */
+  private async validateBudgetFeasibility(
+    prisma: Prisma.TransactionClient,
+    projectId: string,
+    costToCompany: number,
+    allocation: number,
+    startDate: Date,
+    endDate: Date,
+    projectBudget: number,
+  ): Promise<void> {
+    if (costToCompany === undefined || costToCompany === null) {
+      throw new BadRequestException(
+        'Consultant Cost To Company is required for budget calculation.',
+      );
+    }
+
+    const newPlacementDays = this.calculateDaysBetween(startDate, endDate);
+    const newPlacementCost = newPlacementDays * costToCompany * (allocation / 100);
+
+    const existingPlacements = await prisma.projectPlacement.findMany({
+      where: {
+        projectId,
+        status: PlacementStatus.ACTIVE,
+      },
+      include: {
+        consultant: {
+          select: { costToCompany: true },
+        },
+        project: {
+          select: { endDate: true },
+        }
+      },
+    });
+
+    let totalExistingSpend = 0;
+
+    for (const placement of existingPlacements) {
+      const placementEnd = placement.endDate || placement.project.endDate;
+      if (!placementEnd) continue;
+
+      const days = this.calculateDaysBetween(placement.startDate, placementEnd);
+      const cost =
+        days * placement.consultant.costToCompany * (placement.allocation / 100);
+      totalExistingSpend += cost;
+    }
+
+    const projectedTotalCost = totalExistingSpend + newPlacementCost;
+
+    if (projectedTotalCost > projectBudget) {
+      throw new ConflictException(
+        `Budget exceeded. The project budget is ${projectBudget}. Current active placements cost ${totalExistingSpend}. Adding this consultant costs an additional ${newPlacementCost}, bringing the total projected cost to ${projectedTotalCost}.`,
+      );
+    }
+  }
+
+
+  private calculateDaysBetween(start: Date, end: Date): number {
+    const timeDiff = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(timeDiff / (1000 * 3600 * 24));
+  }
+
   async getRemainingCapacity(consultantId: string): Promise<number> {
     const consultant = await this.prisma.consultant.findUnique({
       where: { id: consultantId },
@@ -175,7 +254,6 @@ export class PlacementService {
         `Consultant with ID ${consultantId} not found.`,
       );
     }
-
     return Math.max(0, consultant.capacity);
   }
 
@@ -188,6 +266,4 @@ export class PlacementService {
     });
     return record !== null;
   }
-
-
 }

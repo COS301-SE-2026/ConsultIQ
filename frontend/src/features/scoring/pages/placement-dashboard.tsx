@@ -14,7 +14,6 @@ import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { AlertCircle, Loader2, X } from "lucide-react";
 import { ApiError } from "../../../lib/api-client";
-import { Loader2 } from "lucide-react";
 import SearchBar from "../../../components/shared/search-bar";
 
 
@@ -169,7 +168,7 @@ export default function PlacementDashboard() {
             try {
                 const [globalConfigs, projectOverrides] = await Promise.all([scoringApiService.getGlobalConfig(), scoringApiService.getProjectOverrideConfig(projectId)]);
 
-                if(projectOverrides.length > 0){
+                if (projectOverrides.length > 0) {
                     setScoringFactors(projectOverrides);
                     setProjectScoringBasis("Override");
                 } else {
@@ -248,12 +247,12 @@ export default function PlacementDashboard() {
 
     const filteredRecommendations = useMemo<Recommendation[]>(() => {
         const query = searchQuery.trim().toLowerCase();
-        if(!query) return recommendations;
+        if (!query) return recommendations;
 
-        return recommendations.filter((rec) => 
+        return recommendations.filter((rec) =>
             rec.consultantName.toLowerCase().includes(query) || (rec.consultantEmail ?? "").toLowerCase().includes(query)
         );
-        
+
     }, [recommendations, searchQuery]);
 
     function renderMatchContent() {
@@ -309,12 +308,12 @@ export default function PlacementDashboard() {
                     </section>
                 )}
 
-                <SearchBar 
+                <SearchBar
                     value={searchQuery}
                     onChange={handleSearchChange}
                     placeholder={"Search for a ranked consultant by name or email..."}
                 />
-                <div className="my-6"/>
+                <div className="my-6" />
                 <RecommendationsTable
                     recommendations={filteredRecommendations}
                     onSelectConsultant={handleSelectConsultant}

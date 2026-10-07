@@ -13,6 +13,7 @@ import { placementService } from "../services/placement.service";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import SearchBar from "../../../components/shared/search-bar";
 
 
 interface RawMatchResult {
@@ -34,6 +35,11 @@ export default function PlacementDashboard() {
 
     const location = useLocation();
 
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+    };
     const { projectId, runId } = useParams<{ projectId: string; runId: string }>();
     const [project, setProject] = useState<ProjectPlacementContext | null>(null);
     const [projectScoringBasis, setProjectScoringBasis] = useState<'Override' | 'Default'>('Default');
@@ -191,6 +197,16 @@ export default function PlacementDashboard() {
         }
     };
 
+    const filteredRecommendations = useMemo<Recommendation[]>(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if(!query) return recommendations;
+
+        return recommendations.filter((rec) => 
+            rec.consultantName.toLowerCase().includes(query) || (rec.consultantEmail ?? "").toLowerCase().includes(query)
+        );
+        
+    }, [recommendations, searchQuery]);
+
     function renderMatchContent() {
         if(isMatchLoading){
             return (
@@ -224,8 +240,15 @@ export default function PlacementDashboard() {
                     matched={projectPlaced}
                     excluded={projectExcluded}
                 />
+
+                <SearchBar 
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder={"Search for a ranked consultant by name or email..."}
+                />
+                <div className="my-6"/>
                 <RecommendationsTable
-                    recommendations={recommendations}
+                    recommendations={filteredRecommendations}
                     onSelectConsultant={handleSelectConsultant}
                     onPlaceConsultant={handlePlaceConsultant}
                 />

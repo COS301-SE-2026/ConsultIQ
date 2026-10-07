@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RecommendationRow } from "./recommendation-row";
 import type{ Recommendation } from "../types/placements.types";
 
@@ -18,31 +18,42 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
     const startIndex = (currentPage -1) * ITEMS_PER_PAGE;
     const pageRecommendations = orderedRecommendations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [recommendations]);
+
     return(
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 ">
             <h2 className="text-lg font-bold">Top Recommendations</h2>
             <div className="overflow-x-auto py-4">
-                <table className="min-w-[760px] w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-200 text-sm folt-bold">
-                            <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
-                            <th className="pb-4 px-6 text-lg">Consultant</th>
-                            <th className="pb-4 px-6 text-lg text-center">Fit Score</th>
-                            <th className="pb-4 px-6 text-lg  text-center">Availability</th>
-                            <th className="pb-4 px-6 text-lg text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {pageRecommendations.map((item) =>(
-                            <RecommendationRow
-                            key={item.consultantId}
-                            recommendation={item}
-                            onSelectConsultant={onSelectConsultant}
-                            onPlaceConsultant={onPlaceConsultant}
-                            />
-                        ))}
-                    </tbody>
-                </table>
+                {orderedRecommendations.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-slate-500"> No consultants match your search. </p>
+                ) : (
+                    <div className = "overflow-x-auto py-4">
+                        <table className="min-w-[760px] w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-200 text-sm folt-bold">
+                                    <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
+                                    <th className="pb-4 px-6 text-lg">Consultant</th>
+                                    <th className="pb-4 px-6 text-lg text-center">Fit Score</th>
+                                    <th className="pb-4 px-6 text-lg  text-center">Availability</th>
+                                    <th className="pb-4 px-6 text-lg text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pageRecommendations.map((item) =>(
+                                    <RecommendationRow
+                                    key={item.consultantId}
+                                    recommendation={item}
+                                    onSelectConsultant={onSelectConsultant}
+                                    onPlaceConsultant={onPlaceConsultant}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>                        
+                    </div>
+                )}
+
             </div>
            
            {totalPages > 1 && (

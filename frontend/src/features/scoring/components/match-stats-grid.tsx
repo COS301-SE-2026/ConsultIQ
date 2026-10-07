@@ -55,7 +55,7 @@ export function MatchStatsGrid({ scoringBasis, scoringFactors = [],  totalEvalua
                         count= {scoringBasis}
                         icon= {Settings2}
                         iconBackgroundColour= '#eff6ff'
-                        iconColor= '#2563eb'
+                        iconColour= '#2563eb'
                     />
 
                 </button>
@@ -63,7 +63,7 @@ export function MatchStatsGrid({ scoringBasis, scoringFactors = [],  totalEvalua
                 {showFactors && (
                     <div className="absolute left-0 top-full z-50 mt-2 w-80 rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-lg">
                         <div className="mb-2 flex items-center gap-2 font-bold text-slate-700">
-                            <Info clasName= " h-4 w-4 text-blue-600"/>
+                            <Info className= " h-4 w-4 text-blue-600"/>
                             { scoringBasis === "Override" ?  "Project Override Configuration" : "Consultancy Default Configuration" }
                         </div>
                         {scoringFactors.length === 0 ? (

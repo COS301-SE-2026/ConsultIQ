@@ -9,7 +9,7 @@ const FLAG_TYPE_LABELS: Record<CvSecurityFlagType, string> = {
     HIDDEN_OR_OBFUSCATED_TEXT: "Contains hidden or obfuscated text",
     TOOL_USE_OR_EXTERNAL_REQUEST: "Attempted to trigger an external request",
     SCHEMA_MANIPULATION_ATTEMPT: "Attempted to inject unexpected data fields",
-    OTHER_SUSPICIOUS_CONTENT: "Contains other suspicious content",
+    OTHER_SUSPICIOUS_CONTENT: "Contains other malicious content",
 };
 
 interface SecurityReviewModalProps {
@@ -28,7 +28,7 @@ export default function SecurityReviewModal({ status, flags, onExit }: SecurityR
                 <div className="flex items-center gap-3 mb-4">
                     <AlertTriangle className="h-7 w-7 text-red-600 shrink-0" />
                     <h2 className="text-xl font-bold text-red-700">
-                        {isRejected ? "This CV was rejected" : "This CV contains suspicious content"}
+                        {isRejected ? "This CV was rejected" : "This CV contains malicious content"}
                     </h2>
                 </div>
 

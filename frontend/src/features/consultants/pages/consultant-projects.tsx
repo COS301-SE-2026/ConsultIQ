@@ -9,13 +9,14 @@ import ProjectDetailsModal from "../../projects/components/project-details-modal
 import {consultantSidebarItems,} from "../../../components/layout/sidebar/sidebar.config";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { useFetchAssignedProject } from "../../../hooks/useFetchAssignedProjects";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 
 
 function ConsultantProjects(){
-      const location = useLocation();
-      const { user } = useAuth();
-
+    const location = useLocation();
+    const { user } = useAuth();
+    const { count: unreadCount } = useUnreadNotificationCount();
       
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const targetConsultantId = location.state?.selectedConsultantId;
@@ -32,7 +33,7 @@ function ConsultantProjects(){
   
     return(
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-          <Sidebar items={consultantSidebarItems} />
+          <Sidebar items={consultantSidebarItems} notificationCount={unreadCount} />
           <div className="flex-1 flex flex-col overflow-y-auto min-w-0">
 
             <header

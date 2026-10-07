@@ -2,14 +2,16 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import SkillGrowthCard from "../components/skill-growth-card";
 import { useSkillGrowth } from "../../../hooks/useSkillGrowth";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 
 
 export default function GrowthCompass() {
   const {data, isLoading, isError} = useSkillGrowth();
+  const { count: unreadCount } = useUnreadNotificationCount();
   
   return (
     <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-      <Sidebar items={consultantSidebarItems} />
+      <Sidebar items={consultantSidebarItems} notificationCount={unreadCount} />
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         <header
           className="shrink-0 z-20 bg-white  border-b min-h-[90px] flex items-center  w-full pl-16 pr-4 sm:px-10"

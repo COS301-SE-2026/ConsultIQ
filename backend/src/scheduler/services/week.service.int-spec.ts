@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { WeekService } from './week.service';
 import { cleanDatabase } from '../../../prisma/prisma-test-utils';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 import { TimeService, LocalDate } from './time.service';
 import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';

@@ -3,7 +3,7 @@ import { AlertTriangle, Calendar, GripVertical, Zap, X } from "lucide-react";
 import type { DeferToNextWeekDto, ReasonCode, Task, UnplacedTaskSummary } from "../types/scheduler.types";
 import { ReasonCode as Reason } from "../types/scheduler.types";
 import { ComplexityBars} from "./primitives";
-import { formatDuration, formatEstimateRange } from "./scheduler-utils"
+import { formatDuration, formatEstimateRange, REASON_MESSAGE } from "./scheduler-utils"
 
 interface BacklogTaskCardProps {
     readonly task: Task;
@@ -64,11 +64,6 @@ function DeadlineLabel({ deadline, now } : { readonly deadline?: string; readonl
     )
 }
 
-export const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
-  [Reason.CONTAINER_FULL]: "No room left in this project's allocation this week.",
-  [Reason.DAY_SPAN_LIMIT]: "Would need to spread across too many days to fit.",
-  [Reason.DEADLINE_INFEASIBLE]: "Can't finish before its deadline with the time left.",
-};
 
 function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, expectedVersion }: {
     readonly task: Task;

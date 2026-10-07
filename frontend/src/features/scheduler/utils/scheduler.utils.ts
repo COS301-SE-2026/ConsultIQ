@@ -1,4 +1,5 @@
 import type {Interval, Task} from "../types/scheduler.types";
+import { ReasonCode } from "../types/scheduler.types";
 
 export type LocalDate = string; // nosonar
 export type LocalTime = string; // nosonar
@@ -145,3 +146,9 @@ export function formatRange(weekStart: string){
     const dayMonth= (d: Date) => d.toLocaleDateString("en-GB", {day: "numeric", month: "long", timeZone: "UTC"});
     return `${dayMonth(start)} – ${dayMonth(end)} ${end.getUTCFullYear()}`;
 }
+
+export const REASON_MESSAGE: Partial<Record<ReasonCode, string>> = {
+  [ReasonCode.CONTAINER_FULL]: "No room left in this project's allocation this week.",
+  [ReasonCode.DAY_SPAN_LIMIT]: "Would need to spread across too many days to fit.",
+  [ReasonCode.DEADLINE_INFEASIBLE]: "Can't finish before its deadline with the time left.",
+};

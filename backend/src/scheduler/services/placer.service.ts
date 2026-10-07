@@ -178,14 +178,18 @@ export class PlacerService {
 
     private clampWindowToNow(window: Interval, nowMs: number = Date.now()): Interval | null {
         const QUARTER_MS = 15 * 60_000;
-        const roundedNowMs = Math.ceil(nowMs / QUARTER_MS) * QUARTER_MS;
+        const windowStartMs = this.ms(window?.start);
+        const windowEndMs = this.ms(window?.end);
 
-        const startMs = Math.max(this.ms(window.start), roundedNowMs);
-        const endMs = this.ms(window.end);
-        if (startMs >= endMs) return null;
+        // Missing or unparseable window: nothing can be placed
+        if (!Number.isFinite(windowStartMs) || !Number.isFinite(windowEndMs)) return null;
+
+        const roundedNowMs = Math.ceil(nowMs / QUARTER_MS) * QUARTER_MS;
+        const startMs = Math.max(windowStartMs, roundedNowMs);
+        if (startMs >= windowEndMs) return null;
 
         return {
-            start: (startMs === this.ms(window.start)
+            start: (startMs === windowStartMs
                 ? window.start
                 : new Date(startMs).toISOString().replace(/\.\d{3}Z$/, 'Z')) as Instant,
             end: window.end,
@@ -606,7 +610,7 @@ export class PlacerService {
 
         return take;
     }
-  
+
 
     /**
      * Tier 3: tryPreempt
@@ -806,7 +810,7 @@ export class PlacerService {
         }
 
         // // 5. Sort remaining by deadline (ascending), then priorityScore (descending)
-         const nowIso = new Date().toISOString();
+        const nowIso = new Date().toISOString();
 
         // Most important first. The deadline is already 60% of the score, and a task that
         // would miss its deadline can still move later-due tasks (see tryPreempt)

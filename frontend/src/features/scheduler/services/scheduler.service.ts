@@ -132,8 +132,10 @@ export function pinBlock({blockId, ...body}:PinBlockDto) {
 
 
 
-// The frontend uses "adhoc"; the backend expects "ad-hoc"
-function toApiEntry({ id: _id, type, ...rest }: CalendarEntryDto) {
+function toApiEntry(dto: CalendarEntryDto) {
+  // The id travels in the URL, not the body
+  const { type, ...rest } = dto;
+  Reflect.deleteProperty(rest, "id");
   return { ...rest, type: type === "adhoc" ? "ad-hoc" : type };
 }
 

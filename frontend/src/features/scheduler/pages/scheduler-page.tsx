@@ -30,7 +30,7 @@ import {
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
-import { REASON_MESSAGE } from "../components/backlog-task-card";
+import { REASON_MESSAGE } from "../utils/scheduler.utils";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 interface SchedulerTaskTabProps {
     readonly loading: boolean;

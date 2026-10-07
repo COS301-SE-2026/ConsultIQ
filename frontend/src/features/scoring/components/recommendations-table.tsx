@@ -5,7 +5,7 @@ import type{ Recommendation } from "../types/placements.types";
 interface RecommendationTableProps{
     readonly recommendations: Recommendation[];
     readonly onSelectConsultant: (id: string)=> void;
-    readonly onPlaceConsultant: (consultantId : string) => Promise<void>;
+    readonly onPlaceConsultant: (consultantId : string) => Promise<boolean>;
 }
 
 const ITEMS_PER_PAGE = 10;

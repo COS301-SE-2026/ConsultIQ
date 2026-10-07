@@ -19,23 +19,23 @@ const mockRecommendation = {
     isPlaced: false,
 };
 
+// Placement dashboard is guarded to PROJECT_MANAGER only
 async function mockAuth(page: Page) {
     await page.route('**/auth/me', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-                userId: 'test-admin-id',
-                email: 'admin@consultiq.com',
-                role: 'ADMIN',
-                dashboardRoute: '/admin-dashboard',
-            })
+                userId: 'test-pm-id',
+                email: 'pm@consultiq.com',
+                role: 'PROJECT_MANAGER',
+                dashboardRoute: '/projects',
+            }),
         });
     });
 }
 
 async function mockNetworkRequests(page: Page) {
-
     await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}`), async (route) => {
         await route.fulfill({
             status: 200,
@@ -76,7 +76,6 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render dashboard header', async ({ page }) => {
-
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
 
         await expect(
@@ -85,7 +84,6 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render match run count stats', async ({ page }) => {
-
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
 
         await expect(page.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
@@ -175,7 +173,7 @@ test.describe('UI Test Placement Dashboard', () => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify({ runId: mockRunId, status: 'IN_PROGRESS', progress: 50 })
+                body: JSON.stringify({ runId: mockRunId, status: 'IN_PROGRESS', progress: 50 }),
             });
         });
 

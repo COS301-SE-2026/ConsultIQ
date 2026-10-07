@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RecommendationRow } from "./recommendation-row";
 import type{ Recommendation } from "../types/placements.types";
 
@@ -12,15 +12,17 @@ const ITEMS_PER_PAGE = 10;
 
 export function RecommendationsTable({recommendations, onSelectConsultant, onPlaceConsultant}: RecommendationTableProps){
     const [ currentPage, setCurrentPage ] = useState(1);
+    const [ prevRecommendations, setPrevRecommendations ] = useState(recommendations);
+
+    if (recommendations !== prevRecommendations) {
+        setPrevRecommendations(recommendations);
+        setCurrentPage(1);
+    }
 
     const orderedRecommendations = [...recommendations].sort((left, right) => left.rank - right.rank);
     const totalPages = Math.ceil(orderedRecommendations.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage -1) * ITEMS_PER_PAGE;
     const pageRecommendations = orderedRecommendations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [recommendations]);
 
     return(
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 ">

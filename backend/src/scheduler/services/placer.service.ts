@@ -24,7 +24,7 @@ export class PlacerService {
         window: Interval,
         options: { fillTarget?: number } = {}
     ): FreeGap[] {
-        // Determine the fill target percentage (default to 0.85 since buffer is 0.15)
+        // Fill target: share of each block's free working time that tasks may use (1 - buffer)
         const fillTarget = options.fillTarget ?? (1 - SCHEDULER_RULES.BUFFER_TARGET_PERCENTAGE);
 
         // 1. Get this project's fluid blocks
@@ -48,28 +48,27 @@ export class PlacerService {
 
         // Process each fluid block
         for (const block of fluidBlocks) {
-            let blockIntervals: Interval[] = [{ start: block.start, end: block.end }];
+            // Working time inside the block (core hours, minus lunch, minus holidays)
+            const blockWorkIntervals = this.intersectMulti([{ start: block.start, end: block.end }], workWindows);
 
-            // Intersect with the requested window
-            blockIntervals = this.intersectMulti(blockIntervals, [window]);
+            // Capacity = the block's working time left after calendar entries.
+            // Slots are NOT subtracted here, otherwise the buffer would shrink each time a task is placed.
+            const capacityIntervals = this.subtractMulti(blockWorkIntervals, week.calendarEntries);
+            const capacityMinutes = capacityIntervals.reduce((sum, i) => sum + this.intervalMinutes(i), 0);
+            const allowedCapacity = Math.floor(capacityMinutes * fillTarget);
 
-            // Intersect with working hours (core hours, minus lunch, minus holidays)
-            blockIntervals = this.intersectMulti(blockIntervals, workWindows);
-
-            // Subtract all obstacles (calendar entries, sticky slots)
-            blockIntervals = this.subtractMulti(blockIntervals, obstacles);
-
-            // We now have the raw free intervals for this block
-            const freeGapsForBlock = blockIntervals.map(g => ({ ...g, blockId: block.id }));
-
-            // Apply fillTarget: Stop taking time once we hit the target capacity for this block
-            const allowedCapacity = block.allocatedMinutes * fillTarget;
             const alreadyScheduledInBlock = week.slots
                 .filter(s => s.blockId === block.id)
                 .reduce((sum, s) => sum + this.intervalMinutes(s), 0);
 
             let remainingMinutesToFill = allowedCapacity - alreadyScheduledInBlock;
             if (remainingMinutesToFill <= 0) continue; // Target reached
+
+            // Free gaps: working time within the requested window, minus calendar entries and existing slots
+            let blockIntervals = this.intersectMulti(blockWorkIntervals, [window]);
+            blockIntervals = this.subtractMulti(blockIntervals, obstacles);
+
+            const freeGapsForBlock = blockIntervals.map(g => ({ ...g, blockId: block.id }));
 
             // Trim available gaps to respect the fill target limit
             for (const gap of freeGapsForBlock) {
@@ -104,19 +103,19 @@ export class PlacerService {
     // }
 
     // Accepts ISO strings (any format or offset) or Date objects
-private ms(value: string | Date): number {
-    return new Date(value).getTime();
-}
+    private ms(value: string | Date): number {
+        return new Date(value).getTime();
+    }
 
-private getOverlap(a: Interval, b: Interval): Interval | null {
-    const start = Math.max(this.ms(a.start), this.ms(b.start));
-    const end = Math.min(this.ms(a.end), this.ms(b.end));
-    if (start >= end) return null;
-    return {
-        start: start === this.ms(a.start) ? a.start : b.start,
-        end: end === this.ms(a.end) ? a.end : b.end,
-    };
-}
+    private getOverlap(a: Interval, b: Interval): Interval | null {
+        const start = Math.max(this.ms(a.start), this.ms(b.start));
+        const end = Math.min(this.ms(a.end), this.ms(b.end));
+        if (start >= end) return null;
+        return {
+            start: start === this.ms(a.start) ? a.start : b.start,
+            end: end === this.ms(a.end) ? a.end : b.end,
+        };
+    }
 
     private intersectMulti(sources: Interval[], targets: Interval[]): Interval[] {
         const result: Interval[] = [];
@@ -146,20 +145,20 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
     // }
 
     private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
-    const overlap = this.getOverlap(source, obstacle);
-    if (!overlap) return [source]; // No overlap, return source unchanged
+        const overlap = this.getOverlap(source, obstacle);
+        if (!overlap) return [source]; // No overlap, return source unchanged
 
-    const results: Interval[] = [];
-    // Keep part before obstacle
-    if (this.ms(source.start) < this.ms(overlap.start)) {
-        results.push({ start: source.start, end: overlap.start });
+        const results: Interval[] = [];
+        // Keep part before obstacle
+        if (this.ms(source.start) < this.ms(overlap.start)) {
+            results.push({ start: source.start, end: overlap.start });
+        }
+        // Keep part after obstacle
+        if (this.ms(source.end) > this.ms(overlap.end)) {
+            results.push({ start: overlap.end, end: source.end });
+        }
+        return results;
     }
-    // Keep part after obstacle
-    if (this.ms(source.end) > this.ms(overlap.end)) {
-        results.push({ start: overlap.end, end: source.end });
-    }
-    return results;
-}
 
     private subtractMulti(sources: Interval[], obstacles: Interval[]): Interval[] {
         let current = [...sources];
@@ -199,6 +198,23 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         const end = new Date(interval.end).getTime();
         return Math.round((end - start) / 60000);
     }
+
+    private clampWindowToNow(window: Interval, nowMs: number = Date.now()): Interval | null {
+        const QUARTER_MS = 15 * 60_000;
+        const roundedNowMs = Math.ceil(nowMs / QUARTER_MS) * QUARTER_MS;
+
+        const startMs = Math.max(this.ms(window.start), roundedNowMs);
+        const endMs = this.ms(window.end);
+        if (startMs >= endMs) return null;
+
+        return {
+            start: (startMs === this.ms(window.start)
+                ? window.start
+                : new Date(startMs).toISOString().replace(/\.\d{3}Z$/, 'Z')) as Instant,
+            end: window.end,
+        };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public makeSlot(task: Task, gap: FreeGap, minutes: number): Slot {
 
@@ -236,18 +252,48 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
     }
 
     public priorityScore(task: Task, now: Instant): number {
-        let deadlineTerm = 0;
+        const urgencyWeight = 0.25;
+        const complexityWeight = 0.15;
+        const deadlineWeight = 0.60;
+
+        let deadlineScore = 0;
+
         if (task.deadline) {
             const nowTime = new Date(now).getTime();
             const deadlineTime = new Date(task.deadline).getTime();
-            const hoursToDeadline = (deadlineTime - nowTime) / 3600000;
-            deadlineTerm = 1 / Math.max(hoursToDeadline, 1);
+
+            const hoursToDeadline =
+                (deadlineTime - nowTime) / 3_600_000;
+
+            if (hoursToDeadline <= 1) {
+                deadlineScore = 1;
+            } else if (hoursToDeadline <= 8) {
+                deadlineScore = 0.9;
+            } else if (hoursToDeadline <= 24) {
+                deadlineScore = 0.75;
+            } else if (hoursToDeadline <= 72) {
+                deadlineScore = 0.5;
+            } else if (hoursToDeadline <= 168) {
+                deadlineScore = 0.25;
+            } else {
+                deadlineScore = 0.1;
+            }
         }
-        return task.urgency + task.complexity + deadlineTerm;
+
+        const MAX_URGENCY = 5;
+        const MAX_COMPLEXITY = 5;
+
+
+        return (
+            (task.urgency / MAX_URGENCY) * urgencyWeight +
+            (task.complexity / MAX_COMPLEXITY) * complexityWeight +
+            deadlineScore * deadlineWeight
+        );
     }
 
     public blockMinutes(placement: AllocationSummary): number {
-        return Math.round((placement.allocation / 100) * SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES);
+        const dailyMinutes = SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES / SCHEDULER_RULES.WORKING_DAYS_PER_WEEK;
+        return Math.round((placement.allocation / 100) * dailyMinutes);
     }
 
     /**
@@ -517,7 +563,7 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         const rawRemaining = this.remainingMinutes(task, stickySlots);
         const need = this.roundUp(rawRemaining, SCHEDULER_RULES.MIN_BLOCK_MINUTES);
 
-        const gaps = this.freeGaps(week, task.projectId, window); // Fill target is default 0.85
+        const gaps = this.freeGaps(week, task.projectId, window); // Fill target defaults to 1 - BUFFER_TARGET_PERCENTAGE
 
         const { plan, remaining } = this.planFragments(task, gaps, need, week.timezone);
 
@@ -699,6 +745,13 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
             placed: [],
             unplaced: []
         };
+
+        // Never place into the past: start the window at "now" (rounded up to the next 15 min)
+        const window = this.clampWindowToNow(options.window);
+        if (!window) {
+            return report;
+        }
+        options = { ...options, window };
 
         // 1. Build the movable set
         let movableTasks = options.tasks

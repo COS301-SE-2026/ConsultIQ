@@ -342,7 +342,13 @@ export class WeekService {
             }
         }
 
-        const fullCtx: ValidateContext = { ...ctx, previousWeek: week };
+        //const fullCtx: ValidateContext = { ...ctx, previousWeek: week };
+        // A calendar change may always touch the entry it names
+        const bumpedEntityIds = [...(ctx.bumpedEntityIds ?? [])];
+        if (change.type === 'calendar_remove') bumpedEntityIds.push(change.entryId);
+        if (change.type === 'calendar_upsert' && change.entry.id) bumpedEntityIds.push(change.entry.id);
+
+        const fullCtx: ValidateContext = { ...ctx, bumpedEntityIds, previousWeek: week };
         const validation = this.validatorService.validate(clone, fullCtx);
         const safeIssues = validation.issues ?? [];
 
@@ -650,7 +656,8 @@ export class WeekService {
         if (existingIdx > -1) {
             week.calendarEntries[existingIdx] = { ...week.calendarEntries[existingIdx], ...dto } as CalendarEntry;
         } else {
-            week.calendarEntries.push(dto as CalendarEntry);
+            const newEntry = {...dto, id: dto.id ?? randomUUID()} as CalendarEntry;
+            week.calendarEntries.push(newEntry);
         }
     }
 

@@ -12,7 +12,8 @@ import {
     type ToggleSubtaskDto,
     type SchedulerCommitResult,
     type Interval,
-    type SplitTaskDto
+    type SplitTaskDto,
+    type CalendarEntryDto,
 } from "../types/scheduler.types";
 import {
     designWeek,
@@ -23,6 +24,7 @@ import {
     underusedWeek
 
 } from "../types/scheduler.fixtures";
+import { getProjectColour } from "../components/week/project-colour";
 import { type BacklogProjectOption } from "../components/backlog-panel";
 import TaskForm, { type TaskSubmission } from "../components/task-form";
 import SchedulerAlertBanner from "../components/scheduler-alert-banner";
@@ -31,7 +33,8 @@ import TaskBoard from "../components/task-board";
 import SplitTaskDialog from "../components/split-task-dialog";
 import {
     getSchedulerWeek, setSchedulerTaskStatus, toggleSchedulerSubtask, toCalendarWeek, createSchedulerTask,
-    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks,moveBlock, resizeBlock, pinBlock, moveSlot 
+    updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks,moveBlock, resizeBlock, pinBlock, moveSlot,
+    createCalendarEntry, updateCalendarEntry, deleteCalendarEntry 
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
@@ -51,7 +54,6 @@ interface SchedulerTaskTabProps {
 
 const FIXTURE_WEEKS = [designWeek, holidayWeek, leaveWeek, batchWeek, emptyWeek, underusedWeek];
 
-const projectColors = ["#2563eb", "#059669", "#d97706"];
 
 
 type SchedulerTab = "calendar" | "tasks" | "notifications";
@@ -65,6 +67,12 @@ function getCurrentWeekStart(timeZone: string): string {
     const daysSinceMonday = (date.getUTCDay() + 6) % 7;
     date.setUTCDate(date.getUTCDate() - daysSinceMonday);
 
+    return date.toISOString().slice(0, 10);
+}
+
+function shiftWeek(weekStart: string, weeks: number): string {
+    const date = new Date(`${weekStart}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + weeks * 7);
     return date.toISOString().slice(0, 10);
 }
 
@@ -108,13 +116,7 @@ export default function SchedulerPage() {
     const [dismissed, setDismissed] = useState<string[]>([]);
 
     const schedulerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const currentWeekStart = getCurrentWeekStart(schedulerTimeZone);
-    const [weekIndex, setWeekIndex] = useState(() => {
-        const index = FIXTURE_WEEKS.findIndex((fixture) => fixture.weekStart === currentWeekStart);
-        return index >= 0 ? index : 0;
-    });
-    const week = FIXTURE_WEEKS[weekIndex];
-    const selectedWeekStart = week.weekStart;
+    const [selectedWeekStart, setSelectedWeekStart] = useState(() => getCurrentWeekStart(schedulerTimeZone));
 
     const [loadedWeek, setLoadedWeek] = useState<{ weekStart: string; week?: SchedulerWeekResponse; error?: string; }>({ weekStart: "" });
     const apiWeek = loadedWeek.weekStart === selectedWeekStart ? loadedWeek.week : undefined;
@@ -149,11 +151,11 @@ export default function SchedulerPage() {
             if (cancelled) return;
 
             setProjects(assigned.filter((item) => item.placementStatus === "ACTIVE")
-                .map((item, index) => ({
+                .map((item) => ({
                     id: item.project.id,
                     label: item.project.projectName,
                     clientName: item.project.clientName,
-                    color: projectColors[index % projectColors.length],
+                    color: getProjectColour(item.project.id).color,
                     allocation: item.placementAllocation
                 })));
         })
@@ -167,11 +169,11 @@ export default function SchedulerPage() {
 
     }, [])
 
-    const underused = [...week.metadata.alerts, ...week.metadata.warnings].find(
-        (i) => i.code === ReasonCode.UNDERUTILISED,
-    );
+    const weekIssues = serverWeek ? [...serverWeek.metadata.alerts, ...serverWeek.metadata.warnings] : [];
 
-    const dismissKey = `${week.id}:${ReasonCode.UNDERUTILISED}`;
+    const underused = weekIssues.find((i) => i.code === ReasonCode.UNDERUTILISED);
+
+    const dismissKey = `${serverWeek?.id ?? selectedWeekStart}:${ReasonCode.UNDERUTILISED}`;
     const showUnderused = underused && !dismissed.includes(dismissKey);
 
     function handleSuggestion(s: ActionSuggestion) {
@@ -192,8 +194,11 @@ export default function SchedulerPage() {
     const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
     const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
     const [splitTask, setSplitTask] = useState<Task | null>(null);
+    const [createEntryRequested, setCreateEntryRequested] = useState(false);
 
-    const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
+    //const schedulerIssues = [...designWeek.metadata.alerts, ...designWeek.metadata.warnings];
+    // The underutilised issue has its own card, so leave it out of the banner
+    const schedulerIssues = weekIssues.filter((i) => i.code !== ReasonCode.UNDERUTILISED);
 
     const serverSubtaskProgressByTaskId = Object.fromEntries(
         (serverWeek?.tasks ?? []).map((task) => [
@@ -222,7 +227,7 @@ export default function SchedulerPage() {
     }
 
     function handleAlertAction() {
-        console.log("Handle alert actins"); // still to be implemented
+        console.log("Handle alert actions"); // still to be implemented
     }
 
     async function handleTaskSubmit(submission: TaskSubmission) {
@@ -360,6 +365,25 @@ export default function SchedulerPage() {
         await commitPlacement((v) => toggleSchedulerSubtask(taskId, subtaskId, v));
     };
 
+    async function handleSaveEntry(dto: CalendarEntryDto) {
+        const ok = await commitPlacement((v) => {
+            const body = { ...dto, expectedVersion: v };
+            return dto.id
+                ? updateCalendarEntry(selectedWeekStart, dto.id, body)
+                : createCalendarEntry(selectedWeekStart, body);
+        });
+        if (ok) setCreateEntryRequested(false);
+        return ok;
+    }
+
+    const handleDeleteEntry = (entryId: string) =>
+        commitPlacement((v) => deleteCalendarEntry(entryId, v));
+
+    function openCreateEntry() {
+        setActiveTab("calendar");
+        setCreateEntryRequested(true);
+    }
+
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} />
@@ -372,8 +396,10 @@ export default function SchedulerPage() {
                         projects={projects.map(({ id, label, clientName, allocation }) => ({
                             id, name: label, clientName, allocation: allocation ?? 0
                         }))}
-                        onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
-                        onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
+                        // onPrevWeek={weekIndex > 0 ? () => setWeekIndex((i) => i - 1) : undefined}
+                        // onNextWeek={weekIndex < FIXTURE_WEEKS.length - 1 ? () => setWeekIndex((i) => i + 1) : undefined}
+                        onPrevWeek={() => setSelectedWeekStart((w) => shiftWeek(w, -1))}
+                        onNextWeek={() => setSelectedWeekStart((w) => shiftWeek(w, 1))}
                     />
                 </header>
 
@@ -392,6 +418,12 @@ export default function SchedulerPage() {
                         </div>
 
                         <div className="my-2 flex items-center gap-2">
+                              <button type="button"
+                                onClick={openCreateEntry}
+                                className="my-2 rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
+                            >
+                                + Event
+                            </button>
                             <button type="button"
                                 onClick={() => OpenCreateTask()}
                                 className="my-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"
@@ -415,12 +447,16 @@ export default function SchedulerPage() {
                                         <WeekCalendar
                                             key={`${serverWeek.id}:${serverWeek.version}`}
                                             weekData={serverWeek}
-                                            projects={projects.map(({ id, label, clientName, allocation }) => ({ id, name: label, clientName, allocation }))}
+                                            projects={projects}
                                             onMoveBlock={handleMoveBlock}
                                             onResizeBlock={handleResizeBlock}
                                             onPinBlock={handlePinBlock}
                                             onMoveSlot={handleMoveSlot}
                                             onSetStatus={handleSetStatus}
+                                            createEntryRequested={createEntryRequested}
+                                            onCreateEntryDone={() => setCreateEntryRequested(false)}
+                                            onSaveEntry={handleSaveEntry}
+                                            onDeleteEntry={handleDeleteEntry}
                                         />
                                     </div>
                                 )}
@@ -447,11 +483,11 @@ export default function SchedulerPage() {
                             <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
                                 <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
                                     <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
-                                    {showUnderused && (
+                                    {showUnderused && serverWeek && (
                                         <UnderutilisationCard
                                             issue={underused}
-                                            metadata={week.metadata}
-                                            weekStart={week.weekStart}
+                                            metadata={serverWeek.metadata}
+                                            weekStart={serverWeek.weekStart}
                                             onSuggestion={handleSuggestion}
                                             onDismiss={() => setDismissed((d) => [...d, dismissKey])}
                                         />

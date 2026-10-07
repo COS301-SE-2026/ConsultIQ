@@ -212,7 +212,13 @@ export class ValidatorService {
             if (bumpedIds.has(prev.id)) continue;
 
             const current = currentEntries.get(prev.id);
-            if (current?.start !== prev.start || current?.end !== prev.end) {
+            if (!current) {
+                issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Calendar entry ${prev.id} was removed.` });
+                continue;
+            }
+
+            // Compare instants, not strings, so "…00Z" and "…00.000Z" count as the same time
+            if (Date.parse(current.start) !== Date.parse(prev.start) || Date.parse(current.end) !== Date.parse(prev.end)) {
                 issues.push({ level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: [prev.id], message: `Calendar entry ${prev.id} moved.` });
             }
         }

@@ -137,7 +137,7 @@ export interface ProjectBlock {
 export interface CalendarEntry {
     id: string;
     weekId: string;
-    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc';
+    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc' | 'lunch';
     start: string;
     end: string;
     tags: string[];
@@ -147,7 +147,7 @@ export interface CalendarEntryDto {
     id?: string;
     weekId?: string;
 
-    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc';
+    type: 'meeting' | 'training' | 'travel' | 'personal' | 'leave' | 'ad-hoc' | 'lunch';
     start: string;
     end: string;
     tags: string[];

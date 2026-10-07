@@ -13,16 +13,18 @@ import { useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import ResizeHandle from "./resize-handle";
 import { getProjectColour } from "./project-colour";
+import { type BacklogProjectOption } from "../backlog-panel";
 
 export interface ProjectBlockProps {
     readonly block: ProjectBlockType;
     readonly tasks: Task[];
-    readonly project: ProjectSummary;
+    readonly project: BacklogProjectOption;
     readonly timezone: string;
     readonly selected?: boolean;
     readonly onResize?: (blockId: string, to: Interval) => void;
     readonly onClick?: () => void;
     readonly onTogglePin?: (pinned: boolean) => void;
+    readonly earliestStartMin?: number; // can't extend the top edge earlier than this
 }
 
 const MIN_BLOCK_MINUTES = 60;
@@ -36,6 +38,7 @@ export default function ProjectBlock({
     onClick,
     onResize,
     onTogglePin,
+    earliestStartMin = DAY_START_HOUR * 60,
 }: ProjectBlockProps) {
     const { color, lightColor } = getProjectColour(block.projectId);
     const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({
@@ -59,7 +62,7 @@ export default function ProjectBlock({
 
     function clamp(edge: "top" | "bottom", mins: number) {
         return edge === "top"
-            ? Math.max(DAY_START_HOUR * 60 - startMin, Math.min(mins, durationMin - MIN_BLOCK_MINUTES))
+            ? Math.max(Math.min(0, earliestStartMin - startMin), Math.min(mins, durationMin - MIN_BLOCK_MINUTES))
             : Math.min(DAY_END_HOUR * 60 - endMin, Math.max(mins, -(durationMin - MIN_BLOCK_MINUTES)));
     }
 
@@ -125,7 +128,7 @@ export default function ProjectBlock({
                 {...attributes}
                 type="button"
                 aria-pressed={selected}
-                aria-label={`${project.name}, ${start} to ${end}`}
+                aria-label={`${project.label}, ${start} to ${end}`}
                 onClick={onClick}
                 className="absolute inset-0 w-full h-full focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#002D62]"
                 style={{ cursor: isDragging ? "grabbing" : "grab" }}
@@ -135,7 +138,7 @@ export default function ProjectBlock({
             <div className="relative h-full flex flex-col justify-end pointer-events-none">
                 <div className="flex items-center gap-1 px-2 py-1 min-w-0">
                     <span className="text-[10px] font-semibold truncate" style={{ color: textColour }}>
-                        {hours.toFixed(1)}h · {project.name}
+                        {hours.toFixed(1)}h · {project.label}
                     </span>
                     {project.clientName && (
                         <span className="text-[10px] truncate" style={{ color: mutedColour }}>

@@ -56,6 +56,10 @@ async function refreshWithCrossTabLock(): Promise<string | null> {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
+    if (error.response?.status === 403) {
+        window.location.replace('/');
+        throw error;
+    }
     const originalRequest = error.config;
 
     if (error.response?.status !== 401 || originalRequest._retry) {

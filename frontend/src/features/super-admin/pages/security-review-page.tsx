@@ -19,7 +19,7 @@ const FLAG_TYPE_LABELS: Record<CvSecurityFlagType, string> = {
     HIDDEN_OR_OBFUSCATED_TEXT: "Hidden or obfuscated text",
     TOOL_USE_OR_EXTERNAL_REQUEST: "External request attempt",
     SCHEMA_MANIPULATION_ATTEMPT: "Schema manipulation attempt",
-    OTHER_SUSPICIOUS_CONTENT: "Other suspicious content",
+    OTHER_SUSPICIOUS_CONTENT: "Other malicious content",
 };
 
 function SecurityReviewPage() {
@@ -195,7 +195,7 @@ function SecurityReviewPage() {
                                                                 key={flagType}
                                                                 className="text-xs font-semibold px-2 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200"
                                                             >
-                                                                {FLAG_TYPE_LABELS[flagType] ?? "Other suspicious content"}
+                                                                {FLAG_TYPE_LABELS[flagType] ?? "Other malicious content"}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -213,7 +213,7 @@ function SecurityReviewPage() {
                                                     {item.securityFlags.map((flag, i) => (
                                                         <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                                             <p className="text-sm font-semibold text-amber-800">
-                                                                {FLAG_TYPE_LABELS[flag.flagType] ?? "Other suspicious content"}
+                                                                {FLAG_TYPE_LABELS[flag.flagType] ?? "Other malicious content"}
                                                             </p>
                                                             <p className="text-xs text-gray-500 mt-1">Found in: {flag.field}</p>
                                                             <p className="text-sm text-gray-800 mt-2 font-mono break-all">

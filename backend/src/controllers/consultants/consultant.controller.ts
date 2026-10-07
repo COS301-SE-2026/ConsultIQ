@@ -55,7 +55,7 @@ export class ConsultantController {
     @Req() req: any,
   ) {
     const userRole = req.user?.role ?? 'PROJECT_MANAGER';
-    const managerUserId = req.user?.id;
+    const managerUserId = req.user?.userId;
     return await this.consultantService.getAllConsultants(
       parseInt(page, 10),
       parseInt(limit, 10),

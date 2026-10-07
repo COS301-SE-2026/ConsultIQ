@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 interface RecommendationRowProps {
     readonly recommendation: Recommendation;
     readonly onSelectConsultant: (id: string) => void;
-    readonly onPlaceConsultant: (consultantId: string) => Promise<void>;
+    readonly onPlaceConsultant: (consultantId: string) => Promise<boolean>;
 }
 
 export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceConsultant }: RecommendationRowProps) {
@@ -89,8 +89,8 @@ export function RecommendationRow({ recommendation, onSelectConsultant, onPlaceC
                                 disabled={isPlacing}
                                 onClick={async() =>{ setIsPlacing(true);
                                     try{
-                                        await onPlaceConsultant(recommendation.consultantId);
-                                        setIsConfirming(false);
+                                        const placed = await onPlaceConsultant(recommendation.consultantId);
+                                        if (placed) setIsConfirming(false);
                                     }finally{
                                         setIsPlacing(false);
                                     }

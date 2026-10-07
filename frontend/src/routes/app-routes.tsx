@@ -2,7 +2,7 @@ import { BrowserRouter, useLocation, Routes, Route, Navigate } from "react-route
 import { AnimatePresence } from "framer-motion";
 
 import PageTransition from "../components/layout/page-transition";
-
+import { ROLES } from "../types/global.types";
 // Authentication
 import RegisterUserPage from "../features/authentication/pages/register-user-page";
 import LoginForm from "../features/authentication/pages/login-page";
@@ -60,7 +60,7 @@ import BrandIconsSection from "../brand style guide/components/brand-icons-secti
 import BrandColorsSection from "../brand style guide/components/brand-colors-section.tsx";
 import BrandChangeLogSection from "../brand style guide/components/brand-changelog-section.tsx";
 import BrandLogoSection from "../brand style guide/components/brand-logo-section.tsx";
-
+const { CONSULTANT, CONSULTANT_MANAGER, PROJECT_MANAGER, ADMIN, SUPER_ADMIN } = ROLES;
 function AnimatedRoutes() {
     const location = useLocation();
 
@@ -89,36 +89,66 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
+                
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
+
+                {/* Any authenticated user */}
                 <Route element={<ProtectedRoute />}>
-                    <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
-                    <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
-                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
-                    <Route path="/super-admin/security-review" element={<PageTransition><SecurityReviewPage /></PageTransition>} />
-                    <Route path="/super-admin-dashboard" element={<PageTransition><SuperAdminDashboardPage /></PageTransition>} />
-                    <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
-                    <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
-                    <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
-                    <Route path="/consultant-projects" element={<PageTransition><ConsultantProjects /></PageTransition>}></Route>
-                    <Route path="/under-construction" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
-                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
-                    <Route path="/create-profile/:userId" element={<ProtectedRoute><PageTransition><CreateProfilePage /></PageTransition></ProtectedRoute>} />
-                    <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage /></PageTransition>} />
-                    <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
                     <Route path="/notifications" element={<PageTransition><NotificationPage /></PageTransition>} />
-                    <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
-                    <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>}></Route>
-                    <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
+                </Route>
+
+                {/* Consultant */}
+                <Route element={<ProtectedRoute allowedRoles={[CONSULTANT]} />}>
+                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
+                    <Route path="/consultant-projects" element={<PageTransition><ConsultantProjects /></PageTransition>} />
+                    <Route path="/skill-growth" element={<PageTransition><GrowthCompass /></PageTransition>} />
+                    <Route path="/schedule" element={<PageTransition><SchedulerPage /></PageTransition>} />
+                    <Route path="/under-construction" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
+                </Route>
+
+                {/* Consultant + Consultant Manager */}
+                <Route element={<ProtectedRoute allowedRoles={[CONSULTANT, CONSULTANT_MANAGER]} />}>
+                    <Route path="/create-profile/:userId" element={<PageTransition><CreateProfilePage /></PageTransition>} />
                     <Route path="/create-profile-entry/:userId" element={<PageTransition><ProfileCreationEntry /></PageTransition>} />
+                </Route>
+
+                {/* Consultant Manager */}
+                <Route element={<ProtectedRoute allowedRoles={[CONSULTANT_MANAGER]} />}>
+                    <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
+                    <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
+                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
+                    <Route path="/manager-skill-advisor" element={<PageTransition><ManagerSkillShortage /></PageTransition>} />
+                </Route>
+
+                {/* Project Manager */}
+                <Route element={<ProtectedRoute allowedRoles={[PROJECT_MANAGER]} />}>
+                    <Route path="/projects" element={<PageTransition><ProjectListPage /></PageTransition>} />
+                    <Route path="/project-specification" element={<PageTransition><ProjectSpecificationPage /></PageTransition>} />
+                    <Route path="/project-scoring-config" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
+                    <Route path="/project-scoring-config/:projectId" element={<PageTransition><ProjectScoringOverridePage /></PageTransition>} />
+                    <Route path="/placement-dashboard/:projectId/:runId" element={<PageTransition><PlacementDashboard /></PageTransition>} />
                     <Route path="/skill-gap" element={<PageTransition><SkillGapPage mode="portfolio" /></PageTransition>} />
                     <Route path="/skill-gap/:projectId" element={<PageTransition><SkillGapPage mode="project" /></PageTransition>} />
-                    <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />
-                    <Route path="/schedule" element={<PageTransition><SchedulerPage /></PageTransition>} />
-                    <Route path="/manager-skill-advisor" element={<PageTransition><ManagerSkillShortage /></PageTransition>} />
-                    <Route path="/skill-growth" element={<PageTransition><GrowthCompass/></PageTransition>} />
+                </Route>
 
+                {/* Everyone except Consultant */}
+                <Route element={<ProtectedRoute allowedRoles={[CONSULTANT_MANAGER, PROJECT_MANAGER, ADMIN, SUPER_ADMIN]} />}>
+                    <Route path="/register" element={<PageTransition><RegisterUserPage /></PageTransition>} />
+                </Route>
+
+                {/* Admin */}
+                <Route element={<ProtectedRoute allowedRoles={[ADMIN]} />}>
+                    <Route path="/admin-dashboard" element={<PageTransition><AdminPage /></PageTransition>} />
+                    <Route path="/analytics-dashboard" element={<PageTransition><AnalyticsPage /></PageTransition>} />
+                    <Route path="/admin-scoring-config" element={<PageTransition><AdminScoringConfigPage /></PageTransition>} />
+                </Route>
+
+                {/* Super Admin */}
+                <Route element={<ProtectedRoute allowedRoles={[SUPER_ADMIN]} />}>
+                    <Route path="/super-admin-dashboard" element={<PageTransition><SuperAdminDashboardPage /></PageTransition>} />
+                    <Route path="/super-admin/security-review" element={<PageTransition><SecurityReviewPage /></PageTransition>} />
                 </Route>
 
                 {/* Catch-all: Redirect unknown URLs to the public landing page */}

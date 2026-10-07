@@ -5,13 +5,19 @@ import type{ Recommendation } from "../types/placements.types";
 interface RecommendationTableProps{
     readonly recommendations: Recommendation[];
     readonly onSelectConsultant: (id: string)=> void;
-    readonly onPlaceConsultant: (consultantId : string) => Promise<void>;
+    readonly onPlaceConsultant: (consultantId : string) => Promise<boolean>;
 }
 
 const ITEMS_PER_PAGE = 10;
 
 export function RecommendationsTable({recommendations, onSelectConsultant, onPlaceConsultant}: RecommendationTableProps){
     const [ currentPage, setCurrentPage ] = useState(1);
+    const [ prevRecommendations, setPrevRecommendations ] = useState(recommendations);
+
+    if (recommendations !== prevRecommendations) {
+        setPrevRecommendations(recommendations);
+        setCurrentPage(1);
+    }
 
     const orderedRecommendations = [...recommendations].sort((left, right) => left.rank - right.rank);
     const totalPages = Math.ceil(orderedRecommendations.length / ITEMS_PER_PAGE);
@@ -22,27 +28,34 @@ export function RecommendationsTable({recommendations, onSelectConsultant, onPla
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-6 ">
             <h2 className="text-lg font-bold">Top Recommendations</h2>
             <div className="overflow-x-auto py-4">
-                <table className="min-w-[760px] w-full text-left border-collapse">
-                    <thead>
-                        <tr className="border-b border-slate-200 text-sm folt-bold">
-                            <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
-                            <th className="pb-4 px-6 text-lg">Consultant</th>
-                            <th className="pb-4 px-6 text-lg text-center">Fit Score</th>
-                            <th className="pb-4 px-6 text-lg  text-center">Availability</th>
-                            <th className="pb-4 px-6 text-lg text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {pageRecommendations.map((item) =>(
-                            <RecommendationRow
-                            key={item.consultantId}
-                            recommendation={item}
-                            onSelectConsultant={onSelectConsultant}
-                            onPlaceConsultant={onPlaceConsultant}
-                            />
-                        ))}
-                    </tbody>
-                </table>
+                {orderedRecommendations.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-slate-500"> No consultants match your search. </p>
+                ) : (
+                    <div className = "overflow-x-auto py-4">
+                        <table className="min-w-[760px] w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-200 text-sm folt-bold">
+                                    <th className="pb-4 px-6 text-lg text-center w-16"  style={{ color: "var(--color-text-primary)"}}>Rank</th>
+                                    <th className="pb-4 px-6 text-lg">Consultant</th>
+                                    <th className="pb-4 px-6 text-lg text-center">Fit Score</th>
+                                    <th className="pb-4 px-6 text-lg  text-center">Availability</th>
+                                    <th className="pb-4 px-6 text-lg text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {pageRecommendations.map((item) =>(
+                                    <RecommendationRow
+                                    key={item.consultantId}
+                                    recommendation={item}
+                                    onSelectConsultant={onSelectConsultant}
+                                    onPlaceConsultant={onPlaceConsultant}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>                        
+                    </div>
+                )}
+
             </div>
            
            {totalPages > 1 && (

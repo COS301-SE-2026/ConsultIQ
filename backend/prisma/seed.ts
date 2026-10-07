@@ -39,7 +39,7 @@ const BATCH_SIZE = 10;
 const GENERATED_CONSULTANT_COUNT = 100;
 const GENERATED_PROJECT_COUNT = 20;
 const DEFAULT_CONSULTANT_PASSWORD = 'SecureConsultantPass123!';
-const COS301_PASSWORD = process.env.COS301_SEED_PASSWORD || '';
+const COS301_PASSWORD = process.env.COS301_SEED_PASSWORD || 'SecureSuperAdminPass123!';
 const BASE_COS301_EMAIL = 'cos301queries@cs.up.ac.za';
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -314,6 +314,12 @@ async function seedReservedUsers() {
             process.env.BOOTSTRAP_CONSULTANT_FULL_NAME || 'Alice Consultant',
             process.env.BOOTSTRAP_CONSULTANT_PASSWORD || 'SecureConsultantPass123!',
             Role.CONSULTANT
+        ),
+        seedUser(
+            process.env.BOOSTRAP_SUPER_ADMIN_EMAIL || 'benjaminsuperadmin@consultiq.dev',
+            process.env.BOOSTRAP_SUPER_ADMIN_FULL_NAME || 'Benjamin Supeman',
+            process.env.BOOSTRAP_SUPER_ADMIN_PASSWORD || 'SecureSuperAdminPass123!',
+            Role.SUPER_ADMIN
         ),
     ]);
 
@@ -731,6 +737,39 @@ async function seedPublicHolidays(): Promise<void> {
     console.log(`Seeded ${holidays.length} public holidays for years ${seedYears.join(', ')}.`);
 }
 
+async function seedProfileNotificationsForAll(): Promise<void> {
+    console.log('Seeding profile creation notifications for all profiled consultants...');
+
+    const profiledConsultants = await prisma.consultant.findMany({
+        select: { userId: true }
+    });
+
+    console.log(`Found ${profiledConsultants.length} profiles. Generating notifications...`);
+
+    await runInBatches(profiledConsultants, async (consultant) => {
+        const existingNotification = await prisma.notification.findFirst({
+            where: {
+                userId: consultant.userId,
+                title: 'Profile creation! 🎉'
+            }
+        });
+
+        if (!existingNotification) {
+            await prisma.notification.create({
+                data: {
+                    userId: consultant.userId,
+                    title: 'Profile creation! 🎉',
+                    body: 'Your consultant profile has been completed.',
+                    isRead: false,
+                    isArchived: false,
+                },
+            });
+        }
+    });
+
+    console.log('Successfully seeded profile notifications.');
+}
+
 // --- Consultants without profiles ---
 
 async function seedUnprofiledConsultants(): Promise<void> {
@@ -797,6 +836,7 @@ async function main(): Promise<void> {
 
     await seedPublicHolidays();
     await seedUnprofiledConsultants();
+    await seedProfileNotificationsForAll();
     await printSummary();
 }
 

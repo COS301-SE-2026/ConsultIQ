@@ -19,23 +19,23 @@ const mockRecommendation = {
     isPlaced: false,
 };
 
+// Placement dashboard is guarded to PROJECT_MANAGER only
 async function mockAuth(page: Page) {
     await page.route('**/auth/me', async (route) => {
         await route.fulfill({
             status: 200,
             contentType: 'application/json',
             body: JSON.stringify({
-                userId: 'test-admin-id',
-                email: 'admin@consultiq.com',
-                role: 'ADMIN',
-                dashboardRoute: '/admin-dashboard',
-            })
+                userId: 'test-pm-id',
+                email: 'pm@consultiq.com',
+                role: 'PROJECT_MANAGER',
+                dashboardRoute: '/projects',
+            }),
         });
     });
 }
 
 async function mockNetworkRequests(page: Page) {
-
     await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}`), async (route) => {
         await route.fulfill({
             status: 200,
@@ -76,7 +76,6 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render dashboard header', async ({ page }) => {
-
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
 
         await expect(
@@ -85,7 +84,6 @@ test.describe('UI Test Placement Dashboard', () => {
     });
 
     test('should render match run count stats', async ({ page }) => {
-
         await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
 
         await expect(page.getByText(String(mockStats.totalEvaluated), { exact: true })).toBeVisible();
@@ -93,12 +91,89 @@ test.describe('UI Test Placement Dashboard', () => {
         await expect(page.getByText(String(mockStats.totalExcluded), { exact: true })).toBeVisible();
     });
 
+    test('should present placement service errors with consultant context and recovery guidance', async ({ page }) => {
+        const recommendations = Array.from({ length: 10 }, (_, index) => ({
+            ...mockRecommendation,
+            consultantId: `c${index + 1}`,
+            consultantName: `Consultant ${index + 1}`,
+            consultantEmail: `consultant${index + 1}@consultiq.com`,
+            rank: index + 1,
+            finalScore: 90 - index,
+        }));
+        await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}`), async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify(recommendations),
+            });
+        });
+
+        await page.route('**/auth/csrf-token', async (route) => {
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                headers: {
+                    'access-control-allow-origin': route.request().headers().origin ?? '*',
+                    'access-control-allow-credentials': 'true',
+                },
+                body: JSON.stringify({ csrfToken: 'test-csrf-token' }),
+            });
+        });
+
+        await page.route((url) => url.pathname.includes(`/projects/${mockProjectId}/placements`), async (route) => {
+            const origin = route.request().headers().origin ?? '*';
+            if (route.request().method() === 'OPTIONS') {
+                await route.fulfill({
+                    status: 204,
+                    headers: {
+                        'access-control-allow-origin': origin,
+                        'access-control-allow-credentials': 'true',
+                        'access-control-allow-methods': 'POST, OPTIONS',
+                        'access-control-allow-headers': 'content-type, x-csrf-token',
+                    },
+                });
+                return;
+            }
+
+            await route.fulfill({
+                status: 409,
+                contentType: 'application/json',
+                headers: {
+                    'access-control-allow-origin': origin,
+                    'access-control-allow-credentials': 'true',
+                },
+                body: JSON.stringify({ message: 'Cannot place consultant: project team size limit of 3 has been reached.' }),
+            });
+        });
+
+        await page.goto(`/placement-dashboard/${mockProjectId}/${mockRunId}`);
+        const tenthRecommendation = page.getByRole('row').filter({ hasText: 'Consultant 10' });
+        await tenthRecommendation.scrollIntoViewIfNeeded();
+        await tenthRecommendation.getByRole('button', { name: 'Place Consultant' }).click();
+        await tenthRecommendation.getByRole('button', { name: 'Confirm Placement' }).click();
+
+        const placementAlert = page.getByRole('alert');
+        await expect(placementAlert).toContainText('Placement could not be completed');
+        await expect(placementAlert).toContainText('Recommendation #10: Consultant 10');
+        await expect(placementAlert).toContainText('project team size limit of 3');
+        await expect(placementAlert).toContainText('Check the project team limit');
+        await expect(page.getByRole('button', { name: 'Confirm Placement' })).toBeVisible();
+
+        const failureToast = page.getByText('Placement failed');
+        await expect(failureToast).toBeVisible();
+        await expect(failureToast).toBeInViewport();
+        await expect(page.getByText('Team size limit (Recommendation #10)')).toBeVisible();
+        await expect(failureToast).not.toContainText('project team size limit of 3');
+        await expect(failureToast).toBeHidden({ timeout: 5000 });
+        await expect(placementAlert).toContainText('project team size limit of 3');
+    });
+
     test('should render recommendations passed using router location state', async ({ page }) => {
         await page.route((url) => url.pathname.endsWith(`/projects/${mockProjectId}/match-run/${mockRunId}/status`), async (route) => {
             await route.fulfill({
                 status: 200,
                 contentType: 'application/json',
-                body: JSON.stringify({ runId: mockRunId, status: 'IN_PROGRESS', progress: 50 })
+                body: JSON.stringify({ runId: mockRunId, status: 'IN_PROGRESS', progress: 50 }),
             });
         });
 

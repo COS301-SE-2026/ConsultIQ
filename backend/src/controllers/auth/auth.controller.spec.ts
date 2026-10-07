@@ -90,7 +90,7 @@ describe('AuthController', () => {
 
       const result = await controller.register(dto as any, mockReq('admin-1', Role.ADMIN) as any);
 
-      expect(authService.createUser).toHaveBeenCalledWith(dto);
+      expect(authService.createUser).toHaveBeenCalledWith(dto, undefined);
       expect(result).toEqual(expected);
     });
 
@@ -109,6 +109,7 @@ describe('AuthController', () => {
 
       const result = await controller.register(dto as any, mockReq('mgr-1', Role.CONSULTANT_MANAGER) as any);
 
+      expect(authService.createUser).toHaveBeenCalledWith(dto, 'mgr-1');
       expect(result).toEqual(expected);
     });
 

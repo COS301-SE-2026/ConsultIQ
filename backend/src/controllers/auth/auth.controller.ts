@@ -74,7 +74,11 @@ export class AuthController {
         'Consultant managers can only register Consultant accounts',
       );
     }
-    return await this.authService.createUser(dto);
+    const registeredByUserId =
+      requestingUser?.role === Role.CONSULTANT_MANAGER
+        ? requestingUser.userId
+        : undefined;
+    return await this.authService.createUser(dto, registeredByUserId);
   }
 
   @Public()

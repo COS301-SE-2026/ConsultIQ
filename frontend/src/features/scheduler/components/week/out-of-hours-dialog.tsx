@@ -23,7 +23,7 @@ export default function OutOfHoursConfirmDialog({isWeekend =false, onConfirm,onC
             <div className="flex flex-col gap-3" >
                 <h2 id="ooh-title" className="text-sm font-bold text-slate-800">Outside core hours</h2>
                 <p className="text-sm text-slate-700">
-                    This is {isWeekend ? "on a weekend" : "outside core hours (08:00-16:00)"}. It will be tagged,
+                    This is {isWeekend ? "on a weekend" : "outside core hours (07:00-16:00)"}. It will be tagged,
                     counted toward your weekly hours, and no overtime compensation applies.
                 </p>
                 <div className="flex justify-end gap-2">

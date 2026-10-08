@@ -83,10 +83,10 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick, isOpen, onOpen,
     <div className="group relative">
       <button type="button"
         onClick={onClick}
-        onFocus={() => onOpen}
-        onBlur={() => onClose}
-        onMouseEnter={() => onOpen}
-        onMouseLeave={() => onClose}
+        onFocus={onOpen}
+        onBlur={onClose}
+        onMouseEnter={onOpen}
+        onMouseLeave={onClose}
         aria-label={`View skill gap analysis for ${style.label}`}
         className = {`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-all hover:shadow-md ${style.bg} ${style.border} ${style.text}`}
       >
@@ -95,7 +95,7 @@ const GapBadge : React.FC<GapBadgeProps> = ({ severity, onClick, isOpen, onOpen,
       </button>
 
      {isOpen &&(
-      <div className="absolute bottom-full left-0 z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2">
+      <div className="absolute bottom-full left-1/2 z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2">
         <div className={`w-64 max-w-[calc(100vw-2rem)] whitespace-normal break-words rounded-lg px-3 py-2 text-left text-sm font-medium text-white shadow-lg ${getTooltipBgColor(severity)}`}
         >
           {style.tooltip}

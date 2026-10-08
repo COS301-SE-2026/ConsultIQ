@@ -5,6 +5,8 @@ import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { superAdminSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { ShieldAlert, ShieldCheck, ChevronDown, ChevronUp, Clock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmationDialog from "../../../components/shared/confirmation-dialog";
+
 import {
     type SecurityQueueItem,
     type SecurityHistoryItem,
@@ -19,7 +21,7 @@ const FLAG_TYPE_LABELS: Record<CvSecurityFlagType, string> = {
     HIDDEN_OR_OBFUSCATED_TEXT: "Hidden or obfuscated text",
     TOOL_USE_OR_EXTERNAL_REQUEST: "External request attempt",
     SCHEMA_MANIPULATION_ATTEMPT: "Schema manipulation attempt",
-    OTHER_SUSPICIOUS_CONTENT: "Other suspicious content",
+    OTHER_SUSPICIOUS_CONTENT: "Other malicious content",
 };
 
 function SecurityReviewPage() {
@@ -30,6 +32,11 @@ function SecurityReviewPage() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [historyOpen, setHistoryOpen] = useState(false);
     const [resolvingId, setResolvingId] = useState<string | null>(null);
+    const [pendingDecision, setPendingDecision] = useState<{
+        cvFileId: string;
+        decision: "CLEARED" | "REJECTED";
+        consultantName: string;
+    } | null>(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -98,25 +105,34 @@ function SecurityReviewPage() {
         };
     }, []);
 
-    const handleDecision = async (cvFileId: string, decision: "CLEARED" | "REJECTED") => {
+    const requestDecision = (
+        item: SecurityQueueItem,
+        decision: "CLEARED" | "REJECTED",
+    ) => {
+        setPendingDecision({
+            cvFileId: item.cvFileId,
+            decision,
+            consultantName: item.consultantName,
+        });
+    };
+
+    const handleConfirmDecision = async () => {
+        if (!pendingDecision) return;
+
+        const { cvFileId, decision } = pendingDecision;
         const label = decision === "CLEARED" ? "clear" : "reject";
-        const confirmed = window.confirm(
-            decision === "REJECTED"
-                ? "Reject this CV? This cannot be undone, and the consultant's application cannot be reopened."
-                : "Clear this CV for review? The consultant manager will be able to proceed with profile creation."
-        );
-        if (!confirmed) return;
 
         try {
             setResolvingId(cvFileId);
             await securityReviewService.resolve(cvFileId, decision);
             toast.success(`CV ${label}ed successfully.`);
             setExpandedId(null);
-            await refreshData(); // was: await loadData();
+            await refreshData();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : `Failed to ${label} CV.`);
         } finally {
             setResolvingId(null);
+            setPendingDecision(null);
         }
     };
 
@@ -195,7 +211,7 @@ function SecurityReviewPage() {
                                                                 key={flagType}
                                                                 className="text-xs font-semibold px-2 py-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200"
                                                             >
-                                                                {FLAG_TYPE_LABELS[flagType] ?? "Other suspicious content"}
+                                                                {FLAG_TYPE_LABELS[flagType] ?? "Other malicious content"}
                                                             </span>
                                                         ))}
                                                     </div>
@@ -213,7 +229,7 @@ function SecurityReviewPage() {
                                                     {item.securityFlags.map((flag, i) => (
                                                         <div key={i} className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                                                             <p className="text-sm font-semibold text-amber-800">
-                                                                {FLAG_TYPE_LABELS[flag.flagType] ?? "Other suspicious content"}
+                                                                {FLAG_TYPE_LABELS[flag.flagType] ?? "Other malicious content"}
                                                             </p>
                                                             <p className="text-xs text-gray-500 mt-1">Found in: {flag.field}</p>
                                                             <p className="text-sm text-gray-800 mt-2 font-mono break-all">
@@ -224,14 +240,14 @@ function SecurityReviewPage() {
                                                 </div>
                                                 <div className="flex justify-end gap-3">
                                                     <button
-                                                        onClick={() => handleDecision(item.cvFileId, "REJECTED")}
+                                                        onClick={() => requestDecision(item, "REJECTED")}
                                                         disabled={isResolving}
                                                         className="px-6 py-2.5 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-50"
                                                     >
                                                         Reject
                                                     </button>
                                                     <button
-                                                        onClick={() => handleDecision(item.cvFileId, "CLEARED")}
+                                                        onClick={() => requestDecision(item, "CLEARED")}
                                                         disabled={isResolving}
                                                         className="px-6 py-2.5 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 transition disabled:opacity-50"
                                                     >
@@ -290,6 +306,20 @@ function SecurityReviewPage() {
                     </div>
                 </main>
             </div>
+            
+            <ConfirmationDialog
+                open={pendingDecision !== null}
+                title={pendingDecision?.decision === "REJECTED" ? "Reject this CV?" : "Clear this CV?"}
+                description={
+                    pendingDecision?.decision === "REJECTED"
+                        ? `Reject ${pendingDecision.consultantName}'s CV? This cannot be undone, and the consultant's application cannot be reopened.`
+                        : `Clear ${pendingDecision?.consultantName}'s CV for review? The consultant manager will be able to proceed with profile creation.`
+                }
+                confirmLabel={pendingDecision?.decision === "REJECTED" ? "Reject CV" : "Clear CV"}
+                loading={resolvingId !== null}
+                onConfirm={handleConfirmDecision}
+                onCancel={() => setPendingDecision(null)}
+            />
         </div>
     );
 }

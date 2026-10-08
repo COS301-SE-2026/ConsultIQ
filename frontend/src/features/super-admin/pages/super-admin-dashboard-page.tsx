@@ -113,7 +113,7 @@ function SuperAdminDashboardPage() {
                                     Security Review
                                 </h2>
                                 <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-                                    Review CVs flagged for suspicious content during extraction.
+                                    Review CVs flagged for malicious content during extraction.
                                 </p>
                             </button>
 

@@ -9,6 +9,7 @@ import {
 } from "../../../components/layout/sidebar/sidebar.config";
 import { useAuth } from "../../../hooks/useAuth";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
+import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
 import { useLocation, Link } from "react-router-dom";
 
 interface QnA {
@@ -54,6 +55,7 @@ const faqGroups: FAQItems[] = [
 export default function HelpPage() {
     const { user } = useAuth();
     const location = useLocation();
+    const { count: unreadCount } = useUnreadNotificationCount();
 
     const fromLanding= location.state?.from === "landing";
 
@@ -70,7 +72,7 @@ export default function HelpPage() {
    
     return (
         <div className={`flex h-screen overflow-hidden overscroll-none ${showSideBar ? "" : "flex-col overflow-y-auto"}`}>
-                {showSideBar ? (<Sidebar items={sidebarItems} />) : (<Navbar />)}
+                {showSideBar ? (<Sidebar items={sidebarItems} notificationCount={unreadCount} />) : (<Navbar />)}
           
             <div className={`flex-1 flex flex-col min-w-0 ${showSideBar ? "" : "pt-16 md:pt-0"}`}>
                 {showSideBar ? (

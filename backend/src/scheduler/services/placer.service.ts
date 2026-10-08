@@ -24,7 +24,7 @@ export class PlacerService {
         window: Interval,
         options: { fillTarget?: number } = {}
     ): FreeGap[] {
-        // Determine the fill target percentage (default to 0.85 since buffer is 0.15)
+        // Fill target: share of each block's free working time that tasks may use (1 - buffer)
         const fillTarget = options.fillTarget ?? (1 - SCHEDULER_RULES.BUFFER_TARGET_PERCENTAGE);
 
         // 1. Get this project's fluid blocks
@@ -48,28 +48,27 @@ export class PlacerService {
 
         // Process each fluid block
         for (const block of fluidBlocks) {
-            let blockIntervals: Interval[] = [{ start: block.start, end: block.end }];
+            // Working time inside the block (core hours, minus lunch, minus holidays)
+            const blockWorkIntervals = this.intersectMulti([{ start: block.start, end: block.end }], workWindows);
 
-            // Intersect with the requested window
-            blockIntervals = this.intersectMulti(blockIntervals, [window]);
+            // Capacity = the block's working time left after calendar entries.
+            // Slots are NOT subtracted here, otherwise the buffer would shrink each time a task is placed.
+            const capacityIntervals = this.subtractMulti(blockWorkIntervals, week.calendarEntries);
+            const capacityMinutes = capacityIntervals.reduce((sum, i) => sum + this.intervalMinutes(i), 0);
+            const allowedCapacity = Math.floor(capacityMinutes * fillTarget);
 
-            // Intersect with working hours (core hours, minus lunch, minus holidays)
-            blockIntervals = this.intersectMulti(blockIntervals, workWindows);
-
-            // Subtract all obstacles (calendar entries, sticky slots)
-            blockIntervals = this.subtractMulti(blockIntervals, obstacles);
-
-            // We now have the raw free intervals for this block
-            const freeGapsForBlock = blockIntervals.map(g => ({ ...g, blockId: block.id }));
-
-            // Apply fillTarget: Stop taking time once we hit the target capacity for this block
-            const allowedCapacity = block.allocatedMinutes * fillTarget;
             const alreadyScheduledInBlock = week.slots
                 .filter(s => s.blockId === block.id)
                 .reduce((sum, s) => sum + this.intervalMinutes(s), 0);
 
             let remainingMinutesToFill = allowedCapacity - alreadyScheduledInBlock;
             if (remainingMinutesToFill <= 0) continue; // Target reached
+
+            // Free gaps: working time within the requested window, minus calendar entries and existing slots
+            let blockIntervals = this.intersectMulti(blockWorkIntervals, [window]);
+            blockIntervals = this.subtractMulti(blockIntervals, obstacles);
+
+            const freeGapsForBlock = blockIntervals.map(g => ({ ...g, blockId: block.id }));
 
             // Trim available gaps to respect the fill target limit
             for (const gap of freeGapsForBlock) {
@@ -96,27 +95,20 @@ export class PlacerService {
 
     // --- Interval Math Helpers ---
 
-    // private getOverlap(a: Interval, b: Interval): Interval | null {
-    //     const start = a.start > b.start ? a.start : b.start;
-    //     const end = a.end < b.end ? a.end : b.end;
-    //     if (start < end) return { start, end };
-    //     return null;
-    // }
-
     // Accepts ISO strings (any format or offset) or Date objects
-private ms(value: string | Date): number {
-    return new Date(value).getTime();
-}
+    private ms(value: string | Date): number {
+        return new Date(value).getTime();
+    }
 
-private getOverlap(a: Interval, b: Interval): Interval | null {
-    const start = Math.max(this.ms(a.start), this.ms(b.start));
-    const end = Math.min(this.ms(a.end), this.ms(b.end));
-    if (start >= end) return null;
-    return {
-        start: start === this.ms(a.start) ? a.start : b.start,
-        end: end === this.ms(a.end) ? a.end : b.end,
-    };
-}
+    private getOverlap(a: Interval, b: Interval): Interval | null {
+        const start = Math.max(this.ms(a.start), this.ms(b.start));
+        const end = Math.min(this.ms(a.end), this.ms(b.end));
+        if (start >= end) return null;
+        return {
+            start: start === this.ms(a.start) ? a.start : b.start,
+            end: end === this.ms(a.end) ? a.end : b.end,
+        };
+    }
 
     private intersectMulti(sources: Interval[], targets: Interval[]): Interval[] {
         const result: Interval[] = [];
@@ -129,37 +121,21 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         return result;
     }
 
-    // private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
-    //     const overlap = this.getOverlap(source, obstacle);
-    //     if (!overlap) return [source]; // No overlap, return source unchanged
-
-    //     const results: Interval[] = [];
-    //     // Keep part before obstacle
-    //     if (source.start < overlap.start) {
-    //         results.push({ start: source.start, end: overlap.start });
-    //     }
-    //     // Keep part after obstacle
-    //     if (source.end > overlap.end) {
-    //         results.push({ start: overlap.end, end: source.end });
-    //     }
-    //     return results;
-    // }
-
     private subtractInterval(source: Interval, obstacle: Interval): Interval[] {
-    const overlap = this.getOverlap(source, obstacle);
-    if (!overlap) return [source]; // No overlap, return source unchanged
+        const overlap = this.getOverlap(source, obstacle);
+        if (!overlap) return [source]; // No overlap, return source unchanged
 
-    const results: Interval[] = [];
-    // Keep part before obstacle
-    if (this.ms(source.start) < this.ms(overlap.start)) {
-        results.push({ start: source.start, end: overlap.start });
+        const results: Interval[] = [];
+        // Keep part before obstacle
+        if (this.ms(source.start) < this.ms(overlap.start)) {
+            results.push({ start: source.start, end: overlap.start });
+        }
+        // Keep part after obstacle
+        if (this.ms(source.end) > this.ms(overlap.end)) {
+            results.push({ start: overlap.end, end: source.end });
+        }
+        return results;
     }
-    // Keep part after obstacle
-    if (this.ms(source.end) > this.ms(overlap.end)) {
-        results.push({ start: overlap.end, end: source.end });
-    }
-    return results;
-}
 
     private subtractMulti(sources: Interval[], obstacles: Interval[]): Interval[] {
         let current = [...sources];
@@ -199,6 +175,27 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         const end = new Date(interval.end).getTime();
         return Math.round((end - start) / 60000);
     }
+
+    private clampWindowToNow(window: Interval, nowMs: number = Date.now()): Interval | null {
+        const QUARTER_MS = 15 * 60_000;
+        const windowStartMs = this.ms(window?.start);
+        const windowEndMs = this.ms(window?.end);
+
+        // Missing or unparseable window: nothing can be placed
+        if (!Number.isFinite(windowStartMs) || !Number.isFinite(windowEndMs)) return null;
+
+        const roundedNowMs = Math.ceil(nowMs / QUARTER_MS) * QUARTER_MS;
+        const startMs = Math.max(windowStartMs, roundedNowMs);
+        if (startMs >= windowEndMs) return null;
+
+        return {
+            start: (startMs === windowStartMs
+                ? window.start
+                : new Date(startMs).toISOString().replace(/\.\d{3}Z$/, 'Z')) as Instant,
+            end: window.end,
+        };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public makeSlot(task: Task, gap: FreeGap, minutes: number): Slot {
 
@@ -236,18 +233,48 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
     }
 
     public priorityScore(task: Task, now: Instant): number {
-        let deadlineTerm = 0;
+        const urgencyWeight = 0.25;
+        const complexityWeight = 0.15;
+        const deadlineWeight = 0.60;
+
+        let deadlineScore = 0;
+
         if (task.deadline) {
             const nowTime = new Date(now).getTime();
             const deadlineTime = new Date(task.deadline).getTime();
-            const hoursToDeadline = (deadlineTime - nowTime) / 3600000;
-            deadlineTerm = 1 / Math.max(hoursToDeadline, 1);
+
+            const hoursToDeadline =
+                (deadlineTime - nowTime) / 3_600_000;
+
+            if (hoursToDeadline <= 1) {
+                deadlineScore = 1;
+            } else if (hoursToDeadline <= 8) {
+                deadlineScore = 0.9;
+            } else if (hoursToDeadline <= 24) {
+                deadlineScore = 0.75;
+            } else if (hoursToDeadline <= 72) {
+                deadlineScore = 0.5;
+            } else if (hoursToDeadline <= 168) {
+                deadlineScore = 0.25;
+            } else {
+                deadlineScore = 0.1;
+            }
         }
-        return task.urgency + task.complexity + deadlineTerm;
+
+        const MAX_URGENCY = SCHEDULER_RULES.URGENCY_MAX;
+        const MAX_COMPLEXITY = SCHEDULER_RULES.COMPLEXITY_MAX;
+
+
+        return (
+            (task.urgency / MAX_URGENCY) * urgencyWeight +
+            (task.complexity / MAX_COMPLEXITY) * complexityWeight +
+            deadlineScore * deadlineWeight
+        );
     }
 
     public blockMinutes(placement: AllocationSummary): number {
-        return Math.round((placement.allocation / 100) * SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES);
+        const dailyMinutes = SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES / SCHEDULER_RULES.WORKING_DAYS_PER_WEEK;
+        return Math.round((placement.allocation / 100) * dailyMinutes);
     }
 
     /**
@@ -264,7 +291,7 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         let reason: UnplacedReason = 'CONTAINER_FULL';
 
         // 1. Would it fit if we ignored the day-span cap (but respected the deadline)?
-        if (this.canFit(task, gaps, neededMinutes, Infinity, true, week.timezone)) {
+        if (this.canFit(task, gaps, neededMinutes, Infinity, !task.deadlineMissAccepted, week.timezone)) {
             reason = 'DAY_SPAN_LIMIT';
         }
         // 2. Would it fit if we ignored BOTH the day-span cap AND the deadline?
@@ -516,24 +543,20 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         const stickySlots = week.slots.filter(s => s.taskIds?.includes(task.id));
         const rawRemaining = this.remainingMinutes(task, stickySlots);
         const need = this.roundUp(rawRemaining, SCHEDULER_RULES.MIN_BLOCK_MINUTES);
+        if (need <= 0) return { ok: true, data: [] }; // already has all its time
 
-        const gaps = this.freeGaps(week, task.projectId, window); // Fill target is default 0.85
-
+        const gaps = this.freeGaps(week, task.projectId, window);
         const { plan, remaining } = this.planFragments(task, gaps, need, week.timezone);
+        const fitsInFreeTime = remaining === 0;
 
-        if (remaining === 0) {
-            return { ok: true, data: this.withDaySpanLabels(plan) };
+        if (allowBump) {
+            // Go ahead of less important work, or make room when it doesn't fit at all
+            const preempted = this.tryPreempt(week, task, window, fitsInFreeTime ? plan : null);
+            if (preempted.ok) return preempted;
         }
 
-        if (remaining > 0 && allowBump) {
-            const bumpResult = this.tryBump(week, task, window);
-            if (bumpResult.ok) {
-                return bumpResult;
-            }
-        }
-
-        const summary = this.diagnose(week, task, window);
-        return { ok: false, summary };
+        if (fitsInFreeTime) return { ok: true, data: this.withDaySpanLabels(plan) };
+        return { ok: false, summary: this.diagnose(week, task, window) };
     }
 
     private planFragments(
@@ -545,13 +568,14 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         const plan: Slot[] = [];
         const daysUsed = new Set();
         let remaining = need;
+        const deadline = task.deadlineMissAccepted ? undefined : task.deadline;
 
         for (const gap of gaps) {
             if (remaining <= 0) break;
 
-            if (task.deadline) {
+            if (deadline) {
                 const gapStartMs = new Date(gap.start).getTime();
-                const deadlineMs = new Date(task.deadline).getTime();
+                const deadlineMs = new Date(deadline).getTime();
                 if (gapStartMs >= deadlineMs) break;
             }
 
@@ -561,7 +585,7 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
                 break;
             }
 
-            const take = this.calculateTakeForGap(gap, task.deadline as Instant | undefined, remaining);
+            const take = this.calculateTakeForGap(gap, deadline as Instant | undefined, remaining);
 
             if (take < SCHEDULER_RULES.MIN_BLOCK_MINUTES) continue;
 
@@ -586,56 +610,80 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
 
         return take;
     }
+
+
     /**
-     * Tier 3: tryBump
-     * Displaces lower-priority, non-frozen occupants to make room for an attacking task.
-     * Rolls back completely if any displaced task cannot be re-placed.
+     * Tier 3: tryPreempt
+     * fits (freePlan given): move every less important task in front of the attacker, so it goes first.
+     * doesn't fit (freePlan null): move as few tasks as possible, least important first, until it fits.
+     * Moved tasks must all be re-placed within their deadlines, or the week is rolled back.
      */
-    public tryBump(week: WeekContainer, attacker: Task, window: Interval): PlaceTaskResult {
+    public tryPreempt(week: WeekContainer, attacker: Task, window: Interval, freePlan: Slot[] | null): PlaceTaskResult {
         const nowIso = new Date().toISOString() as Instant;
 
-        const candidateTasks = this.getBumpCandidates(week, attacker, window, nowIso);
+        // Where the attacker lands without moving anything; tasks starting before that are "in front"
+        const horizonMs = freePlan
+            ? Math.max(...freePlan.map((s) => new Date(s.end).getTime()))
+            : new Date(window.end).getTime();
 
-        if (candidateTasks.length === 0) {
+        const candidates = this.getPreemptionCandidates(week, attacker, window, horizonMs, freePlan !== null)
+            .sort((a, b) => this.priorityScore(a, nowIso) - this.priorityScore(b, nowIso)); // least important first
+
+        if (candidates.length === 0) {
             return { ok: false, summary: this.diagnose(week, attacker, window), code: 'NO_BUMP_CANDIDATE' };
         }
 
-        // Sort by priority ascending (bump least important first)
-        candidateTasks.sort((a, b) => this.priorityScore(a, nowIso) - this.priorityScore(b, nowIso));
-
-        return this.simulatePreemption(week, attacker, candidateTasks, window);
-    }
-
-    private getBumpCandidates(week: WeekContainer, attacker: Task, window: Interval, nowIso: Instant): Task[] {
-        const windowStartMs = new Date(window.start).getTime();
-        const windowEndMs = new Date(window.end).getTime();
-
-        const occupants = week.slots.filter(s => {
-            if (s.kind !== 'task') return false;
-            return new Date(s.start).getTime() < windowEndMs && new Date(s.end).getTime() > windowStartMs;
-        });
-
-        const occupantTaskIds = new Set(occupants.flatMap(s => s.taskIds || []));
-        const candidateTasks: Task[] = [];
-        const attackerScore = this.priorityScore(attacker, nowIso);
-        const attackerDeadline = attacker.deadline ? new Date(attacker.deadline).getTime() : Infinity;
-
-        for (const taskId of occupantTaskIds) {
-            const t = week.tasks.find(x => x.id === taskId);
-            if (!t || t.status === 'InProgress' || t.status === 'Done') continue;
-
-            const hasLockedSlot = week.slots.some(s => s.taskIds?.includes(t.id) && s.locked);
-            if (hasLockedSlot) continue;
-
-            const cScore = this.priorityScore(t, nowIso);
-            const cDeadline = t.deadline ? new Date(t.deadline).getTime() : Infinity;
-
-            if (cScore < attackerScore && cDeadline >= attackerDeadline) {
-                candidateTasks.push(t);
-            }
+        if (freePlan) {
+            return this.simulatePreemption(week, attacker, candidates, window);
         }
 
-        return candidateTasks;
+        for (let count = 1; count <= candidates.length; count++) {
+            const result = this.simulatePreemption(week, attacker, candidates.slice(0, count), window);
+            if (result.ok) return result;
+        }
+
+        return { ok: false, summary: this.diagnose(week, attacker, window), code: 'BUMP_FAILED' };
+    }
+
+    private getPreemptionCandidates(
+        week: WeekContainer,
+        attacker: Task,
+        window: Interval,
+        horizonMs: number,
+        fitsInFreeTime: boolean,
+    ): Task[] {
+        const nowIso = new Date().toISOString() as Instant;
+        const windowStartMs = new Date(window.start).getTime();
+        const attackerScore = this.priorityScore(attacker, nowIso);
+        const attackerDeadline = this.effectiveDeadlineMs(attacker);
+
+        return week.tasks.filter((t) => {
+            // Only the attacker's own project: it can only use that project's blocks
+            if (t.id === attacker.id || t.projectId !== attacker.projectId) return false;
+            if (t.status !== 'Ready') return false;
+
+            const slots = week.slots.filter((s) => s.taskIds?.includes(t.id));
+            if (slots.length === 0) return false;
+
+            // Never move hand-placed work, batched micro-tasks, or tasks with time already in the past
+            if (slots.some((s) => s.locked || s.kind !== 'task')) return false;
+            if (slots.some((s) => new Date(s.start).getTime() < windowStartMs)) return false;
+
+            const inFront = slots.some((s) => new Date(s.start).getTime() < horizonMs);
+            if (!inFront) return false;
+
+            const lowerPriority = this.priorityScore(t, nowIso) < attackerScore;
+            // Deadline rescue: a task that can't fit may move tasks due later, whatever their priority,
+            // as long as they still meet their own deadline when re-placed
+            const deadlineRescue = !fitsInFreeTime && this.effectiveDeadlineMs(t) > attackerDeadline;
+
+            return lowerPriority || deadlineRescue;
+        });
+    }
+
+    private effectiveDeadlineMs(task: Task): number {
+        if (!task.deadline || task.deadlineMissAccepted) return Infinity;
+        return new Date(task.deadline as unknown as string).getTime();
     }
 
     private simulatePreemption(week: WeekContainer, attacker: Task, candidateTasks: Task[], window: Interval): PlaceTaskResult {
@@ -662,8 +710,11 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
         // Temporarily apply attacker slots so candidates see the reduced space
         week.slots.push(...attackerResult.data);
 
-        // Try re-placing candidates
-        for (const candidate of candidateTasks) {
+        // Re-place moved tasks most important first, so they keep their relative order
+        const nowIso = new Date().toISOString() as Instant;
+        const byPriority = [...candidateTasks].sort((a, b) => this.priorityScore(b, nowIso) - this.priorityScore(a, nowIso));
+
+        for (const candidate of byPriority) {
             const candResult = this.placeTask(week, candidate, window, false);
             if (!candResult.ok) {
                 this.rollback(week, snapshotSlots, snapshotTasks);
@@ -683,7 +734,12 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
 
     private rollback(week: WeekContainer, snapshotSlots: string, snapshotTasks: string): void {
         week.slots = JSON.parse(snapshotSlots);
-        week.tasks = JSON.parse(snapshotTasks);
+
+        const saved: Task[] = JSON.parse(snapshotTasks);
+        for (const savedTask of saved) {
+            const live = week.tasks.find((t) => t.id === savedTask.id);
+            if (live) Object.assign(live, savedTask);
+        }
     }
 
 
@@ -699,6 +755,13 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
             placed: [],
             unplaced: []
         };
+
+        // Never place into the past: start the window at "now" (rounded up to the next 15 min)
+        const window = this.clampWindowToNow(options.window);
+        if (!window) {
+            return report;
+        }
+        options = { ...options, window };
 
         // 1. Build the movable set
         let movableTasks = options.tasks
@@ -746,20 +809,12 @@ private getOverlap(a: Interval, b: Interval): Interval | null {
             });
         }
 
-        // 5. Sort remaining by deadline (ascending), then priorityScore (descending)
+        // // 5. Sort remaining by deadline (ascending), then priorityScore (descending)
         const nowIso = new Date().toISOString();
-        remaining.sort((a, b) => {
-            if (a.deadline && b.deadline) {
-                const diff = new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-                if (diff !== 0) return diff;
-            } else if (a.deadline && !b.deadline) {
-                return -1; // a comes first
-            } else if (!a.deadline && b.deadline) {
-                return 1;  // b comes first
-            }
 
-            return this.priorityScore(b, nowIso as Instant) - this.priorityScore(a, nowIso as Instant);
-        });
+        // Most important first. The deadline is already 60% of the score, and a task that
+        // would miss its deadline can still move later-due tasks (see tryPreempt)
+        remaining.sort((a, b) => this.priorityScore(b, nowIso as Instant) - this.priorityScore(a, nowIso as Instant));
 
         // 6. Attempt to place each remaining task
         for (const task of remaining) {

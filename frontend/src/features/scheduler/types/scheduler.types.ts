@@ -204,15 +204,12 @@ export interface ProjectBlock {
 
 export type CalendarEntryType =
     | 'meeting'
-    | 'lunch'
-    | 'admin'
     | 'training'
     | 'travel'
     | 'personal'
-    | 'holiday'
     | 'leave'
     | 'adhoc'
-    | 'other';
+    | 'lunch';
 
 export type CalendarTag = "extended-hours" | "weekend";
 

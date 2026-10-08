@@ -16,9 +16,12 @@ const prisma = new PrismaClient({
     },
 });
 
+const PM_EMAIL = 'e2e_pm@consultiq.com';
+const PM_PASSWORD = 'password123';
+
 test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
     let testProject: Project;
-    let testAdmin;
+    let testPm;
     let user1, user2, user3;
 
     test.beforeAll(async () => {
@@ -28,24 +31,24 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
             where: {
                 email: {
                     in: [
-                        'e2e_admin@consultiq.com',
+                        PM_EMAIL,
                         'perfect@consultiq.com',
                         'partial@consultiq.com',
-                        'no@consultiq.com'
-                    ]
-                }
-            }
+                        'no@consultiq.com',
+                    ],
+                },
+            },
         });
 
-        // Test admin
-        testAdmin = await prisma.user.create({
+        // Test project manager (scoring config + placement dashboard are PROJECT_MANAGER only)
+        testPm = await prisma.user.create({
             data: {
-                email: 'e2e_admin@consultiq.com',
-                passwordHash: await bcrypt.hash('password123', 12),
-                fullName: 'E2E Admin',
-                role: 'ADMIN',
+                email: PM_EMAIL,
+                passwordHash: await bcrypt.hash(PM_PASSWORD, 12),
+                fullName: 'E2E Project Manager',
+                role: 'PROJECT_MANAGER',
                 status: 'ACTIVE',
-            } as any
+            } as any,
         });
 
         const backendSkill = await prisma.skill.create({
@@ -65,6 +68,9 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
                 budget: 1000,
                 startDate: new Date(),
                 allocation: 100,
+                // If the backend scopes projects to their PM, link the project here
+                // using your actual field name, e.g.:
+                // projectManagerId: testPm.id,
                 skills: {
                     create: [
                         {
@@ -100,7 +106,7 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
                             },
                         ],
                     },
-                } as any
+                } as any,
             }),
             prisma.consultant.create({
                 data: {
@@ -119,7 +125,7 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
                             },
                         ],
                     },
-                } as any
+                } as any,
             }),
             prisma.consultant.create({
                 data: {
@@ -128,9 +134,9 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
                     addressLine1: '123 Tech St',
                     city: 'Pretoria',
                     province: 'Gauteng',
-                    // No skills to test consultant exclusion 
-                } as any
-            })
+                    // No skills to test consultant exclusion
+                } as any,
+            }),
         ]);
     });
 
@@ -141,13 +147,11 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
     });
 
     test('should score only consultants that possess a skill', async ({ page }) => {
-
         await page.goto('/login');
 
-        await page.getByLabel('Email').fill('e2e_admin@consultiq.com');
-        await page.getByLabel('Password').fill('password123');
+        await page.getByLabel('Email').fill(PM_EMAIL);
+        await page.getByLabel('Password').fill(PM_PASSWORD);
 
-        // Submit form and wait for response
         page.on('request', (req) => {
             if (req.url().includes('auth') || req.url().includes('login')) {
                 console.log('>> REQUEST', req.method(), req.url());
@@ -159,15 +163,16 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
             }
         });
 
+        // Submit form and wait for response
         const [response] = await Promise.all([
             page.waitForResponse(
                 (res) => /\/(auth\/)?login/.test(res.url()) && res.request().method() === 'POST',
                 { timeout: 10000 }
             ),
-            page.locator('button[type="submit"]').click()
+            page.locator('button[type="submit"]').click(),
         ]);
 
-        // gracefully fail and output backend error 
+        // Gracefully fail and output backend error
         if (!response.ok()) {
             const errorBody = await response.text();
             throw new Error(`\n AUTH FAILURE \n Backend rejected login with code: ${response.status()}\nResponse: ${errorBody}\n`);
@@ -179,16 +184,19 @@ test.describe('E2E: Placement Dashboard x Scoring Engine', () => {
         // Navigate to project scoring config
         await page.goto(`/project-scoring-config/${testProject.id}`);
 
+        // Fail fast with a clear message if the role guard bounced us
+        await expect(page).toHaveURL(new RegExp(`/project-scoring-config/${testProject.id}$`));
+
         // Click match run button on the scoring config page
         await page.getByRole('button', { name: 'Run Match' }).click();
 
         await page.waitForURL(/\/placement-dashboard\/.+/);
 
         await expect(page.getByRole('heading', { name: 'Placement Dashboard' })).toBeVisible();
-        // 4. ASSERTION: Verify all profiles were evaluated by the scoring algorithm
+
+        // Verify all profiles were evaluated by the scoring algorithm
         await expect(page.getByText('Perfect Match')).toBeVisible();
         await expect(page.getByText('Partial Match')).toBeVisible();
-        // await expect(page.getByText('No Match')).toBeVisible();
 
         await expect(page.getByText('Total Evaluated').locator('..')).toContainText('3');
         await expect(page.getByText('Excluded').locator('..')).toContainText('1');

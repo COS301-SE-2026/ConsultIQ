@@ -4,14 +4,11 @@ import {blockTop,blockHeight, instantToLocalTime} from "../../utils/scheduler.ut
 const ENTRY_STYLES: Record<CalendarEntryType, {label: string; bg: string; border: string; text: string }>={
     meeting: {label: "Meeting", bg: "#FFF7ED", border: "#F97316", text: "#9A3412"},
     lunch: {label: "Lunch", bg: "#DCFCE7", border: "#16A34A", text: "#166534"},
-    admin: {label: "Admin", bg: "#F1F5F9", border: "#64748B", text: "#334155"},
     training: {label: "Training", bg: "#FEF9C3", border: "#CA8A04", text: "#854D0E"},
     travel: {label: "Travel", bg: "#E0F2FE", border: "#0284C7", text: "#075985"},
     personal: {label: "Personal", bg: "#FCE7F3", border: "#DB2777", text: "#9D174D"},
-    holiday: {label: "Public holiday", bg: "#F3F4F6", border: "#9CA3AF", text: "#374151"},
     leave: {label: "Leave", bg: "#F3F4F6", border: "#9CA3AF", text: "#4B5563"},
     adhoc: {label: "Ad-hoc", bg: "#FEE2E2", border: "#DC2626", text: "#991B1B"},
-    other: {label: "Other", bg: "#F8FAFC", border: "#94A3B8", text: "475569"},
 }
 
 const TAG_LABELS: Record<CalendarTag, string> = {

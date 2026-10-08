@@ -22,7 +22,7 @@ import DropGhost from "./drag-ghost";
 import OutOfHoursConfirmDialog from "./out-of-hours-dialog";
 import CalendarEntryForm from "../calendar-entry-form";
 import { getProjectColour } from "./project-colour";
-import { holidayWeek, FIXTURE_PROJECTS, type ProjectSummary } from "../../types/scheduler.fixtures";
+import { type BacklogProjectOption } from "../backlog-panel";
 import type {
     WeekContainer,
     Interval,
@@ -44,6 +44,7 @@ import {
     DAY_START_HOUR,
     DAY_END_HOUR,
     isWeekendInstant,
+    CORE_START_TIME,
 } from "../../utils/scheduler.utils";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -65,15 +66,17 @@ interface AwaitingConfirmation {
 type EntryFormState = { mode: "create" } | { mode: "edit"; entry: CalendarEntryData } | null;
 
 export interface WeekCalendarProps {
-    readonly weekData?: WeekContainer;
-    readonly projects?: ProjectSummary[];
+    readonly weekData: WeekContainer;
+    readonly projects: BacklogProjectOption[];
     readonly createEntryRequested?: boolean;
     readonly onCreateEntryDone?: () => void;
-    readonly onMoveBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
-    readonly onResizeBlock?: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
-    readonly onPinBlock?: (blockId: string, pinned: boolean) => Promise<boolean>;
-    readonly onMoveSlot?: (slotId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
-    readonly onSetStatus?: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
+    readonly onMoveBlock: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onResizeBlock: (blockId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onPinBlock: (blockId: string, pinned: boolean) => Promise<boolean>;
+    readonly onMoveSlot: (slotId: string, to: Interval, confirmedOverride: boolean) => Promise<boolean>;
+    readonly onSetStatus: (taskId: string, dto: SetTaskStatusDto) => void | Promise<void>;
+    readonly onSaveEntry: (dto: CalendarEntryDto) => Promise<boolean>;
+    readonly onDeleteEntry: (entryId: string) => Promise<boolean>;
 }
 
 function addDays(date: string, days: number): string {
@@ -83,7 +86,7 @@ function addDays(date: string, days: number): string {
 }
 
 function scrollToCoreHours(el: HTMLDivElement | null) {
-    if (el) el.scrollTop = blockTop("08:00");
+    if (el) el.scrollTop = blockTop(CORE_START_TIME);
 }
 
 // "slot:abc" -> { kind: "slot", id: "abc" }
@@ -108,8 +111,8 @@ function withSlot(w: WeekContainer, slotId: string, to: Interval): WeekContainer
 }
 
 export default function WeekCalendar({
-    weekData = holidayWeek,
-    projects = FIXTURE_PROJECTS,
+    weekData,
+    projects,
     createEntryRequested = false,
     onCreateEntryDone,
     onMoveBlock,
@@ -117,6 +120,8 @@ export default function WeekCalendar({
     onPinBlock,
     onMoveSlot,
     onSetStatus,
+    onSaveEntry,
+    onDeleteEntry,
 }: WeekCalendarProps) {
     const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
     const [week, setWeek] = useState(weekData);
@@ -133,60 +138,49 @@ export default function WeekCalendar({
         }),
     );
 
+
     const activeForm: EntryFormState = entryForm ?? (createEntryRequested ? { mode: "create" } : null);
 
-    // ─── Calendar entries (local only until the calendar-entry service is connected) ───
+    // Earliest minute of the day a drop may start: now (rounded up to 15 min) today, midnight otherwise
+    function earliestStartMin(date: string): number {
+        if (date !== today) return DAY_START_HOUR * 60;
+        const nowMin = timeToMinutes(instantToLocalTime(new Date().toISOString(), week.timezone));
+        return Math.ceil(nowMin / 15) * 15;
+    }
+    
 
     function closeEntryForm() {
         setEntryForm(null);
         onCreateEntryDone?.();
     }
-
-    function handleSaveEntry(dto: CalendarEntryDto) {
-        const saved: CalendarEntryData = {
-            id: dto.id ?? crypto.randomUUID(),
-            type: dto.type,
-            start: dto.start,
-            end: dto.end,
-            tags: dto.tags,
-            origin: dto.origin,
-        };
-        setWeek((w) => ({
-            ...w,
-            entries: dto.id ? w.entries.map((e) => (e.id === dto.id ? saved : e)) : [...w.entries, saved],
-        }));
-        closeEntryForm();
+    async function handleSaveEntry(dto: CalendarEntryDto) {
+        try {
+            if (await onSaveEntry(dto)) closeEntryForm(); // on failure the form stays open
+        } catch {
+            // network error: keep the form open so nothing typed is lost
+        }
     }
 
-    function handleDeleteEntry(entryId: string) {
-        setWeek((w) => ({ ...w, entries: w.entries.filter((e) => e.id !== entryId) }));
-        closeEntryForm();
+    async function handleDeleteEntry(entryId: string) {
+        try {
+            if (await onDeleteEntry(entryId)) closeEntryForm();
+        } catch {
+            // network error: keep the form open
+        }
     }
 
     // ─── Task status ───
 
-    function handleSetStatus(taskId: string, status: TaskStatus) {
-        setWeek((w) => ({
-            ...w,
-            tasks: w.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)),
-        }));
-    }
-
     function changeStatus(taskId: string, status: TaskStatus) {
-        if (onSetStatus) {
-            void onSetStatus(taskId, { status, expectedVersion: week.version });
-        } else {
-            handleSetStatus(taskId, status); // fixtures only: no backend
-        }
+        void onSetStatus(taskId, { status, expectedVersion: week.version });
     }
-
     // ─── Manual placement ───
 
-    function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save?: Promise<boolean>) {
+   function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save: Promise<boolean>) {
         const previous = week;
         setWeek(patch(previous));
         save
-            ?.then((ok) => {
+            .then((ok) => {
                 if (!ok) setWeek(previous);
             })
             .catch(() => setWeek(previous));
@@ -250,15 +244,25 @@ export default function WeekCalendar({
         return others.some((e) => Date.parse(e.start) < end && start < Date.parse(e.end));
     }
 
+    // Where the dragged item would land, or null if it can't land there
+    function dropTarget(dragId: string, date: string, deltaY: number) {
+        const snapped = snappedStart(dragId, deltaY);
+        const startMin = Math.max(snapped.startMin, earliestStartMin(date));
+        if (startMin + snapped.durationMin > DAY_END_HOUR * 60) return null; // would run past midnight
+        return { ...snapped, startMin };
+    }
+
     function handleDragMove({ active, over, delta }: DragMoveEvent) {
-        if (!over) {
+        const target = over ? dropTarget(String(active.id), String(over.id), delta.y) : null;
+        if (!over || !target) {
             if (ghost) setGhost(null);
             return;
         }
+
         const { kind, id } = parseDragId(String(active.id));
         const next: GhostState = {
             date: String(over.id),
-            ...snappedStart(String(active.id), delta.y),
+            ...target,
             slotId: kind === "slot" ? id : undefined,
         };
         if (ghost?.date === next.date && ghost.startMin === next.startMin) return;
@@ -267,12 +271,12 @@ export default function WeekCalendar({
 
     function handleDragEnd({ active, over, delta }: DragEndEvent) {
         setGhost(null);
-        if (!over) return;
+        const target = over ? dropTarget(String(active.id), String(over.id), delta.y) : null;
+        if (!over || !target) return;
 
         const { kind, id } = parseDragId(String(active.id));
-        const { startMin, durationMin } = snappedStart(String(active.id), delta.y);
-        const start = fromZonedTime(`${over.id}T${minutesToTime(startMin)}:00`, week.timezone);
-        const end = new Date(start.getTime() + durationMin * 60_000);
+        const start = fromZonedTime(`${over.id}T${minutesToTime(target.startMin)}:00`, week.timezone);
+        const end = new Date(start.getTime() + target.durationMin * 60_000);
 
         requestChange({
             kind: kind === "slot" ? "slot" : "move",
@@ -301,6 +305,7 @@ export default function WeekCalendar({
             date,
             isWeekend: i >= 5,
             isToday: date === today,
+            isPast: date < today,
             isHoliday: !!holiday,
             holidayName: holiday?.name,
             totalHours: minutes / 60,
@@ -344,19 +349,21 @@ export default function WeekCalendar({
                         <div className="flex">
                             <TimeAxis />
                             {days.map((d) => (
-                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend}>
+                                <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend} isPast={d.isPast}>
                                     {/* Project blocks: the background for each project's time */}
                                     {week.blocks
                                         .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
                                         .map((b) => {
-                                            const project = projects.find((p) => p.id === b.projectId) ?? {
+                                                const project: BacklogProjectOption = projects.find((p) => p.id === b.projectId) ?? {
                                                 id: b.projectId,
-                                                name: b.projectId,
+                                                label: b.projectId,
                                                 clientName: "",
+                                                color: getProjectColour(b.projectId).color,
                                             };
                                             return (
                                                 <ProjectBlock
                                                     key={b.id}
+                                                    earliestStartMin={earliestStartMin(d.date)}
                                                     block={b}
                                                     tasks={week.tasks}
                                                     project={project}

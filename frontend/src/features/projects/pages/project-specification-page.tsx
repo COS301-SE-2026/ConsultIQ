@@ -191,13 +191,6 @@ function ProjectSpecificationPage() {
           <div className="flex w-full max-w-[1024px] flex-col gap-5 sm:gap-8">
             
             <ProjectBasicInfoCard data={formData} onChange={updateForm} />
-            <FeasibilityPreviewPanel 
-              open = {isFeasibilityOpen}
-              onToggle = {() => setIsFeasibilityOpen((current) => !current)}
-              state = {feasibility.state}
-              result = {feasibility.result}
-              error = {feasibility.error}
-            />
 
             <div className="grid grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-2">
 
@@ -214,6 +207,14 @@ function ProjectSpecificationPage() {
                 onEditSkill={handleEditSkill}
               />
             </div>
+
+              <FeasibilityPreviewPanel 
+                open = {isFeasibilityOpen}
+                onToggle = {() => setIsFeasibilityOpen((current) => !current)}
+                state = {feasibility.state}
+                result = {feasibility.result}
+                error = {feasibility.error}
+              />
           </div>
         </main>
       </div>

@@ -91,7 +91,7 @@ describe('ConsultantController', () => {
       const mockResponse = { page: 1, total: 0, consultants: [] };
       mockConsultantService.getAllConsultants.mockResolvedValue(mockResponse);
 
-      const req = { user: { role: 'CONSULTANT_MANAGER', id: 'manager-123' } };
+      const req = { user: { role: 'CONSULTANT_MANAGER', userId: 'manager-123' } };
       const result = await controller.getAllConsultants('1', '10', req);
 
       expect(result).toEqual(mockResponse);
@@ -109,7 +109,7 @@ describe('ConsultantController', () => {
     it('should parse page and limit as integers', async () => {
       mockConsultantService.getAllConsultants.mockResolvedValue({ page: 3, total: 30, consultants: [] });
 
-      const req = { user: { role: 'ADMIN', id: 'admin-123' } };
+      const req = { user: { role: 'ADMIN', userId: 'admin-123' } };
       await controller.getAllConsultants('3', '5', req);
 
       expect(mockConsultantService.getAllConsultants).toHaveBeenCalledWith(3, 5, 'ADMIN', 'admin-123');

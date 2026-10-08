@@ -154,7 +154,7 @@ function ConsultantProfileViewPage() {
               fullName={profile.fullName}
               status={profile.status}
               pictureUrl={profile.pictureUrl}
-              canEdit={canEdit}
+              canEdit={false}
               onSave={async (status, photo) => {
                 await save({ availability: status === "Available" ? "AVAILABLE" : "UNAVAILABLE" });
                 if (photo) {
@@ -172,7 +172,6 @@ function ConsultantProfileViewPage() {
               nationality={profile.nationality}
               costToCompany={profile.costToCompany}
               canEdit={canEdit}
-              canEditCost={user?.role === "CONSULTANT"}
               onSave={async (data) => {
                 await save({
                   fullname: data.fullName,
@@ -180,7 +179,6 @@ function ConsultantProfileViewPage() {
                   phone: data.phone,
                   idNumber: data.idNumber,
                   nationality: data.nationality,
-                  ...(data.costToCompany !== undefined && { costToCompany: data.costToCompany }),
                 });
                 await refetch();
               }}

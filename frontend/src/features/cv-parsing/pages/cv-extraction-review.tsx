@@ -301,10 +301,10 @@ export default function CVExtractionReview() {
         setExperiences((prev) => prev.map((e, i) => (i === idx ? { ...e, ...patch } : e)));
     }
 
-    const updateCertification = (idx: number, patch: Partial<ParsedCertification>) => {
-        if (isSecurityBlocked) return;
-        setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
-    }
+    // const updateCertification = (idx: number, patch: Partial<ParsedCertification>) => {
+    //     if (isSecurityBlocked) return;
+    //     setCertifications((prev) => prev.map((c, i) => (i === idx ? { ...c, ...patch } : c)));
+    // }
 
     const updateEducation = (idx: number, patch: Partial<ParsedEducation>) => {
         if (isSecurityBlocked) return;
@@ -697,7 +697,7 @@ export default function CVExtractionReview() {
                                         ))}
                                     </Card>
 
-                                    <Card className="p-4 sm:p-6 rounded-lg">
+                                    {/* <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-xl font-bold mb-4"> Certifications</h2>
                                         {certifications.map((cert, i) => (
                                             <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
@@ -707,7 +707,7 @@ export default function CVExtractionReview() {
                                                 <FormField label="End date" value={cert.endDate ?? ""} onChange={(v) => updateCertification(i, { endDate: v })} />
                                             </div>
                                         ))}
-                                    </Card>
+                                    </Card> */}
 
                                     <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-xl font-bold mb-4"> Education</h2>

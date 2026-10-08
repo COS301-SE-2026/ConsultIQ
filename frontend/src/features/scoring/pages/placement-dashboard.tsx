@@ -5,12 +5,15 @@ import { useState, useEffect, useMemo } from "react";
 import { RecommendationsTable } from "../components/recommendations-table";
 import type { Recommendation, MatchRunStats } from "../types/placements.types";
 import type { MatchRunStatus } from "../services/placement.service";
+import { scoringApiService } from "../services/scoring.service";
+import type { ScoringFactor } from "../components/scoring-weights-table";
 import { getProjectById, type ProjectPlacementContext } from "../../projects/services/project.service";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { placementService } from "../services/placement.service";
-import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, X } from "lucide-react";
+import { ApiError } from "../../../lib/api-client";
+import SearchBar from "../../../components/shared/search-bar";
 
 
 interface RawMatchResult {
@@ -27,19 +30,52 @@ interface RawMatchResult {
     isPlaced?: boolean;
 }
 
-export default function PlacementDashboard() {
-    const navigate = useNavigate();
+const getPlacementRecoveryHint = (error: unknown): string => {
+    if (error instanceof ApiError) {
+        if (error.status === 400) return "Review the placement dates, allocation, consultant capacity, and budget requirements.";
+        if (error.status === 403) return "Confirm that you are the project manager assigned to this project.";
+        if (error.status === 404) return "Refresh the recommendations and confirm the project and consultant are still available.";
+        if (error.status === 409) return "Check the project team limit, existing placements, and remaining budget.";
+    }
 
+    return "Review the placement details and try again. If the issue continues, contact support.";
+};
+
+const getPlacementErrorType = (error: unknown): string => {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (message.includes("team size")) return "Team size limit";
+    if (message.includes("budget exceeded") || message.includes("project budget is")) return "Budget limit";
+    if (message.includes("already placed")) return "Already placed";
+    if (message.includes("capacity")) return "Capacity limit";
+
+    if (error instanceof ApiError) {
+        if (error.status === 400) return "Placement requirements";
+        if (error.status === 403) return "Permission error";
+        if (error.status === 404) return "Project or consultant unavailable";
+        if (error.status === 409) return "Placement conflict";
+    }
+
+    return "Placement error";
+};
+
+export default function PlacementDashboard() {
     const location = useLocation();
 
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+    };
     const { projectId, runId } = useParams<{ projectId: string; runId: string }>();
     const [project, setProject] = useState<ProjectPlacementContext | null>(null);
-    const [projectScoringBasis] = useState<'Override' | 'Default'>('Override');
+    const [projectScoringBasis, setProjectScoringBasis] = useState<'Override' | 'Default'>('Default');
+    const [scoringFactors, setScoringFactors] = useState<ScoringFactor[]>([]);
 
     const [stats, setStats] = useState<MatchRunStats | null>(null);
     const [rawMatchData, setRawMatchData] = useState<RawMatchResult[]>(location.state?.rawMatchData ?? []);
     const [matchRunStatus, setMatchRunStatus] = useState<MatchRunStatus | null>(null);
     const [placedConsultantIds, setPlacedConsultantIds] = useState<string[]>([]);
+    const [placementError, setPlacementError] = useState<{ consultantName: string; rank: number; message: string; hint: string } | null>(null);
 
     const recommendations = useMemo<Recommendation[]>(() => {
         if (!rawMatchData || !Array.isArray(rawMatchData)) {
@@ -124,6 +160,28 @@ export default function PlacementDashboard() {
         void loadProject();
     }, [projectId]);
 
+    useEffect(() => {
+        const loadScoringConfig = async () => {
+            if (!projectId) return;
+
+            try {
+                const [globalConfigs, projectOverrides] = await Promise.all([scoringApiService.getGlobalConfig(), scoringApiService.getProjectOverrideConfig(projectId)]);
+
+                if (projectOverrides.length > 0) {
+                    setScoringFactors(projectOverrides);
+                    setProjectScoringBasis("Override");
+                } else {
+                    setScoringFactors(globalConfigs);
+                    setProjectScoringBasis("Default");
+                }
+            } catch (error) {
+                console.error("Failed to load scoring factors", error);
+            }
+        };
+
+        void loadScoringConfig();
+    }, [projectId]);
+
 
     const projectMatched = stats?.totalMatched ?? recommendations.length;
     const projectPlaced = stats?.totalPlaced ?? recommendations.filter(r => r.isPlaced === true).length;
@@ -132,18 +190,26 @@ export default function PlacementDashboard() {
     const projectTotalEvaluated = stats?.totalEvaluated ?? (projectMatched + projectExcluded);
 
     const hasInitialRecommendations = rawMatchData.length > 0;
-    const isMatchLoading = 
+    const isMatchLoading =
         !matchRunStatus ||
-        (matchRunStatus.status === "IN_PROGRESS" && !hasInitialRecommendations ) || 
+        (matchRunStatus.status === "IN_PROGRESS" && !hasInitialRecommendations) ||
         (matchRunStatus.status === "COMPLETED" && stats === null);
 
     const handleSelectConsultant = (consultantId: string) => {
         console.log("Selected consultant for modal view", consultantId);
     };
-    const handlePlaceConsultant = async (consultantId: string) => {
+    const handlePlaceConsultant = async (consultantId: string): Promise<boolean> => {
+        const recommendation = recommendations.find((item) => item.consultantId === consultantId);
+        const consultantName = recommendation?.consultantName ?? "Selected consultant";
+        const rank = recommendation?.rank ?? 0;
         if (!projectId || !project) {
-            navigate("/projects", {replace: true});
-            throw new Error("Project information is missing.");
+            setPlacementError({
+                consultantName,
+                rank,
+                message: "Project information is missing, so the placement could not be submitted.",
+                hint: "Return to the projects list and reopen this recommendation run.",
+            });
+            return false;
         }
         try {
             await placementService.createPlacement(projectId, {
@@ -153,24 +219,46 @@ export default function PlacementDashboard() {
                 allocation: project.allocation,
             });
 
+            setPlacementError(null);
+
             setPlacedConsultantIds((prev) =>
                 prev.includes(consultantId) ? prev : [...prev, consultantId],
             );
 
             setStats((currStats) => currStats ? { ...currStats, totalPlaced: currStats.totalPlaced + 1, } : currStats,);
             toast.success("Consultant has been placed successfully");
+            return true;
         } catch (err) {
             const message = err instanceof Error ? err.message : "Unable to place consultant.";
-            toast.error(message);
-            throw err;
+            const hint = getPlacementRecoveryHint(err);
+            setPlacementError({
+                consultantName,
+                rank,
+                message,
+                hint,
+            });
+            toast.error("Placement failed", {
+                description: `${getPlacementErrorType(err)} (Recommendation #${rank})`,
+            });
+            return false;
         }
     };
 
+    const filteredRecommendations = useMemo<Recommendation[]>(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return recommendations;
+
+        return recommendations.filter((rec) =>
+            rec.consultantName.toLowerCase().includes(query) || (rec.consultantEmail ?? "").toLowerCase().includes(query)
+        );
+
+    }, [recommendations, searchQuery]);
+
     function renderMatchContent() {
-        if(isMatchLoading){
+        if (isMatchLoading) {
             return (
                 <div className="flex min-h-[280px] flex-col items-center justify-center gap-4 rounded-xl border border-slate-200 bg-white p-6 text-center">
-                    <Loader2 className="h-10 w-10 animate-spin" style={{color: "var(--color-primary)"}}/>
+                    <Loader2 className="h-10 w-10 animate-spin" style={{ color: "var(--color-primary)" }} />
                     <div className="text-lg font-semibold text-slate-800">
                         <h2 className="text-lg font-semibold text-slate-800">
                             Scoring consultants...
@@ -179,14 +267,14 @@ export default function PlacementDashboard() {
                             {matchRunStatus ? `Progress: ${matchRunStatus.progress}%` : "Preparing the match run"}
                         </p>
                     </div>
-                </div>            
+                </div>
             );
         }
-        if(matchRunStatus?.status === "FAILED"){
-            return(
+        if (matchRunStatus?.status === "FAILED") {
+            return (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-sm text-red-700">
                     {matchRunStatus.errorMessage ?? "The match run failed. Please try again."}
-                </div>                
+                </div>
             );
         }
 
@@ -194,16 +282,43 @@ export default function PlacementDashboard() {
             <>
                 <MatchStatsGrid
                     scoringBasis={projectScoringBasis}
+                    scoringFactors={scoringFactors}
                     totalEvaluated={projectTotalEvaluated}
                     matched={projectPlaced}
                     excluded={projectExcluded}
                 />
+                {placementError && (
+                    <section role="alert" className="mb-5 flex items-start gap-3 border-l-4 border-rose-600 bg-rose-50 p-4 text-rose-950 shadow-sm">
+                        <AlertCircle aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0 text-rose-700" />
+                        <div className="min-w-0 flex-1">
+                            <h2 className="font-semibold">Placement could not be completed</h2>
+                            <p className="mt-1 text-sm font-medium">Recommendation #{placementError.rank}: {placementError.consultantName}</p>
+                            <p className="mt-1 break-words text-sm">{placementError.message}</p>
+                            <p className="mt-2 text-sm text-rose-800">{placementError.hint}</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setPlacementError(null)}
+                            aria-label="Dismiss placement error"
+                            className="rounded p-1 text-rose-800 hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-700"
+                        >
+                            <X aria-hidden="true" className="h-4 w-4" />
+                        </button>
+                    </section>
+                )}
+
+                <SearchBar
+                    value={searchQuery}
+                    onChange={handleSearchChange}
+                    placeholder={"Search for a ranked consultant by name or email..."}
+                />
+                <div className="my-6" />
                 <RecommendationsTable
-                    recommendations={recommendations}
+                    recommendations={filteredRecommendations}
                     onSelectConsultant={handleSelectConsultant}
                     onPlaceConsultant={handlePlaceConsultant}
                 />
-            </>    
+            </>
         );
     }
 
@@ -217,17 +332,17 @@ export default function PlacementDashboard() {
                     className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
                     style={{ borderColor: "var(--color-border)", minHeight: "90px" }}
                 >
-                <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
-                        Placement Dashboard
-                    </h1>
-                    <div className="text-left sm:text-right">
-                        <p className="text-lg font-medium text-slate-500 lg:text-lg">{project?.projectName}</p>
-                        {matchRunStatus?.status === "IN_PROGRESS" && (
+                    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
+                            Placement Dashboard
+                        </h1>
+                        <div className="text-left sm:text-right">
+                            <p className="text-lg font-medium text-slate-500 lg:text-lg">{project?.projectName}</p>
+                            {/* {matchRunStatus?.status === "IN_PROGRESS" && (
                             <p className="text-sm text-slate-400">Scoring in progress: {matchRunStatus.progress}%</p>
-                        )}
+                        )} */}
+                        </div>
                     </div>
-                   </div>
                 </header>
                 <div className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-[80px] lg:py-[32px]">
                     {renderMatchContent()}

@@ -397,11 +397,11 @@ export default function SchedulerPage() {
     }
 
     return (
-        <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex h-dvh overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantSidebarItems} notificationCount={unreadCount}/>
 
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
-                <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
+                <header className=" flex-none border-b border-slate-200 bg-white sm:px-2 lg:px-6 ">
                     <SchedulerHeader
                         weekStart={selectedWeekStart}
                         week={serverWeek}
@@ -430,13 +430,13 @@ export default function SchedulerPage() {
                         <div className="my-2 flex items-center gap-2">
                             <button type="button"
                                 onClick={openCreateEntry}
-                                className="my-2 rounded-md border border-primary px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
+                                className="rounded-md border border-primary px-2.5 sm:px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
                             >
                                 + Event
                             </button>
                             <button type="button"
                                 onClick={() => OpenCreateTask()}
-                                className="my-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"
+                                className="rounded-md bg-primary px-2.5 sm:px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"
                             >
                                 + New Task
                             </button>

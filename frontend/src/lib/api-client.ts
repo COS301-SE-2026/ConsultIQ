@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from '../api/api-base-url';
+
+const CSRF_TOKEN_KEY = 'ciq_csrf_token';
 
 export class ApiError extends Error {
     status: number;
@@ -10,6 +12,7 @@ export class ApiError extends Error {
 }
 
 let csrfTokenMemory: string | null = null;
+let csrfTokenRefreshPromise: Promise<string> | null = null;
 
 const readCsrfTokenCookie = (): string | null => {
     if (typeof document === 'undefined') {
@@ -21,41 +24,116 @@ const readCsrfTokenCookie = (): string | null => {
         .find((row) => row.startsWith('XSRF-TOKEN='));
 
     if (!match) return null;
-
-    const value = match.slice('XSRF-TOKEN='.length);
-    return decodeURIComponent(value);
+    return decodeURIComponent(match.slice('XSRF-TOKEN='.length));
 };
 
-const getCsrfToken = async (forceRefresh = false): Promise<string | null> => {
+const readSharedCsrfToken = (): string | null => {
+    try {
+        return typeof localStorage === 'undefined'
+            ? null
+            : localStorage.getItem(CSRF_TOKEN_KEY);
+    } catch {
+        return null;
+    }
+};
+
+const rememberCsrfToken = (token: string): void => {
+    csrfTokenMemory = token;
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(CSRF_TOKEN_KEY, token);
+        }
+    } catch {
+
+    }
+};
+
+const withBrowserLock = <T>(name: string, action: () => Promise<T>): Promise<T> => {
+    if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+        return navigator.locks.request(name, action);
+    }
+    return action();
+};
+
+const fetchCsrfToken = async (
+    forceRefresh: boolean,
+    rejectedToken?: string,
+): Promise<string> => {
+    return withBrowserLock('ciq-csrf-token', async () => {
+        const cookieToken = readCsrfTokenCookie();
+        const sharedToken = readSharedCsrfToken();
+        const candidates = [cookieToken, sharedToken, csrfTokenMemory].filter(
+            (token): token is string => Boolean(token),
+        );
+        const currentToken = forceRefresh
+            ? candidates.find((token) => token !== rejectedToken) ?? candidates[0]
+            : candidates[0];
+
+        if (!forceRefresh && currentToken) {
+            rememberCsrfToken(currentToken);
+            return currentToken;
+        }
+
+        if (
+            forceRefresh &&
+            rejectedToken &&
+            currentToken &&
+            currentToken !== rejectedToken
+        ) {
+            rememberCsrfToken(currentToken);
+            return currentToken;
+        }
+
+        const url = forceRefresh
+            ? `${API_BASE_URL}/auth/csrf-token?refresh=true`
+            : `${API_BASE_URL}/auth/csrf-token`;
+        const response = await fetch(url, { credentials: 'include' });
+        if (!response.ok) {
+            throw new ApiError('Unable to renew the security token. Please retry.', response.status);
+        }
+
+        const data = await response.json() as { csrfToken?: string };
+        if (typeof data.csrfToken !== 'string' || data.csrfToken.length === 0) {
+            throw new ApiError('The server returned an invalid security token.', response.status);
+        }
+
+        const latestCookieToken = readCsrfTokenCookie();
+        const token = latestCookieToken ?? data.csrfToken;
+        rememberCsrfToken(token);
+        return token;
+    });
+};
+
+const getCsrfToken = async (forceRefresh = false, rejectedToken?: string): Promise<string> => {
     const cookieToken = readCsrfTokenCookie();
-    if (cookieToken && !forceRefresh) {
-        csrfTokenMemory = cookieToken;
-        return cookieToken;
+    const sharedToken = readSharedCsrfToken();
+    const currentToken = cookieToken ?? sharedToken ?? csrfTokenMemory;
+
+    if (!forceRefresh && currentToken) {
+        rememberCsrfToken(currentToken);
+        return currentToken;
     }
 
-    if (csrfTokenMemory && !forceRefresh) return csrfTokenMemory;
+    if (csrfTokenRefreshPromise) return csrfTokenRefreshPromise;
 
-    const response = await fetch(`${API_BASE_URL}/auth/csrf-token`, {
-        credentials: 'include',
-    });
-    if (!response.ok) return null;
-
-    const data = await response.json() as { csrfToken?: string };
-    csrfTokenMemory = data.csrfToken ?? null;
-    return csrfTokenMemory;
+    const refreshPromise = fetchCsrfToken(forceRefresh, rejectedToken);
+    csrfTokenRefreshPromise = refreshPromise;
+    try {
+        return await refreshPromise;
+    } finally {
+        if (csrfTokenRefreshPromise === refreshPromise) {
+            csrfTokenRefreshPromise = null;
+        }
+    }
 };
 
 let refreshTokenFn: () => Promise<string | null> = async () => {
-    throw new Error("Refresh function not injected yet");
+    throw new Error('Refresh function not injected yet');
 };
 
-const isCsrfFailure = (responseData: Record<string, unknown> | null): boolean => {
-    if (!responseData || typeof responseData.message !== 'string') {
-        return false;
-    }
-
-    return responseData.message.toLowerCase().includes('csrf');
-};
+const isCsrfFailure = (responseData: Record<string, unknown> | null): boolean =>
+    typeof responseData?.message === 'string' &&
+    responseData.message.toLowerCase().includes('csrf');
 
 let logoutFn: () => void = () => {
     if (!window.location.pathname.startsWith('/login')) {
@@ -66,8 +144,16 @@ let isLoggingOut = false;
 
 export const setLoggingOut = (loggingOut: boolean) => {
     isLoggingOut = loggingOut;
-    if (loggingOut) {
-        failedQueue = [];
+};
+
+export const clearCsrfToken = (): void => {
+    csrfTokenMemory = null;
+    try {
+        if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem(CSRF_TOKEN_KEY);
+        }
+    } catch {
+
     }
 };
 
@@ -84,26 +170,31 @@ export const injectAuth = ({
     logoutFn = logout;
 };
 
-// Refresh Queue Logic
-let isRefreshing = false;
-let failedQueue: { resolve: (value: unknown) => void; reject: (reason?: unknown) => void }[] = [];
+let accessTokenRefreshPromise: Promise<void> | null = null;
 
-const processQueue = (error: unknown = null) => {
-    failedQueue.forEach((prom) => {
-        if (error) {
-            prom.reject(error);
-        } else {
-            prom.resolve(null);
-        }
-    });
-    failedQueue = [];
+const refreshAccessToken = (): Promise<void> => {
+    if (!accessTokenRefreshPromise) {
+        const refreshPromise = withBrowserLock('ciq-refresh-token', async () => {
+            if (isLoggingOut) return;
+            const token = await refreshTokenFn();
+            if (!token) throw new Error('Refresh token was rejected');
+        });
+        accessTokenRefreshPromise = refreshPromise;
+        void refreshPromise.finally(() => {
+            if (accessTokenRefreshPromise === refreshPromise) {
+                accessTokenRefreshPromise = null;
+            }
+        }).catch(() => undefined);
+    }
+    return accessTokenRefreshPromise;
 };
-
 
 async function fetchWithAuth<T>(
     endpoint: string,
     options: RequestInit = {},
-    allowAuthRecovery = true,
+    accessRecoveryAttempted = false,
+    csrfRecoveryAttempted = false,
+    csrfTokenOverride?: string,
 ): Promise<T> {
     const headers = new Headers(options.headers);
     if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
@@ -111,17 +202,16 @@ async function fetchWithAuth<T>(
     }
 
     const method = (options.method ?? 'GET').toUpperCase();
-    const csrfToken = !['GET', 'HEAD', 'OPTIONS'].includes(method)
-        ? await getCsrfToken()
+    const isUnsafeMethod = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+    const csrfToken = isUnsafeMethod
+        ? csrfTokenOverride ?? await getCsrfToken()
         : null;
-    if (csrfToken) {
-        headers.set('X-CSRF-Token', csrfToken);
-    }
+    if (csrfToken) headers.set('X-CSRF-Token', csrfToken);
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers,
-        credentials: 'include'
+        credentials: 'include',
     });
 
     if (response.status === 204) return {} as T;
@@ -130,84 +220,53 @@ async function fetchWithAuth<T>(
     try {
         responseData = await response.json();
     } catch {
-        // If parsing fails
+
     }
 
-    const shouldRetryWithRefresh = allowAuthRecovery && (
-        response.status === 401 ||
-        (response.status === 403 && isCsrfFailure(responseData))
-    );
-
-    // (Token Expiration / CSRF recovery)
-    if (shouldRetryWithRefresh) {
-        if (isLoggingOut) {
-            return waitForLogout<T>();
-        }
-
-        if (isRefreshing) {
-            return new Promise((resolve, reject) => {
-                failedQueue.push({ resolve, reject });
-            }).then(() => {
-                if (isLoggingOut) {
-                    return waitForLogout<T>();
-                }
-                return fetchWithAuth<T>(endpoint, options, false);
-            });
-        }
-
-        isRefreshing = true;
+    if (response.status === 401 && !accessRecoveryAttempted) {
+        if (isLoggingOut) return waitForLogout<T>();
 
         try {
-            if (isLoggingOut) {
-                return waitForLogout<T>();
-            }
-
-            if (response.status === 403 && isCsrfFailure(responseData)) {
-                await getCsrfToken(true);
-            } else {
-                if (typeof navigator !== 'undefined' && 'locks' in navigator) {
-                    await navigator.locks.request('ciq-refresh-token', async () => {
-                        if (isLoggingOut) {
-                            return;
-                        }
-
-                        await refreshTokenFn();
-                    });
-                } else {
-                    await refreshTokenFn();
-                }
-            }
-
-            if (isLoggingOut) {
-                return waitForLogout<T>();
-            }
-
-            processQueue(null);
-
-            return fetchWithAuth<T>(endpoint, options, false);
-
-        } catch (err) {
-            processQueue(err);
-
-            if (isLoggingOut) {
-                return waitForLogout<T>();
-            }
-
-            const isAlreadyOnLoginPage = window.location.pathname.startsWith('/login');
-            if (!isLoggingOut && !isAlreadyOnLoginPage) {
-                logoutFn();
-            }
-            throw new ApiError(response.status === 403 ? 'CSRF validation failed' : 'Session expired', 401);
-        } finally {
-            isRefreshing = false;
+            await refreshAccessToken();
+        } catch {
+            if (isLoggingOut) return waitForLogout<T>();
+            if (!window.location.pathname.startsWith('/login')) logoutFn();
+            throw new ApiError('Your session has expired. Please sign in again.', 401);
         }
+
+        if (isLoggingOut) return waitForLogout<T>();
+        return fetchWithAuth<T>(
+            endpoint,
+            options,
+            true,
+            csrfRecoveryAttempted,
+            csrfTokenOverride,
+        );
+    }
+
+    if (
+        response.status === 403 &&
+        isCsrfFailure(responseData) &&
+        !csrfRecoveryAttempted
+    ) {
+        if (isLoggingOut) return waitForLogout<T>();
+
+        const replacementToken = await getCsrfToken(true, csrfToken ?? undefined);
+        if (isLoggingOut) return waitForLogout<T>();
+        return fetchWithAuth<T>(
+            endpoint,
+            options,
+            accessRecoveryAttempted,
+            true,
+            replacementToken,
+        );
     }
 
     if (!response.ok) {
         let errorMessage = `Request failed (${response.status})`;
-        if (responseData && responseData.message) {
-            const msg = responseData.message;
-            errorMessage = Array.isArray(msg) ? msg.join(', ') : String(msg);
+        if (responseData?.message) {
+            const message = responseData.message;
+            errorMessage = Array.isArray(message) ? message.join(', ') : String(message);
         }
         throw new ApiError(errorMessage, response.status);
     }

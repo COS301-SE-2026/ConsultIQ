@@ -4,6 +4,8 @@ import type { SidebarItem } from "./sidebar.types";
 import { LogOut, User, Menu, X } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth";
 import { useLocation, useNavigate } from "react-router-dom";
+import { getConsultantProfileRoute } from "../../../features/consultants/services/consultant.service";
+import { toast } from "sonner";
 
 interface SidebarProps {
   readonly items: SidebarItem[];
@@ -67,7 +69,18 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
           return (
             <button
               key={item.path}
-              onClick={() =>{
+              onClick={async () => {
+                if (item.path === "/profile" && user?.role === "CONSULTANT") {
+                  try {
+                    const profileRoute = await getConsultantProfileRoute(user.userId);
+                    navigate(profileRoute, { state: { from: "sidebar" } });
+                  } catch {
+                    toast.error("Unable to determine your profile status. Please try again.");
+                  }
+                  setIsOpen(false);
+                  return;
+                }
+
                 navigate(item.path, { state: { from: "sidebar" } });
                 setIsOpen(false);
               }}

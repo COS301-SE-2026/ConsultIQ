@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://api.consultiq.co.za/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

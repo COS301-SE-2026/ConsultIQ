@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { ApiError } from '../services/auth.service';
+import { getConsultantProfileRoute } from '../../consultants/services/consultant.service';
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -58,10 +59,19 @@ export const LoginCard: React.FC = () => {
 
     setLoading(true);
     try {
-      const targetRoute = await login({ email, password });
+      const loginResult = await login({ email, password });
+      let targetRoute = loginResult.dashboardRoute || '/dashboard';
+
+      if (targetRoute === '/profile') {
+        try {
+          targetRoute = await getConsultantProfileRoute(loginResult.userId);
+        } catch {
+          toast.error('Login succeeded, but your profile status could not be checked.');
+        }
+      }
 
       toast.success('Login successful');
-      navigate(targetRoute || '/dashboard');
+      navigate(targetRoute);
     } catch (err) {
       toast.error(friendlyError(err));
     } finally {

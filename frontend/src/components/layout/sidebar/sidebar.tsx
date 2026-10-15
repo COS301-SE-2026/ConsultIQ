@@ -19,8 +19,10 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
 
   const [isOpen, setIsOpen] = useState(false);
   const activeItemPath = [...items]
-    .filter((item) => location.pathname === item.path || location.pathname.startsWith(`${item.path}/`))
-    .sort((left, right) => right.path.length - left.path.length)[0]?.path;
+    .flatMap((item) => [item.path, ...(item.activePaths ?? [])]
+      .filter((path) => location.pathname === path || location.pathname.startsWith(`${path}/`))
+      .map((path) => ({ itemPath: item.path, matchedPath: path })))
+    .sort((left, right) => right.matchedPath.length - left.matchedPath.length)[0]?.itemPath;
   
 
     return (

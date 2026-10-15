@@ -107,7 +107,8 @@ export const consultantSidebarItems: SidebarItem[] = [
     {
         label: "Profile",
         path: "/profile",
-        icon: UserCheck
+        icon: UserCheck,
+        activePaths: ["/under-construction"]
     },
     {
         label: "Notifications",

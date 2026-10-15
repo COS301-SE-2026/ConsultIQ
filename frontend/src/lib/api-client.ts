@@ -44,7 +44,7 @@ const rememberCsrfToken = (token: string): void => {
             localStorage.setItem(CSRF_TOKEN_KEY, token);
         }
     } catch {
-
+        // The in-memory token remains available when browser storage is blocked.
     }
 };
 
@@ -153,7 +153,7 @@ export const clearCsrfToken = (): void => {
             localStorage.removeItem(CSRF_TOKEN_KEY);
         }
     } catch {
-
+        // The in-memory token remains available when browser storage is blocked.
     }
 };
 
@@ -220,7 +220,7 @@ async function fetchWithAuth<T>(
     try {
         responseData = await response.json();
     } catch {
-
+        // Non-JSON error responses are reported using their HTTP status below.
     }
 
     if (response.status === 401 && !accessRecoveryAttempted) {

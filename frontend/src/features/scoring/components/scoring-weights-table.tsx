@@ -84,7 +84,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 </div>
             )}
             <div className="hidden border-b border-slate-100 md:block">
-                <div className="grid grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] items-center gap-1 py-4 text-sm font-bold tracking-wide text-primary">
+                <div className="grid grid-cols-[0.2fr_2fr_1fr_1fr_0.2fr] items-center gap-1 py-4 text-sm font-bold tracking-wide text-primary">
                     <div></div>
                     <div className="flex"><h3>Factor</h3></div>
                     <div className="flex justify-center gap-2"><h3>Weight</h3></div>
@@ -92,10 +92,12 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                         <span><h3>Active</h3></span>
                         <ViewInfo label="Active" description="When turned on, the algorithm actively uses the selected factor to calculate the overall fit, otherwise it is ignored" />
                     </div>
+                    {/* Hard Exclusion UI temporarily disabled.
                     <div className="flex items-center justify-center gap-2">
                         <span><h3>Hard Exclusion</h3></span>
                         <ViewInfo label="Hard Exclusion" description="If enabled, this factor can block the consultant from being considered." />
                     </div>
+                    */}
                     <div></div>
                 </div>
             </div>
@@ -103,7 +105,7 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                 {factors.map((factor, idx) => (
                     <div key={`${factor.factorName}-${idx}`} >
                         <div className={`mb-4 border border-slate-200 rounded shadow-sm ${!factor.isActive && 'opacity-60'}`}>
-                            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-[0.2fr_2fr_1fr_1fr_1fr_0.2fr] md:items-center md:gap-1 md:p-0 md:py-2">
+                            <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-[0.2fr_2fr_1fr_1fr_0.2fr] md:items-center md:gap-1 md:p-0 md:py-2">
                                 <div className="hidden md:block"></div>
                                 <div className="space-y-2 md:space-y-3">
                                     <h4 className="text-base font-semibold text-[#002D62]">{factor.factorName}</h4>
@@ -132,12 +134,14 @@ export function ScoringWeightsTable({ initialFactors, isProjectOverride, isUsing
                                         onChange={(e) => handleWeightChange(idx, 'isActive', e.target.checked)}
                                         className="h-5 w-5 rounded-full accent-blue-900 md:h-4 md:w-4" />
                                 </div>
+                                {/* Hard Exclusion UI temporarily disabled.
                                 <div className="flex items-center justify-between md:justify-center">
                                     <span className="text-sm font-semibold text-slate-500 md:hidden">Hard Exclusion</span>            
                                     <input type="checkbox" disabled={!factor.isActive} checked={factor.hardExclusion}
                                         onChange={(e) => handleWeightChange(idx, 'hardExclusion', e.target.checked)}
                                         className="h-5 w-5 rounded accent-blue-900 md:h-4 md:w-4" />
                                 </div>
+                                */}
                                 <div className="hidden md:block"></div>
                             </div>
                         </div>

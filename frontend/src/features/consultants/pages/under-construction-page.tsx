@@ -5,10 +5,12 @@ import { useAuth } from "../../../hooks/useAuth";
 import { useFetchConsultantProfile } from "../../../hooks/useFetchConsultantsProfiles";
 import ConsultantProfileViewPage from "./consultant-profile-view";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
+import { Navigate, useLocation } from "react-router-dom";
 
 
 function UnderConstructionPage() {
   const {user} = useAuth();
+  const location = useLocation();
 
   const{count: unreadCount} = useUnreadNotificationCount();
  
@@ -28,12 +30,15 @@ function UnderConstructionPage() {
   }
 
   let hasNoProfile= notFound || !profile ;
-  console.log("profile?",hasNoProfile);
 
   if(user?.role === "CONSULTANT_MANAGER"){
     hasNoProfile = false;
   }
-  
+
+  const expectedPath = hasNoProfile ? "/under-construction" : "/profile";
+  if (location.pathname !== expectedPath) {
+    return <Navigate to={expectedPath} replace />;
+  }
 
   if(hasNoProfile){
      return (

@@ -1,5 +1,5 @@
 import type { SidebarItem } from "./sidebar.types";
-import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie,Calendar,ShieldAlert,TrendingUp } from "lucide-react";
+import { Users, Briefcase, UserCheck, House, Cog, Bell, HelpCircle, ChartPie, Calendar, ShieldAlert, TrendingUp } from "lucide-react";
 export const adminSidebarItems: SidebarItem[] = [
     {
         label: "Dashboard",
@@ -32,7 +32,7 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
     {
         label: "Skill Advisor",
         path: "/manager-skill-advisor",
-        icon:TrendingUp
+        icon: TrendingUp
     },
     {
         label: "Help",
@@ -44,70 +44,71 @@ export const consultantManagerSidebarItems: SidebarItem[] = [
 
 export const superAdminSidebarItems: SidebarItem[] = [
     {
-    path: "/super-admin-dashboard",
-    label: "Dashboard",
-    icon: House,
+        path: "/super-admin-dashboard",
+        label: "Dashboard",
+        icon: House,
     },
     {
-    path: "/super-admin/security-review",
-    label: "Security Review",
-    icon: ShieldAlert,
-  },
+        path: "/super-admin/security-review",
+        label: "Security Review",
+        icon: ShieldAlert,
+    },
 
 ];
 
-export const projectManagerSidebarItems = (projectId?: string, runId?:string,): SidebarItem[] => {
+export const projectManagerSidebarItems = (projectId?: string, runId?: string,): SidebarItem[] => {
     const items: SidebarItem[] = [
-       {
-        label: "Projects",
-        path: "/projects",
-        icon: Briefcase
-    },
-    {
-        label: "Portfolio Gaps",
-        path: "/skill-gap",
-        icon: ChartPie
-    },
-
-   ];
-
-   if(projectId){
-    items.push(
         {
-            label: "Configurations",
-            path: `/project-scoring-config/${projectId}`,
-            icon: Cog
+            label: "Projects",
+            path: "/projects",
+            icon: Briefcase
         },
         {
-        label: "Project Skill Gaps",
-        path: `/skill-gap/${projectId}`,
-        icon: ChartPie,
-    });
-   }
+            label: "Portfolio Gaps",
+            path: "/skill-gap",
+            icon: ChartPie
+        },
 
-   if(projectId && runId){
-    items.push(
-        {
-            label: "Placements",
-            path: `/placement-dashboard/${projectId}/${runId}`,
-            icon: Users
-        })
-   }
+    ];
 
-   items.push({
+    if (projectId) {
+        items.push(
+            {
+                label: "Configurations",
+                path: `/project-scoring-config/${projectId}`,
+                icon: Cog
+            },
+            {
+                label: "Project Skill Gaps",
+                path: `/skill-gap/${projectId}`,
+                icon: ChartPie,
+            });
+    }
+
+    if (projectId && runId) {
+        items.push(
+            {
+                label: "Placements",
+                path: `/placement-dashboard/${projectId}/${runId}`,
+                icon: Users
+            })
+    }
+
+    items.push({
         label: "Help",
         path: "/help-page",
         icon: HelpCircle
     });
-    
+
     return items;
 }
 
 export const consultantSidebarItems: SidebarItem[] = [
     {
         label: "Profile",
-        path: "/under-construction",
-        icon: UserCheck
+        path: "/profile",
+        icon: UserCheck,
+        activePaths: ["/under-construction"]
     },
     {
         label: "Notifications",

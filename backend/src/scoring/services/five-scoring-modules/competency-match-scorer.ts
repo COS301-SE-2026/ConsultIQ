@@ -41,6 +41,7 @@ export class CompetencyMatchScorer {
     let totalMarks = 0;
     let totalWeight = 0;
     let matchedRequiredSkills = 0;
+    const missingMandatorySkills: string[] = [];
 
     const perSkillDetails: Array<{
       skill: string;
@@ -54,6 +55,7 @@ export class CompetencyMatchScorer {
       const normalizedReqName = req.skillName.trim().toLowerCase();
       const consultantRank = consultantRankByName.get(normalizedReqName);
       const requiredRank = COMPETENCY_RANK[req.minimumCompetencyLevel] ?? 0;
+      const isMandatory = req.isMandatory ?? false;
 
       let skillScore = 0;
       let consultantLevel = 'NONE';
@@ -77,49 +79,55 @@ export class CompetencyMatchScorer {
             skillScore = consultantRank.rank / requiredRank;
           }
         }
+      } else if(isMandatory) {
+        // completely absent mandatory skill results in a hard exclusion
+          missingMandatorySkills.push(req.skillName);
+        }
+        const weight = isMandatory ? this.MANDATORY_WEIGHT : this.OPTIONAL_WEIGHT;
+        totalMarks += skillScore * weight;
+        totalWeight += weight;
+
+        perSkillDetails.push({
+          skill: req.skillName,
+          consultantLevel: consultantLevel,
+          requiredLevel: req.minimumCompetencyLevel,
+          score: skillScore,
+          weight: weight,
+          isMandatory: isMandatory,
+        });
       }
 
-      const isMandatory = req.isMandatory ?? false;
-      const weight = isMandatory ? this.MANDATORY_WEIGHT : this.OPTIONAL_WEIGHT;
+      const baseScore = totalWeight > 0 ? totalMarks / totalWeight : 0;
 
-      totalMarks += skillScore * weight;
-      totalWeight += weight;
+      // Bonus marks for consultants with extra set of skills
+      const totalConsultantSkills = consultant.skills
+        ? consultant.skills.length
+        : 0;
+      const extraSkillCount = Math.max(
+        0,
+        totalConsultantSkills - matchedRequiredSkills,
+      );
 
-      perSkillDetails.push({
-        skill: req.skillName,
-        consultantLevel: consultantLevel,
-        requiredLevel: req.minimumCompetencyLevel,
-        score: skillScore,
-        weight: weight,
-        isMandatory: isMandatory,
-      });
-    }
+      
+      const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
+      const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));
+      const baseFormatted = (baseScore * 100).toFixed(1);
 
-    const baseScore = totalWeight > 0 ? totalMarks / totalWeight : 0;
+      const bonusFormatted = (skillCountBonus * 100).toFixed(1);
+      let detailString = `Competency Match: ${baseFormatted}%.`;
 
-    // Bonus marks for consultants with extra set of skills
-    const totalConsultantSkills = consultant.skills
-      ? consultant.skills.length
-      : 0;
-    const extraSkillCount = Math.max(
-      0,
-      totalConsultantSkills - matchedRequiredSkills,
-    );
+      if (extraSkillCount > 0) {
+        detailString += ` Bonus applied for ${extraSkillCount} extra skill(s): +${bonusFormatted}%.`;
+      }
 
-    const skillCountBonus = extraSkillCount * this.SKILL_BONUS;
-    const finalScore = Math.min(1, Math.max(0, skillCountBonus + baseScore));
-    const baseFormatted = (baseScore * 100).toFixed(1);
+      if( missingMandatorySkills.length > 0) {
+        detailString += ` Missing mandatory skill(s): ${missingMandatorySkills.join(', ')}.`;
+      }
 
-    const bonusFormatted = (skillCountBonus * 100).toFixed(1);
-    let detailString = `Competency Match: ${baseFormatted}%.`;
-
-    if (extraSkillCount > 0) {
-      detailString += ` Bonus applied for ${extraSkillCount} extra skill(s): +${bonusFormatted}%.`;
-    }
     return {
       score: finalScore,
-      triggerHardExclusion: false,
-
+      triggerHardExclusion: missingMandatorySkills.length > 0,
+      missingMandatorySkills,
       details: detailString,
     };
   }

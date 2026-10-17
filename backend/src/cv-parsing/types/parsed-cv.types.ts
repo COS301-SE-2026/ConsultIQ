@@ -86,6 +86,7 @@ export interface CvParsingResult {
   securityFlags?: CvSecurityFlag[];
   fieldWarnings?: FieldWarning[];
   error?: string;
+  errorCode?: 'WRONG_PARSING_METHOD';
   processingTimeMs: number;
 }
 

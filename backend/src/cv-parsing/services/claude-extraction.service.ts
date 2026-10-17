@@ -169,7 +169,7 @@ private processResponse(
 
   if (securityFlags.length > 0) {
     this.logger.warn(
-      `CV extraction flagged ${securityFlags.length} suspicious item(s): ${JSON.stringify(securityFlags)}`,
+      `CV extraction flagged ${securityFlags.length} malicious item(s): ${JSON.stringify(securityFlags)}`,
     );
   }
 

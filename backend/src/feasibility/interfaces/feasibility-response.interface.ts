@@ -12,5 +12,7 @@ export interface FeasibilityVariantResult extends FeasibilityCheckResult {
 }
 
 export interface FeasibilityCheckResponse extends FeasibilityCheckResult {
+  hardExclusionsActive: boolean;
+  hardExclusionFactors: string[];
   variants: FeasibilityVariantResult[];
 }

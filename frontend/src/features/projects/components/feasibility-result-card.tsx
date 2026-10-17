@@ -1,6 +1,17 @@
-import { AlertCircle, CheckCircle2, Loader2, ShieldAlert, TrendingUp } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Loader2, ShieldAlert, TrendingUp } from "lucide-react";
 import type { FeasibilityResponseDto, FeasibilityVariantResultDto  } from "../types/feasibility.types";
 import type { FeasibilityCheckState } from "../hooks/use-feasibility-check";    
+
+
+const FACTOR_LABELS: Record<string, string> = {
+    SKILL_ALIGNMENT: "Skill Alignment",
+    COMPETENCY_LEVEL: "Competency Level",
+    AVAILABILITY: "Availability",
+    LOCATION: "Location",
+    COST_TO_COMPANY: "Cost to Company",
+};
+
+const LOW_ELIGIBILITY_THRESHOLD = 10;
 
 interface FeasibilityResultCardProps {
     readonly state: FeasibilityCheckState;
@@ -72,9 +83,40 @@ export  default function FeasibilityResultCard({state, result, error} : Feasibil
 
     if(!result) return null;
     const topPick = findMostImpactfulVariant(result);
+    const isLowEligibility = result.hardExclusionsActive && result.eligibleCount <= LOW_ELIGIBILITY_THRESHOLD;
 
     return(
-        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
+            {!result.hardExclusionsActive && (
+                <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                    <p>
+                        No hard exclusions are currently enabled in scoring config, so every active consultant stays eligible — a poor fit lowers their score rather than removing them. Enable hard exclusion for a factor (e.g. Competency Level or Availability) in scoring settings for a tighter eligible count here.
+                    </p>
+                </div>
+            )}
+
+            {result.hardExclusionsActive && (
+                <div className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                    <p>
+                        Hard exclusion is enforced for: {result.hardExclusionFactors.map((f) => FACTOR_LABELS[f] ?? f).join(', ')}.
+                    </p>
+                </div>
+            )}
+
+            {isLowEligibility && (
+                <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <p>
+                        Very few consultants are eligible, likely because hard exclusion is enforced for{' '}
+                        {result.hardExclusionFactors.map((f) => FACTOR_LABELS[f] ?? f).join(', ')}. If this project
+                        is still viable with a close-but-imperfect fit, consider relaxing hard exclusion for one of
+                        these factors in scoring settings — a near-miss will still score lower, just won't be removed outright.
+                    </p>
+                </div>
+            )}
+        
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                     <div className="mb-1 flex items-center gap-2 text-sm font-medium text-emerald-800">

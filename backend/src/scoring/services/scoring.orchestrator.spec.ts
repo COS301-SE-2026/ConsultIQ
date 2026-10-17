@@ -68,8 +68,8 @@ const ACTIVE_FACTORS = new Set<ScoringFactor>([
 ]);
 
 describe('ScoringOrchestrator', () => {
-
-    describe('Hard Exclusion', () => {
+    
+     describe('Hard Exclusion', () => {
 
         it('excludes a consultant when they have no skills listed (Invalid Data)', async () => {
             const orchestrator = orcheStrator(true);
@@ -141,6 +141,53 @@ describe('ScoringOrchestrator', () => {
             );
 
             expect(result.excluded).toBe(true);
+        });
+
+        it('excludes a consultant on COMPETENCY_LEVEL when hard exclusion is configured and a mandatory skill is entirely missing', async () => {
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
+                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                new Set([ScoringFactor.COMPETENCY_LEVEL]),
+            );
+
+            expect(result.excluded).toBe(true);
+            if (result.excluded) {
+                expect(result.missingMandatorySkills).toEqual(['Java']);
+                expect(result.reason).toContain('Missing mandatory skill(s): Java');
+            }
+        });
+
+        it('does not exclude on COMPETENCY_LEVEL when the factor is active but hard exclusion is not enabled for it', async () => {
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
+                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                // excludedFactors omitted — defaults to an empty set, so nothing should exclude here
+            );
+
+            expect(result.excluded).toBe(false);
+        });
+
+        it('does not compute remaining scoring factors once COMPETENCY_LEVEL hard exclusion triggers', async () => {
+            const orchestrator = orcheStrator(true);
+
+            const result = await orchestrator.scoreConsultant(
+                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
+                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
+                WEIGHTS,
+                ACTIVE_FACTORS,
+                new Set([ScoringFactor.COMPETENCY_LEVEL]),
+            );
+
+            expect(result.excluded).toBe(true);
+            expect(result).not.toHaveProperty('factorScores');
         });
 
     });

@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect,useCallback } from "react";
 import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
@@ -471,18 +471,39 @@ export default function CVExtractionReview() {
                     )}
 
                     {viewState === "failed" && (
-                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                            <AlertTriangle className="h-10 w-10 text-red-600" />
-                            <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>
-                            <p className="text-sm ">
-                                {failureReason}
-                            </p>
-                            <button className="h-12 px-6 rounded-lg font-semibold text-white"
-                                style={{ backgroundColor: "var(--color-primary)" }}
-                                onClick={() => navigate(`/create-profile-entry/${userId}`)}>
-                                Back to upload
-                            </button>
-                        </div>
+                        cvFile?.parsedData?.errorCode === "WRONG_PARSING_METHOD" ? (
+                            <div className="flI didnex flex-col items-center justify-center h-full gap-3 text-center">
+                                <RefreshCw className="h-10 w-10 text-amber-600" />
+                                <p className="text-lg font-semibold text-amber-700 text-center max-w-md">
+                                    Wrong parsing method for this CV
+                                </p>
+                                <p className="text-sm max-w-lg" style={{ color: "var(--color-text-secondary)" }}>
+                                    {failureReason}
+                                </p>
+                                <button
+                                    className="h-12 px-6 rounded-lg font-semibold text-white"
+                                    style={{ backgroundColor: "var(--color-primary)" }}
+                                    onClick={() => navigate(`/create-profile-entry/${userId}`)}
+                                >
+                                    Re-upload with Rule-Based parsing
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                                <AlertTriangle className="h-10 w-10 text-red-600" />
+                                <p className="text-lg font-semibold text-secondary text-center max-w-md">
+                                    Extraction failed.
+                                </p>
+                                <p className="text-sm">{failureReason}</p>
+                                <button
+                                    className="h-12 px-6 rounded-lg font-semibold text-white"
+                                    style={{ backgroundColor: "var(--color-primary)" }}
+                                    onClick={() => navigate(`/create-profile-entry/${userId}`)}
+                                >
+                                    Back to upload
+                                </button>
+                            </div>
+                        )
                     )}
 
                     {viewState === "review" && cvFile && (

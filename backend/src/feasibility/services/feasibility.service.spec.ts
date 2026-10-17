@@ -7,7 +7,7 @@ import { DataIngestionService } from '../../scoring/services/data-normalization/
 import { MatchScoringExecutorService } from '../../scoring/services/match-scoring-executor.service';
 import { VariantGenerator } from './variant-generator';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
-import { ScoringFactor } from 'src/scoring/enums/scoring-factor.enum';
+import { ScoringFactor } from '../../scoring/enums/scoring-factor.enum';
 
 describe('FeasibilityService', () => {
   let service: FeasibilityService;

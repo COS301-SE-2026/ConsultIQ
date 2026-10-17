@@ -7,6 +7,7 @@ import { DataIngestionService } from '../../scoring/services/data-normalization/
 import { MatchScoringExecutorService } from '../../scoring/services/match-scoring-executor.service';
 import { VariantGenerator } from './variant-generator';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
+import { ScoringFactor } from 'src/scoring/enums/scoring-factor.enum';
 
 describe('FeasibilityService', () => {
   let service: FeasibilityService;
@@ -158,6 +159,79 @@ describe('FeasibilityService', () => {
       expect(dataIngestion.getProjectScoringContext).toHaveBeenCalledWith(
         expect.stringMatching(/^draft-/),
       );
+    });
+  });
+
+  describe('checkFeasibility — hard exclusion visibility', () => {
+    it('resolves scoring context exactly once per check, regardless of variant count', async () => {
+      variantGenerator.generate.mockReturnValue([
+        { label: 'Variant A', spec: baseSpec() },
+        { label: 'Variant B', spec: baseSpec() },
+      ]);
+
+      await service.checkFeasibility(baseSpec());
+
+      expect(dataIngestion.getProjectScoringContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes the same resolved scoring context into every scorePool call', async () => {
+      const sharedContext = {
+        activeWeights: {},
+        activeFactors: new Set([ScoringFactor.COMPETENCY_LEVEL]),
+        excludedFactors: new Set([ScoringFactor.COMPETENCY_LEVEL]),
+      };
+      dataIngestion.getProjectScoringContext.mockResolvedValue(sharedContext);
+      variantGenerator.generate.mockReturnValue([
+        { label: 'Budget +15%', spec: { ...baseSpec(), budget: 115000 } },
+      ]);
+
+      await service.checkFeasibility(baseSpec());
+
+      expect(scoringExecutor.scorePool).toHaveBeenCalledTimes(2);
+      const [, , baseContextArg] = scoringExecutor.scorePool.mock.calls[0];
+      const [, , variantContextArg] = scoringExecutor.scorePool.mock.calls[1];
+      expect(baseContextArg).toBe(sharedContext);
+      expect(variantContextArg).toBe(sharedContext);
+    });
+
+    it('reports hardExclusionsActive: false and an empty factor list when nothing is excluded', async () => {
+      dataIngestion.getProjectScoringContext.mockResolvedValue({
+        activeWeights: {}, activeFactors: new Set(), excludedFactors: new Set(),
+      });
+
+      const result = await service.checkFeasibility(baseSpec());
+
+      expect(result.hardExclusionsActive).toBe(false);
+      expect(result.hardExclusionFactors).toEqual([]);
+    });
+
+    it('reports hardExclusionsActive: true and names every excluded factor when one or more are configured', async () => {
+      dataIngestion.getProjectScoringContext.mockResolvedValue({
+        activeWeights: {},
+        activeFactors: new Set([ScoringFactor.COMPETENCY_LEVEL, ScoringFactor.AVAILABILITY]),
+        excludedFactors: new Set([ScoringFactor.COMPETENCY_LEVEL, ScoringFactor.AVAILABILITY]),
+      });
+
+      const result = await service.checkFeasibility(baseSpec());
+
+      expect(result.hardExclusionsActive).toBe(true);
+      expect(result.hardExclusionFactors).toEqual(
+        expect.arrayContaining([ScoringFactor.COMPETENCY_LEVEL, ScoringFactor.AVAILABILITY]),
+      );
+      expect(result.hardExclusionFactors).toHaveLength(2);
+    });
+
+    it('reports a single excluded factor correctly when only one is configured', async () => {
+      dataIngestion.getProjectScoringContext.mockResolvedValue({
+        activeWeights: {},
+        activeFactors: new Set([ScoringFactor.AVAILABILITY]),
+        excludedFactors: new Set([ScoringFactor.AVAILABILITY]),
+      });
+
+      const result = await service.checkFeasibility(baseSpec());
+
+      expect(result.hardExclusionsActive).toBe(true);
+      expect(result.hardExclusionFactors).toEqual([ScoringFactor.AVAILABILITY]);
     });
   });
 

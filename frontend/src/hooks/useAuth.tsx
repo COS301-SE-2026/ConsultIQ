@@ -2,7 +2,7 @@
 import React, { createContext, useCallback, useContext, useMemo, useState, useEffect, useLayoutEffect } from 'react';
 import { authService } from '../features/authentication/services/auth.service';
 import type { LoginPayload } from '../features/authentication/types/auth.types';
-import { injectAuth, setLoggingOut } from '../lib/api-client';
+import { clearCsrfToken, injectAuth, setLoggingOut } from '../lib/api-client';
 
 // Remove session tokens from profile
 export type UserProfile = {
@@ -16,7 +16,7 @@ interface AuthContextValue {
   user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (payload: LoginPayload) => Promise<string | undefined>;
+  login: (payload: LoginPayload) => Promise<{ dashboardRoute?: string; userId: string }>;
   logout: () => void;
 }
 
@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore logout errors
     } finally {
+      clearCsrfToken();
       clearInterval(progressInterval);
       setLogoutProgress(100);
 
@@ -83,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (payload: LoginPayload) => {
+    clearCsrfToken();
     const response = await authService.login(payload);
     setLoggingOut(false);
 
@@ -93,7 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         )
       ) as UserProfile;
       setUser(userProfile);
-      return (userProfile as Record<string, unknown>).dashboardRoute as string | undefined;
+      return {
+        dashboardRoute: userProfile.dashboardRoute,
+        userId: userProfile.userId,
+      };
     } else {
       throw new Error('Malformed response structure from authentication server.');
     }

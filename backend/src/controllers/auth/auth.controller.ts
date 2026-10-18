@@ -10,6 +10,7 @@ import {
   UnauthorizedException,
   Get,
   Request,
+  Query,
 } from '@nestjs/common';
 import * as express from 'express';
 import { randomBytes } from 'node:crypto';
@@ -44,7 +45,7 @@ export class AuthController {
       httpOnly: false,
       secure: true,
       sameSite: 'none',
-      maxAge: 5 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return csrfToken;
   }
@@ -52,7 +53,16 @@ export class AuthController {
   @Public()
   @SkipCsrf()
   @Get('csrf-token')
-  getCsrfToken(@Res({ passthrough: true }) res: any): { csrfToken: string } {
+  getCsrfToken(
+    @Req() req: express.Request,
+    @Res({ passthrough: true }) res: any,
+    @Query('refresh') refresh?: string,
+  ): { csrfToken: string } {
+    const existingToken = req.cookies?.['XSRF-TOKEN'];
+    if (existingToken && refresh !== 'true') {
+      return { csrfToken: existingToken };
+    }
+
     return { csrfToken: this.setCsrfCookie(res) };
   }
 
@@ -201,8 +211,6 @@ export class AuthController {
       sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
-    this.setCsrfCookie(res);
 
     return { message: 'Token refreshed successfully.' };
   }

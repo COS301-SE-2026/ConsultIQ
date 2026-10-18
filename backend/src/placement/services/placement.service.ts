@@ -233,7 +233,7 @@ export class PlacementService {
 
     if (projectedTotalCost > projectBudget) {
       throw new ConflictException(
-        `Budget exceeded. The project budget is ${projectBudget}. Current active placements cost ${totalExistingSpend}. Adding this consultant costs an additional ${newPlacementCost}, bringing the total projected cost to ${projectedTotalCost}.`,
+        `Budget exceeded. The project budget is ${projectBudget.toFixed(2)}. Current active placements cost ${totalExistingSpend.toFixed(2)}. Adding this consultant costs an additional ${newPlacementCost.toFixed(2)}, bringing the total projected cost to ${projectedTotalCost.toFixed(2)}.`,
       );
     }
   }

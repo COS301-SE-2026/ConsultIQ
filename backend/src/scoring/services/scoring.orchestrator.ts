@@ -63,18 +63,31 @@ export class ScoringOrchestrator {
       }
     }
 
-    if (activeFactors.has(ScoringFactor.COMPETENCY_LEVEL)) {
-      const competencyResult = this.competencyMatchScorer.score(
-        consultant,
-        project,
-      );
-      scoresByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.score;
+      if (activeFactors.has(ScoringFactor.COMPETENCY_LEVEL)) {
+        const competencyResult = this.competencyMatchScorer.score(
+          consultant,
+          project,
+        );
 
-      if (competencyResult.details) {
-        detailsByFactor[ScoringFactor.COMPETENCY_LEVEL] =
-          competencyResult.details;
+        if (
+          competencyResult.triggerHardExclusion &&
+          excludedFactors.has(ScoringFactor.COMPETENCY_LEVEL)
+        ) {
+          return {
+            excluded: true,
+            reason:
+              competencyResult.details ?? 'Missing one or more mandatory skills',
+            missingMandatorySkills: competencyResult.missingMandatorySkills ?? [],
+          };
+        }
+
+        scoresByFactor[ScoringFactor.COMPETENCY_LEVEL] = competencyResult.score;
+
+        if (competencyResult.details) {
+          detailsByFactor[ScoringFactor.COMPETENCY_LEVEL] =
+            competencyResult.details;
+        }
       }
-    }
 
     if (activeFactors.has(ScoringFactor.COST_TO_COMPANY)) {
       const costFitResult = this.costFitScorer.score(consultant, project);

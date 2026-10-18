@@ -168,9 +168,9 @@ function ConsultantsPage() {
 
               <button
                 onClick={() => { setActiveSection("pending"); setCurrentPage(1); }}
-                className="rounded-4xl font-semibold text-base transition flex items-center gap-3"
+                className="rounded-4xl font-semibold text-sm sm:text-base transition flex items-center gap-2 sm:gap-3 whitespace-nowrap"
                 style={{
-                  padding: "18px 40px",
+                  padding: "12px 20px",
                   backgroundColor: activeSection === "pending" ? "var(--color-primary)" : "var(--color-surface)",
                   color: activeSection === "pending" ? "white" : "var(--color-text-secondary)",
                   border: "2px solid var(--color-border)",
@@ -178,6 +178,21 @@ function ConsultantsPage() {
               >
                 <span>Awaiting Profile</span>
                 <span className={activeSection === "pending" ? "opacity-90" : "opacity-60"}>({pendingProfiles.length})</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveSection("flagged"); setCurrentPage(1); }}
+                className="rounded-4xl font-semibold text-sm sm:text-base transition flex items-center gap-2 sm:gap-3 whitespace-nowrap"
+                style={{
+                  padding: "12px 20px",
+                  backgroundColor: activeSection === "flagged" ? "#dc2626" : "var(--color-surface)",
+                  color: activeSection === "flagged" ? "white" : "#dc2626",
+                  border: activeSection === "flagged" ? "2px solid #dc2626" : "2px solid #fecaca",
+                }}
+              >
+                <ShieldAlert size={16} />
+                <span>Flagged</span>
+                <span className={activeSection === "flagged" ? "opacity-90" : "opacity-70"}>({flaggedCvs.length})</span>
               </button>
             </div>
 

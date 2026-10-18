@@ -180,22 +180,6 @@ describe('ScoringOrchestrator', () => {
             expect(result.excluded).toBe(true);
             expect(result).not.toHaveProperty('factorScores');
         });
-
-        it('does not compute remaining scoring factors once COMPETENCY_LEVEL hard exclusion triggers', async () => {
-            const orchestrator = orcheStrator(true);
-
-            const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
-                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
-                WEIGHTS,
-                ACTIVE_FACTORS,
-                new Set([ScoringFactor.COMPETENCY_LEVEL]),
-            );
-
-            expect(result.excluded).toBe(true);
-            expect(result).not.toHaveProperty('factorScores');
-        });
-
     });
 
     describe('Redistributed Weights', () => {

@@ -713,6 +713,8 @@ model SchedulerTask {
   carriedOver    Boolean         @default(false) @map("carried_over")
   placement      TaskPlacementStatus
   unplacedReason String?         @map("unplaced_reason") 
+  unplacedNeededMinutes    Int? @map("unplaced_needed_minutes")
+  unplacedAvailableMinutes Int? @map("unplaced_available_minutes")
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 

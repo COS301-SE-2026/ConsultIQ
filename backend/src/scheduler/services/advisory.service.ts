@@ -13,6 +13,9 @@ export interface Suggestion {
     action?: any;
 }
 
+// Issue codes that describe a real problem and must stay visible
+const PERSISTENT_CODES = new Set(['CONTAINERS_EXCEED_CONTRACT']);
+
 @Injectable()
 export class AdvisoryService {
     constructor(
@@ -46,6 +49,8 @@ export class AdvisoryService {
         });
         const dismissedCodes = new Set(dismissals.map((d) => d.code));
 
+        if (dismissedCodes.has('UNDERUTILISED')) return [];
+
         if (!dismissedCodes.has('PLACE_UNPLACED')) {
             const unplacedTasks = week.tasks.filter((t) => t.placement === 'unplaced');
             if (unplacedTasks.length > 0) {
@@ -54,11 +59,12 @@ export class AdvisoryService {
                     window: this.getWeekWindow(week),
                 });
 
-                if (dryRunRes.ok) {
+                // Only suggest it when a replan would actually place at least one of them
+                if (dryRunRes.ok && this.unplacedCount(dryRunRes.value) < unplacedTasks.length) {
                     suggestions.push({
                         code: 'PLACE_UNPLACED',
                         message: `You have ${unplacedTasks.length} unplaced task(s) and available capacity.`,
-                        action: { type: 'replan' },
+                        action: { type: 'place_unplaced', taskIds: unplacedTasks.map((t) => t.id) },
                     });
                 }
             }
@@ -110,7 +116,7 @@ export class AdvisoryService {
 
         const tasks = await this.prisma.schedulerTask.findMany({
             where: { id: { in: taskIds } },
-            include: { week: true }
+            include: { week: true, subtasks: true }
         });
 
         if (tasks.length !== taskIds.length) {
@@ -128,11 +134,19 @@ export class AdvisoryService {
             if (task.week.weekStart.getTime() <= currentWeekStart) {
                 throw new BadRequestException(`Task ${task.id} is not in a future week.`);
             }
+            if (task.status !== 'Ready') {
+                throw new BadRequestException(`Task ${task.id} has already been started and can't be moved.`);
+            }
         }
 
-        const mappedTasks = tasks.map(t => ({
+        // Re-home each task: this week's id, no old placement details, no Prisma relation object
+        const mappedTasks = tasks.map(({ week: _sourceWeek, ...t }) => ({
             ...t,
+            weekId: week.id,
             placement: 'unplaced',
+            unplacedReason: undefined,
+            unplacedNeededMinutes: undefined,
+            unplacedAvailableMinutes: undefined,
         })) as unknown as Task[];
 
         const change: Change = {
@@ -145,7 +159,28 @@ export class AdvisoryService {
 
         const ctx: ValidateContext = { bumpedEntityIds: [], allocations: [] };
 
-        return this.weekService.commit(week, change, ctx, expectedVersion);
+        const result = await this.weekService.commit(week, change, ctx, expectedVersion);
+
+        // The tasks now belong to this week: remove their old slots and mark the old weeks as changed
+        if (result.ok) {
+            const sourceWeekIds = [...new Set(tasks.map((t) => t.weekId))];
+            await this.prisma.$transaction([
+                // Unlink the moved tasks from slots in their old weeks
+                this.prisma.schedulerSlotTask.deleteMany({
+                    where: { taskId: { in: taskIds }, slot: { weekId: { in: sourceWeekIds } } },
+                }),
+                // Slots left with no tasks at all are deleted
+                this.prisma.schedulerSlot.deleteMany({
+                    where: { weekId: { in: sourceWeekIds }, slotTasks: { none: {} } },
+                }),
+                // Anyone with an old week open gets a version conflict and refreshes
+                this.prisma.schedulerWeek.updateMany({
+                    where: { id: { in: sourceWeekIds } },
+                    data: { version: { increment: 1 } },
+                }),
+            ]);
+        }
+        return result;
     }
 
     // -----------------------------------------------------------------
@@ -153,6 +188,10 @@ export class AdvisoryService {
     // -----------------------------------------------------------------
 
     public async dismiss(weekId: string, code: string): Promise<void> {
+        if (PERSISTENT_CODES.has(code)) {
+            throw new BadRequestException(`${code} cannot be dismissed`);
+        }
+
         await this.prisma.schedulerIssueDismissal.upsert({
             where: { weekId_code: { weekId, code } },
             update: { dismissedAt: new Date() },
@@ -165,7 +204,7 @@ export class AdvisoryService {
             .plus({ days: 7 }).toFormat('yyyy-MM-dd') as LocalDate;
 
         const nextWeekDb = await this.prisma.schedulerWeek.findUnique({
-            where: { consultantId_weekStart: { consultantId: week.consultantId, weekStart: nextWeekStart } },
+            where: { consultantId_weekStart: { consultantId: week.consultantId, weekStart: new Date(`${nextWeekStart}T00:00:00Z`) } },
             include: { tasks: true },
         });
 
@@ -194,7 +233,11 @@ export class AdvisoryService {
             window: this.getWeekWindow(week),
         } as Change);
 
-        if (!dryRunRes.ok) return null;
+        // Every pulled task must actually get time this week
+        const allPlaced = candidateIds.every(
+            (id) => dryRunRes.value.tasks.find((t) => t.id === id)?.placement === 'placed',
+        );
+        if (!dryRunRes.ok || !allPlaced) return null;
 
         return {
             code: 'PULL_FORWARD',
@@ -203,23 +246,25 @@ export class AdvisoryService {
         };
     }
 
-    private async buildExtendBlockCandidate(week: WeekContainer, gap: number): Promise<Suggestion | null> {
-        const weekEnd = this.getWeekWindow(week).end;
-
+        private async buildExtendBlockCandidate(week: WeekContainer, gap: number): Promise<Suggestion | null> {
         for (const block of week.blocks) {
             if (block.mobility !== 'fluid') continue;
-            if (block.end >= weekEnd) continue;
 
-            const hasWaitingTasks = week.tasks.some(
-                (t) => t.projectId === block.projectId && (t.placement === 'unplaced' || t.status === 'Ready'),
-            );
-            if (!hasWaitingTasks) continue;
+            // Only worth extending when this project has work that couldn't be placed
+            const hasUnplaced = week.tasks.some((t) => t.projectId === block.projectId && t.placement === 'unplaced');
+            if (!hasUnplaced) continue;
 
-            const extendedEnd = this.clampInstant(
-                this.addMinutes(block.end, Math.min(gap, this.minutesBetween(block.end, weekEnd))),
-                weekEnd,
-            );
-            if (extendedEnd === block.end) continue;
+            // Room to grow: up to the end of that working day, and never into a later block
+            const blockEndMs = Date.parse(block.end);
+            const dayEndMs = this.workingDayEndMs(week, block.end);
+            const nextBlockStartMs = week.blocks
+                .filter((b) => b.id !== block.id && Date.parse(b.start) >= blockEndMs)
+                .reduce((min, b) => Math.min(min, Date.parse(b.start)), Infinity);
+
+            const limitMs = Math.min(dayEndMs, nextBlockStartMs, blockEndMs + gap * 60_000);
+            if (!Number.isFinite(limitMs) || limitMs <= blockEndMs) continue;
+
+            const extendedEnd = new Date(limitMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
 
             const dryRunRes = await this.weekService.dryRun(week.id, {
                 type: 'resize_block',
@@ -229,16 +274,36 @@ export class AdvisoryService {
                 window: this.getWeekWindow(week),
             } as Change);
 
-            if (dryRunRes.ok) {
+            if (dryRunRes.ok && this.unplacedCount(dryRunRes.value) < this.unplacedCount(week)) {
+                const projectName = await this.projectName(block.projectId);
+                const day = DateTime.fromISO(block.start, { zone: week.timezone }).toFormat('cccc');
                 return {
                     code: 'EXTEND_BLOCK',
-                    message: `Extending ${block.projectId}'s block could fit more of its waiting work in this week.`,
+                    message: `Extending ${projectName}'s block on ${day} could fit more of its waiting work in this week.`,
                     action: { type: 'resize_block', blockId: block.id, to: { start: block.start, end: extendedEnd } },
                 };
             }
         }
 
         return null;
+    }
+
+    // End of the working day (core hours) that contains this instant; -Infinity if it isn't a working day
+    private workingDayEndMs(week: WeekContainer, instant: string): number {
+        const day = this.timeService.localDate(instant, week.timezone);
+        const ends = this.timeService.workingWindows(week.weekStart, week.timezone)
+            .filter((w) => this.timeService.localDate(w.start, week.timezone) === day)
+            .map((w) => Date.parse(w.end));
+        return ends.length > 0 ? Math.max(...ends) : -Infinity;
+    }
+
+    // A readable project name for messages, falling back to a generic word
+    private async projectName(projectId: string): Promise<string> {
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId },
+            select: { projectName: true },
+        });
+        return project?.projectName ?? 'this project';
     }
 
     private getWeekWindow(week: WeekContainer): Interval {
@@ -253,15 +318,7 @@ export class AdvisoryService {
         };
     }
 
-    private minutesBetween(start: string, end: string): number {
-        return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
-    }
-
-    private addMinutes(instant: string, minutes: number): string {
-        return new Date(new Date(instant).getTime() + minutes * 60000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-    }
-
-    private clampInstant(instant: string, max: string): string {
-        return new Date(instant).getTime() > new Date(max).getTime() ? max : instant;
+    private unplacedCount(week: WeekContainer): number {
+        return week.tasks.filter((t) => t.placement === 'unplaced').length;
     }
 }

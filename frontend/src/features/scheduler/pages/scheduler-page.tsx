@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import WeekCalendar from "../components/week/week-calendar";
-import UnderutilisationCard, { type ActionSuggestion } from "../components/underutilisation-card";
+import UnderutilisationCard from "../components/underutilisation-card";
 import {
     ReasonCode,
     type Task,
@@ -14,6 +14,8 @@ import {
     type Interval,
     type SplitTaskDto,
     type CalendarEntryDto,
+    type Issue,
+    type UnplacedTaskSummary
 } from "../types/scheduler.types";
 import { getProjectColour } from "../components/week/project-colour";
 import { type BacklogProjectOption } from "../components/backlog-panel";
@@ -26,12 +28,15 @@ import {
     getSchedulerWeek, setSchedulerTaskStatus, toggleSchedulerSubtask, toCalendarWeek, createSchedulerTask,
     updateSchedulerTask, deleteSchedulerTask, splitSchedulerTask, placeUnplacedTasks, moveBlock, resizeBlock, pinBlock, moveSlot,
     deferTasksToNextWeek, acceptDeadlineMiss,
-    createCalendarEntry, updateCalendarEntry, deleteCalendarEntry
+    createCalendarEntry, updateCalendarEntry, deleteCalendarEntry, dismissSchedulerIssue, getSchedulerSuggestions, type SchedulerSuggestion, pullForwardTasks
 } from "../services/scheduler.service"
 import { getAssignedProjects } from "../../consultants/services/consultant.service";
 import { toast } from "sonner";
 import { REASON_MESSAGE } from "../utils/scheduler.utils";
 import useUnreadNotificationCount from "../../../hooks/useUnreadNotificationsCount";
+import DeadlineResolutionDialog from "../components/deadline-resolution-dialog";
+import { type AlertActionKind } from "../utils/reason-code-registry";
+
 interface SchedulerTaskTabProps {
     readonly loading: boolean;
     readonly error: string | null;
@@ -48,8 +53,14 @@ interface SchedulerTaskTabProps {
     readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
 }
 
-
-
+const NOTIFICATION_CODES = new Set([
+    "UNPLACED_TASKS",
+    "DEADLINE_INFEASIBLE",
+    "CONTAINER_OVERFLOW",
+    "SOFT_CAP_BREACH",
+    "DAY_SPAN_LIMIT_AT_RISK",
+    "CONTAINERS_EXCEED_CONTRACT",
+]);
 
 type SchedulerTab = "calendar" | "tasks" | "notifications";
 
@@ -110,8 +121,6 @@ export default function SchedulerPage() {
     const { count: unreadCount } = useUnreadNotificationCount();
     const [activeTab, setActiveTab] = useState<SchedulerTab>("calendar");
 
-    const [dismissed, setDismissed] = useState<string[]>([]);
-
     const schedulerTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const [selectedWeekStart, setSelectedWeekStart] = useState(() => getCurrentWeekStart(schedulerTimeZone));
 
@@ -123,6 +132,12 @@ export default function SchedulerPage() {
     const weekError = loadedWeek.weekStart === selectedWeekStart ? loadedWeek.error ?? null : null;
 
     const [projects, setProjects] = useState<BacklogProjectOption[]>([]);
+
+    const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
+    const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
+    const [splitTask, setSplitTask] = useState<Task | null>(null);
+    const [deadlineTask, setDeadlineTask] = useState<Task | null>(null);
+    const [createEntryRequested, setCreateEntryRequested] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -168,33 +183,60 @@ export default function SchedulerPage() {
 
     const weekIssues = serverWeek ? [...serverWeek.metadata.alerts, ...serverWeek.metadata.warnings] : [];
 
-    const underused = weekIssues.find((i) => i.code === ReasonCode.UNDERUTILISED);
 
-    const dismissKey = `${serverWeek?.id ?? selectedWeekStart}:${ReasonCode.UNDERUTILISED}`;
-    const showUnderused = underused && !dismissed.includes(dismissKey);
-
-    function handleSuggestion(s: ActionSuggestion) {
+    async function handleSuggestion(s: SchedulerSuggestion) {
+        const action = s.action;
         switch (s.code) {
             case "PLACE_UNPLACED":
-                // placeUnplaced.mutate({ taskIds: s.payload.taskIds, expectedVersion: week.version })
+                if (action?.taskIds) await commitPlacement((v) => placeUnplacedTasks(action.taskIds!, v));
                 break;
             case "PULL_FORWARD":
-                // pullForward.mutate({ taskIds: s.payload.taskIds, expectedVersion: week.version })
+                if (action?.taskIds) await commitPlacement((v) => pullForwardTasks(selectedWeekStart, action.taskIds!, v));
                 break;
             case "EXTEND_BLOCK":
-                // Resize
+                if (action?.blockId && action.to) {
+                    await commitPlacement((v) => resizeBlock({ blockId: action.blockId!, to: action.to!, confirmedOverride: false, expectedVersion: v }));
+                }
                 break;
+            case "REVIEW_CAPACITY":
+                break; 
         }
     }
 
 
-    const [taskForm, setTaskForm] = useState<{ mode: "create" | "edit"; task?: Task; projectId?: string; } | null>(null);
-    const [dismissedAlertKeys, setDismissedAlertKeys] = useState<Set<string>>(() => new Set());
-    const [splitTask, setSplitTask] = useState<Task | null>(null);
-    const [createEntryRequested, setCreateEntryRequested] = useState(false);
 
-    // The underutilised issue has its own card, so leave it out of the banner
+    
     const schedulerIssues = weekIssues.filter((i) => i.code !== ReasonCode.UNDERUTILISED);
+
+    
+    const dismissedCodesThisWeek = new Set(
+        [...dismissedAlertKeys]
+            .filter((k) => k.startsWith(`${selectedWeekStart}:`))
+            .map((k) => k.slice(selectedWeekStart.length + 1)),
+    );
+
+    // Refetch whenever the week changes (any commit bumps the version)
+    const suggestionsKey = apiWeek ? `${apiWeek.weekStart}:${apiWeek.version}` : "";
+    const [suggestions, setSuggestions] = useState<{ key: string; list: SchedulerSuggestion[] }>({ key: "", list: [] });
+
+    useEffect(() => {
+        if (!suggestionsKey) return;
+        const controller = new AbortController();
+        getSchedulerSuggestions(selectedWeekStart, controller.signal)
+            .then((list) => setSuggestions({ key: suggestionsKey, list }))
+            .catch(() => { /* suggestions are optional; the page works without them */ });
+        return () => controller.abort();
+    }, [suggestionsKey, selectedWeekStart]);
+
+    const currentSuggestions = suggestions.key === suggestionsKey
+        ? suggestions.list.filter((s) => !dismissedCodesThisWeek.has(s.code))
+        : [];
+    
+
+    const showUnderused = currentSuggestions.length > 0 && !dismissedCodesThisWeek.has(ReasonCode.UNDERUTILISED);
+
+    const notificationCount =
+        schedulerIssues.filter((i) => !dismissedCodesThisWeek.has(i.code)).length + (showUnderused ? 1 : 0);
 
     const serverSubtaskProgressByTaskId = Object.fromEntries(
         (serverWeek?.tasks ?? []).map((task) => [
@@ -214,16 +256,39 @@ export default function SchedulerPage() {
         setTaskForm({ mode: "edit", task, projectId: task.projectId });
     }
 
-    function dismissAlert(key: string) {
-        setDismissedAlertKeys((current) => {
-            const next = new Set(current);
-            next.add(key);
-            return next;
+    // Hide straight away, save to the backend, and undo if the save fails
+    function dismissAlert(code: string) {
+        const key = `${selectedWeekStart}:${code}`;
+        setDismissedAlertKeys((current) => new Set(current).add(key));
+
+        dismissSchedulerIssue(selectedWeekStart, code).catch(() => {
+            setDismissedAlertKeys((current) => {
+                const next = new Set(current);
+                next.delete(key);
+                return next;
+            });
+            toast.error("Couldn't dismiss this alert. Please try again.");
         });
     }
 
-    function handleAlertAction() {
-        console.log("Handle alert actions"); // still to be implemented
+    function handleAlertAction(issue: Issue, action: AlertActionKind) {
+        const task = serverWeek?.tasks.find((t) => t.id === issue.entityIds?.[0]);
+
+        switch (action) {
+            case "openBacklog":
+            case "resolveContainer":
+                setActiveTab("tasks"); // the backlog lives on the Tasks tab
+                break;
+            case "openDeadlineDialog":
+                if (task) setDeadlineTask(task);
+                break;
+            case "openSplitDialog":
+                if (task) setSplitTask(task);
+                break;
+            case "viewSuggestions":
+            case "dismiss":
+                break; // the card is already on this tab; dismiss is the X button
+        }
     }
 
     async function handleTaskSubmit(submission: TaskSubmission) {
@@ -242,7 +307,7 @@ export default function SchedulerPage() {
         if (!result.ok) {
             throw new Error(result.violations.map((issue) => issue.message).join(" "));
         }
-        
+
         setLoadedWeek({ weekStart: selectedWeekStart, week: result.value });
         setTaskForm(null);
 
@@ -294,19 +359,9 @@ export default function SchedulerPage() {
     }
 
     async function handleConfirmSplit(taskId: string, dto: SplitTaskDto) {
-        if (!apiWeek) return;
-
-        const result = await splitSchedulerTask(taskId, dto.atMinutes, apiWeek.version);
-
-        if (!result.ok) {
-            setLoadedWeek((current) => ({
-                ...current, error: result.violations.map((issue) => issue.message).join(" ")
-            }));
-            return;
+        if (await commitPlacement((v) => splitSchedulerTask(taskId, dto.atMinutes, v))) {
+            setSplitTask(null);
         }
-
-        setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
-        setSplitTask(null);
     }
 
     async function handleScheduleTask(taskId: string) {
@@ -322,6 +377,12 @@ export default function SchedulerPage() {
             const result = await request(apiWeek.version);
 
             if (!result.ok) {
+                // The backend sends the current week back with a conflict, so catch up straight away
+                if (result.violations.some((v) => v.code === "VERSION_CONFLICT")) {
+                    setLoadedWeek({ weekStart: apiWeek.weekStart, week: result.value });
+                    toast.warning("This week changed elsewhere. It's been refreshed, so please try again.");
+                    return false;
+                }
                 toast.error(result.violations.map((issue) => issue.message).join(" "));
                 return false;
             }
@@ -339,12 +400,14 @@ export default function SchedulerPage() {
                     newlyUnplaced.length === 1
                         ? `"${newlyUnplaced[0].title}" no longer fits and was moved to the Backlog.`
                         : `${newlyUnplaced.length} tasks no longer fit and were moved to the Backlog.`,
-                    {duration: 10_000, action: { label: "View tasks", onClick: () => setActiveTab("tasks") } },
+                    { duration: 10_000, action: { label: "View tasks", onClick: () => setActiveTab("tasks") } },
                 );
             }
 
-            if (result.warnings.length > 0) {
-                toast.warning(result.warnings.map((issue) => issue.message).join(" "));
+
+            const actionWarnings = [...result.warnings, ...result.infos].filter((i) => !NOTIFICATION_CODES.has(i.code));
+            if (actionWarnings.length > 0) {
+                toast.warning(actionWarnings.map((issue) => issue.message).join(" "));
             }
             return true;
         } catch (error) {
@@ -398,7 +461,7 @@ export default function SchedulerPage() {
 
     return (
         <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
-            <Sidebar items={consultantSidebarItems} notificationCount={unreadCount}/>
+            <Sidebar items={consultantSidebarItems} notificationCount={unreadCount} />
 
             <div className="flex-1 flex flex-col min-w-0 min-h-0">
                 <header className=" flex-none border-b border-slate-200 bg-white px-6 ">
@@ -416,13 +479,18 @@ export default function SchedulerPage() {
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <nav className="flex flex-none items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
                         <div className="flex">
-                            {([["calendar", "Calendar"], ["tasks", "Tasks"]] as const).map(([key, label]) => (
+                            {([["calendar", "Calendar"], ["tasks", "Tasks"], ["notifications", "Notifications"]] as const).map(([key, label]) => (
                                 <button key={key} type="button" role="tab"
                                     aria-selected={activeTab === key}
                                     onClick={() => setActiveTab(key)}
                                     className={`border-b-2 px-3 py-3 text-sm font-medium ${activeTab === key ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                                 >
                                     {label}
+                                    {key === "notifications" && notificationCount > 0 && (
+                                        <span className="ml-1.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                            {notificationCount}
+                                        </span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -491,28 +559,34 @@ export default function SchedulerPage() {
                             />
                         )}
 
-                        {activeTab == "notifications" && (
-                            <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
+                                             {activeTab == "notifications" && (
+                            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-white p-4 sm:p-6">
                                 <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
                                     <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
                                     {showUnderused && serverWeek && (
                                         <UnderutilisationCard
-                                            issue={underused}
+                                            issue={{ level: "info", code: ReasonCode.UNDERUTILISED, message: "You have spare capacity this week." }}
                                             metadata={serverWeek.metadata}
                                             weekStart={serverWeek.weekStart}
+                                            suggestions={currentSuggestions}
                                             onSuggestion={handleSuggestion}
-                                            onDismiss={() => setDismissed((d) => [...d, dismissKey])}
+                                            onDismissSuggestion={dismissAlert}
+                                            onDismiss={() => currentSuggestions.forEach((s) => dismissAlert(s.code))}
                                         />
                                     )}
 
                                     <SchedulerAlertBanner
                                         issues={schedulerIssues}
-                                        dismissedKeys={dismissedAlertKeys}
+                                        dismissedKeys={dismissedCodesThisWeek}
                                         onDismiss={dismissAlert}
                                         onAction={handleAlertAction}
                                     />
+
+                                    {!showUnderused && schedulerIssues.every((i) => dismissedCodesThisWeek.has(i.code)) && (
+                                        <p className="text-sm text-slate-500">Nothing needs your attention this week.</p>
+                                    )}
                                 </div>
-                            </main>
+                            </div>
                         )}
                     </main>
 
@@ -541,6 +615,29 @@ export default function SchedulerPage() {
                             expectedVersion={apiWeek.version}
                             onCancel={() => setSplitTask(null)}
                             onConfirm={handleConfirmSplit}
+                        />
+                    )}
+
+                    {deadlineTask && apiWeek && (
+                        <DeadlineResolutionDialog
+                            task={deadlineTask}
+                            summary={{
+                                reason: deadlineTask.unplacedReason ?? "DEADLINE_INFEASIBLE",
+                                neededMinutes: deadlineTask.unplacedNeededMinutes ?? deadlineTask.tMax,
+                                availableMinutes: deadlineTask.unplacedAvailableMinutes ?? 0,
+                                deadline: deadlineTask.deadline,
+                            } as UnplacedTaskSummary}
+                            expectedVersion={apiWeek.version}
+                            onCancel={() => setDeadlineTask(null)}
+                            onExtendDeadline={async (id, dto) => {
+                                if (await commitPlacement((v) => updateSchedulerTask(id, { ...dto, expectedVersion: v }))) setDeadlineTask(null);
+                            }}
+                            onReduceEstimate={async (id, dto) => {
+                                if (await commitPlacement((v) => updateSchedulerTask(id, { ...dto, expectedVersion: v }))) setDeadlineTask(null);
+                            }}
+                            onAcceptMiss={async (id) => {
+                                if (await commitPlacement((v) => acceptDeadlineMiss(id, v))) setDeadlineTask(null);
+                            }}
                         />
                     )}
 

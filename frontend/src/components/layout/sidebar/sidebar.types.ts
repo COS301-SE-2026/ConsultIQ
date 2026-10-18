@@ -4,4 +4,5 @@ export interface SidebarItem {
     label: string;
     path: string;
     icon: LucideIcon;
+    activePaths?: string[];
 }

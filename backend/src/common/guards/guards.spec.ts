@@ -27,6 +27,7 @@ function signToken(payload: Partial<JwtPayload>, secret = TEST_SECRET): string {
 /** Builds a mock ExecutionContext with full control over headers and req.user */
 function buildContext(overrides: {
     authHeader?: string;
+    cookieToken?: string;
     user?: JwtPayload | null;
     isPublic?: boolean;
     requiredRoles?: Role[];
@@ -34,6 +35,9 @@ function buildContext(overrides: {
     const request: Record<string, any> = {
         headers: overrides.authHeader
             ? { authorization: overrides.authHeader }
+            : {},
+        cookies: overrides.cookieToken
+            ? { ciq_access_token: overrides.cookieToken }
             : {},
         user: overrides.user ?? undefined,
     };
@@ -123,6 +127,28 @@ describe('JwtAuthGuard', () => {
             expect(request.user).toMatchObject({ userId: 'uuid-1234', role: Role.ADMIN });
         });
 
+        it('should authenticate with the HTTP-only access-token cookie', () => {
+            const token = signToken({ userId: 'uuid-cookie', role: Role.ADMIN });
+            const ctx = buildContext({ cookieToken: token });
+
+            expect(guard.canActivate(ctx)).toBe(true);
+            expect(ctx.switchToHttp().getRequest().user).toMatchObject({
+                userId: 'uuid-cookie',
+                role: Role.ADMIN,
+            });
+        });
+
+        it('should prefer the cookie over a stale bearer token', () => {
+            const token = signToken({ userId: 'uuid-cookie', role: Role.ADMIN });
+            const ctx = buildContext({
+                authHeader: 'Bearer stale-token',
+                cookieToken: token,
+            });
+
+            expect(guard.canActivate(ctx)).toBe(true);
+            expect(ctx.switchToHttp().getRequest().user.userId).toBe('uuid-cookie');
+        });
+
         it('should return true for a valid PROJECT_MANAGER token', () => {
             const token = signToken({ userId: 'uuid-pm', role: Role.PROJECT_MANAGER });
             const ctx = buildContext({ authHeader: `Bearer ${token}` });
@@ -172,7 +198,7 @@ describe('JwtAuthGuard', () => {
 
             expect(() => guard.canActivate(ctx)).toThrow(UnauthorizedException);
             expect(() => guard.canActivate(ctx)).toThrow(
-                'Authorization token is missing',
+                'Authentication required',
             );
         });
 

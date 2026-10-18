@@ -67,6 +67,15 @@ const ACTIVE_FACTORS = new Set<ScoringFactor>([
     ScoringFactor.AVAILABILITY
 ]);
 
+function consultantMissingMandatoryJava() {
+    return {
+        orchestrator: orcheStrator(true),
+        consultant: consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
+        project: project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
+    };
+}
+
+
 describe('ScoringOrchestrator', () => {
     
      describe('Hard Exclusion', () => {
@@ -102,14 +111,9 @@ describe('ScoringOrchestrator', () => {
         });
 
         it('does NOT exclude or penalize a consultant for missing a mandatory skill', async () => {
-            const orchestrator = orcheStrator(true);
+            const { orchestrator, consultant: c, project: p } = consultantMissingMandatoryJava();
 
-            const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
-                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
-                WEIGHTS,
-                ACTIVE_FACTORS,
-            );
+            const result = await orchestrator.scoreConsultant(c, p, WEIGHTS, ACTIVE_FACTORS);
 
             expect(result.excluded).toBe(false);
             if (!result.excluded) {
@@ -144,14 +148,10 @@ describe('ScoringOrchestrator', () => {
         });
 
         it('excludes a consultant on COMPETENCY_LEVEL when hard exclusion is configured and a mandatory skill is entirely missing', async () => {
-            const orchestrator = orcheStrator(true);
+            const { orchestrator, consultant: c, project: p } = consultantMissingMandatoryJava();
 
             const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
-                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
-                WEIGHTS,
-                ACTIVE_FACTORS,
-                new Set([ScoringFactor.COMPETENCY_LEVEL]),
+                c, p, WEIGHTS, ACTIVE_FACTORS, new Set([ScoringFactor.COMPETENCY_LEVEL]),
             );
 
             expect(result.excluded).toBe(true);
@@ -162,17 +162,23 @@ describe('ScoringOrchestrator', () => {
         });
 
         it('does not exclude on COMPETENCY_LEVEL when the factor is active but hard exclusion is not enabled for it', async () => {
-            const orchestrator = orcheStrator(true);
+            const { orchestrator, consultant: c, project: p } = consultantMissingMandatoryJava();
 
             const result = await orchestrator.scoreConsultant(
-                consultant({ skills: [{ skillName: 'Python', competencyLevel: CompetencyLevel.INTERMEDIATE }] }),
-                project({ requiredSkills: [{ skillName: 'Java', minimumCompetencyLevel: CompetencyLevel.INTERMEDIATE, isMandatory: true }] }),
-                WEIGHTS,
-                ACTIVE_FACTORS,
-                // excludedFactors omitted — defaults to an empty set, so nothing should exclude here
-            );
+                c, p, WEIGHTS, ACTIVE_FACTORS);
 
             expect(result.excluded).toBe(false);
+        });
+
+        it('does not compute remaining scoring factors once COMPETENCY_LEVEL hard exclusion triggers', async () => {
+            const { orchestrator, consultant: c, project: p } = consultantMissingMandatoryJava();
+
+            const result = await orchestrator.scoreConsultant(
+                c, p, WEIGHTS, ACTIVE_FACTORS, new Set([ScoringFactor.COMPETENCY_LEVEL]),
+            );
+
+            expect(result.excluded).toBe(true);
+            expect(result).not.toHaveProperty('factorScores');
         });
 
         it('does not compute remaining scoring factors once COMPETENCY_LEVEL hard exclusion triggers', async () => {

@@ -96,62 +96,45 @@ export default function TaskBoard({ tasks, projects, now, expectedVersion, subta
                     ))}
                 </select>
             </div>
-                {/* Column tabs: phones & tablets only */}
-        <div role="tablist" aria-label="Task columns" className="mb-3 flex flex-none gap-1 overflow-x-auto lg:hidden">
-            {COLUMNS.map(({ key, label }) => {
-                const count = byColumn.get(key)?.length ?? 0;
-                const active = mobileColumn === key;
-                return (
-                    <button
-                        key={key}
-                        type="button"
-                        role="tab"
-                        aria-selected={active}
-                        onClick={() => setMobileColumn(key)}
-                        className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                            active ? "border-primary bg-primary text-white" : "border-slate-300 bg-white text-slate-600"
-                        }`}
-                    >
-                        {label}
-                        <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/20" : "bg-slate-100"}`}>{count}</span>
-                    </button>
-                );
-            })}
-        </div>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            <div className="grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-4 lg:p-4">
-                {COLUMNS.map(({ key, label, dot }) => {
-                    const columnTasks = byColumn.get(key) ?? [];
+            {/* Column tabs: phones & tablets only */}
+            <div role="tablist" aria-label="Task columns" className="mb-3 flex flex-none gap-1 overflow-x-auto lg:hidden">
+                {COLUMNS.map(({ key, label }) => {
+                    const count = byColumn.get(key)?.length ?? 0;
+                    const active = mobileColumn === key;
                     return (
-                        <div key={key}
-                            onDragOver={(e) => {
-                                if (key === "Backlog") return; // not a drop target
-                                e.preventDefault();
-                                setDragOverColumn(key);
-                            }}
-                            onDragLeave={() => setDragOverColumn((c) => (c === key ? null : c))}
-                            onDrop={(e) => handleDrop(key, e)}
-                            className={`${key === mobileColumn ? "flex" : "hidden"} lg:flex h-full min-h-0 min-w-0 flex-col rounded-lg border bg-slate-50 ${dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
+                        <button
+                            key={key}
+                            type="button"
+                            role="tab"
+                            aria-selected={active}
+                            onClick={() => setMobileColumn(key)}
+                            className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium ${
+                                active ? "border-primary bg-primary text-white" : "border-slate-300 bg-white text-slate-600"
+                            }`}
                         >
-                            <div className={`flex items-center justify-between border-t-2 px-3 py-2 ${dot}`}>
-                                <span className="text-sm font-semibold text-slate-700">{label}</span>
-                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600">{columnTasks.length}</span>
-                            </div> 
-            <div className="min-h-0 min-w-0 flex-1 overflow-x-auto overflow-y-hidden">
-                <div className="grid h-full min-h-0 min-w-225 grid-cols-4 gap-3 p-3 sm:gap-4 sm:p-4 lg:min-w-0">
+                            {label}
+                            <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/20" : "bg-slate-100"}`}>{count}</span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* One column at a time below lg, all four side by side from lg up */}
+            <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+                <div className="grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-4">
                     {COLUMNS.map(({ key, label, dot }) => {
                         const columnTasks = byColumn.get(key) ?? [];
                         return (
                             <div key={key}
                                 onDragOver={(e) => {
-                                    if (key === "Backlog") return; 
+                                    if (key === "Backlog") return; // not a drop target
                                     e.preventDefault();
                                     setDragOverColumn(key);
                                 }}
                                 onDragLeave={() => setDragOverColumn((c) => (c === key ? null : c))}
                                 onDrop={(e) => handleDrop(key, e)}
-                                className={`flex h-full min-h-0 min-w-0 flex-col rounded-lg border bg-slate-50 ${dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
+                                className={`${key === mobileColumn ? "flex" : "hidden"} h-full min-h-0 min-w-0 flex-col rounded-lg border bg-slate-50 lg:flex ${dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
                             >
                                 <div className={`flex items-center justify-between border-t-2 px-3 py-2 ${dot}`}>
                                     <span className="text-sm font-semibold text-slate-700">{label}</span>

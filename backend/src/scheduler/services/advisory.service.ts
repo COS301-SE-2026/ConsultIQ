@@ -29,77 +29,77 @@ export class AdvisoryService {
     // Daily tick: build capacity suggestions
     // -----------------------------------------------------------------
 
-public async buildSuggestions(week: WeekContainer): Promise<Suggestion[]> {
-    const gap = this.spareMinutes(week);
-    if (gap <= 0) return [];
+    public async buildSuggestions(week: WeekContainer): Promise<Suggestion[]> {
+        const gap = this.spareMinutes(week);
+        if (gap <= 0) return [];
 
-    const dismissedCodes = await this.dismissedCodes(week.id);
-    if (dismissedCodes.has('UNDERUTILISED')) return [];
+        const dismissedCodes = await this.dismissedCodes(week.id);
+        if (dismissedCodes.has('UNDERUTILISED')) return [];
 
-    // Checked in this order; each one returns a suggestion or null
-    const candidates: Array<[string, () => Promise<Suggestion | null>]> = [
-        ['PLACE_UNPLACED', () => this.buildPlaceUnplacedCandidate(week)],
-        ['PULL_FORWARD', () => this.buildPullForwardCandidate(week, gap)],
-        ['EXTEND_BLOCK', () => this.buildExtendBlockCandidate(week, gap)],
-    ];
+        // Checked in this order; each one returns a suggestion or null
+        const candidates: Array<[string, () => Promise<Suggestion | null>]> = [
+            ['PLACE_UNPLACED', () => this.buildPlaceUnplacedCandidate(week)],
+            ['PULL_FORWARD', () => this.buildPullForwardCandidate(week, gap)],
+            ['EXTEND_BLOCK', () => this.buildExtendBlockCandidate(week, gap)],
+        ];
 
-    const suggestions: Suggestion[] = [];
-    for (const [code, build] of candidates) {
-        if (dismissedCodes.has(code)) continue;
-        const suggestion = await build();
-        if (suggestion) suggestions.push(suggestion);
+        const suggestions: Suggestion[] = [];
+        for (const [code, build] of candidates) {
+            if (dismissedCodes.has(code)) continue;
+            const suggestion = await build();
+            if (suggestion) suggestions.push(suggestion);
+        }
+
+        // Fallback when there is nothing more specific to suggest
+        if (suggestions.length === 0 && !dismissedCodes.has('REVIEW_CAPACITY')) {
+            suggestions.push(this.reviewCapacitySuggestion(gap));
+        }
+
+        return suggestions;
     }
 
-    // Fallback when there is nothing more specific to suggest
-    if (suggestions.length === 0 && !dismissedCodes.has('REVIEW_CAPACITY')) {
-        suggestions.push(this.reviewCapacitySuggestion(gap));
+    // Unused working time left after scheduled work and the buffer
+    private spareMinutes(week: WeekContainer): number {
+        const available = week.metadata.available ?? 0;
+        const scheduled = week.metadata.scheduled ?? 0;
+        const bufferTargetMinutes = (SCHEDULER_RULES as any).BUFFER_TARGET_MIN_MINUTES
+            ?? Math.round(SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * SCHEDULER_RULES.BUFFER_TARGET_PERCENTAGE);
+
+        return available - scheduled - bufferTargetMinutes;
     }
 
-    return suggestions;
-}
+    private async dismissedCodes(weekId: string): Promise<Set<string>> {
+        const dismissals = await this.prisma.schedulerIssueDismissal.findMany({ where: { weekId } });
+        return new Set(dismissals.map((d) => d.code));
+    }
 
-// Unused working time left after scheduled work and the buffer
-private spareMinutes(week: WeekContainer): number {
-    const available = week.metadata.available ?? 0;
-    const scheduled = week.metadata.scheduled ?? 0;
-    const bufferTargetMinutes = (SCHEDULER_RULES as any).BUFFER_TARGET_MIN_MINUTES
-        ?? Math.round(SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * SCHEDULER_RULES.BUFFER_TARGET_PERCENTAGE);
+    private async buildPlaceUnplacedCandidate(week: WeekContainer): Promise<Suggestion | null> {
+        const unplacedTasks = week.tasks.filter((t) => t.placement === 'unplaced');
+        if (unplacedTasks.length === 0) return null;
 
-    return available - scheduled - bufferTargetMinutes;
-}
+        const dryRunRes = await this.weekService.dryRun(week.id, {
+            type: 'replan',
+            window: this.getWeekWindow(week),
+        });
 
-private async dismissedCodes(weekId: string): Promise<Set<string>> {
-    const dismissals = await this.prisma.schedulerIssueDismissal.findMany({ where: { weekId } });
-    return new Set(dismissals.map((d) => d.code));
-}
+        // Only suggest it when a replan would actually place at least one of them
+        if (!dryRunRes.ok || this.unplacedCount(dryRunRes.value) >= unplacedTasks.length) return null;
 
-private async buildPlaceUnplacedCandidate(week: WeekContainer): Promise<Suggestion | null> {
-    const unplacedTasks = week.tasks.filter((t) => t.placement === 'unplaced');
-    if (unplacedTasks.length === 0) return null;
+        return {
+            code: 'PLACE_UNPLACED',
+            message: `You have ${unplacedTasks.length} unplaced task(s) and available capacity.`,
+            action: { type: 'place_unplaced', taskIds: unplacedTasks.map((t) => t.id) },
+        };
+    }
 
-    const dryRunRes = await this.weekService.dryRun(week.id, {
-        type: 'replan',
-        window: this.getWeekWindow(week),
-    });
-
-    // Only suggest it when a replan would actually place at least one of them
-    if (!dryRunRes.ok || this.unplacedCount(dryRunRes.value) >= unplacedTasks.length) return null;
-
-    return {
-        code: 'PLACE_UNPLACED',
-        message: `You have ${unplacedTasks.length} unplaced task(s) and available capacity.`,
-        action: { type: 'place_unplaced', taskIds: unplacedTasks.map((t) => t.id) },
-    };
-}
-
-private reviewCapacitySuggestion(gap: number): Suggestion {
-    const hours = Math.floor(gap / 60);
-    const minutes = gap % 60;
-    return {
-        code: 'REVIEW_CAPACITY',
-        message: `You have ${hours}h${minutes}m of unused capacity this week.`,
-    };
-}
+    private reviewCapacitySuggestion(gap: number): Suggestion {
+        const hours = Math.floor(gap / 60);
+        const minutes = gap % 60;
+        return {
+            code: 'REVIEW_CAPACITY',
+            message: `You have ${hours}h${minutes}m of unused capacity this week.`,
+        };
+    }
 
     // -----------------------------------------------------------------
     // POST /scheduler/weeks/:weekStart/pull-forward
@@ -149,14 +149,18 @@ private reviewCapacitySuggestion(gap: number): Suggestion {
         }
 
         // Re-home each task: this week's id, no old placement details, no Prisma relation object
-        const mappedTasks = tasks.map(({ week: _sourceWeek, ...t }) => ({
-            ...t,
-            weekId: week.id,
-            placement: 'unplaced',
-            unplacedReason: undefined,
-            unplacedNeededMinutes: undefined,
-            unplacedAvailableMinutes: undefined,
-        })) as unknown as Task[];
+        const mappedTasks = tasks.map((task) => {
+            const t: Record<string, unknown> = { ...task };
+            delete t.week;
+            return {
+                ...t,
+                weekId: week.id,
+                placement: 'unplaced',
+                unplacedReason: undefined,
+                unplacedNeededMinutes: undefined,
+                unplacedAvailableMinutes: undefined,
+            };
+        }) as unknown as Task[];
 
         const change: Change = {
             type: 'pull_forward',
@@ -255,7 +259,7 @@ private reviewCapacitySuggestion(gap: number): Suggestion {
         };
     }
 
-        private async buildExtendBlockCandidate(week: WeekContainer, gap: number): Promise<Suggestion | null> {
+    private async buildExtendBlockCandidate(week: WeekContainer, gap: number): Promise<Suggestion | null> {
         for (const block of week.blocks) {
             if (block.mobility !== 'fluid') continue;
 

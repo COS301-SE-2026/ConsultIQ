@@ -1,800 +1,622 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Logger } from '@nestjs/common';
-import { ValidatorService } from './validator.service';
-import { TimeService, LocalDate } from './time.service';
+import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { AdvisoryService } from './advisory.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { WeekService } from './week.service';
+import { PlacerService } from './placer.service';
+import { TimeService, LocalDate, Instant } from './time.service';
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
-import { WeekContainer, ValidateContext, Task } from '../dto/scheduler.dto';
+import { WeekContainer } from '../dto/scheduler.dto';
 
 /*
  * Fixtures
  * --------
- * Week of Mon 2026-09-21, timezone Africa/Johannesburg, but every instant below is
- * written in UTC and the mocked TimeService reads the local date straight off the ISO
- * string, so the tests don't depend on the machine's timezone.
+ * Week of Mon 2026-09-21, timezone UTC. The mocked TimeService gives one working
+ * window per weekday, 07:00-16:00, and reads the local date straight off the ISO string.
  *
- * Unless a test says otherwise there are no working windows and everything counts as
- * inside core hours, so each test only switches on the rule it is about.
+ * With the real SCHEDULER_RULES the buffer target is
+ * CONTRACT_SOFT_CAP_MINUTES * BUFFER_TARGET_PERCENTAGE, so the spare "gap" is
+ * available - scheduled - that buffer.
  */
 
-const MIN = SCHEDULER_RULES.MIN_BLOCK_MINUTES;
-const DAILY_MAX = SCHEDULER_RULES.DAILY_MAX_MINUTES;
+const WEEK_ID = 'week-1';
+const CONSULTANT_ID = 'cons-1';
+const WEEK_START = '2026-09-21' as LocalDate;
+const BUFFER = Math.round(SCHEDULER_RULES.CONTRACT_SOFT_CAP_MINUTES * SCHEDULER_RULES.BUFFER_TARGET_PERCENTAGE);
 
-const createBaseWeek = (): WeekContainer => ({
-    id: 'week-1',
-    consultantId: 'c1',
-    timezone: 'Africa/Johannesburg',
-    weekStart: '2026-09-21',
-    version: 1,
-    lastCommittedAt: '2026-09-20T00:00:00Z',
-    sourceOfLastChange: 'test',
-    createdAt: '2026-09-20T00:00:00Z',
-    updatedAt: '2026-09-20T00:00:00Z',
-    blocks: [],
-    tasks: [],
-    slots: [],
-    calendarEntries: [],
-    holidays: [],
-    metadata: {
-        available: 0, allocated: 0, scheduled: 0, buffer: 0, utilization: 0,
-        softCapBreached: false, hardCapBreached: false, hasOutOfHours: false,
-        hasWeekend: false, hasContainerOverflow: false, alerts: [], warnings: [],
-    },
-}) as unknown as WeekContainer;
+// day: 0 = Mon ... 4 = Fri
+const at = (day: number, time: string) => `2026-09-${String(21 + day).padStart(2, '0')}T${time}:00Z`;
 
-const createContext = (previousWeek?: WeekContainer): ValidateContext => ({
-    previousWeek,
-    bumpedEntityIds: [],
-    allocations: [],
-});
+function workingWindows() {
+    return [0, 1, 2, 3, 4].map((d) => ({ start: at(d, '07:00'), end: at(d, '16:00') }));
+}
 
-// Two working windows per day with an unpaid lunch 10:00-11:00 UTC
-const workingDay = (date: string) => [
-    { start: `${date}T05:00:00Z`, end: `${date}T10:00:00Z` },
-    { start: `${date}T11:00:00Z`, end: `${date}T14:00:00Z` },
-];
+// Loose overrides so tests only spell out the fields they care about
+function makeWeek(o: Record<string, unknown> = {}): WeekContainer {
+    return {
+        id: WEEK_ID,
+        consultantId: CONSULTANT_ID,
+        weekStart: WEEK_START,
+        timezone: 'UTC',
+        tasks: [],
+        blocks: [],
+        slots: [],
+        calendarEntries: [],
+        holidays: [],
+        version: 1,
+        lastCommittedAt: '2026-09-20T00:00:00Z',
+        sourceOfLastChange: 'system',
+        createdAt: '2026-09-20T00:00:00Z',
+        updatedAt: '2026-09-20T00:00:00Z',
+        // Gap = 2400 - 600 - BUFFER: plenty of spare time by default
+        metadata: { available: 2400, scheduled: 600 },
+        ...o,
+    } as unknown as WeekContainer;
+}
 
-describe('ValidatorService', () => {
-    let validator: ValidatorService;
-    // Loosely typed so tests can return plain ISO strings from the mocks
-    let timeService: any;
-    let week: WeekContainer;
-    let previous: WeekContainer;
-    let context: ValidateContext;
+// A dry-run result whose week has the given tasks
+const dryRunWith = (tasks: unknown[], ok = true) => ({ ok, value: { tasks } }) as any;
 
-    const issues = () => validator.validate(week, context).issues ?? [];
-    const issuesFor = (code: string) => issues().filter((i: any) => i.code === code);
-    const firstIssue = (code: string) => issuesFor(code)[0];
+describe('AdvisoryService', () => {
+    let service: AdvisoryService;
+    let prisma: any;
+    let weekService: jest.Mocked<WeekService>;
+    let placerService: jest.Mocked<PlacerService>;
+    let timeService: jest.Mocked<TimeService>;
 
     beforeEach(async () => {
+        const prismaMock = {
+            schedulerIssueDismissal: {
+                findMany: jest.fn().mockResolvedValue([]),
+                upsert: jest.fn().mockResolvedValue({}),
+            },
+            schedulerWeek: {
+                findUnique: jest.fn().mockResolvedValue(null),
+                updateMany: jest.fn().mockReturnValue('week-update'),
+            },
+            schedulerTask: { findMany: jest.fn().mockResolvedValue([]) },
+            schedulerSlotTask: { deleteMany: jest.fn().mockReturnValue('slot-task-delete') },
+            schedulerSlot: { deleteMany: jest.fn().mockReturnValue('slot-delete') },
+            project: { findUnique: jest.fn().mockResolvedValue({ projectName: 'Data Lake' }) },
+            $transaction: jest.fn().mockResolvedValue([]),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
-                ValidatorService,
+                AdvisoryService,
+                { provide: PrismaService, useValue: prismaMock },
+                {
+                    provide: WeekService,
+                    useValue: {
+                        getWeek: jest.fn(),
+                        dryRun: jest.fn().mockResolvedValue(dryRunWith([])),
+                        commit: jest.fn(),
+                    },
+                },
+                { provide: PlacerService, useValue: { priorityScore: jest.fn().mockReturnValue(0) } },
                 {
                     provide: TimeService,
                     useValue: {
-                        isInCoreHours: jest.fn().mockReturnValue(true),
-                        localDate: jest.fn((iso: string) => String(iso).slice(0, 10) as LocalDate),
-                        workingWindows: jest.fn().mockReturnValue([]),
+                        localDateToInstant: jest.fn((date: string) => `${date}T00:00:00Z` as Instant),
+                        workingWindows: jest.fn(workingWindows),
+                        localDate: jest.fn((instant: string) => instant.slice(0, 10)),
                     },
                 },
             ],
         }).compile();
 
-        validator = module.get(ValidatorService);
+        service = module.get(AdvisoryService);
+        prisma = module.get(PrismaService);
+        weekService = module.get(WeekService);
+        placerService = module.get(PlacerService);
         timeService = module.get(TimeService);
-
-        week = createBaseWeek();
-        previous = createBaseWeek();
-        context = createContext(previous);
     });
 
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => jest.clearAllMocks());
 
     // -----------------------------------------------------------------
-    // validate(): the orchestrator
+    // buildSuggestions
     // -----------------------------------------------------------------
 
-    describe('validate', () => {
-        it('returns ok with the week, and writes fresh metadata onto it, when there are no violations', () => {
-            week.tasks.push({ id: 't1', placement: 'unplaced' } as Task);
+    describe('buildSuggestions', () => {
+        describe('spare capacity', () => {
+            it('returns nothing when the gap after the buffer is zero or less', async () => {
+                const week = makeWeek({ metadata: { available: 1000, scheduled: 1000 - BUFFER } });
 
-            const result = validator.validate(week, context);
+                expect(await service.buildSuggestions(week)).toEqual([]);
+                expect(prisma.schedulerIssueDismissal.findMany).not.toHaveBeenCalled();
+            });
 
-            expect(result.ok).toBe(true);
-            expect(result.data).toBe(week);
-            expect(result.issues.some((i: any) => i.code === 'UNPLACED_TASKS')).toBe(true);
-            expect(week.metadata).toEqual(expect.objectContaining({ scheduled: 0, alerts: [], warnings: [] }));
-        });
+            it('treats missing metadata numbers as zero', async () => {
+                const week = makeWeek({ metadata: {} });
 
-        it('returns not ok without data, and leaves the metadata untouched, when there is a violation', () => {
-            week.metadata = { marker: true } as any;
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T21:01:00Z', taskIds: [] } as any);
+                expect(await service.buildSuggestions(week)).toEqual([]);
+            });
 
-            const result = validator.validate(week, context);
+            it('uses BUFFER_TARGET_MIN_MINUTES when the rules define it', async () => {
+                (SCHEDULER_RULES as any).BUFFER_TARGET_MIN_MINUTES = 60;
+                try {
+                    // 1000 - 900 - 60 = 40 minutes spare; with the default buffer there would be none
+                    const week = makeWeek({ metadata: { available: 1000, scheduled: 900 } });
 
-            expect(result.ok).toBe(false);
-            expect((result as any).data).toBeUndefined();
-            expect(week.metadata).toEqual({ marker: true });
-        });
+                    const suggestions = await service.buildSuggestions(week);
 
-        it('handles an empty week', () => {
-            expect(validator.validate(week, context)).toEqual({ ok: true, data: week, issues: [] });
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // Overlapping events
-    // -----------------------------------------------------------------
-
-    describe('OVERLAPPING_EVENTS', () => {
-        it('flags a slot that overlaps a calendar entry', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', taskIds: [] } as any);
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T09:00:00Z', end: '2026-09-21T11:00:00Z' } as any);
-
-            const issue = firstIssue('OVERLAPPING_EVENTS');
-
-            expect(issue.level).toBe('violation');
-            expect(issue.message).toBe('Overlap detected between slot s1 and calendar_entry ce1.');
-        });
-
-        it('allows events that only touch end to start', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z', taskIds: [] } as any);
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' } as any);
-
-            expect(issuesFor('OVERLAPPING_EVENTS')).toEqual([]);
-        });
-
-        it('compares each event with the one that ends latest so far, not just its neighbour', () => {
-            // long covers both short ones; short1 and short2 don't overlap each other
-            week.slots.push(
-                { id: 'long', start: '2026-09-21T08:00:00Z', end: '2026-09-21T12:00:00Z', taskIds: [] } as any,
-                { id: 'short1', start: '2026-09-21T09:00:00Z', end: '2026-09-21T09:30:00Z', taskIds: [] } as any,
-                { id: 'short2', start: '2026-09-21T10:00:00Z', end: '2026-09-21T10:30:00Z', taskIds: [] } as any,
-            );
-
-            const messages = issuesFor('OVERLAPPING_EVENTS').map((i: any) => i.message);
-
-            expect(messages).toEqual([
-                'Overlap detected between slot long and slot short1.',
-                'Overlap detected between slot long and slot short2.',
-            ]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #1 OUT_OF_HOURS_UNTAGGED
-    // -----------------------------------------------------------------
-
-    describe('#1 OUT_OF_HOURS_UNTAGGED', () => {
-        beforeEach(() => timeService.isInCoreHours.mockReturnValue(false));
-
-        it('flags an untagged slot outside core hours', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T18:00:00Z', end: '2026-09-21T19:00:00Z', tags: [], taskIds: [] } as any);
-
-            expect(firstIssue('OUT_OF_HOURS_UNTAGGED')).toMatchObject({ level: 'violation', entityIds: ['s1'] });
-        });
-
-        it('flags an untagged calendar entry outside core hours', () => {
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T18:00:00Z', end: '2026-09-21T19:00:00Z' } as any);
-
-            expect(firstIssue('OUT_OF_HOURS_UNTAGGED')).toMatchObject({ entityIds: ['ce1'] });
-        });
-
-        it.each([['extended-hours'], ['weekend']])('accepts items tagged %s', (tag) => {
-            week.slots.push({ id: 's1', start: '2026-09-21T18:00:00Z', end: '2026-09-21T19:00:00Z', tags: [tag], taskIds: [] } as any);
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T20:00:00Z', end: '2026-09-21T21:00:00Z', tags: [tag] } as any);
-
-            expect(issuesFor('OUT_OF_HOURS_UNTAGGED')).toEqual([]);
-        });
-
-        it('ignores items inside core hours', () => {
-            timeService.isInCoreHours.mockReturnValue(true);
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z' } as any);
-
-            expect(issuesFor('OUT_OF_HOURS_UNTAGGED')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #2 DAILY_MAX_EXCEEDED
-    // -----------------------------------------------------------------
-
-    describe('#2 DAILY_MAX_EXCEEDED', () => {
-        it('flags a day whose slots and work entries add up to more than the daily maximum', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T05:00:00Z', end: '2026-09-21T09:00:00Z', taskIds: [] } as any); // 240
-            week.calendarEntries.push({ id: 'ce1', type: 'meeting', start: '2026-09-21T09:00:00Z', end: '2026-09-21T14:00:00Z' } as any); // 300
-
-            expect(firstIssue('DAILY_MAX_EXCEEDED')).toEqual({
-                level: 'violation',
-                code: 'DAILY_MAX_EXCEEDED',
-                entityIds: ['s1', 'ce1'],
-                message: `Scheduled time on 2026-09-21 is 540m, exceeding the daily limit of ${DAILY_MAX}m.`,
+                    expect(suggestions).toEqual([{ code: 'REVIEW_CAPACITY', message: 'You have 0h40m of unused capacity this week.' }]);
+                } finally {
+                    delete (SCHEDULER_RULES as any).BUFFER_TARGET_MIN_MINUTES;
+                }
             });
         });
 
-        it('counts each day on its own', () => {
-            week.slots.push(
-                { id: 'mon', start: '2026-09-21T05:00:00Z', end: '2026-09-21T09:00:00Z', taskIds: [] } as any,
-                { id: 'tue', start: '2026-09-22T05:00:00Z', end: '2026-09-22T09:00:00Z', taskIds: [] } as any,
-            );
+        describe('dismissals', () => {
+            it('loads dismissals for this week only', async () => {
+                await service.buildSuggestions(makeWeek());
 
-            expect(issuesFor('DAILY_MAX_EXCEEDED')).toEqual([]);
-        });
-
-        it.each(['leave', 'personal', 'lunch'])('does not count %s entries as work', (type) => {
-            week.calendarEntries.push({ id: 'off', type, start: '2026-09-21T00:00:00Z', end: '2026-09-21T23:00:00Z' } as any);
-
-            expect(issuesFor('DAILY_MAX_EXCEEDED')).toEqual([]);
-        });
-
-        it('allows a full-day leave entry (the 07:00-16:00 case)', () => {
-            timeService.workingWindows.mockReturnValue(workingDay('2026-09-21'));
-            week.calendarEntries.push({ id: 'leave', type: 'leave', start: '2026-09-21T05:00:00Z', end: '2026-09-21T14:00:00Z' } as any);
-
-            expect(issues().filter((i: any) => i.level === 'violation')).toEqual([]);
-        });
-
-        it('does not count the unpaid lunch hour inside a long work entry', () => {
-            timeService.workingWindows.mockReturnValue(workingDay('2026-09-21'));
-            // 540 minutes on the clock, 60 of them lunch -> 480 of work, which is allowed
-            week.calendarEntries.push({ id: 'training', type: 'training', start: '2026-09-21T05:00:00Z', end: '2026-09-21T14:00:00Z' } as any);
-
-            expect(issuesFor('DAILY_MAX_EXCEEDED')).toEqual([]);
-
-            // One more hour of work on the same day tips it over
-            week.slots.push({ id: 's1', start: '2026-09-21T14:00:00Z', end: '2026-09-21T15:00:00Z', taskIds: [] } as any);
-            expect(firstIssue('DAILY_MAX_EXCEEDED').message).toContain('540m');
-        });
-
-        it('finds lunch breaks however the working windows are ordered, on every day', () => {
-            // Out of order, two days, and a day whose windows touch (no lunch gap)
-            timeService.workingWindows.mockReturnValue([
-                ...workingDay('2026-09-22').reverse(),
-                ...workingDay('2026-09-21'),
-                { start: '2026-09-23T05:00:00Z', end: '2026-09-23T10:00:00Z' },
-                { start: '2026-09-23T10:00:00Z', end: '2026-09-23T14:00:00Z' },
-            ]);
-
-            expect(validator['lunchIntervals'](week)).toEqual([
-                { start: '2026-09-22T10:00:00Z', end: '2026-09-22T11:00:00Z' },
-                { start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' },
-            ]);
-        });
-
-        it('skips work entries that fall entirely inside lunch', () => {
-            timeService.workingWindows.mockReturnValue(workingDay('2026-09-21'));
-            week.calendarEntries.push({ id: 'lunch-call', type: 'meeting', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' } as any);
-
-            const totals = validator['checkDailyMaxExceeded'](week);
-
-            expect(totals).toEqual([]);
-        });
-
-        it('measures overlap in whole minutes, and zero when intervals do not meet', () => {
-            const a = { start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z' };
-
-            expect(validator['overlapMinutes'](a, { start: '2026-09-21T08:30:00Z', end: '2026-09-21T10:00:00Z' })).toBe(30);
-            expect(validator['overlapMinutes'](a, { start: '2026-09-21T09:00:00Z', end: '2026-09-21T10:00:00Z' })).toBe(0);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #3 / #4 caps
-    // -----------------------------------------------------------------
-
-    describe('#3 SOFT_CAP_BREACH', () => {
-        it('warns when scheduled time exceeds the contract', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T17:00:00Z', taskIds: [] } as any); // 2460
-
-            expect(firstIssue('SOFT_CAP_BREACH')).toEqual({
-                level: 'warning',
-                code: 'SOFT_CAP_BREACH',
-                message: 'Scheduled hours exceed the contract by 60 minutes.',
+                expect(prisma.schedulerIssueDismissal.findMany).toHaveBeenCalledWith({ where: { weekId: WEEK_ID } });
             });
-        });
 
-        it('stays quiet at or under the contract', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T16:00:00Z', taskIds: [] } as any); // 2400
+            it('returns nothing at all when the whole card (UNDERUTILISED) was dismissed', async () => {
+                prisma.schedulerIssueDismissal.findMany.mockResolvedValue([{ code: 'UNDERUTILISED' }]);
+                const week = makeWeek({ tasks: [{ id: 't1', placement: 'unplaced' }] });
 
-            expect(issuesFor('SOFT_CAP_BREACH')).toEqual([]);
-        });
-    });
-
-    describe('#4 HARD_CAP_BREACH', () => {
-        it('passes at exactly the legal maximum', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T21:00:00Z', taskIds: [] } as any); // 2700
-
-            expect(issuesFor('HARD_CAP_BREACH')).toEqual([]);
-        });
-
-        it('fails above it and lists placed tasks to defer, lowest urgency + complexity first', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T21:01:00Z', taskIds: [] } as any); // 2701
-            week.tasks.push(
-                { id: 'high', urgency: 4, complexity: 3, placement: 'placed' } as Task,
-                { id: 'low', urgency: 1, complexity: 1, placement: 'placed' } as Task,
-                { id: 'mid', urgency: 2, complexity: 2, placement: 'placed' } as Task,
-                { id: 'unplaced', urgency: 1, complexity: 1, placement: 'unplaced' } as Task,
-            );
-
-            expect(firstIssue('HARD_CAP_BREACH')).toEqual({
-                level: 'violation',
-                code: 'HARD_CAP_BREACH',
-                message: 'Scheduled hours breach the legal maximum by 1 minutes.',
-                entityIds: ['low', 'mid', 'high'],
+                expect(await service.buildSuggestions(week)).toEqual([]);
+                expect(weekService.dryRun).not.toHaveBeenCalled();
             });
-        });
-    });
 
-    // -----------------------------------------------------------------
-    // #5 FRAGMENT_TOO_SMALL
-    // -----------------------------------------------------------------
-
-    describe('#5 FRAGMENT_TOO_SMALL', () => {
-        it('flags a task slot shorter than the minimum block', () => {
-            week.slots.push({ id: 's1', kind: 'task', start: '2026-09-21T08:00:00Z', end: '2026-09-21T08:30:00Z', taskIds: [] } as any);
-
-            expect(firstIssue('FRAGMENT_TOO_SMALL')).toMatchObject({
-                entityIds: ['s1'],
-                message: `Slot s1 is 30m, below the ${MIN}m minimum.`,
-            });
-        });
-
-        it('ignores batch slots and slots of at least the minimum', () => {
-            week.slots.push(
-                { id: 'batch', kind: 'batch', start: '2026-09-21T08:00:00Z', end: '2026-09-21T08:30:00Z', taskIds: [] } as any,
-                { id: 'ok', kind: 'task', start: '2026-09-21T09:00:00Z', end: '2026-09-21T10:00:00Z', taskIds: [] } as any,
-            );
-
-            expect(issuesFor('FRAGMENT_TOO_SMALL')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #6 FROZEN_ENTITY_MOVED
-    // -----------------------------------------------------------------
-
-    describe('#6 FROZEN_ENTITY_MOVED', () => {
-        const frozenIds = () => issuesFor('FROZEN_ENTITY_MOVED').flatMap((i: any) => i.entityIds);
-
-        it('skips every frozen check on the first commit of a week (no previous week)', () => {
-            context = createContext(undefined);
-            week.blocks.push({ id: 'b1', mobility: 'pinned', start: 'new-time' } as any);
-
-            expect(frozenIds()).toEqual([]);
-        });
-
-        it('treats a missing bumpedEntityIds list as empty', () => {
-            context = { previousWeek: previous, allocations: [] } as any;
-            previous.calendarEntries.push({ id: 'ce1', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' } as any);
-
-            expect(frozenIds()).toEqual(['ce1']);
-        });
-
-        describe('pinned blocks', () => {
-            const pinned = { id: 'b1', mobility: 'pinned', start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z' };
-
-            it('flags a pinned block whose start or end changed', () => {
-                previous.blocks.push(pinned as any, { ...pinned, id: 'b2' } as any);
-                week.blocks.push(
-                    { ...pinned, start: '2026-09-21T09:00:00Z' } as any,
-                    { ...pinned, id: 'b2', end: '2026-09-21T10:00:00Z' } as any,
-                );
-
-                expect(issuesFor('FROZEN_ENTITY_MOVED').map((i: any) => i.message)).toEqual([
-                    'Pinned block b1 was moved.', 'Pinned block b2 was moved.',
+            it('skips every dismissed suggestion code', async () => {
+                prisma.schedulerIssueDismissal.findMany.mockResolvedValue([
+                    { code: 'PLACE_UNPLACED' }, { code: 'PULL_FORWARD' }, { code: 'EXTEND_BLOCK' }, { code: 'REVIEW_CAPACITY' },
                 ]);
-            });
+                const week = makeWeek({ tasks: [{ id: 't1', placement: 'unplaced' }] });
 
-            it('allows unchanged pinned blocks, moved fluid blocks, and blocks the change named', () => {
-                previous.blocks.push(pinned as any, { ...pinned, id: 'fluid', mobility: 'fluid' } as any, { ...pinned, id: 'bumped' } as any);
-                week.blocks.push(
-                    pinned as any,
-                    { ...pinned, id: 'fluid', mobility: 'fluid', start: '2026-09-21T12:00:00Z' } as any,
-                    { ...pinned, id: 'bumped', start: '2026-09-21T12:00:00Z' } as any,
-                );
-                context.bumpedEntityIds = ['bumped'];
-
-                expect(frozenIds()).toEqual([]);
+                expect(await service.buildSuggestions(week)).toEqual([]);
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+                expect(prisma.schedulerWeek.findUnique).not.toHaveBeenCalled();
             });
         });
 
-        describe('in-progress and done tasks', () => {
-            it('flags a done task that changed status', () => {
-                previous.tasks.push({ id: 't1', status: 'Done', placement: 'placed' } as Task);
-                week.tasks.push({ id: 't1', status: 'Ready', placement: 'placed' } as Task);
+        describe('REVIEW_CAPACITY', () => {
+            it('is the fallback when nothing else applies, with the spare time in hours and minutes', async () => {
+                const gap = 2400 - 600 - BUFFER;
 
-                expect(firstIssue('FROZEN_ENTITY_MOVED')).toMatchObject({ entityIds: ['t1'], message: 'Frozen task t1 mutated.' });
+                const suggestions = await service.buildSuggestions(makeWeek());
+
+                expect(suggestions).toEqual([{
+                    code: 'REVIEW_CAPACITY',
+                    message: `You have ${Math.floor(gap / 60)}h${gap % 60}m of unused capacity this week.`,
+                }]);
             });
 
-            it('flags a frozen task whose placement changed or that disappeared', () => {
-                previous.tasks.push(
-                    { id: 'moved', status: 'InProgress', placement: 'placed' } as Task,
-                    { id: 'gone', status: 'InProgress', placement: 'placed' } as Task,
-                );
-                week.tasks.push({ id: 'moved', status: 'InProgress', placement: 'unplaced' } as Task);
+            it('is left out when another suggestion was found', async () => {
+                const week = makeWeek({ tasks: [{ id: 't1', placement: 'unplaced' }] });
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 't1', placement: 'placed' }]));
 
-                expect(frozenIds()).toEqual(['moved', 'gone']);
-            });
+                const codes = (await service.buildSuggestions(week)).map((s) => s.code);
 
-            it('allows InProgress to become Done', () => {
-                previous.tasks.push({ id: 't1', status: 'InProgress', placement: 'placed' } as Task);
-                week.tasks.push({ id: 't1', status: 'Done', placement: 'placed' } as Task);
-
-                expect(frozenIds()).toEqual([]);
-            });
-
-            it('ignores Ready tasks and tasks the change named', () => {
-                previous.tasks.push(
-                    { id: 'ready', status: 'Ready', placement: 'placed' } as Task,
-                    { id: 'bumped', status: 'Done', placement: 'placed' } as Task,
-                );
-                week.tasks.push(
-                    { id: 'ready', status: 'Ready', placement: 'unplaced' } as Task,
-                    { id: 'bumped', status: 'Ready', placement: 'unplaced' } as Task,
-                );
-                context.bumpedEntityIds = ['bumped'];
-
-                expect(frozenIds()).toEqual([]);
+                expect(codes).toEqual(['PLACE_UNPLACED']);
             });
         });
 
-        describe('locked slots', () => {
-            const locked = { id: 's1', locked: true, start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z', blockId: 'b1', taskIds: ['t1'] };
+        describe('PLACE_UNPLACED', () => {
+            it('is suggested when a replan dry run would place at least one unplaced task', async () => {
+                const week = makeWeek({
+                    tasks: [{ id: 't1', placement: 'unplaced' }, { id: 't2', placement: 'unplaced' }, { id: 't3', placement: 'placed' }],
+                });
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([
+                    { id: 't1', placement: 'placed' }, { id: 't2', placement: 'unplaced' }, { id: 't3', placement: 'placed' },
+                ]));
 
-            it.each([
-                ['its start', { start: '2026-09-21T07:00:00Z' }],
-                ['its end', { end: '2026-09-21T10:00:00Z' }],
-                ['its block', { blockId: 'b2' }],
-                ['its tasks', { taskIds: ['t2'] }],
-            ])('flags a locked slot when %s changes', (_label, patch) => {
-                previous.slots.push(locked as any);
-                week.slots.push({ ...locked, ...patch } as any);
+                const [suggestion] = await service.buildSuggestions(week);
 
-                expect(firstIssue('FROZEN_ENTITY_MOVED')).toMatchObject({ entityIds: ['s1'], message: 'Locked slot s1 moved.' });
-            });
-
-            it('flags a locked slot that disappeared', () => {
-                previous.slots.push(locked as any);
-
-                expect(frozenIds()).toEqual(['s1']);
-            });
-
-            it('allows unchanged locked slots, moved unlocked slots, and slots the change named', () => {
-                previous.slots.push(
-                    locked as any,
-                    { ...locked, id: 'free', locked: false } as any,
-                    { ...locked, id: 'bumped' } as any,
-                );
-                week.slots.push(
-                    locked as any,
-                    { ...locked, id: 'free', locked: false, start: '2026-09-21T12:00:00Z' } as any,
-                    { ...locked, id: 'bumped', start: '2026-09-21T12:00:00Z' } as any,
-                );
-                context.bumpedEntityIds = ['bumped'];
-
-                expect(frozenIds()).toEqual([]);
-            });
-        });
-
-        describe('calendar entries', () => {
-            const entry = { id: 'ce1', type: 'meeting', start: '2026-09-21T10:00:00Z', end: '2026-09-21T11:00:00Z' };
-
-            it('reports a removed entry as removed', () => {
-                previous.calendarEntries.push(entry as any);
-
-                expect(firstIssue('FROZEN_ENTITY_MOVED')).toEqual({
-                    level: 'violation', code: 'FROZEN_ENTITY_MOVED', entityIds: ['ce1'], message: 'Calendar entry ce1 was removed.',
+                expect(weekService.dryRun).toHaveBeenCalledWith(WEEK_ID, {
+                    type: 'replan',
+                    window: { start: '2026-09-21T00:00:00Z', end: '2026-09-28T00:00:00Z' },
+                });
+                expect(suggestion).toEqual({
+                    code: 'PLACE_UNPLACED',
+                    message: 'You have 2 unplaced task(s) and available capacity.',
+                    action: { type: 'place_unplaced', taskIds: ['t1', 't2'] },
                 });
             });
 
-            it.each([
-                ['start', { start: '2026-09-21T09:00:00Z' }],
-                ['end', { end: '2026-09-21T12:00:00Z' }],
-            ])('reports an entry whose %s changed as moved', (_label, patch) => {
-                previous.calendarEntries.push(entry as any);
-                week.calendarEntries.push({ ...entry, ...patch } as any);
+            it('is not suggested when the dry run reports violations', async () => {
+                const week = makeWeek({ tasks: [{ id: 't1', placement: 'unplaced' }] });
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 't1', placement: 'placed' }], false));
 
-                expect(firstIssue('FROZEN_ENTITY_MOVED').message).toBe('Calendar entry ce1 moved.');
+                const codes = (await service.buildSuggestions(week)).map((s) => s.code);
+
+                expect(codes).not.toContain('PLACE_UNPLACED');
             });
 
-            it('compares instants, so the same time written differently is not a move', () => {
-                previous.calendarEntries.push(entry as any);
-                week.calendarEntries.push({ ...entry, start: '2026-09-21T10:00:00.000Z', end: '2026-09-21T13:00:00+02:00' } as any);
+            it('is not suggested when a replan would place nothing new', async () => {
+                const week = makeWeek({ tasks: [{ id: 't1', placement: 'unplaced' }] });
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 't1', placement: 'unplaced' }]));
 
-                expect(frozenIds()).toEqual([]);
+                const codes = (await service.buildSuggestions(week)).map((s) => s.code);
+
+                expect(codes).not.toContain('PLACE_UNPLACED');
             });
 
-            it('allows the entry the change names to be moved or removed', () => {
-                previous.calendarEntries.push(entry as any, { ...entry, id: 'ce2' } as any);
-                week.calendarEntries.push({ ...entry, id: 'ce2', start: '2026-09-21T12:00:00Z', end: '2026-09-21T13:00:00Z' } as any);
-                context.bumpedEntityIds = ['ce1', 'ce2'];
+            it('does not run a dry run when nothing is unplaced', async () => {
+                await service.buildSuggestions(makeWeek({ tasks: [{ id: 't1', placement: 'placed' }] }));
 
-                expect(frozenIds()).toEqual([]);
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+            });
+        });
+
+        describe('PULL_FORWARD', () => {
+            const nextWeek = (tasks: unknown[]) => ({ id: 'week-2', tasks });
+
+            it('looks next week up by consultant and a Date week start', async () => {
+                await service.buildSuggestions(makeWeek());
+
+                expect(prisma.schedulerWeek.findUnique).toHaveBeenCalledWith({
+                    where: { consultantId_weekStart: { consultantId: CONSULTANT_ID, weekStart: new Date('2026-09-28T00:00:00Z') } },
+                    include: { tasks: true },
+                });
+            });
+
+            it('is suggested for Ready tasks from next week that fit and would all be placed', async () => {
+                prisma.schedulerWeek.findUnique.mockResolvedValue(nextWeek([
+                    { id: 'n1', status: 'Ready', tMax: 120 },
+                    { id: 'n2', status: 'Ready', tMax: 60 },
+                    { id: 'n3', status: 'InProgress', tMax: 60 },
+                ]));
+                placerService.priorityScore.mockImplementation((t: any) => (t.id === 'n2' ? 0.9 : 0.1));
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([
+                    { id: 'n1', placement: 'placed' }, { id: 'n2', placement: 'placed' },
+                ]));
+
+                const [suggestion] = await service.buildSuggestions(makeWeek());
+
+                // Most important first: n2 before n1; the in-progress task is never pulled
+                expect(suggestion).toEqual({
+                    code: 'PULL_FORWARD',
+                    message: 'You have capacity to pull forward 2 task(s) from next week.',
+                    action: { type: 'pull_forward', taskIds: ['n2', 'n1'] },
+                });
+                expect(weekService.dryRun).toHaveBeenCalledWith(WEEK_ID, expect.objectContaining({
+                    type: 'pull_forward',
+                    taskIds: ['n2', 'n1'],
+                    origin: 'system',
+                    tasks: [expect.objectContaining({ id: 'n2' }), expect.objectContaining({ id: 'n1' })],
+                }));
+            });
+
+            it('skips tasks that would not fit in the spare time', async () => {
+                const gap = 2400 - 600 - BUFFER;
+                prisma.schedulerWeek.findUnique.mockResolvedValue(nextWeek([
+                    { id: 'huge', status: 'Ready', tMax: gap + 1 },
+                    { id: 'small', status: 'Ready', tMax: 60 },
+                ]));
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 'small', placement: 'placed' }]));
+
+                const [suggestion] = await service.buildSuggestions(makeWeek());
+
+                expect(suggestion.action.taskIds).toEqual(['small']);
+            });
+
+            it('is not suggested when next week does not exist yet', async () => {
+                prisma.schedulerWeek.findUnique.mockResolvedValue(null);
+
+                const codes = (await service.buildSuggestions(makeWeek())).map((s) => s.code);
+
+                expect(codes).toEqual(['REVIEW_CAPACITY']);
+            });
+
+            it('is not suggested when no Ready task fits', async () => {
+                prisma.schedulerWeek.findUnique.mockResolvedValue(nextWeek([{ id: 'n1', status: 'Done', tMax: 60 }]));
+
+                const codes = (await service.buildSuggestions(makeWeek())).map((s) => s.code);
+
+                expect(codes).toEqual(['REVIEW_CAPACITY']);
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+            });
+
+            it('is not suggested when the dry run reports violations', async () => {
+                prisma.schedulerWeek.findUnique.mockResolvedValue(nextWeek([{ id: 'n1', status: 'Ready', tMax: 60 }]));
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 'n1', placement: 'placed' }], false));
+
+                const codes = (await service.buildSuggestions(makeWeek())).map((s) => s.code);
+
+                expect(codes).not.toContain('PULL_FORWARD');
+            });
+
+            it('is not suggested when a pulled task would not actually be placed', async () => {
+                prisma.schedulerWeek.findUnique.mockResolvedValue(nextWeek([
+                    { id: 'n1', status: 'Ready', tMax: 60 },
+                    { id: 'n2', status: 'Ready', tMax: 60 },
+                ]));
+                // n1 stays unplaced and n2 is missing from the result entirely
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([{ id: 'n1', placement: 'unplaced' }]));
+
+                const codes = (await service.buildSuggestions(makeWeek())).map((s) => s.code);
+
+                expect(codes).not.toContain('PULL_FORWARD');
+            });
+        });
+
+        describe('EXTEND_BLOCK', () => {
+            // Only EXTEND_BLOCK is left to check in these tests
+            beforeEach(() => {
+                prisma.schedulerIssueDismissal.findMany.mockResolvedValue([{ code: 'PLACE_UNPLACED' }, { code: 'PULL_FORWARD' }]);
+            });
+
+            const unplacedFor = (projectId: string) => ({ id: `u-${projectId}`, projectId, placement: 'unplaced' });
+
+            it('extends a block to the end of its working day and names the project and day', async () => {
+                const week = makeWeek({
+                    blocks: [{ id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '11:00') }],
+                    tasks: [unplacedFor('p1')],
+                });
+                weekService.dryRun.mockResolvedValueOnce(dryRunWith([]));
+
+                const [suggestion] = await service.buildSuggestions(week);
+
+                expect(weekService.dryRun).toHaveBeenCalledWith(WEEK_ID, expect.objectContaining({
+                    type: 'resize_block',
+                    blockId: 'b1',
+                    to: { start: at(0, '07:00'), end: at(0, '16:00') },
+                    origin: 'system',
+                }));
+                expect(prisma.project.findUnique).toHaveBeenCalledWith({ where: { id: 'p1' }, select: { projectName: true } });
+                expect(suggestion).toEqual({
+                    code: 'EXTEND_BLOCK',
+                    message: "Extending Data Lake's block on Monday could fit more of its waiting work in this week.",
+                    action: { type: 'resize_block', blockId: 'b1', to: { start: at(0, '07:00'), end: at(0, '16:00') } },
+                });
+            });
+
+            it('falls back to a generic name when the project is not found', async () => {
+                prisma.project.findUnique.mockResolvedValueOnce(null);
+                const week = makeWeek({
+                    blocks: [{ id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '11:00') }],
+                    tasks: [unplacedFor('p1')],
+                });
+
+                const [suggestion] = await service.buildSuggestions(week);
+
+                expect(suggestion.message).toContain("Extending this project's block");
+            });
+
+            it('never extends into the next block on the same day', async () => {
+                const week = makeWeek({
+                    blocks: [
+                        { id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '10:00') },
+                        { id: 'later', projectId: 'p2', mobility: 'fluid', start: at(0, '12:00'), end: at(0, '16:00') },
+                        { id: 'earlier', projectId: 'p2', mobility: 'fluid', start: at(0, '06:00'), end: at(0, '07:00') },
+                    ],
+                    tasks: [unplacedFor('p1')],
+                });
+
+                const [suggestion] = await service.buildSuggestions(week);
+
+                expect(suggestion.action.to.end).toBe(at(0, '12:00'));
+            });
+
+            it('extends by no more than the spare time', async () => {
+                // Gap of 30 minutes: 1000 - (1000 - BUFFER - 30) - BUFFER
+                const week = makeWeek({
+                    metadata: { available: 1000, scheduled: 1000 - BUFFER - 30 },
+                    blocks: [{ id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '11:00') }],
+                    tasks: [unplacedFor('p1')],
+                });
+
+                const [suggestion] = await service.buildSuggestions(week);
+
+                expect(suggestion.action.to.end).toBe(at(0, '11:30'));
+            });
+
+            it('skips pinned blocks and projects with nothing unplaced', async () => {
+                const week = makeWeek({
+                    blocks: [
+                        { id: 'pinned', projectId: 'p1', mobility: 'pinned', start: at(0, '07:00'), end: at(0, '10:00') },
+                        { id: 'idle', projectId: 'p2', mobility: 'fluid', start: at(1, '07:00'), end: at(1, '10:00') },
+                    ],
+                    tasks: [unplacedFor('p1'), { id: 'placed', projectId: 'p2', placement: 'placed' }],
+                });
+
+                const codes = (await service.buildSuggestions(week)).map((s) => s.code);
+
+                expect(codes).toEqual(['REVIEW_CAPACITY']);
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+            });
+
+            it('skips a block that already reaches the end of its day', async () => {
+                const week = makeWeek({
+                    blocks: [{ id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '16:00') }],
+                    tasks: [unplacedFor('p1')],
+                });
+
+                await service.buildSuggestions(week);
+
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+            });
+
+            it('skips a block on a day with no working hours', async () => {
+                timeService.workingWindows.mockReturnValue([]);
+                const week = makeWeek({
+                    blocks: [{ id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(5, '07:00'), end: at(5, '10:00') }],
+                    tasks: [unplacedFor('p1')],
+                });
+
+                await service.buildSuggestions(week);
+
+                expect(weekService.dryRun).not.toHaveBeenCalled();
+            });
+
+            it('tries the next block when an extension would not place anything', async () => {
+                const week = makeWeek({
+                    blocks: [
+                        { id: 'b1', projectId: 'p1', mobility: 'fluid', start: at(0, '07:00'), end: at(0, '11:00') },
+                        { id: 'b2', projectId: 'p1', mobility: 'fluid', start: at(1, '07:00'), end: at(1, '11:00') },
+                    ],
+                    tasks: [unplacedFor('p1')],
+                });
+                weekService.dryRun
+                    .mockResolvedValueOnce(dryRunWith([unplacedFor('p1')]))       // b1: still unplaced
+                    .mockResolvedValueOnce(dryRunWith([], false))                // b2: violation
+                ;
+
+                const codes = (await service.buildSuggestions(week)).map((s) => s.code);
+
+                expect(weekService.dryRun).toHaveBeenCalledTimes(2);
+                expect(codes).toEqual(['REVIEW_CAPACITY']);
             });
         });
     });
 
     // -----------------------------------------------------------------
-    // #7 DEPENDENCY_ORDER
+    // pullForward
     // -----------------------------------------------------------------
 
-    describe('#7 DEPENDENCY_ORDER', () => {
+    describe('pullForward', () => {
+        const thisWeekDb = { id: WEEK_ID, consultantId: CONSULTANT_ID, weekStart: new Date('2026-09-21T00:00:00Z') };
+        const liveWeek = makeWeek();
+
+        const futureTask = (o: Record<string, unknown> = {}) => ({
+            id: 'task-1',
+            weekId: 'week-next',
+            status: 'Ready',
+            placement: 'placed',
+            unplacedReason: 'CONTAINER_FULL',
+            subtasks: [{ id: 's1', title: 'Sub', done: false }],
+            week: { consultantId: CONSULTANT_ID, weekStart: new Date('2026-09-28T00:00:00Z') },
+            ...o,
+        });
+
         beforeEach(() => {
-            week.tasks.push(
-                { id: 'dep', dependsOn: [], status: 'Ready' } as any,
-                { id: 'task', dependsOn: ['dep'], status: 'Ready' } as any,
-            );
+            prisma.schedulerWeek.findUnique.mockResolvedValue(thisWeekDb);
+            weekService.getWeek.mockResolvedValue(liveWeek);
+            weekService.commit.mockResolvedValue({ ok: true, value: liveWeek } as any);
         });
 
-        it('flags a task that starts before its prerequisite finishes', () => {
-            week.slots.push(
-                { id: 's1', taskIds: ['task'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z' } as any,
-                { id: 's2', taskIds: ['dep'], start: '2026-09-21T09:00:00Z', end: '2026-09-21T11:00:00Z' } as any,
-            );
+        it('rejects an empty task list', async () => {
+            await expect(service.pullForward(WEEK_ID, [])).rejects.toThrow(BadRequestException);
+        });
 
-            expect(firstIssue('DEPENDENCY_ORDER')).toEqual({
-                level: 'violation',
-                code: 'DEPENDENCY_ORDER',
-                message: 'Task task starts before prerequisite dep finishes.',
-                entityIds: ['task', 'dep'],
+        it('rejects an unknown week', async () => {
+            prisma.schedulerWeek.findUnique.mockResolvedValue(null);
+
+            await expect(service.pullForward('nope', ['task-1'])).rejects.toThrow(NotFoundException);
+        });
+
+        it('lists the task ids it could not find', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([futureTask()]);
+
+            await expect(service.pullForward(WEEK_ID, ['task-1', 'task-2'])).rejects.toThrow('Task(s) not found: task-2');
+        });
+
+        it('refuses tasks that belong to another consultant', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                futureTask({ week: { consultantId: 'someone-else', weekStart: new Date('2026-09-28T00:00:00Z') } }),
+            ]);
+
+            await expect(service.pullForward(WEEK_ID, ['task-1'])).rejects.toThrow(ForbiddenException);
+        });
+
+        it('refuses tasks that are not in a future week', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                futureTask({ week: { consultantId: CONSULTANT_ID, weekStart: new Date('2026-09-21T00:00:00Z') } }),
+            ]);
+
+            await expect(service.pullForward(WEEK_ID, ['task-1'])).rejects.toThrow('is not in a future week');
+        });
+
+        it('refuses tasks that have already been started', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([futureTask({ status: 'InProgress' })]);
+
+            await expect(service.pullForward(WEEK_ID, ['task-1'])).rejects.toThrow("has already been started and can't be moved");
+        });
+
+        it('loads the week and the tasks with their subtasks', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([futureTask()]);
+
+            await service.pullForward(WEEK_ID, ['task-1'], 4);
+
+            expect(weekService.getWeek).toHaveBeenCalledWith(CONSULTANT_ID, '2026-09-21');
+            expect(prisma.schedulerTask.findMany).toHaveBeenCalledWith({
+                where: { id: { in: ['task-1'] } },
+                include: { week: true, subtasks: true },
             });
         });
 
-        it('allows a task that starts after its prerequisite finishes', () => {
-            week.slots.push(
-                { id: 's1', taskIds: ['dep'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z' } as any,
-                { id: 's2', taskIds: ['task'], start: '2026-09-21T09:00:00Z', end: '2026-09-21T10:00:00Z' } as any,
-            );
+        it('re-homes the tasks to this week and commits a pull_forward change', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([futureTask()]);
 
-            expect(issuesFor('DEPENDENCY_ORDER')).toEqual([]);
+            const result = await service.pullForward(WEEK_ID, ['task-1'], 4);
+
+            expect(result.ok).toBe(true);
+            const [week, change, ctx, version] = weekService.commit.mock.calls[0];
+            expect(week).toBe(liveWeek);
+            expect(version).toBe(4);
+            expect(ctx).toEqual({ bumpedEntityIds: [], allocations: [] });
+            expect(change).toMatchObject({
+                type: 'pull_forward',
+                taskIds: ['task-1'],
+                origin: 'user',
+                window: { start: '2026-09-21T00:00:00Z', end: '2026-09-28T00:00:00Z' },
+            });
+
+            const [moved] = (change as any).tasks;
+            expect(moved).toMatchObject({ id: 'task-1', weekId: WEEK_ID, placement: 'unplaced', subtasks: [{ id: 's1' }] });
+            expect(moved.unplacedReason).toBeUndefined();
+            expect(moved.unplacedNeededMinutes).toBeUndefined();
+            expect(moved.unplacedAvailableMinutes).toBeUndefined();
+            expect(moved).not.toHaveProperty('week');
         });
 
-        it('ignores a prerequisite that is already done', () => {
-            week.tasks[0].status = 'Done';
-            week.slots.push(
-                { id: 's1', taskIds: ['task'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z' } as any,
-                { id: 's2', taskIds: ['dep'], start: '2026-09-21T09:00:00Z', end: '2026-09-21T11:00:00Z' } as any,
-            );
+        it('clears the old slots and bumps the version of each source week once', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([
+                futureTask(),
+                futureTask({ id: 'task-2' }),
+            ]);
 
-            expect(issuesFor('DEPENDENCY_ORDER')).toEqual([]);
+            await service.pullForward(WEEK_ID, ['task-1', 'task-2']);
+
+            expect(prisma.schedulerSlotTask.deleteMany).toHaveBeenCalledWith({
+                where: { taskId: { in: ['task-1', 'task-2'] }, slot: { weekId: { in: ['week-next'] } } },
+            });
+            expect(prisma.schedulerSlot.deleteMany).toHaveBeenCalledWith({
+                where: { weekId: { in: ['week-next'] }, slotTasks: { none: {} } },
+            });
+            expect(prisma.schedulerWeek.updateMany).toHaveBeenCalledWith({
+                where: { id: { in: ['week-next'] } },
+                data: { version: { increment: 1 } },
+            });
+            // Unlink first, then delete empty slots, then bump versions
+            expect(prisma.$transaction).toHaveBeenCalledWith(['slot-task-delete', 'slot-delete', 'week-update']);
         });
 
-        it('ignores a prerequisite with no slots, and a dependent with no slots', () => {
-            week.slots.push({ id: 's1', taskIds: ['task'], start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z' } as any);
-            expect(issuesFor('DEPENDENCY_ORDER')).toEqual([]);
+        it('leaves the source week alone when the commit is rejected', async () => {
+            prisma.schedulerTask.findMany.mockResolvedValue([futureTask()]);
+            weekService.commit.mockResolvedValue({ ok: false, value: liveWeek } as any);
 
-            week.slots = [{ id: 's2', taskIds: ['dep'], start: '2026-09-21T09:00:00Z', end: '2026-09-21T11:00:00Z' } as any];
-            expect(issuesFor('DEPENDENCY_ORDER')).toEqual([]);
-        });
+            const result = await service.pullForward(WEEK_ID, ['task-1']);
 
-        it('handles slots without task ids', () => {
-            week.slots.push({ id: 'empty', start: '2026-09-21T08:00:00Z', end: '2026-09-21T09:00:00Z' } as any);
-
-            expect(issuesFor('DEPENDENCY_ORDER')).toEqual([]);
-        });
-
-        it('copes with a task that has no dependsOn list and with an empty slot list', () => {
-            expect(validator['getDependencyIssuesForTask']({ id: 'x' } as Task, 0, new Map(), new Map())).toEqual([]);
-            expect(validator['getEarliestStart']([])).toBeNull();
-            expect(validator['getLatestEnd']([])).toBeNull();
+            expect(result.ok).toBe(false);
+            expect(prisma.$transaction).not.toHaveBeenCalled();
         });
     });
 
     // -----------------------------------------------------------------
-    // #8 / #10 project allocation
+    // dismiss
     // -----------------------------------------------------------------
 
-    describe('#8 TASK_LARGER_THAN_CONTAINER', () => {
-        it('flags a placed task larger than its project allocation', () => {
-            week.blocks.push({ projectId: 'p1', allocatedMinutes: 100 } as any);
-            week.tasks.push({ id: 't1', projectId: 'p1', tMax: 120, placement: 'placed', status: 'Ready' } as Task);
+    describe('dismiss', () => {
+        it('records the dismissal, and repeating it is harmless (upsert)', async () => {
+            await service.dismiss(WEEK_ID, 'REVIEW_CAPACITY');
 
-            expect(firstIssue('TASK_LARGER_THAN_CONTAINER')).toEqual({
-                level: 'violation',
-                code: 'TASK_LARGER_THAN_CONTAINER',
-                message: 'Task t1 (120m) exceeds project p1 allocation (100m).',
-                entityIds: ['t1'],
+            expect(prisma.schedulerIssueDismissal.upsert).toHaveBeenCalledWith({
+                where: { weekId_code: { weekId: WEEK_ID, code: 'REVIEW_CAPACITY' } },
+                update: { dismissedAt: expect.any(Date) },
+                create: { weekId: WEEK_ID, code: 'REVIEW_CAPACITY', dismissedAt: expect.any(Date) },
             });
         });
 
-        it('ignores done, unplaced and fitting tasks, and projects with no blocks', () => {
-            week.blocks.push({ projectId: 'p1', allocatedMinutes: 60 } as any, { projectId: 'p1', allocatedMinutes: 60 } as any);
-            week.tasks.push(
-                { id: 'fits', projectId: 'p1', tMax: 120, placement: 'placed', status: 'Ready' } as Task,
-                { id: 'done', projectId: 'p1', tMax: 999, placement: 'placed', status: 'Done' } as Task,
-                { id: 'unplaced', projectId: 'p1', tMax: 999, placement: 'unplaced', status: 'Ready' } as Task,
-                { id: 'no-blocks', projectId: 'p2', tMax: 999, placement: 'placed', status: 'Ready' } as Task,
-            );
-
-            expect(issuesFor('TASK_LARGER_THAN_CONTAINER')).toEqual([]);
-        });
-    });
-
-    describe('#10 CONTAINER_OVERFLOW', () => {
-        it('warns when a project\'s tasks add up to more than its allocation', () => {
-            week.blocks.push({ projectId: 'p1', allocatedMinutes: 100 } as any);
-            week.tasks.push({ id: 't1', projectId: 'p1', tMax: 60 } as any, { id: 't2', projectId: 'p1', tMax: 60 } as any);
-
-            expect(firstIssue('CONTAINER_OVERFLOW')).toEqual({
-                level: 'warning',
-                code: 'CONTAINER_OVERFLOW',
-                message: 'Project p1 tasks (120m) overflow allocation (100m).',
-                entityIds: ['t1', 't2'],
-            });
-        });
-
-        it('treats a project with no blocks as having no allocation', () => {
-            week.tasks.push({ id: 't1', projectId: 'p2', tMax: 30 } as any);
-
-            expect(firstIssue('CONTAINER_OVERFLOW').message).toContain('allocation (0m)');
-        });
-
-        it('stays quiet when tasks fit', () => {
-            week.blocks.push({ projectId: 'p1', allocatedMinutes: 100 } as any);
-            week.tasks.push({ id: 't1', projectId: 'p1', tMax: 100 } as any);
-
-            expect(issuesFor('CONTAINER_OVERFLOW')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #9 / #11 / #12 task warnings
-    // -----------------------------------------------------------------
-
-    describe('#9 DAY_SPAN_LIMIT_AT_RISK', () => {
-        const maxCapacity = SCHEDULER_RULES.FRAGMENT_MAX_COUNT * DAILY_MAX;
-
-        it('warns about tasks bigger than the most the day-span limit allows', () => {
-            week.tasks.push({ id: 'giant', tMax: maxCapacity + 1 } as any, { id: 'ok', tMax: maxCapacity } as any);
-
-            expect(firstIssue('DAY_SPAN_LIMIT_AT_RISK')).toMatchObject({ level: 'warning', entityIds: ['giant'] });
-        });
-
-        it('stays quiet when every task fits', () => {
-            week.tasks.push({ id: 'ok', tMax: maxCapacity } as any);
-
-            expect(issuesFor('DAY_SPAN_LIMIT_AT_RISK')).toEqual([]);
-        });
-    });
-
-    describe('#11 UNPLACED_TASKS', () => {
-        it('warns with the count and the unplaced task ids', () => {
-            week.tasks.push({ id: 't1', placement: 'unplaced' } as any, { id: 't2', placement: 'placed' } as any);
-
-            expect(firstIssue('UNPLACED_TASKS')).toEqual({
-                level: 'warning', code: 'UNPLACED_TASKS', message: 'There are 1 unplaced tasks.', entityIds: ['t1'],
-            });
-        });
-    });
-
-    describe('#12 DEADLINE_INFEASIBLE', () => {
-        it('warns about tasks the placer marked as missing their deadline', () => {
-            week.tasks.push(
-                { id: 't1', placement: 'unplaced', unplacedReason: 'DEADLINE_INFEASIBLE' } as any,
-                { id: 't2', placement: 'unplaced', unplacedReason: 'CONTAINER_FULL' } as any,
-            );
-
-            expect(firstIssue('DEADLINE_INFEASIBLE')).toMatchObject({ entityIds: ['t1'], message: '1 task(s) cannot be placed before their deadline.' });
-        });
-
-        it('stays quiet when no task has that reason', () => {
-            expect(issuesFor('DEADLINE_INFEASIBLE')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #13 CONTAINERS_EXCEED_CONTRACT
-    // -----------------------------------------------------------------
-
-    describe('#13 CONTAINERS_EXCEED_CONTRACT', () => {
-        it('raises a persistent violation and logs it when allocations exceed the contract', () => {
-            const logSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
-            context.allocations = [{ projectId: 'p1', allocation: 105, allocatedMinutes: 2520 }] as any;
-
-            expect(firstIssue('CONTAINERS_EXCEED_CONTRACT')).toMatchObject({ level: 'violation', persistent: true });
-            expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('CONTAINERS_EXCEED_CONTRACT'));
-        });
-
-        it('does not false-positive on fractional percentages that add up to 100', () => {
-            context.allocations = Array(7).fill({ allocation: 14.2857 }) as any;
-
-            expect(issuesFor('CONTAINERS_EXCEED_CONTRACT')).toEqual([]);
-        });
-
-        it('skips the check when there are no allocations', () => {
-            context.allocations = undefined as any;
-
-            expect(issuesFor('CONTAINERS_EXCEED_CONTRACT')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // #14 INVALID_ENTRY_ORIGIN
-    // -----------------------------------------------------------------
-
-    describe('#14 INVALID_ENTRY_ORIGIN', () => {
-        it('flags a public-holiday entry on a day that is not a holiday', () => {
-            week.calendarEntries.push({ id: 'ce1', type: 'leave', origin: 'public-holiday', start: '2026-12-25T08:00:00Z', end: '2026-12-25T09:00:00Z' } as any);
-            week.holidays.push({ date: '2026-12-26' } as any);
-
-            expect(firstIssue('INVALID_ENTRY_ORIGIN')).toMatchObject({
-                entityIds: ['ce1'],
-                message: 'Entry ce1 is marked as public-holiday but no holiday exists on 2026-12-25.',
-            });
-        });
-
-        it('accepts a public-holiday entry on a holiday and ignores other origins', () => {
-            week.calendarEntries.push(
-                { id: 'ce1', type: 'leave', origin: 'public-holiday', start: '2026-09-24T08:00:00Z', end: '2026-09-24T09:00:00Z' } as any,
-                { id: 'ce2', type: 'meeting', origin: 'user', start: '2026-09-22T08:00:00Z', end: '2026-09-22T09:00:00Z' } as any,
-            );
-            week.holidays.push({ date: '2026-09-24' } as any);
-
-            expect(issuesFor('INVALID_ENTRY_ORIGIN')).toEqual([]);
-        });
-    });
-
-    // -----------------------------------------------------------------
-    // summarize
-    // -----------------------------------------------------------------
-
-    describe('summarize', () => {
-        beforeEach(() => {
-            timeService.workingWindows.mockReturnValue(
-                ['21', '22', '23', '24', '25'].map((d) => ({ start: `2026-09-${d}T06:00:00Z`, end: `2026-09-${d}T14:00:00Z` })),
-            );
-        });
-
-        it('counts the working windows as available time', () => {
-            const metadata = validator.summarize(week);
-
-            expect(metadata).toEqual({
-                available: 2400, allocated: 0, scheduled: 0, buffer: 2400, utilization: 0,
-                softCapBreached: false, hardCapBreached: false, hasOutOfHours: false, hasWeekend: false,
-                hasContainerOverflow: false,
-                // Issues are added later by WeekService.buildMetadata
-                alerts: [], warnings: [],
-            });
-        });
-
-        it('removes public holidays and the time calendar entries take', () => {
-            week.holidays.push({ date: '2026-09-24' } as any);
-            week.calendarEntries.push(
-                { id: 'ce1', type: 'meeting', start: '2026-09-21T08:00:00Z', end: '2026-09-21T10:00:00Z' } as any,
-                { id: 'outside', type: 'meeting', start: '2026-09-21T15:00:00Z', end: '2026-09-21T16:00:00Z' } as any,
-            );
-
-            expect(validator.summarize(week).available).toBe(2400 - 480 - 120);
-        });
-
-        it('adds up block allocations and scheduled slot time', () => {
-            week.blocks.push({ projectId: 'p1', allocatedMinutes: 300 } as any, { projectId: 'p2', allocatedMinutes: 200 } as any);
-            week.slots.push({ id: 's1', start: '2026-09-21T06:00:00Z', end: '2026-09-21T08:00:00Z', taskIds: [] } as any);
-
-            const metadata = validator.summarize(week);
-
-            expect(metadata).toMatchObject({ allocated: 500, scheduled: 120, buffer: 2280, utilization: 120 / 2400 });
-        });
-
-        it('flags out-of-hours and weekend items', () => {
-            timeService.isInCoreHours.mockReturnValue(false);
-            week.calendarEntries.push({ id: 'sat', type: 'meeting', tags: ['weekend'], start: '2026-09-26T08:00:00Z', end: '2026-09-26T09:00:00Z' } as any);
-
-            expect(validator.summarize(week)).toMatchObject({ hasOutOfHours: true, hasWeekend: true });
-        });
-
-        it('reports cap breaches and container overflow', () => {
-            week.slots.push({ id: 's1', start: '2026-09-21T00:00:00Z', end: '2026-09-22T21:01:00Z', taskIds: [] } as any);
-            week.tasks.push({ id: 't1', projectId: 'p1', tMax: 60 } as any);
-
-            expect(validator.summarize(week)).toMatchObject({ softCapBreached: true, hardCapBreached: true, hasContainerOverflow: true });
-        });
-
-        it('reports zero utilisation when nothing is available', () => {
-            timeService.workingWindows.mockReturnValue([]);
-            week.slots.push({ id: 's1', start: '2026-09-21T06:00:00Z', end: '2026-09-21T08:00:00Z', taskIds: [] } as any);
-
-            expect(validator.summarize(week).utilization).toBe(0);
+        it('refuses to dismiss persistent issues', async () => {
+            await expect(service.dismiss(WEEK_ID, 'CONTAINERS_EXCEED_CONTRACT')).rejects.toThrow(BadRequestException);
+            expect(prisma.schedulerIssueDismissal.upsert).not.toHaveBeenCalled();
         });
     });
 });

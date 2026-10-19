@@ -6,7 +6,7 @@ import { HolidayService } from './holiday.service';
 import { PlacerService } from './placer.service';
 import { ValidatorService } from './validator.service';
 import { randomUUID } from 'node:crypto';
-import { WeekMetadata } from '../dto/scheduler.dto';
+
 
 
 import {
@@ -24,6 +24,7 @@ import {
     PrismaBlock,
     CalendarEntryDto,
     PublicHoliday,
+    WeekMetadata,
 } from '../dto/scheduler.dto';
 
 export interface CommitResult {

@@ -261,7 +261,7 @@ describe('AuthController', () => {
       expect(refreshTokenService.refresh).toHaveBeenCalledWith('old-refresh-token');
       expect(mockRes.cookie).toHaveBeenCalledWith('ciq_access_token', 'new-jwt', expect.any(Object));
       expect(mockRes.cookie).toHaveBeenCalledWith('ciq_refresh_token', 'new-refresh-token', expect.any(Object));
-      expect(mockRes.cookie).toHaveBeenCalledWith('XSRF-TOKEN', expect.any(String), expect.any(Object));
+      expect(mockRes.cookie).not.toHaveBeenCalledWith('XSRF-TOKEN', expect.any(String), expect.any(Object));
       expect(result).toEqual({ message: 'Token refreshed successfully.' });
     });
 
@@ -378,7 +378,7 @@ describe('AuthController', () => {
 
   describe('getCsrfToken', () => {
     it('should generate a CSRF token, set the XSRF-TOKEN cookie, and return the token', () => {
-      const result = controller.getCsrfToken(mockRes as any);
+      const result = controller.getCsrfToken({ cookies: {} } as any, mockRes as any);
 
       expect(result).toHaveProperty('csrfToken');
       expect(typeof result.csrfToken).toBe('string');
@@ -391,8 +391,33 @@ describe('AuthController', () => {
           httpOnly: false,
           secure: true,
           sameSite: 'none',
-          maxAge: 5 * 60 * 1000,
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         },
+      );
+    });
+
+    it('should reuse an existing CSRF cookie unless refresh is requested', () => {
+      const result = controller.getCsrfToken(
+        { cookies: { 'XSRF-TOKEN': 'existing-token' } } as any,
+        mockRes as any,
+      );
+
+      expect(result).toEqual({ csrfToken: 'existing-token' });
+      expect(mockRes.cookie).not.toHaveBeenCalled();
+    });
+
+    it('should rotate an existing CSRF cookie when refresh is requested', () => {
+      const result = controller.getCsrfToken(
+        { cookies: { 'XSRF-TOKEN': 'existing-token' } } as any,
+        mockRes as any,
+        'true',
+      );
+
+      expect(result.csrfToken).not.toBe('existing-token');
+      expect(mockRes.cookie).toHaveBeenCalledWith(
+        'XSRF-TOKEN',
+        result.csrfToken,
+        expect.objectContaining({ maxAge: 7 * 24 * 60 * 60 * 1000 }),
       );
     });
   });

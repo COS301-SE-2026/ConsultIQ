@@ -15,9 +15,6 @@ import { Role } from '../../auth/enums/role.enum';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { Reflector } from '@nestjs/core';
 
-// ---------------------------------------------------------------------------
-// Shape of the decoded JWT payload
-// ---------------------------------------------------------------------------
 export interface JwtPayload {
   userId: string;
   role: Role;
@@ -34,12 +31,10 @@ declare global {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Guard
-// ---------------------------------------------------------------------------
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -48,11 +43,13 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) return true;
 
     const request = context.switchToHttp().getRequest();
-    const token = this.extractBearerToken(request);
+    const token =
+      request.cookies?.['ciq_access_token'] ??
+      this.extractBearerToken(request);
 
     if (!token) {
       throw new UnauthorizedException(
-        'Authorization token is missing. Please provide a valid Bearer token.',
+        'Authentication required. Please sign in and try again.',
       );
     }
 
@@ -66,7 +63,6 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const payload = jwt.verify(token, secret) as JwtPayload;
 
-      // Basic payload shape validation
       if (!payload.userId || !payload.role) {
         throw new UnauthorizedException(
           'Token payload is malformed: missing required fields.',
@@ -102,15 +98,7 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Extract the raw token string from the `Authorization: Bearer <token>` header.
-   */
   private extractBearerToken(request: any): string | null {
-    // Try Authorization header first
     const authHeader = request.headers['authorization'] as string | undefined;
     if (authHeader) {
       const parts = authHeader.split(' ');
@@ -120,10 +108,6 @@ export class JwtAuthGuard implements CanActivate {
         return token;
       }
     }
-
-    // Fall back to HTTP-only cookie
-    const cookieToken = request.cookies?.['ciq_access_token'];
-    if (cookieToken) return cookieToken as string;
 
     return null;
   }

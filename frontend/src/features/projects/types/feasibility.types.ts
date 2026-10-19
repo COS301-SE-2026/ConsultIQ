@@ -39,5 +39,7 @@ export interface FeasibilityVariantResultDto extends FeasibilityResultDto {
 }
 
 export interface FeasibilityResponseDto extends FeasibilityResultDto {
+  hardExclusionsActive: boolean;
+  hardExclusionFactors: string[];
   variants: FeasibilityVariantResultDto[];
 }

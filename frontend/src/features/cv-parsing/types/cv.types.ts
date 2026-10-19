@@ -96,6 +96,7 @@ export interface CvParsedDataEnvelope {
     securityFlags?: CvSecurityFlag[];
     fieldWarnings?: FieldWarning[];
     error?: string;
+    errorCode?: "WRONG_PARSING_METHOD";
 }
 
 export interface CvFileStatus{

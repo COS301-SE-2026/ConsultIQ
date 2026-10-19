@@ -52,6 +52,8 @@ export class FeasibilityController {
 
     const sanitized: FeasibilityCheckResponse = {
       ...sanitizedBase,
+      hardExclusionsActive: result.hardExclusionsActive,
+      hardExclusionFactors: result.hardExclusionFactors,
       variants: result.variants.map((v) => {
       const sanitizedVariant = {
         eligibleCount: this.sanitizer.sanitizeCount(v.eligibleCount),

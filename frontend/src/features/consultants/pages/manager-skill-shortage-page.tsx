@@ -8,7 +8,7 @@ import { useTeamSkillDemand } from "../../../hooks/useTeamSkillDemand";
 export default function ManagerSkillShortage() {
     const { data, isLoading, isError, refetch } = useTeamSkillDemand();
     return (
-        <div className="flex h-screen overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex h-dvh overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantManagerSidebarItems} />
 
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
@@ -25,15 +25,15 @@ export default function ManagerSkillShortage() {
 
                 <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-10">
                     <div className="mx-auto w-full max-w-6xl">
-                        <p className="text-3xl font-bold text-[#0B2F63]">Where to invest next</p>
-                        <p className="mt-2 text-base text-[#6B7280]">
+                        <p className="text-xl font-bold text-[#0B2F63] sm:text-3xl">Where to invest next</p>
+                        <p className="mt-2 text-sm text-[#6B7280] sm:text-base">
                             Skills your team is short on, ranked by how many projects they leave uncovered.
                         </p>
-                        <section className="mt-8">
+                        <section className="mt-6 sm:mt-8">
                             {isError && (
                                 <div
                                     role="alert"
-                                    className="mb-6 flex items-center justify-between gap-4 rounded-md border border-yellow-300 bg-yellow-50 px-5 py-3 text-sm text-yellow-900"
+                                    className="mb-6 flex flex-col items-start gap-3 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-5"
                                 >
                                     <span>
                                         {data ? "Couldn't refresh skill demand. Showing the last loaded data." : "Couldn't load skill demand."}

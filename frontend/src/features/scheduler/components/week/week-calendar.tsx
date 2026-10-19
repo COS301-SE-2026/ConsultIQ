@@ -46,6 +46,7 @@ import {
     isWeekendInstant,
     CORE_START_TIME,
 } from "../../utils/scheduler.utils";
+import { useMediaQuery } from "../../../../hooks/useMediaQuery";
 
 const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
@@ -147,7 +148,7 @@ export default function WeekCalendar({
         const nowMin = timeToMinutes(instantToLocalTime(new Date().toISOString(), week.timezone));
         return Math.ceil(nowMin / 15) * 15;
     }
-    
+
 
     function closeEntryForm() {
         setEntryForm(null);
@@ -176,7 +177,7 @@ export default function WeekCalendar({
     }
     // ─── Manual placement ───
 
-   function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save: Promise<boolean>) {
+    function applyOptimistic(patch: (w: WeekContainer) => WeekContainer, save: Promise<boolean>) {
         const previous = week;
         setWeek(patch(previous));
         save
@@ -312,22 +313,56 @@ export default function WeekCalendar({
         };
     }).filter((d) => showWeekend || !d.isWeekend);
 
+    const isPhone = useMediaQuery("(max-width: 639px)");
+    const isTablet = useMediaQuery("(max-width: 1023px)");
+    const daysPerView = isPhone ? 1 : isTablet ? 3 : days.length;
+
+    const [dayOffset, setDayOffset] = useState(() => Math.max(0, days.findIndex((d) => d.isToday)));
+    const maxOffset = Math.max(0, days.length - daysPerView);
+    const firstVisible = Math.min(dayOffset, maxOffset);
+    const visibleDays = days.slice(firstVisible, firstVisible + daysPerView);
+
     return (
         <div className="flex flex-col gap-2 w-full min-w-0 flex-1 min-h-0">
-            <button
-                type="button"
-                className="self-start px-3 py-1 text-sm rounded border border-slate-300"
-                onClick={() => setShowWeekend((s) => !s)}
-            >
-                {showWeekend ? "Hide weekend" : "Show weekend"}
-            </button>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                <button
+                    type="button"
+                    className="px-3 py-1 text-sm rounded border border-slate-300"
+                    onClick={() => setShowWeekend((s) => !s)}
+                >
+                    {showWeekend ? "Hide weekend" : "Show weekend"}
+                </button>
+
+                {/* Day picker: only when not all days fit */}
+                {daysPerView < days.length && (
+                    <div className="flex w-full gap-1 overflow-x-auto sm:w-auto">
+                        {days.map((d, i) => {
+                            const active = i >= firstVisible && i < firstVisible + daysPerView;
+                            return (
+                                <button
+                                    key={d.date}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() => setDayOffset(Math.min(i, maxOffset))}
+                                    className={`flex min-w-11 flex-1 shrink-0 flex-col items-center rounded-md border px-2 py-1 text-xs ${
+                                        active ? "border-primary bg-primary text-white" : "border-slate-200 bg-white text-slate-600"
+                                    } ${d.isToday && !active ? "font-bold text-primary" : ""}`}
+                                >
+                                    <span>{d.name.slice(0, 3)}</span>
+                                    <span className="text-sm font-semibold">{d.date.slice(8, 10)}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
             <div ref={scrollToCoreHours} className="isolate flex-1 min-h-0 overflow-auto border border-slate-200">
-                <div style={{ minWidth: 64 + days.length * 112 }}>
+                <div style={{ minWidth: 64 + visibleDays.length * 112 }}>
                     {/* Header row: sticks to the top while scrolling */}
                     <div className="sticky top-0 z-40 flex bg-white border-b border-slate-200">
                         <div className="w-16 flex-none sticky left-0 bg-white" />
-                        {days.map((d) => (
+                        {visibleDays.map((d) => (
                             <Dayheader
                                 key={d.date}
                                 dayOfWeek={d.name}
@@ -348,13 +383,13 @@ export default function WeekCalendar({
                     >
                         <div className="flex">
                             <TimeAxis />
-                            {days.map((d) => (
+                            {visibleDays.map((d) => (
                                 <DayColumn key={d.date} date={d.date} isHoliday={d.isHoliday} isWeekend={d.isWeekend} isPast={d.isPast}>
                                     {/* Project blocks: the background for each project's time */}
                                     {week.blocks
                                         .filter((b) => instantToLocalDate(b.start, week.timezone) === d.date)
                                         .map((b) => {
-                                                const project: BacklogProjectOption = projects.find((p) => p.id === b.projectId) ?? {
+                                            const project: BacklogProjectOption = projects.find((p) => p.id === b.projectId) ?? {
                                                 id: b.projectId,
                                                 label: b.projectId,
                                                 clientName: "",

@@ -31,7 +31,7 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       onClick={() => setIsOpen((open) => !open)}
       aria-label= {isOpen ? "Close navigation menu" : "Open navigation menu"}
       aria-expanded={isOpen}
-      className="fixed left-4 top-4 z-50 rounded-lg bg-[var(--color-primary)] p-3 text-white shadow-lg md:hidden"
+      className="fixed left-4 top-4 z-50 rounded-lg bg-[var(--color-primary)] p-3 text-white shadow-lg lg:hidden"
       >
       {isOpen ? <X size={22} /> : <Menu size={22} />}
     </button>
@@ -40,16 +40,16 @@ function Sidebar({ items, notificationCount = 0 }: SidebarProps) {
       <button type="button"
         aria-label="Close navigation menu"
         onClick={() => setIsOpen(false)}
-        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        className="fixed inset-0 z-30 bg-black/40 lg:hidden"
         />
     )}
     
-    <aside className={`fixed inset-y-0 left-0 z-40 flex h-screen w-[280px] flex-col overflow-hidden transition-transform duration-200 md:relative md:translate-x-0
-      ${isOpen ? "translate-x-0" : "-translate-x-full" } md:sticky md:top-0 md:translate-x-0`}
+    <aside className={`fixed inset-y-0 left-0 z-40 flex h-dvh w-[280px] shrink-0 flex-col overflow-hidden transition-transform duration-200
+      ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:sticky lg:top-0 lg:translate-x-0`}
       style={{backgroundColor: "var(--color-primary)",}}
     >
       {/* Logo Section */}
-      <div className="flex h-[72px] items-center justify-center md:h-[90px]"
+      <div className="flex h-[72px] items-center justify-center lg:h-[90px]"
         style={{ backgroundColor: "var(--color-surface)" }}
       >
         <img

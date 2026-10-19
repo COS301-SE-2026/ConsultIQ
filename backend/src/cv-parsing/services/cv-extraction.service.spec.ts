@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from './s3.service';
 import { CvOcrService } from './cv-ocr.service';
 import { ClaudeExtractionService } from './claude-extraction.service';
+import { isRuleBasedTemplateText } from './cv-extraction.service';
 import { CvParsingService } from './cv-parsing.service';
 import { CvFieldValidatorService } from './cv-field-validator.service';
 import { ParsedCvData } from '../types/parsed-cv.types';
@@ -121,6 +122,98 @@ describe('CvExtractionService', () => {
 
       expect(validator.validate).not.toHaveBeenCalled();
       expect(getFinalUpdate().data.extractionStatus).toBe('FAILED');
+    });
+  });
+
+  describe('wrong parsing method detection', () => {
+    it('short-circuits AI-assisted extraction and persists WRONG_PARSING_METHOD when the raw text matches the rule-based template', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'AI_ASSISTED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ocr.extractText.mockResolvedValue(
+        'Consultant CV Structured Template\nRule-based parsing mode — keep all headers...',
+      );
+
+      await service.processExtraction('cv-1');
+
+      expect(claudeExtraction.extractCvData).not.toHaveBeenCalled();
+      const finalUpdate = getFinalUpdate();
+      expect(finalUpdate.data.extractionStatus).toBe('FAILED');
+      expect(finalUpdate.data.parsedData.errorCode).toBe('WRONG_PARSING_METHOD');
+      expect(finalUpdate.data.parsedData.error).toMatch(/rule-based/i);
+    });
+
+    it('matches regardless of marker casing', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'AI_ASSISTED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ocr.extractText.mockResolvedValue('CONSULTIQ — RULE-BASED CV TEMPLATE. Only boxed fields are editable.');
+
+      await service.processExtraction('cv-1');
+
+      expect(claudeExtraction.extractCvData).not.toHaveBeenCalled();
+      expect(getFinalUpdate().data.parsedData.errorCode).toBe('WRONG_PARSING_METHOD');
+    });
+
+    it('proceeds to Claude extraction normally when the raw text does not match the template markers', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'AI_ASSISTED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ocr.extractText.mockResolvedValue('John Doe — Senior Software Engineer...');
+      claudeExtraction.extractCvData.mockResolvedValue({
+        success: true, data: sampleParsedData, securityFlags: [], processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(claudeExtraction.extractCvData).toHaveBeenCalledWith('John Doe — Senior Software Engineer...');
+      expect(getFinalUpdate().data.extractionStatus).toBe('REVIEW_REQUIRED');
+    });
+
+    it('does not flag a rule-based upload itself, since that path never calls the AI extractor', async () => {
+      givenRuleBasedCvFile();
+      ruleBasedParsing.parse.mockResolvedValue({ success: true, data: sampleParsedData, processingTimeMs: 10 });
+
+      await service.processExtraction('cv-1');
+
+      expect(ocr.extractText).not.toHaveBeenCalled();
+      expect(getFinalUpdate().data.parsedData.errorCode).toBeUndefined();
+    });
+
+    it('persists errorCode as undefined for an unrelated AI-assisted failure', async () => {
+      prisma.cvFile.findUniqueOrThrow.mockResolvedValue({
+        id: 'cv-1', s3Key: 'key', mimeType: 'application/pdf', parsingMethod: 'AI_ASSISTED',
+      });
+      s3.downloadFile.mockResolvedValue(Buffer.from(''));
+      ocr.extractText.mockResolvedValue('John Doe — Senior Software Engineer...');
+      claudeExtraction.extractCvData.mockResolvedValue({
+        success: false, error: 'insufficient credits', processingTimeMs: 10,
+      });
+
+      await service.processExtraction('cv-1');
+
+      expect(getFinalUpdate().data.parsedData.errorCode).toBeUndefined();
+    });
+  });
+
+  describe('isRuleBasedTemplateText', () => {
+    it('returns true when the text contains the rule-based template header marker', () => {
+      expect(isRuleBasedTemplateText('Consultant CV Structured Template\nRule-based parsing mode')).toBe(true);
+    });
+
+    it('returns true when the text contains the footer marker only', () => {
+      expect(isRuleBasedTemplateText('...ConsultIQ — rule-based CV template. Only boxed fields are editable.')).toBe(true);
+    });
+
+    it('returns false for an ordinary CV with no template markers', () => {
+      expect(isRuleBasedTemplateText('Jane Doe\nSoftware Engineer\n5 years experience in React')).toBe(false);
+    });
+
+    it('returns false for empty text', () => {
+      expect(isRuleBasedTemplateText('')).toBe(false);
     });
   });
 

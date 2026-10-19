@@ -185,7 +185,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
              {/* Work model */}
             <div className="flex flex-col gap-2">
               <label htmlFor="workModel" className="text-base font-semibold">
-                Work Model
+                Work Model <span className="text-red-500">*</span>
               </label>
 
               <select

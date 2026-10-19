@@ -89,7 +89,7 @@ function AnimatedRoutes() {
                 <Route path="/brand-colors-section" element={<PageTransition><BrandColorsSection /></PageTransition>} />
                 <Route path="/brand-changelog-section" element={<PageTransition><BrandChangeLogSection /></PageTransition>} />
                 <Route path="/brand-logo-section" element={<PageTransition><BrandLogoSection /></PageTransition>} />
-                
+
                 {/* ------------------------------------------- */}
                 {/* PROTECTED ROUTES                            */}
                 {/* ------------------------------------------- */}
@@ -101,11 +101,11 @@ function AnimatedRoutes() {
 
                 {/* Consultant */}
                 <Route element={<ProtectedRoute allowedRoles={[CONSULTANT]} />}>
-                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/consultant-projects" element={<PageTransition><ConsultantProjects /></PageTransition>} />
                     <Route path="/skill-growth" element={<PageTransition><GrowthCompass /></PageTransition>} />
                     <Route path="/schedule" element={<PageTransition><SchedulerPage /></PageTransition>} />
                     <Route path="/under-construction" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
+                    <Route path="/profile" element={<PageTransition><UnderConstructionPage /></PageTransition>} />
                 </Route>
 
                 {/* Consultant + Consultant Manager */}
@@ -116,6 +116,7 @@ function AnimatedRoutes() {
 
                 {/* Consultant Manager */}
                 <Route element={<ProtectedRoute allowedRoles={[CONSULTANT_MANAGER]} />}>
+                    <Route path="/profile-view" element={<PageTransition><ConsultantProfileViewPage /></PageTransition>} />
                     <Route path="/consultants-manager" element={<PageTransition><ConsultantsPage /></PageTransition>} />
                     <Route path="/cv-upload/:userId" element={<PageTransition><CVUpload /></PageTransition>} />
                     <Route path="/cv-extraction-review/:userId/:cvFileId" element={<PageTransition><CVExtractionReview /></PageTransition>} />

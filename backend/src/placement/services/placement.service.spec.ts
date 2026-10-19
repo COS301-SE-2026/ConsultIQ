@@ -377,12 +377,12 @@ describe('PlacementService', () => {
           id: 'project-1',
           teamSize: 10,
           endDate: new Date('2026-12-01'),
-          budget: 9_000,
+          budget: 9_000.129,
         },
         consultant: {
           id: 'consultant-1',
           capacity: 100,
-          costToCompany: 100,
+          costToCompany: 100.123,
           userId: 'consultant-user-1',
         },
       });
@@ -390,6 +390,12 @@ describe('PlacementService', () => {
       await expect(
         service.createPlacement('project-1', dto, 'user-123'),
       ).rejects.toThrow(ConflictException);
+
+      await expect(
+        service.createPlacement('project-1', dto, 'user-123'),
+      ).rejects.toThrow(
+        'Budget exceeded. The project budget is 9000.13. Current active placements cost 0.00. Adding this consultant costs an additional 9161.25, bringing the total projected cost to 9161.25.',
+      );
 
       expect(mockPrismaService.projectPlacement.create).not.toHaveBeenCalled();
       expect(mockPrismaService.consultant.update).not.toHaveBeenCalled();

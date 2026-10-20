@@ -102,7 +102,7 @@ describe('ValidatorService', () => {
 
             expect(result.ok).toBe(true);
             expect(result.data).toBe(week);
-            expect(result.issues.some((i: any) => i.code === 'UNPLACED_TASKS')).toBe(true);
+            expect((result.issues ?? []).some((i: any) => i.code === 'UNPLACED_TASKS')).toBe(true);
             expect(week.metadata).toEqual(expect.objectContaining({ scheduled: 0, alerts: [], warnings: [] }));
         });
 

@@ -43,12 +43,12 @@ export class AdvisoryService {
             ['EXTEND_BLOCK', () => this.buildExtendBlockCandidate(week, gap)],
         ];
 
-        const suggestions: Suggestion[] = [];
-        for (const [code, build] of candidates) {
-            if (dismissedCodes.has(code)) continue;
-            const suggestion = await build();
-            if (suggestion) suggestions.push(suggestion);
-        }
+        const results = await Promise.all(
+            candidates
+                .filter(([code]) => !dismissedCodes.has(code))
+                .map(([, build]) => build()),
+        );
+        const suggestions = results.filter((s): s is Suggestion => s !== null);
 
         // Fallback when there is nothing more specific to suggest
         if (suggestions.length === 0 && !dismissedCodes.has('REVIEW_CAPACITY')) {

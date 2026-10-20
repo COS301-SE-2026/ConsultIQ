@@ -11,6 +11,8 @@ describe('FeasibilityCacheService', () => {
   const response: FeasibilityCheckResponse = {
     eligibleCount: 5,
     topScore: 80,
+    hardExclusionsActive: false,
+    hardExclusionFactors: [],
     variants: [],
   };
 

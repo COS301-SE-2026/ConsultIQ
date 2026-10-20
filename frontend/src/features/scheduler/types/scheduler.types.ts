@@ -56,6 +56,9 @@ export const ReasonCode = {
     HOLIDAY_ENTRY_IMMUTABLE: "HOLIDAY_ENTRY_IMMUTABLE",
     DEADLINE_MISSED: "DEADLINE_MISSED",
     UNDERUTILISED: "UNDERUTILISED",
+    VERSION_CONFLICT: "VERSION_CONFLICT",
+    OVERLAPPING_EVENTS: "OVERLAPPING_EVENTS",
+    FRAGMENT_LIMIT_AT_RISK: "FRAGMENT_LIMIT_AT_RISK",
 } as const;
 
 export type ReasonCode = (typeof ReasonCode)[keyof typeof ReasonCode];
@@ -143,7 +146,7 @@ export type TaskPlacement = "placed" | "unplaced";
 
 export type Urgency = 1 | 2 | 3 | 4;
 
-export type Complexity = 1 | 2 | 3 ;
+export type Complexity = 1 | 2 | 3;
 
 export const URGENCY_LABELS: Record<Urgency, string> = {
     1: "Low",
@@ -153,7 +156,7 @@ export const URGENCY_LABELS: Record<Urgency, string> = {
 
 }
 
-export const COMPLEXITY_LABELS: Record<Complexity,string>={
+export const COMPLEXITY_LABELS: Record<Complexity, string> = {
     1: "Low",
     2: "Medium",
     3: "High",
@@ -175,6 +178,8 @@ export interface Task {
     carriedOver?: boolean;
     placement: TaskPlacement;
     unplacedReason?: ReasonCode;
+    unplacedNeededMinutes?: number;
+    unplacedAvailableMinutes?: number;
 }
 
 export interface NewTask {
@@ -287,26 +292,26 @@ export interface WeekContainer {
 }
 
 export type Change =
-| {type: "create_task"; task: NewTask}
-| {type: "Update_task"; taskId: string; patch: Partial<Task>}
-| {type: "delete_task"; taskId: string}
-| { type: 'set_status'; taskId: string; status: TaskStatus}
-| {type: 'toggle_subtask'; taskId: string; subtaskId: string }
-| {type: 'split_task'; taskId: string; atMinutes: Minutes}
-| {type: 'move_slot'; slotId: string; to: Interval}
-| {type: 'move_block'; blockId: string; to: Interval}
-| {type: 'pin_block'; blockId: string; pinned: boolean}
-| {type: 'resize_block'; blockId: string; to: Interval}
-| {type: 'calendar_upsert'; entry: CalendarEntry}
-| {type: 'calendar_remove'; entryId: string}
-| {type: 'set_project_hours'; projectId: string; minutes: Minutes}
-| {type: 'rollover'; taskId: string; fromSlotId: string}
-| {type: 'mark_incomplete'; date: LocalDate}
-| {type: 'pull_forward'; taskIds: string[]}
-| {type: 'place_unplaced'; taskIds: string[]}
-| {type: 'accept_deadline_miss'; taskId: string}
-| {type: 'defer_to_next_week'; taskIds: string[]}
-| {type: 'replan'; window: Interval};
+    | { type: "create_task"; task: NewTask }
+    | { type: "Update_task"; taskId: string; patch: Partial<Task> }
+    | { type: "delete_task"; taskId: string }
+    | { type: 'set_status'; taskId: string; status: TaskStatus }
+    | { type: 'toggle_subtask'; taskId: string; subtaskId: string }
+    | { type: 'split_task'; taskId: string; atMinutes: Minutes }
+    | { type: 'move_slot'; slotId: string; to: Interval }
+    | { type: 'move_block'; blockId: string; to: Interval }
+    | { type: 'pin_block'; blockId: string; pinned: boolean }
+    | { type: 'resize_block'; blockId: string; to: Interval }
+    | { type: 'calendar_upsert'; entry: CalendarEntry }
+    | { type: 'calendar_remove'; entryId: string }
+    | { type: 'set_project_hours'; projectId: string; minutes: Minutes }
+    | { type: 'rollover'; taskId: string; fromSlotId: string }
+    | { type: 'mark_incomplete'; date: LocalDate }
+    | { type: 'pull_forward'; taskIds: string[] }
+    | { type: 'place_unplaced'; taskIds: string[] }
+    | { type: 'accept_deadline_miss'; taskId: string }
+    | { type: 'defer_to_next_week'; taskIds: string[] }
+    | { type: 'replan'; window: Interval };
 
 export type ChangeType = Change["type"];
 
@@ -315,7 +320,7 @@ export interface PlaceReport {
     unplaced: UnplacedTaskSummary[];
 }
 
-export interface VersionedRequest{
+export interface VersionedRequest {
     expectedVersion: number;
 }
 
@@ -325,164 +330,167 @@ export type CreateTaskDto = NewTask & VersionedRequest;
 
 export type UpdateTaskDto = Partial<Task> & VersionedRequest
 
-export interface SetTaskStatusDto extends VersionedRequest{
+export interface SetTaskStatusDto extends VersionedRequest {
     status: TaskStatus;
 }
 
-export type ToggleSubtaskDto= VersionedRequest;
+export type ToggleSubtaskDto = VersionedRequest;
 
 
-export interface SplitTaskDto extends VersionedRequest{
+export interface SplitTaskDto extends VersionedRequest {
     atMinutes: Minutes;
 }
 
 export type AcceptDeadlineMissDto = VersionedRequest;
 
 
-export interface DeferToNextWeekDto extends VersionedRequest{
+export interface DeferToNextWeekDto extends VersionedRequest {
     taskIds: string[];
 
 }
 
-export interface PlaceUnplacedDto extends VersionedRequest{
+export interface PlaceUnplacedDto extends VersionedRequest {
     taskIds: string[];
 }
 
-export interface PullForwardDto extends VersionedRequest{
+export interface PullForwardDto extends VersionedRequest {
     taskIds: string[];
 }
 
 export type CalendarEntryDto = Omit<CalendarEntry, 'id'> &
-  VersionedRequest & {
-    id?: string;
-    confirmedOverride?: boolean;
-  };
+    VersionedRequest & {
+        id?: string;
+        confirmedOverride?: boolean;
+    };
 
-export type RemovedCalendarEntryDto= VersionedRequest;
+export type RemovedCalendarEntryDto = VersionedRequest;
 
 export interface MoveSlotDto extends VersionedRequest {
-  slotId: string;
-  to: Interval;
-  confirmedOverride?: boolean;
+    slotId: string;
+    to: Interval;
+    confirmedOverride?: boolean;
 }
 
-export interface MoveBlockDto extends VersionedRequest{
+export interface MoveBlockDto extends VersionedRequest {
     blockId: string;
     to: Interval;
-    confirmedOverride? : boolean;
+    confirmedOverride?: boolean;
 }
 
-export interface ResizeBlockDto extends VersionedRequest{
+export interface ResizeBlockDto extends VersionedRequest {
     blockId: string;
     to: Interval;
-    confirmedOverride? : boolean;
+    confirmedOverride?: boolean;
 }
 
-export interface PinBlockDto extends VersionedRequest{
+export interface PinBlockDto extends VersionedRequest {
     blockId: string;
     pinned: boolean;
 }
 
 
-export interface DryRunDto{
+export interface DryRunDto {
     change: Change;
 }
 
 export interface Project {
-  id: string;
-  projectName: string;
-  clientName: string;
-  description: string;
-  teamSize: number;
-  requiredAllocationPercentage: number;
-  clientBillingBudget: number;
-  startDate: string;
-  endDate?: string;
-  status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "COMPLETED";
-  city: string;
-  province: string;
-  gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
+    id: string;
+    projectName: string;
+    clientName: string;
+    description: string;
+    teamSize: number;
+    requiredAllocationPercentage: number;
+    clientBillingBudget: number;
+    startDate: string;
+    endDate?: string;
+    status: "OPEN" | "IN_PROGRESS" | "CLOSED" | "COMPLETED";
+    city: string;
+    province: string;
+    gapSeverity?: "COVERED" | "AT_RISK" | "CRITICAL";
 }
 
 export interface SchedulerTaskResponse extends Omit<Task, "slots" | "subtasks"> {
-  weekId: string;
-  createdAt: Instant;
-  updatedAt: Instant;
-  deadlineMissAccepted?: boolean;
-  subtasks?: Array<{ id: string; done: boolean; durationMinutes?: Minutes;}>;
-}
-
-export interface SchedulerSlotResponse extends Slot {
-  weekId: string;
-  tags?: string[];
-}
-
-export interface SchedulerProjectBlockResponse
-  extends Omit<ProjectBlock, "placementId"> {
-  weekId: string;
-  placementId?: string;
-  userSized: boolean;
-}
-
-export interface SchedulerCalendarEntryResponse {
-  id: string;
-  weekId: string;
-  type: "meeting" | "training" | "travel" | "personal" | "leave" | "ad-hoc";
-  start: Instant;
-  end: Instant;
-  tags: string[];
-  origin: "user" | "feed" | "system" | "public-holiday";
-}
-
-export interface SchedulerWeekMetadataResponse {
-  available: Minutes;
-  allocated: Minutes;
-  scheduled: Minutes;
-  buffer: Minutes;
-  utilization: number;
-  softCapBreached: boolean;
-  hardCapBreached: boolean;
-  hasOutOfHours: boolean;
-  hasWeekend: boolean;
-  hasContainerOverflow: boolean;
-}
-
-export interface SchedulerWeekResponse extends Omit<WeekContainer, "entries" | "metadata" | "tasks" | "blocks"> {
-  blocks: Array<Omit<ProjectBlock, "placementId"> & { placementId?: string; weekId: string; userSized: boolean }>;
-  tasks: Array<Omit<Task, "slots" | "subtasks"> & {
     weekId: string;
     createdAt: Instant;
     updatedAt: Instant;
-    subtasks: Array<{ id: string; taskId: string; title: string; estimate: number; done: boolean }>;
-  }>;
-  slots: Array<Slot & { weekId: string; tags?: string[] }>;
-  calendarEntries: Array<{
-    id: string; weekId: string; type: string; start: Instant; end: Instant;
-    tags: string[]; origin: string;
-  }>;
-  metadata: {
-    available: Minutes; allocated: Minutes; scheduled: Minutes; buffer: Minutes;
-    utilization: number; softCapBreached: boolean; hardCapBreached: boolean;
-    hasOutOfHours: boolean; hasWeekend: boolean; hasContainerOverflow: boolean;
-  };
-  lastCommittedAt: Instant;
-  sourceOfLastChange: string;
-  createdAt: Instant;
-  updatedAt: Instant;
+    deadlineMissAccepted?: boolean;
+    subtasks?: Array<{ id: string; done: boolean; durationMinutes?: Minutes; }>;
+}
+
+export interface SchedulerSlotResponse extends Slot {
+    weekId: string;
+    tags?: string[];
+}
+
+export interface SchedulerProjectBlockResponse
+    extends Omit<ProjectBlock, "placementId"> {
+    weekId: string;
+    placementId?: string;
+    userSized: boolean;
+}
+
+export interface SchedulerCalendarEntryResponse {
+    id: string;
+    weekId: string;
+    type: "meeting" | "training" | "travel" | "personal" | "leave" | "ad-hoc";
+    start: Instant;
+    end: Instant;
+    tags: string[];
+    origin: "user" | "feed" | "system" | "public-holiday";
+}
+
+export interface SchedulerWeekMetadataResponse {
+    available: Minutes;
+    allocated: Minutes;
+    scheduled: Minutes;
+    buffer: Minutes;
+    utilization: number;
+    softCapBreached: boolean;
+    hardCapBreached: boolean;
+    hasOutOfHours: boolean;
+    hasWeekend: boolean;
+    hasContainerOverflow: boolean;
+}
+
+export interface SchedulerWeekResponse extends Omit<WeekContainer, "entries" | "metadata" | "tasks" | "blocks"> {
+    blocks: Array<Omit<ProjectBlock, "placementId"> & { placementId?: string; weekId: string; userSized: boolean }>;
+    tasks: Array<Omit<Task, "slots" | "subtasks"> & {
+        weekId: string;
+        createdAt: Instant;
+        updatedAt: Instant;
+        subtasks: Array<{ id: string; taskId: string; title: string; estimate: number; done: boolean }>;
+    }>;
+    slots: Array<Slot & { weekId: string; tags?: string[] }>;
+    calendarEntries: Array<{
+        id: string; weekId: string; type: string; start: Instant; end: Instant;
+        tags: string[]; origin: string;
+    }>;
+    metadata: {
+        available: Minutes; allocated: Minutes; scheduled: Minutes; buffer: Minutes;
+        utilization: number; softCapBreached: boolean; hardCapBreached: boolean;
+        hasOutOfHours: boolean; hasWeekend: boolean; hasContainerOverflow: boolean;
+    };
+    lastCommittedAt: Instant;
+    sourceOfLastChange: string;
+    createdAt: Instant;
+    updatedAt: Instant;
 }
 
 export interface SchedulerCommitIssue {
-  level: IssueLevel;
-  code: string;
-  message: string;
-  entityIds?: string[];
-  persistent?: boolean;
+    level: IssueLevel;
+    code: string;
+    message: string;
+    entityIds?: string[];
+    persistent?: boolean;
 }
 
 export interface SchedulerCommitResult {
-  ok: boolean;
-  value: SchedulerWeekResponse;
-  violations: Array<{ level: IssueLevel; code: string; message: string }>;
-  warnings: Array<{ level: IssueLevel; code: string; message: string }>;
-  infos: Array<{ level: IssueLevel; code: string; message: string }>;
+    ok: boolean;
+    value: SchedulerWeekResponse;
+    //   violations: Array<{ level: IssueLevel; code: string; message: string }>;
+    //   warnings: Array<{ level: IssueLevel; code: string; message: string }>;
+    //   infos: Array<{ level: IssueLevel; code: string; message: string }>;
+    violations: Issue[];
+    warnings: Issue[];
+    infos: Issue[];
 }

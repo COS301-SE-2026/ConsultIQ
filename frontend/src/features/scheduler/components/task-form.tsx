@@ -57,8 +57,9 @@ function createId(): string {
 }
 
 function toDateInput(value?: string): string {
-    return value ? value.slice(0, 10) : "";
+    return value ? new Date(value).toLocaleDateString("en-CA") : "";
 }
+
 
 function todayDateInput(): string {
     const now = new Date();
@@ -67,7 +68,7 @@ function todayDateInput(): string {
 }
 
 function toInstant(value: string): string | undefined {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+    return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T23:59:59`).toISOString() : undefined;
 }
 
 export default function TaskForm(props: TaskFormProps) {

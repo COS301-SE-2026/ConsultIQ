@@ -9,38 +9,39 @@ interface SchedulerAlerBannerProps {
     readonly onAction: (issue: Issue, action: AlertActionKind) => void;
     readonly showVersionConflict?: boolean;
     readonly onDismissVersionConflict?: () => void;
-} 
+}
 
 const ACTION_LABEL: Record<AlertActionKind, string> = {
-  dismiss: "Dismiss",
-  openBacklog: "Open backlog",
-  openDeadlineDialog: "Resolve deadline",
-  openSplitDialog: "Split task",
-  resolveContainer: "Review allocation",
-  viewSuggestions: "View suggestions"
+    dismiss: "Dismiss",
+    openBacklog: "Open backlog",
+    openDeadlineDialog: "Resolve deadline",
+    openSplitDialog: "Split task",
+    resolveContainer: "Review allocation",
+    viewSuggestions: "View suggestions"
 };
 
+
 function issueKey(issue: Issue): string {
-  return `${issue.code}:${issue.entityIds?.join(",") ?? ""}`;
+    return issue.code;
 }
 
-function SeverityIcon({ severity } : { severity: Issue["level"]}) {
-  if (severity === "violation") return <AlertOctagon size={18} className="text-red-600" />;
-  if (severity === "warning") return <AlertTriangle size={18} className="text-amber-600" />;
-  return <Info size={18} className="text-blue-600" />;
+function SeverityIcon({ severity }: { severity: Issue["level"] }) {
+    if (severity === "violation") return <AlertOctagon size={18} className="text-red-600" />;
+    if (severity === "warning") return <AlertTriangle size={18} className="text-amber-600" />;
+    return <Info size={18} className="text-blue-600" />;
 }
 
-function AlertToast({ issue, onDismiss, onAction,}: {
-  readonly issue: Issue;
-  readonly onDismiss: () => void;
-  readonly onAction: (action: AlertActionKind) => void;
+function AlertToast({ issue, onDismiss, onAction, }: {
+    readonly issue: Issue;
+    readonly onDismiss: () => void;
+    readonly onAction: (action: AlertActionKind) => void;
 }) {
-    
-    const entry = reasonCodeRegistry[issue.code];
-    const bg =issue.level === "violation" ? "bg-red-50 border-red-200" : issue.level === "warning" ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200";
+
+    const entry = reasonCodeRegistry[issue.code] ?? { title: issue.code, message: issue.message, actions: ["dismiss"] as AlertActionKind[] };
+    const bg = issue.level === "violation" ? "bg-red-50 border-red-200" : issue.level === "warning" ? "bg-amber-50 border-amber-200" : "bg-blue-50 border-blue-200";
 
     return (
-        <div className = {`flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm ${bg}`} >
+        <div className={`flex items-start gap-3 rounded-lg border px-4 py-3 shadow-sm ${bg}`} >
             <SeverityIcon severity={issue.level} />
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-900">{entry.title}</p>
@@ -60,20 +61,23 @@ function AlertToast({ issue, onDismiss, onAction,}: {
                 )}
             </div>
 
-            <button type="button" aria-label="Dismiss alert"
-                onClick={onDismiss} 
-                className="shrink-0 text-slate-400 hover:text-slate-600"
-            >
-                <X size={16} />
-            </button>
+            {entry.actions.includes("dismiss") && !issue.persistent && (
+                <button type="button" aria-label="Dismiss alert"
+                    onClick={onDismiss}
+                    className="shrink-0 text-slate-400 hover:text-slate-600"
+                >
+                    <X size={16} />
+                </button>
+            )}
+
         </div>
     )
 }
 
-export default function SchedulerAlertBanner({ issues,   dismissedKeys, onDismiss, onAction, showVersionConflict, onDismissVersionConflict } : SchedulerAlerBannerProps) {
+export default function SchedulerAlertBanner({ issues, dismissedKeys, onDismiss, onAction, showVersionConflict, onDismissVersionConflict }: SchedulerAlerBannerProps) {
     const visible = issues.filter((issue) => !dismissedKeys.has(issueKey(issue)));
 
-    if(visible.length == 0 && !showVersionConflict) return null;
+    if (visible.length == 0 && !showVersionConflict) return null;
 
     return (
         <div className="space-y-2">
@@ -81,7 +85,7 @@ export default function SchedulerAlertBanner({ issues,   dismissedKeys, onDismis
                 <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 shadow-sm">
                     <RefreshCw size={18} className="text-blue-600" />
                     <p className="flex-1 text-sm font-medium text-blue-900"> Your schedule changed elsewhere — refreshed. </p>
-                
+
                     <button type="button" aria-label="Dismiss"
                         onClick={onDismissVersionConflict}
                         className="shrink-0 text-blue-400 hover:text-blue-600"
@@ -94,11 +98,11 @@ export default function SchedulerAlertBanner({ issues,   dismissedKeys, onDismis
             {visible.map((issue) => {
                 const key = issueKey(issue);
                 return (
-                    <AlertToast 
-                    key={key}
-                    issue={issue}
-                    onDismiss={() => onDismiss(key)}
-                    onAction={(action) => onAction(issue, action)}
+                    <AlertToast
+                        key={key}
+                        issue={issue}
+                        onDismiss={() => onDismiss(key)}
+                        onAction={(action) => onAction(issue, action)}
                     />
                 );
             })}

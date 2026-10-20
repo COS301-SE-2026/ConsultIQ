@@ -286,7 +286,12 @@ export class PlacerService {
         const neededMinutes = this.remainingMinutes(task, stickySlots);
 
         const gaps = this.freeGaps(week, task.projectId, window);
-        const availableMinutes = gaps.reduce((sum, g) => sum + this.intervalMinutes(g), 0);
+        // Only time before the deadline counts, unless a late finish was accepted
+        const deadline = task.deadlineMissAccepted ? undefined : (task.deadline as Instant | undefined);
+        const availableMinutes = gaps.reduce(
+            (sum, g) => sum + Math.max(0, this.intervalMinutes(this.clipToDeadline(g, deadline))),
+            0,
+        );
 
         let reason: UnplacedReason = 'CONTAINER_FULL';
 
@@ -804,7 +809,12 @@ export class PlacerService {
             const batchedTaskIds = new Set(batched.flatMap(s => s.taskIds || []));
             batchedTaskIds.forEach(id => {
                 const t = week.tasks.find(x => x.id === id);
-                if (t) t.placement = 'placed';
+                if (t) {
+                    t.placement = 'placed';
+                    t.unplacedReason = undefined;
+                    t.unplacedNeededMinutes = undefined;
+                    t.unplacedAvailableMinutes = undefined;
+                }
                 report.placed.push(id);
             });
         }
@@ -824,10 +834,14 @@ export class PlacerService {
                 week.slots.push(...res.data);
                 task.placement = 'placed';
                 task.unplacedReason = undefined;
+                task.unplacedNeededMinutes = undefined;
+                task.unplacedAvailableMinutes = undefined;
                 report.placed.push(task.id);
             } else {
                 task.placement = 'unplaced';
                 task.unplacedReason = res.summary.reason;
+                task.unplacedNeededMinutes = res.summary.neededMinutes;
+                task.unplacedAvailableMinutes = res.summary.availableMinutes;
                 report.unplaced.push({ taskId: task.id, summary: res.summary });
             }
         }

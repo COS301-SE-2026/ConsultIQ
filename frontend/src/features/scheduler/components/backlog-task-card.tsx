@@ -1,7 +1,7 @@
 import type { DragEvent } from "react";
 import { AlertTriangle, Calendar, GripVertical, Zap, X } from "lucide-react";
 import type { DeferToNextWeekDto, Task, UnplacedTaskSummary } from "../types/scheduler.types";
-import { ReasonCode as Reason } from "../types/scheduler.types";
+import { ReasonCode as Reason, SCHEDULER_RULES } from "../types/scheduler.types";
 import { ComplexityBars} from "./primitives";
 import { formatDuration, formatEstimateRange } from "./scheduler-utils"
 import { REASON_MESSAGE } from "../utils/scheduler.utils"
@@ -14,6 +14,7 @@ interface BacklogTaskCardProps {
     readonly expectedVersion: number;
     readonly onSchedule: (taskId: string) => void | Promise<void>;
     readonly onResolveDeadline: (task: Task) => void;
+    readonly onSplit: (task: Task) => void;
     readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
     readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
     readonly onDismiss: (taskId: string) => void | Promise<void>;
@@ -65,15 +66,17 @@ function DeadlineLabel({ deadline, now } : { readonly deadline?: string; readonl
 }
 
 
-function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, expectedVersion }: {
+function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, expectedVersion, onSplit }: {
     readonly task: Task;
     readonly summary: Pick<UnplacedTaskSummary, "reason"> & Partial<UnplacedTaskSummary>;
     readonly onResolveDeadline: (task: Task) => void;
     readonly onAcceptDeadlineMiss: (taskId: string) => void | Promise<void>;
     readonly onDeferToNextWeek: (taskId: string, dto: DeferToNextWeekDto) => void | Promise<void>;
     readonly expectedVersion: number;
+    readonly onSplit: (task: Task) => void;
 }) {
     const isDeadlineIssue = summary.reason === Reason.DEADLINE_INFEASIBLE;
+    const isDaySpanIssue = summary.reason === Reason.DAY_SPAN_LIMIT;
     const message = REASON_MESSAGE[summary.reason] ?? summary.reason;
     const buttonClass = "rounded border border-amber-300 bg-white px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100";
 
@@ -85,7 +88,9 @@ function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss
             </p>
             {summary.neededMinutes !== undefined && summary.availableMinutes !== undefined && (
                 <p className="mt-1 text-xs text-amber-700">
-                    Needs {formatDuration(summary.neededMinutes)}, only {formatDuration(summary.availableMinutes)} available.
+                    {isDaySpanIssue
+                        ? `Needs ${formatDuration(summary.neededMinutes)}, more than fits in ${SCHEDULER_RULES.maxDaysSpanned} working days.`
+                        : `Needs ${formatDuration(summary.neededMinutes)}, only ${formatDuration(summary.availableMinutes)} available.`}
                 </p>
             )}
             <div className="mt-2 flex flex-wrap gap-2">
@@ -98,13 +103,20 @@ function UnplacedReason({ task, summary, onResolveDeadline, onAcceptDeadlineMiss
                             Accept late finish
                         </button>
                     </>
-                ) : (
-                    <button type="button" className={buttonClass}
-                        onClick={() => void onDeferToNextWeek(task.id, { taskIds: [task.id], expectedVersion })}
-                    >
-                        Push to next week
-                    </button>
-                )}
+                   ) : (
+                       <>
+                           {isDaySpanIssue && (
+                               <button type="button" className={buttonClass} onClick={() => onSplit(task)}>
+                                   Split task
+                               </button>
+                           )}
+                           <button type="button" className={buttonClass}
+                               onClick={() => void onDeferToNextWeek(task.id, { taskIds: [task.id], expectedVersion })}
+                           >
+                               Push to next week
+                           </button>
+                       </>
+                   )}
             </div>
         </div>
     );
@@ -117,7 +129,7 @@ function stopAndRun(action: () => void) {
 }
 
 export default function BacklogTaskCard({task, projectLabel, projectColor, unplacedSummary, now,
-  expectedVersion, onSchedule, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, onDismiss, onDragStart}: BacklogTaskCardProps) {
+  expectedVersion, onSchedule, onResolveDeadline, onAcceptDeadlineMiss, onDeferToNextWeek, onDismiss, onDragStart, onSplit}: BacklogTaskCardProps) {
 
     return (
         <article className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm" style={{borderLeftWidth: 4, borderLeftColor: projectColor}}>
@@ -146,6 +158,7 @@ export default function BacklogTaskCard({task, projectLabel, projectColor, unpla
                 <UnplacedReason 
                     task={task}
                     summary={unplacedSummary}
+                    onSplit={onSplit}
                     onResolveDeadline={onResolveDeadline}
                     onAcceptDeadlineMiss={onAcceptDeadlineMiss}
                     onDeferToNextWeek={onDeferToNextWeek}

@@ -1,4 +1,4 @@
-import { apiClient } from "../../../lib/api-client";
+import { ApiError, apiClient } from "../../../lib/api-client";
 import type { ConsultantProfileDto } from "../../../hooks/useFetchConsultantsProfiles";
 import {type SkillGrowthResponse, type TeamSkillDemandResponse} from "../types/consultant.types";
 
@@ -192,6 +192,18 @@ export const getConsultantProfileByUserId = async (userId: string): Promise<Cons
   return await apiClient.get<ConsultantProfileDto>(`/consultants/user/${userId}`);
 
 }
+
+export const getConsultantProfileRoute = async (userId: string): Promise<"/profile" | "/under-construction"> => {
+  try {
+    await getConsultantProfileByUserId(userId);
+    return "/profile";
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return "/under-construction";
+    }
+    throw error;
+  }
+};
 
 export const getSkillGrowth = async (): Promise<SkillGrowthResponse> => {
   return await apiClient.get<SkillGrowthResponse>("/consultants/me/skill-growth");

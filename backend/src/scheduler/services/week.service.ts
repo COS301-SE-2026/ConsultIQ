@@ -8,6 +8,7 @@ import { ValidatorService } from './validator.service';
 import { randomUUID } from 'node:crypto';
 
 
+
 import {
     WeekContainer,
     Change,
@@ -23,6 +24,7 @@ import {
     PrismaBlock,
     CalendarEntryDto,
     PublicHoliday,
+    WeekMetadata,
 } from '../dto/scheduler.dto';
 
 export interface CommitResult {
@@ -53,7 +55,8 @@ export class WeekService {
             blocks: true,
             tasks: { include: { subtasks: true } },
             calendarEntries: true,
-            slots: { include: { slotTasks: true } }
+            slots: { include: { slotTasks: true } },
+            dismissals: true
         };
 
         const existingWeek = await this.prisma.schedulerWeek.findUnique({
@@ -123,9 +126,15 @@ export class WeekService {
             holidays,
             slots,
             metadata: {} as WeekContainer['metadata'],
+            dismissedCodes: dbWeek.dismissals.map((d) => d.code),
         };
 
-        week.metadata = this.validatorService.summarize(week);
+        // week.metadata = this.validatorService.summarize(week);
+        // return week;
+
+        // Validate a copy: validate() writes metadata onto the week it checks
+        const { issues = [] } = this.validatorService.validate(structuredClone(week), { bumpedEntityIds: [], allocations: [] });
+        week.metadata = this.buildMetadata(week, issues);
         return week;
     }
 
@@ -339,8 +348,11 @@ export class WeekService {
         const safeIssues = validation.issues ?? [];
 
         const violations = safeIssues.filter((i) => i.level === 'violation');
-        const warnings = safeIssues.filter((i) => i.level === 'warning');
-        const infos = safeIssues.filter((i) => i.level === 'info');
+        // const warnings = safeIssues.filter((i) => i.level === 'warning');
+        // const infos = safeIssues.filter((i) => i.level === 'info');
+        const dismissed = new Set(week.dismissedCodes ?? []);
+        const warnings = safeIssues.filter((i) => i.level === 'warning' && !dismissed.has(i.code));
+        const infos = safeIssues.filter((i) => i.level === 'info' && !dismissed.has(i.code));
 
         if (violations.length > 0 || options?.dryRun) {
             return { ok: violations.length === 0, value: clone, violations, warnings, infos };
@@ -349,7 +361,8 @@ export class WeekService {
         try {
             await this.persistWeek(clone, expectedVersion);
             clone.version = (expectedVersion ?? clone.version) + 1;
-            clone.metadata = this.validatorService.summarize(clone);
+            //clone.metadata = this.validatorService.summarize(clone);
+            clone.metadata = this.buildMetadata(clone, safeIssues);
 
             return { ok: true, value: clone, violations: [], warnings, infos };
         } catch (error: unknown) {
@@ -510,6 +523,8 @@ export class WeekService {
         });
         after.placement = 'unplaced';
         after.unplacedReason = undefined;
+        after.unplacedNeededMinutes = undefined;
+        after.unplacedAvailableMinutes = undefined;
     }
 
     private applyDeleteTask(week: WeekContainer, taskId: string): void {
@@ -592,6 +607,8 @@ export class WeekService {
         original.subtasks = firstHalfSubtasks as Task["subtasks"];
         original.placement = "unplaced";
         original.unplacedReason = undefined;
+        original.unplacedNeededMinutes = undefined;
+        original.unplacedAvailableMinutes = undefined;
 
         const secondHalf: Task = {
             ...original,
@@ -601,6 +618,8 @@ export class WeekService {
             status: "Ready",
             placement: "unplaced",
             unplacedReason: undefined,
+            unplacedNeededMinutes: undefined,
+            unplacedAvailableMinutes: undefined,
             subtasks: secondHalfSubtasks as Task["subtasks"],
         };
 
@@ -611,6 +630,8 @@ export class WeekService {
         const task = week.tasks.find(t => t.id === taskId);
         if (task) {
             task.unplacedReason = undefined;
+            task.unplacedNeededMinutes = undefined;
+            task.unplacedAvailableMinutes = undefined;
             task.deadlineMissAccepted = true;
         }
     }
@@ -696,6 +717,18 @@ export class WeekService {
         }
     }
 
+    // Metadata numbers plus the week's issues, leaving out dismissed advisories
+    private buildMetadata(week: WeekContainer, issues: Issue[]): WeekMetadata {
+        const dismissed = new Set(week.dismissedCodes ?? []);
+        const visible = issues.filter((i) => i.level === 'violation' || !dismissed.has(i.code));
+
+        return {
+            ...this.validatorService.summarize(week),
+            alerts: visible.filter((i) => i.level === 'violation'),
+            warnings: visible.filter((i) => i.level !== 'violation'),
+        };
+    }
+
     private getBlock(week: WeekContainer, blockId: string) {
         const block = week.blocks.find((b) => b.id === blockId);
         if (!block) throw new NotFoundException('Project block ' + blockId + ' not found');
@@ -771,6 +804,8 @@ export class WeekService {
                 status: t.status,
                 placement: t.placement,
                 unplacedReason: t.unplacedReason,
+                unplacedNeededMinutes: t.unplacedNeededMinutes ?? null,
+                unplacedAvailableMinutes: t.unplacedAvailableMinutes ?? null,
                 carriedOver: t.carriedOver ?? false,
                 deadlineMissAccepted: t.deadlineMissAccepted ?? false,
                 deadline: t.deadline ? new Date(t.deadline) : null,

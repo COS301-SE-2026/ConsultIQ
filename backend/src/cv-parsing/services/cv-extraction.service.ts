@@ -13,6 +13,16 @@ import { Prisma, AuditAction } from '@prisma/client';
 import { AuditLogService } from '../../audit-log/services/audit-log.service';
 import { S3Service } from './s3.service';
 
+const RULE_BASED_TEMPLATE_MARKERS = [
+  'rule-based cv template',
+  'rule-based parsing mode',
+];
+
+export function isRuleBasedTemplateText(rawText: string): boolean {
+  const normalised = rawText.toLowerCase();
+  return RULE_BASED_TEMPLATE_MARKERS.some((marker) => normalised.includes(marker));
+}
+
 @Injectable()
 export class CvExtractionService {
   private readonly logger = new Logger(CvExtractionService.name);
@@ -85,6 +95,20 @@ export class CvExtractionService {
     mimeType: string,
   ): Promise<CvParsingResult> {
     const rawText = await this.ocr.extractText(fileBuffer, mimeType);
+
+    if (isRuleBasedTemplateText(rawText)) {
+      return {
+        success: false,
+        error: 
+        'This CV uses the ConsultIQ structured (rule-based) template. To avoid sending ' +
+          'personal data to the AI model for a document that was designed for local, rule-based ' +
+          'extraction, this file was not processed. Please discard this upload and re-upload the ' +
+          'same file using Rule-Based parsing instead.',
+        errorCode: 'WRONG_PARSING_METHOD',
+        processingTimeMs: 0,
+      };
+    }
+
     return this.claudeExtraction.extractCvData(rawText);
   }
 
@@ -106,7 +130,7 @@ export class CvExtractionService {
               fieldWarnings: result.fieldWarnings ?? [],
               securityFlags: result.securityFlags ?? [],
             } as unknown as Prisma.InputJsonValue)
-          : { error: result.error },
+          : { error: result.error, errorCode: result.errorCode } as unknown as Prisma.InputJsonValue,
       },
     });
 

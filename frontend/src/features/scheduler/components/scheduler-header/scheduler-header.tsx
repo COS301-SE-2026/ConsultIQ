@@ -25,7 +25,7 @@ interface WeekNavigatorProps {
 function WeekNavigator({ weekStart, onPrevWeek, onNextWeek }: WeekNavigatorProps) {
     const arrowClass = "w-8 h-8 p-0 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
     return (
-        <div className="flex items-center gap-6">
+        <div className="flex items-center  gap-3 sm:gap-6">
             <div className="flex flex-col">
                 <h1 className="font-bold" style={{ color: "#002D62", fontSize: "1.125rem", lineHeight: 1.3 }}>My week</h1>
                 <span className="text-sm font-medium text-slate-700 whitespace-nowrap">{formatRange(weekStart)}</span>
@@ -60,7 +60,7 @@ function HoursSummary({ metadata }: { readonly metadata: WeekMetadata }) {
     ];
 
     return (
-        <div className="relative group w-52">
+        <div className="relative group w-full sm:w-52">
             <button
                 type="button"
                 aria-labelledby="capacity-breakdown"
@@ -117,7 +117,7 @@ interface SchedulerHeaderProject extends ProjectSummary {
 function ProjectLegend({ projects, contractedMinutes }: ProjectLegendprops) {
    
         return (
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+            <div className="hidden sm:flex flex-wrap justify-center gap-x-4 gap-y-1">
                 {projects.map((project) => {
                     const minutes = Math.round((project.allocation / 100) * contractedMinutes);
 
@@ -156,14 +156,14 @@ export default function SchedulerHeader({
     
 
     return (
-        <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-4">
+        <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-3 sm:p-4">
 
-            <div className="justify-self-start">
+            <div className="justify-self-start pl-14 lg:pl-0">
                 <WeekNavigator weekStart={weekStart} onPrevWeek={onPrevWeek} onNextWeek={onNextWeek} />
             </div>
 
 
-            <div className="flex flex-col items-center gap-2 min-w-0">
+            <div className="flex w-full flex-col items-stretch gap-2 min-w-0 sm:w-auto sm:items-center">
                 {week ? (
                     <>
                         <HoursSummary metadata={week.metadata} />

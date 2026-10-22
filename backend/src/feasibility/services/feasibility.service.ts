@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { CompetencyLevel } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { DataIngestionService } from '../../scoring/services/data-normalization/data-ingestion.service';
+import { DataIngestionService, ProjectScoringContext } from '../../scoring/services/data-normalization/data-ingestion.service';
 import { MatchScoringExecutorService } from '../../scoring/services/match-scoring-executor.service';
 import { VariantGenerator } from './variant-generator';
 import { FeasibilityCheckRequestDto } from '../dto/feasibility-check-request.dto';
@@ -33,15 +33,23 @@ export class FeasibilityService {
       spec,
     );
 
+    const scoringContext = await this.dataIngestion.getProjectScoringContext(
+      `draft-${randomUUID()}`,
+    );
+
     const variants = this.variantGenerator.generate(spec);
 
     const [base, ...variantResults] = await Promise.all([
-      this.scoreOneSpec(spec, pool, allocationsByConsultant),
-      ...variants.map((v) => this.scoreOneSpec(v.spec, pool, allocationsByConsultant)),
+      this.scoreOneSpec(spec, pool, allocationsByConsultant, scoringContext),
+      ...variants.map((v) => this.scoreOneSpec(v.spec, pool, allocationsByConsultant, scoringContext)),
     ]);
+
+    const hardExclusionFactors = Array.from(scoringContext.excludedFactors);
 
     return {
       ...base,
+      hardExclusionsActive: hardExclusionFactors.length > 0,
+      hardExclusionFactors,
       variants: variants.map((v, i) => ({
         label: v.label,
         kind: v.kind,
@@ -57,12 +65,10 @@ export class FeasibilityService {
     spec: FeasibilityCheckRequestDto,
     pool: ConsultantPoolEntry[],
     allocationsByConsultant: ReadonlyMap<string, number>,
+    scoringContext: ProjectScoringContext,
   ): Promise<FeasibilityCheckResult> {
     const projectDto = this.mapSpecToRawProject(spec);
 
-    const scoringContext = await this.dataIngestion.getProjectScoringContext(
-      projectDto.projectId,
-    );
 
     const { finalResults } = await this.scoringExecutor.scorePool(
       projectDto,

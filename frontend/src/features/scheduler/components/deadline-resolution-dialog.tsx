@@ -6,7 +6,6 @@ interface DeadlineResolutionDialogProps {
   readonly task: Task;
   readonly summary: UnplacedTaskSummary;
   readonly expectedVersion: number;
-  //readonly open: boolean;
   readonly onCancel: () => void;
   readonly onExtendDeadline: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
   readonly onReduceEstimate: (taskId: string, dto: UpdateTaskDto) => void | Promise<void>;
@@ -25,7 +24,8 @@ export default function DeadlineResolutionDialog(props: DeadlineResolutionDialog
 }
 
 function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCancel, onExtendDeadline, onReduceEstimate, onAcceptMiss } : DeadlineResolutionDialogProps) {
-    const [newDeadline, setNewDeadline] = useState(task.deadline?.slice(0, 10) ?? "");
+
+    const [newDeadline, setNewDeadline] = useState(task.deadline ? new Date(task.deadline).toLocaleDateString("en-CA") : "");
     const [newMaxHours, setNewMaxHours] = useState(Math.max(0.25, Math.min(task.tMax, summary.availableMinutes) / 60) );
 
     const newMaxMinutes = Math.round(newMaxHours * 60);
@@ -70,7 +70,7 @@ function DeadlineResolutionDialogContent({ task, summary, expectedVersion, onCan
                         <button type="button"
                             disabled={!newDeadline}
                             onClick={() => 
-                                void onExtendDeadline(task.id, { deadline: new Date(`${newDeadline}T00:00:00.000Z`).toISOString(), expectedVersion})
+                                void onExtendDeadline(task.id, { deadline: new Date(`${newDeadline}T23:59:59`).toISOString(), expectedVersion })
                             }
                             className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >

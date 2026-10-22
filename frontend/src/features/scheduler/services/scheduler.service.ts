@@ -157,3 +157,17 @@ export function deleteCalendarEntry(entryId: string, expectedVersion: number) {
 export function dismissSchedulerIssue(weekStart: string, code: string) {
     return apiClient.post<void>(`/scheduler/weeks/${weekStart}/issues/${encodeURIComponent(code)}/dismiss`, {});
 }
+
+export interface SchedulerSuggestion {
+    code: string;
+    message: string;
+    action?: { type: string; taskIds?: string[]; blockId?: string; to?: Interval };
+}
+
+export function getSchedulerSuggestions(weekStart: string, signal?: AbortSignal) {
+    return apiClient.get<SchedulerSuggestion[]>(`/scheduler/weeks/${weekStart}/suggestions`, { signal });
+}
+
+export function pullForwardTasks(weekStart: string, taskIds: string[], expectedVersion: number) {
+    return apiClient.post<SchedulerCommitResult>(`/scheduler/weeks/${weekStart}/pull-forward`, { taskIds, expectedVersion });
+}

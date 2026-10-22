@@ -84,6 +84,8 @@ export interface Task {
     splitFromId?: string;
     carriedOver: boolean;
     placement: 'placed' | 'unplaced';
+    unplacedNeededMinutes?: number;
+    unplacedAvailableMinutes?: number;
     unplacedReason?: UnplacedReason;
     priorityScore?: number;
     createdAt: string;
@@ -205,6 +207,8 @@ export interface WeekMetadata {
     hasOutOfHours: boolean;
     hasWeekend: boolean;
     hasContainerOverflow: boolean;
+    alerts: Issue[];
+    warnings: Issue[];
 }
 
 export interface WeekContainer {
@@ -224,6 +228,7 @@ export interface WeekContainer {
     calendarEntries: CalendarEntry[];
     holidays: PublicHoliday[];
     metadata: WeekMetadata;
+    dismissedCodes?: string[];
 }
 
 // --- Settings ---

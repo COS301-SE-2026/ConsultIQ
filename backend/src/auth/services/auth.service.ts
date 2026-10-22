@@ -45,7 +45,7 @@ const ROLE_DASHBOARD_MAP: Record<Role, string> = {
   ADMIN: '/admin-dashboard',
   PROJECT_MANAGER: '/projects',
   CONSULTANT_MANAGER: '/consultants-manager',
-  CONSULTANT: '/under-construction',
+  CONSULTANT: '/profile',
 };
 
 class TooManyRequestsException extends HttpException {

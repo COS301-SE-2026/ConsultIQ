@@ -11,6 +11,9 @@ import {
 import { SCHEDULER_RULES } from './scheduler-rules.constant';
 import { TimeService } from './time.service';
 
+// Calendar entries that aren't work and so don't count toward the daily working limit
+const NON_WORK_ENTRY_TYPES = new Set(['leave', 'personal', 'lunch']);
+
 @Injectable()
 export class ValidatorService {
     private readonly logger = new Logger(ValidatorService.name);
@@ -50,20 +53,6 @@ export class ValidatorService {
 
         allEvents.sort((a, b) => a.start - b.start);
 
-        // for (let i = 0; i < allEvents.length - 1; i++) {
-        //     const current = allEvents[i];
-        //     const next = allEvents[i + 1];
-
-        //     if (current.end > next.start) {
-        //         const overlapIssue = {
-        //             level: 'violation',
-        //             code: 'OVERLAPPING_EVENTS',
-        //             message: 'Overlap detected between ' + current.type + ' ' + current.id + ' and ' + next.type + ' ' + next.id + '.'
-        //         } as unknown as Issue;
-
-        //         issues.push(overlapIssue);
-        //     }
-        // }
 
         // Compare each event with the one that ends latest so far, not just its neighbour
         let furthest = allEvents[0];
@@ -399,18 +388,27 @@ export class ValidatorService {
     private checkDailyMaxExceeded(week: WeekContainer): Issue[] {
         const issues: Issue[] = [];
         const dailyTotals = new Map<string, { total: number; entityIds: string[] }>();
+        const lunches = this.lunchIntervals(week);
 
-        const processEntity = (id: string, start: string, end: string) => {
+        const addMinutes = (id: string, start: string, minutes: number) => {
+            if (minutes <= 0) return;
             const day = this.timeService.localDate(start, week.timezone);
-            const duration = this.durationMinutes(start, end);
             const current = dailyTotals.get(day) || { total: 0, entityIds: [] };
-            current.total += duration;
+            current.total += minutes;
             current.entityIds.push(id);
             dailyTotals.set(day, current);
         };
 
-        week.slots.forEach(s => processEntity(s.id, s.start, s.end));
-        week.calendarEntries.forEach(e => processEntity(e.id, e.start, e.end));
+        // Slots are always placed inside working time, so their whole length is work
+        week.slots.forEach((s) => addMinutes(s.id, s.start, this.durationMinutes(s.start, s.end)));
+
+        // Entries: skip leave, personal time and lunch; don't count the unpaid lunch hour inside a long entry
+        week.calendarEntries
+            .filter((e) => !NON_WORK_ENTRY_TYPES.has(e.type))
+            .forEach((e) => {
+                const lunchOverlap = lunches.reduce((sum, l) => sum + this.overlapMinutes(e, l), 0);
+                addMinutes(e.id, e.start, this.durationMinutes(e.start, e.end) - lunchOverlap);
+            });
 
         for (const [day, data] of dailyTotals.entries()) {
             if (data.total > SCHEDULER_RULES.DAILY_MAX_MINUTES) {
@@ -423,6 +421,32 @@ export class ValidatorService {
             }
         }
         return issues;
+    }
+
+    // The unpaid lunch breaks: the gaps between one day's working windows
+    private lunchIntervals(week: WeekContainer): { start: string; end: string }[] {
+        const byDay = new Map<string, { start: string; end: string }[]>();
+        for (const w of this.timeService.workingWindows(week.weekStart, week.timezone)) {
+            const day = this.timeService.localDate(w.start, week.timezone);
+            byDay.set(day, [...(byDay.get(day) ?? []), w]);
+        }
+
+        const lunches: { start: string; end: string }[] = [];
+        for (const windows of byDay.values()) {
+            const sorted = [...windows].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+            for (let i = 1; i < sorted.length; i++) {
+                if (Date.parse(sorted[i].start) > Date.parse(sorted[i - 1].end)) {
+                    lunches.push({ start: sorted[i - 1].end, end: sorted[i].start });
+                }
+            }
+        }
+        return lunches;
+    }
+
+    private overlapMinutes(a: { start: string; end: string }, b: { start: string; end: string }): number {
+        const start = Math.max(Date.parse(a.start), Date.parse(b.start));
+        const end = Math.min(Date.parse(a.end), Date.parse(b.end));
+        return end > start ? Math.round((end - start) / 60000) : 0;
     }
 
     /** #5 ~ FRAGMENT_TOO_SMALL (violation) */
@@ -558,7 +582,9 @@ export class ValidatorService {
             hardCapBreached: scheduled > SCHEDULER_RULES.LEGAL_HARD_CAP_MINUTES,
             hasOutOfHours,
             hasWeekend,
-            hasContainerOverflow: this.checkContainerOverflow(week).length > 0
+            hasContainerOverflow: this.checkContainerOverflow(week).length > 0,
+            alerts: [],
+            warnings: [],
         };
     }
 
@@ -586,13 +612,6 @@ export class ValidatorService {
         }
         return map;
     }
-
-    // private normalizeIds(ids?: string[]): string {
-    //     return (ids ?? [])
-    //         .slice()
-    //         .sort((a, b) => a.localeCompare(b))
-    //         .join(',');
-    // }
 
     private durationMinutes(start: string, end: string): number {
         return Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);

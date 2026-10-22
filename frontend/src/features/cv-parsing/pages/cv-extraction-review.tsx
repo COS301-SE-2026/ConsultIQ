@@ -1,7 +1,7 @@
-import { useMemo, useState, useRef, useEffect,useCallback } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { CostRateType } from "../../consultants/components/personal/profile-info-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Loader2, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import Sidebar from "../../../components/layout/sidebar/sidebar";
 import { consultantManagerSidebarItems } from "../../../components/layout/sidebar/sidebar.config";
 import { Card } from "../../../components/ui/card";
@@ -218,7 +218,7 @@ export default function CVExtractionReview() {
 
 
 
-  
+
 
     const maybeShowClearedModal = useCallback((currentStatus: CvFileStatus["securityReviewStatus"]) => {
         if (wasPendingOnLoadRef.current === null) {
@@ -433,7 +433,7 @@ export default function CVExtractionReview() {
 
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white border-b sm:h-[90px] flex flex-col  px-4 sm:px-10 lg:px-20 py-3 sm:py-0 w-full "
+                    className="shrink-0 z-20 bg-white border-b sm:h-[90px] flex flex-col pl-16 pr-4 sm:pr-10 lg:px-20 py-3 sm:py-0 w-full"
                     style={{ borderColor: "var(--color-border)" }}
                 >
 
@@ -452,7 +452,7 @@ export default function CVExtractionReview() {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-10">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10">
                     {viewState === "loading" && (
                         <div className="flex items-center justify-center h-full gap-2">
                             <Loader2 className="h-6 w-6 animate-spin" />
@@ -471,18 +471,39 @@ export default function CVExtractionReview() {
                     )}
 
                     {viewState === "failed" && (
-                        <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-                            <AlertTriangle className="h-10 w-10 text-red-600" />
-                            <p className="text-lg font-semibold text-secondary text-center max-w-md">Extraction failed.</p>
-                            <p className="text-sm ">
-                                {failureReason}
-                            </p>
-                            <button className="h-12 px-6 rounded-lg font-semibold text-white"
-                                style={{ backgroundColor: "var(--color-primary)" }}
-                                onClick={() => navigate(`/create-profile-entry/${userId}`)}>
-                                Back to upload
-                            </button>
-                        </div>
+                        cvFile?.parsedData?.errorCode === "WRONG_PARSING_METHOD" ? (
+                            <div className="flI didnex flex-col items-center justify-center h-full gap-3 text-center">
+                                <RefreshCw className="h-10 w-10 text-amber-600" />
+                                <p className="text-lg font-semibold text-amber-700 text-center max-w-md">
+                                    Wrong parsing method for this CV
+                                </p>
+                                <p className="text-sm max-w-lg" style={{ color: "var(--color-text-secondary)" }}>
+                                    {failureReason}
+                                </p>
+                                <button
+                                    className="h-12 px-6 rounded-lg font-semibold text-white"
+                                    style={{ backgroundColor: "var(--color-primary)" }}
+                                    onClick={() => navigate(`/create-profile-entry/${userId}`)}
+                                >
+                                    Re-upload with Rule-Based parsing
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+                                <AlertTriangle className="h-10 w-10 text-red-600" />
+                                <p className="text-lg font-semibold text-secondary text-center max-w-md">
+                                    Extraction failed.
+                                </p>
+                                <p className="text-sm">{failureReason}</p>
+                                <button
+                                    className="h-12 px-6 rounded-lg font-semibold text-white"
+                                    style={{ backgroundColor: "var(--color-primary)" }}
+                                    onClick={() => navigate(`/create-profile-entry/${userId}`)}
+                                >
+                                    Back to upload
+                                </button>
+                            </div>
+                        )
                     )}
 
                     {viewState === "review" && cvFile && (
@@ -500,7 +521,7 @@ export default function CVExtractionReview() {
                             )}
                             <fieldset disabled={isSecurityBlocked} className="contents">
                                 <div className="max-w-4xl mx-auto flex flex-col gap-8">
-                                    <Card className="p-6 rounded-lg">
+                                    <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-xl font-bold mb-4" style={{ color: isLowConfidence("contact") ? "#b45309" : undefined }}>
                                             Contact details
                                             {isLowConfidence("contact") && " (low extraction confidence — please verify) "}
@@ -513,8 +534,8 @@ export default function CVExtractionReview() {
                                             <FormField label="Phone (10 digits)" value={contact.phone ?? ""} warning={warningByPath.get("contact.phone")} onChange={(v) => setContact((c) => ({ ...c, phone: v }))} />
 
                                             <FormField label="Nationality" value={contact.nationality ?? ""} warning={warningByPath.get("contact.nationality")} onChange={(v) => setContact((c) => ({ ...c, nationality: v }))} />
-                                            
-                                             <div className="relative w-full col-span-2 mb-2 mt-3">
+
+                                            <div className="relative w-full col-span-1 sm:col-span-2 mb-2 mt-3">
                                                 <SearchBar
                                                     value={addressSearch}
                                                     onChange={handleSearchAddress}
@@ -570,19 +591,19 @@ export default function CVExtractionReview() {
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <FormField label="ID number (13 digits)" value={manualFields.idNumber} onChange={(v) => setManualFields((m) => ({ ...m, idNumber: v }))} />
 
-                                                    <label className="flex flex-col gap-1">
-                                                        <span className="text-lg font-semibold text-primary">Availability</span>
-                                                        <select className="border rounded-lg h-12 px-2"
-                                                            value={manualFields.availability}
-                                                            disabled={isSecurityBlocked}
-                                                            onChange={(event) =>
-                                                                setManualFields((curr) => ({  ...curr, availability: event.target.value as ManualFields["availability"]  }))}
-                                                        >
-                                                            <option value="AVAILABLE" >Available</option>
-                                                            <option value="UNAVAILABLE">Unavailable</option>
-                                                            <option value="ON_LEAVE">On leave</option>
-                                                        </select>
-                                                    </label>
+                                            <label className="flex flex-col gap-1">
+                                                <span className="text-lg font-semibold text-primary">Availability</span>
+                                                <select className="border rounded-lg h-12 px-2"
+                                                    value={manualFields.availability}
+                                                    disabled={isSecurityBlocked}
+                                                    onChange={(event) =>
+                                                        setManualFields((curr) => ({ ...curr, availability: event.target.value as ManualFields["availability"] }))}
+                                                >
+                                                    <option value="AVAILABLE" >Available</option>
+                                                    <option value="UNAVAILABLE">Unavailable</option>
+                                                    <option value="ON_LEAVE">On leave</option>
+                                                </select>
+                                            </label>
 
                                             <div className="flex flex-col gap-2">
                                                 <span className="text-lg font-semibold text-primary">Cost to Company (R)</span>
@@ -631,34 +652,34 @@ export default function CVExtractionReview() {
 
                                         </h2>
                                         {skills.map((skill, i) => (
-                                            <div key={i} className="grid grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
+                                            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end mb-3 border-b pb-3">
                                                 <FormField label="Skill" value={skill.skillName} onChange={(v) => updateSkill(i, { skillName: v })} />
                                                 <FormField label="Years experience" value={String(skill.yearsExperience)}
                                                     onChange={(v) => updateSkill(i, { yearsExperience: Number(v) || 0 })} />
 
-                                                        <label className="flex flex-col gap-1">
-                                                            <span className="text-lg font-semibold text-primary">Competency</span>
-                                                            <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel} disabled={isSecurityBlocked}
-                                                                onChange={(e) => updateSkill(i, { competencyLevel: e.target.value as SkillFormRow["competencyLevel"] })}>
-                                                                <option value="BEGINNER">Beginner</option>
-                                                                <option value="INTERMEDIATE">Intermediate</option>
-                                                                <option value="EXPERT">Expert</option>
-                                                            </select>
-                                                        </label>
-                                                        <label className="flex flex-col gap-1">
-                                                            <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
-                                                            <input type="number" min={1} max={4} className="border rounded-lg h-12 px-2"
-                                                                value={skill.confidenceLevel} onChange={(e) => updateSkill(i, {  confidenceLevel: Number(e.target.value)  })}
-                                                           />
-                                                        </label>
-                                                        {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
-                                                            <p className="col-span-1 sm:col-span-2 lg:col-span-4 text-xs text-amber-700">
-                                                                Low extraction confidence for this skill — please verify.
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </Card>
+                                                <label className="flex flex-col gap-1">
+                                                    <span className="text-lg font-semibold text-primary">Competency</span>
+                                                    <select className="border rounded-lg h-10 px-2" value={skill.competencyLevel} disabled={isSecurityBlocked}
+                                                        onChange={(e) => updateSkill(i, { competencyLevel: e.target.value as SkillFormRow["competencyLevel"] })}>
+                                                        <option value="BEGINNER">Beginner</option>
+                                                        <option value="INTERMEDIATE">Intermediate</option>
+                                                        <option value="EXPERT">Expert</option>
+                                                    </select>
+                                                </label>
+                                                <label className="flex flex-col gap-1">
+                                                    <span className="text-lg font-semibold text-primary"> Confidence (1-4) </span>
+                                                    <input type="number" min={1} max={4} className="border rounded-lg h-12 px-2"
+                                                        value={skill.confidenceLevel} onChange={(e) => updateSkill(i, { confidenceLevel: Number(e.target.value) })}
+                                                    />
+                                                </label>
+                                                {skill.extractionConfidence < LOW_CONFIDENCE_THRESHOLD && (
+                                                    <p className="col-span-1 sm:col-span-2 lg:col-span-4 text-xs text-amber-700">
+                                                        Low extraction confidence for this skill — please verify.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </Card>
 
                                     <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-lg sm:text-xl font-bold mb-4" >
@@ -700,7 +721,7 @@ export default function CVExtractionReview() {
                                     {/* <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-xl font-bold mb-4"> Certifications</h2>
                                         {certifications.map((cert, i) => (
-                                            <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
+                                            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                                 <FormField label="Title" value={cert.title} onChange={(v) => updateCertification(i, { title: v })} />
                                                 <FormField label="Issuing body" value={cert.issuingBody} onChange={(v) => updateCertification(i, { issuingBody: v })} />
                                                 <FormField label="Start date" value={cert.startDate ?? ""} onChange={(v) => updateCertification(i, { startDate: v })} />
@@ -712,7 +733,7 @@ export default function CVExtractionReview() {
                                     <Card className="p-4 sm:p-6 rounded-lg">
                                         <h2 className="text-xl font-bold mb-4"> Education</h2>
                                         {education.map((edu, i) => (
-                                            <div key={i} className="grid grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
+                                            <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 border-b border-gray-400 pb-4">
                                                 <FormField label="Institution" value={edu.institution} onChange={(v) => updateEducation(i, { institution: v })} />
                                                 <FormField label="Qualification" value={edu.qualification} onChange={(v) => updateEducation(i, { qualification: v })} />
                                                 <FormField label="Start date" value={edu.startDate ?? ""} onChange={(v) => updateEducation(i, { startDate: v })} />
@@ -722,14 +743,14 @@ export default function CVExtractionReview() {
                                     </Card>
 
                                     {!isSecurityBlocked && (
-                                        <div className="flex justify-between items-center pb-10">
-                                            <button className="flex items-center gap-2 h-12 px-6 rounded-lg font-semibold border border-red-300 text-red-600"
+                                        <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 pb-10">
+                                            <button className="flex items-center justify-center gap-2 h-12 px-6 w-full sm:w-auto rounded-lg font-semibold border border-red-300 text-red-600"
                                                 onClick={() => setShowDiscardConfirmation(true)} disabled={isDiscarding || isSubmitting} >
                                                 <Trash2 className="h-5 w-5" />
                                                 {isDiscarding ? "Discarding..." : "Discard this CV"}
                                             </button>
 
-                                            <button className="h-12 px-8 rounded-lg font-semibold text-white "
+                                            <button className="h-12 px-8 w-full sm:w-auto rounded-lg font-semibold text-white"
                                                 style={{ backgroundColor: "var(--color-primary)" }}
                                                 onClick={handleApprove} disabled={isSubmitting || isDiscarding} >
                                                 {isSubmitting ? "Creating profile..." : "Approve and create profile"}

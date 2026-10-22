@@ -8,12 +8,12 @@ import { useTeamSkillDemand } from "../../../hooks/useTeamSkillDemand";
 export default function ManagerSkillShortage() {
     const { data, isLoading, isError, refetch } = useTeamSkillDemand();
     return (
-        <div className="flex h-dvh overflow-hidden overscroll-none" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={consultantManagerSidebarItems} />
 
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            <div className="min-w-0 flex-1 flex flex-col min-h-screen overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white  border-b min-h-[90px] flex items-center  w-full pl-16 pr-4 sm:px-10"
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
                     style={{ borderColor: "var(--color-border)" }}
                 >
                     <div className="mx-auto w-full max-w-6xl">
@@ -23,7 +23,7 @@ export default function ManagerSkillShortage() {
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-10">
+                <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-10 sm:py-8">
                     <div className="mx-auto w-full max-w-6xl">
                         <p className="text-xl font-bold text-[#0B2F63] sm:text-3xl">Where to invest next</p>
                         <p className="mt-2 text-sm text-[#6B7280] sm:text-base">
@@ -59,9 +59,11 @@ export default function ManagerSkillShortage() {
                             )}
                             
                             { data && (
-                                <SkillShortageTable
-                                    skills={data?.skills ?? []}
-                                />
+                                <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
+                                    <SkillShortageTable
+                                        skills={data?.skills ?? []}
+                                    />
+                                </div>
                             )}
 
                         </section>

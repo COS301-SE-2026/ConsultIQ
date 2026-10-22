@@ -300,21 +300,20 @@ function ConsultantsPage() {
                   return (
                     <div
                       key={flagged.cvFileId}
-                      className="bg-white rounded-xl border-2 flex items-center justify-between"
+                      className="flex flex-col gap-4 rounded-xl border-2 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-7"
                       style={{
                         borderColor: isRejected ? "#dc2626" : "#f59e0b",
-                        padding: "28px 32px",
                       }}
                     >
-                      <div className="flex items-start gap-4">
+                      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                         {isRejected
                           ? <AlertTriangle className="h-6 w-6 text-red-600 shrink-0 mt-1" />
                           : <ShieldAlert className="h-6 w-6 text-amber-600 shrink-0 mt-1" />}
-                        <div>
-                          <p className="font-semibold text-lg" style={{ color: "var(--color-primary)" }}>
+                        <div className="min-w-0">
+                          <p className="font-semibold text-lg break-words" style={{ color: "var(--color-primary)" }}>
                             {flagged.consultantName}
                           </p>
-                          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                          <p className="text-sm break-all" style={{ color: "var(--color-text-secondary)" }}>
                             {flagged.consultantEmail}
                           </p>
                           <p className={`text-xs mt-1 font-semibold ${isRejected ? "text-red-600" : "text-amber-600"}`}>
@@ -327,12 +326,9 @@ function ConsultantsPage() {
                       </div>
                       <button
                         onClick={() => navigate(`/cv-extraction-review/${flagged.consultantUserId}/${flagged.cvFileId}`)}
-                        className="flex items-center gap-2 rounded-xl font-semibold transition hover:opacity-90 shrink-0"
+                        className="flex w-full shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-[15px] font-semibold text-white transition hover:opacity-90 sm:w-auto"
                         style={{
-                          backgroundColor: isRejected ? "#dc2626" : "#b45309",
-                          color: "white",
-                          fontSize: "15px",
-                          padding: "10px 20px",
+                          backgroundColor: isRejected ? "#dc2626" : "#b45309"
                         }}
                       >
                         View details

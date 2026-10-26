@@ -140,7 +140,7 @@ export default function BacklogTaskCard({task, projectLabel, projectColor, unpla
                     </span>
             </div>
 
-            <p className="mt-1 font-semibold text-slate-900">{task.title}</p>
+            <p className="mt-1 min-w-0 break-words [overflow-wrap:anywhere] font-semibold text-slate-900">{task.title}</p>
 
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-600">
                 <span className = "inline-flex items-center gap-1.5">

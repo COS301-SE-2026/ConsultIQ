@@ -4,10 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { RedisUtilityService } from '../../../common/services/redis-utility.service';
 
 @Injectable()
 export class AdminProjectService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redisUtilityService: RedisUtilityService,
+  ) {}
 
   async archiveProject(projectId: string, adminUserId: string) {
     const project = await this.prisma.project.findUnique({
@@ -42,6 +46,7 @@ export class AdminProjectService {
           },
         });
       });
+      await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
       return { message: 'Project archived successfully' };
     } catch (error) {
       if (
@@ -77,6 +82,7 @@ export class AdminProjectService {
         });
       });
 
+      await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
       return { message: 'Project unarchived successfully' };
     } catch (error) {
       if (

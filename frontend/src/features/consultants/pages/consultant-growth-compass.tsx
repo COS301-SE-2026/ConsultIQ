@@ -26,15 +26,15 @@ export default function GrowthCompass() {
 
 
 
-        <main className="flex-1 overflow-y-auto px-4 py-8 sm:px-10">
-          <div className="mx-auto max-w-6xl">
-            <p className="text-3xl font-bold text-brand-navy">Your next move</p>
-            <p className="text-base text-brand-muted">
+        <main className="flex-1 overflow-y-auto px-3 py-5 sm:px-6 sm:py-8 lg:px-10">
+          <div className="mx-auto w-full max-w-6xl">
+            <p className="text-2xl font-bold text-primary sm:text-3xl">Your next move</p>
+            <p className="mt-1 text-lg text-brand-muted sm:text-base">
               A focused recommendation based on your profile and current demand.
             </p>
           </div>
 
-          <section className="mt-8">
+          <section className="mt-6 sm:mt-8">
             <SkillGrowthCard 
               recommendations={data?.recommendations ?? []}
               eligibleNow={data?.eligibleNow ?? 0}

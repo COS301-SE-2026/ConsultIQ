@@ -192,7 +192,7 @@ export default function SkillGrowthCard({
 
   return (
     <Card className="gap-0 overflow-hidden rounded-lg border border-gray-200 border-t-4 border-t-[#C9A44C] bg-white shadow-sm">
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         {isError && !isLoading && (
           <div
             role="status"
@@ -209,9 +209,9 @@ export default function SkillGrowthCard({
           <EmptyState />
         ) : (
           <>
-            <div className="mt-10 flex items-center gap-4">
+            <div className="mt-8 flex min-w-0 items-center gap-3 sm:mt-10 sm:gap-4">
               <RankBadge rank={1} />
-              <h2 className="text-4xl font-bold text-brand-blue">{top.skillName}</h2>
+              <h2 className="min-w-0 break-words text-2xl font-bold text-brand-blue sm:text-3xl lg:text-4xl">{top.skillName}</h2>
             </div>
 
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-brand-muted">

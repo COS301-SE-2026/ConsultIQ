@@ -477,17 +477,18 @@ export default function SchedulerPage() {
                 </header>
 
                 <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    <nav className="flex flex-none items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
-                        <div className="flex">
+                    <nav className="flex flex-none flex-col gap-2 border-b border-slate-200 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-0">
+                        <div className="grid w-full grid-cols-3 sm:flex sm:w-auto">
                             {([["calendar", "Calendar"], ["tasks", "Tasks"], ["notifications", "Notifications"]] as const).map(([key, label]) => (
                                 <button key={key} type="button" role="tab"
                                     aria-selected={activeTab === key}
                                     onClick={() => setActiveTab(key)}
-                                    className={`border-b-2 px-3 py-3 text-sm font-medium ${activeTab === key ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                                    className={`whitespace-nowrap border-b-2 px-2 py-3 text-sm font-medium sm:px-3 sm:text-sm ${
+                                        activeTab === key ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                                 >
                                     {label}
                                     {key === "notifications" && notificationCount > 0 && (
-                                        <span className="ml-1.5 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                        <span className="ml-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                             {notificationCount}
                                         </span>
                                     )}
@@ -495,16 +496,16 @@ export default function SchedulerPage() {
                             ))}
                         </div>
 
-                        <div className="my-2 flex items-center gap-2">
+                        <div className="grid w-full grid-cols-2 gap-2 sm:my-2 sm:flex sm:w-auto">
                             <button type="button"
                                 onClick={openCreateEntry}
-                                className="rounded-md border border-primary px-2.5 sm:px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/5"
+                                className="w-full whitespace-nowrap rounded-md border border-primary px-2 py-1.5 text-sm font-medium text-primary hover:bg-primary/5 sm:w-auto sm:px-3 sm:text-sm"
                             >
                                 + Event
                             </button>
                             <button type="button"
                                 onClick={() => OpenCreateTask()}
-                                className="rounded-md bg-primary px-2.5 sm:px-3 py-1.5 text-sm font-medium text-white hover:bg-primary/80"
+                                className="w-full whitespace-nowrap rounded-md bg-primary px-2 py-1.5 text-sm font-medium text-white hover:bg-primary/80 sm:w-auto sm:px-3 sm:text-sm"
                             >
                                 + New Task
                             </button>

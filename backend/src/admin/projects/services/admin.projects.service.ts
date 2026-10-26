@@ -27,63 +27,51 @@ export class AdminProjectService {
       throw new BadRequestException ('Completed project cannot be archived');
     }
 
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.project.update({
-          where: { id: projectId },
-          data: {
-            archivedAt: new Date(),
-            status: 'ARCHIVED',
-          },
-        });
-
-        await tx.projectAuditLog.create({
-          data: {
-            projectId: projectId,
-            action: 'ARCHIVE',
-            userId: adminUserId,
-            createdAt: new Date(),
-          },
-        });
-      });
-      await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
-      return { message: 'Project archived successfully' };
-    } catch (error) {
-      if (
-        error instanceof Object &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException('Project does not exist');
-      } else {
-        throw error;
-      }
-    }
+    return this.setProjectArchivedState(
+      projectId,
+      adminUserId,
+      'ARCHIVED',
+      'ARCHIVE',
+      new Date(),
+      'Project archived successfully',
+    );
   }
 
   async unarchiveProject(projectId: string, adminUserId: string) {
+    return this.setProjectArchivedState(
+      projectId,
+      adminUserId,
+      'OPEN',
+      'UNARCHIVE',
+      null,
+      'Project unarchived successfully',
+    );
+  }
+
+  private async setProjectArchivedState(
+    projectId: string,
+    adminUserId: string,
+    status: 'ARCHIVED' | 'OPEN',
+    action: 'ARCHIVE' | 'UNARCHIVE',
+    archivedAt: Date | null,
+    message: string,
+  ) {
     try {
       await this.prisma.$transaction(async (tx) => {
         await tx.project.update({
           where: { id: projectId },
-          data: {
-            archivedAt: null,
-            status: 'OPEN',
-          },
+          data: { archivedAt, status },
         });
 
         await tx.projectAuditLog.create({
           data: {
-            projectId: projectId,
-            action: 'UNARCHIVE',
+            projectId,
+            action,
             userId: adminUserId,
             createdAt: new Date(),
           },
         });
       });
-
-      await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
-      return { message: 'Project unarchived successfully' };
     } catch (error) {
       if (
         error instanceof Object &&
@@ -91,10 +79,12 @@ export class AdminProjectService {
         error.code === 'P2025'
       ) {
         throw new NotFoundException('Project does not exist');
-      } else {
-        throw error;
       }
+      throw error;
     }
+
+    await this.redisUtilityService.invalidateCacheByPattern('cache:projects:*');
+    return { message };
   }
 
   async getAllProjects(page: number = 1, limit: number = 10, search?: string, budgetSort?: 'asc' | 'desc') {

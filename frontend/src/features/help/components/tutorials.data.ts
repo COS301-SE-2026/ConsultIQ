@@ -3,6 +3,9 @@ import ProfileCreation from "../../../../public/help_thumbnails/profile_creation
 import RegisterConsultant from "../../../../public/help_thumbnails/register_consultant.png"
 import Consultancy from "../../../../public/help_thumbnails/consultancy-wide.png"
 import Project from "../../../../public/help_thumbnails/project-wide.png"
+import CV from  "../../../../public/help_thumbnails/CV_Parsing.png"
+import ProjectCreation from "../../../../public/help_thumbnails/Project_Creation.png"
+import ConsultantView from "../../../../public/help_thumbnails/Consultant_View.png"
 export interface TutorialItem{
   
     title: string;
@@ -45,11 +48,32 @@ export  const tutorials: TutorialItem[] = [
     embedUrl:"https://embed.app.guidde.com/playbooks/2mECR3hxwpN1YwuvUzmuZC?mode=videoOnly",
     thumbnail:Consultancy,
   },
-    {
+  {
     title: "Setting project-wide configurations",
     desc: "Learn to set the project wide configurations that influence the scoring engine",
     duration: "2 min",
     embedUrl:"https://embed.app.guidde.com/playbooks/6T75M13Lk4BNH3XHXe66kq?mode=videoOnly",
     thumbnail:Project,
+  },
+  {
+    title: "Profile creation with CV parsing",
+    desc: "Learn to create consultant profiles using rule based or AI assisted CV parsing",
+    duration: "5 min",
+    embedUrl:"https://embed.app.guidde.com/playbooks/j1gYS9Q75wM1ZNqBWHyVHk?mode=videoOnly",
+    thumbnail:CV,
+  },
+  {
+    title: "Creating projects",
+    desc: "Learn to create projects and know whether they are feasible or not",
+    duration: "6 min",
+    embedUrl:"https://embed.app.guidde.com/playbooks/4RDFGBgvPEf4wgNTkRND6q?mode=videoOnly",
+    thumbnail:ProjectCreation,
+  },
+  {
+    title: "Consultant view",
+    desc: "As a consultant learn to view your profile, projects, notifications and how to make your schedule.",
+    duration: "5 min",
+    embedUrl:"https://embed.app.guidde.com/playbooks/93i4pncfD5b4MfgQo2wQKq?mode=videoOnly",
+    thumbnail:ConsultantView,
   },
 ];

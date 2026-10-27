@@ -1,10 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminProjectService } from './admin.projects.service';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { RedisUtilityService } from '../../../common/services/redis-utility.service';
 
 describe('AdminProjectService', () => {
     let service: AdminProjectService;
     let prisma: PrismaService;
+    let redisUtilityService: RedisUtilityService;
 
     beforeEach(async () => {
 
@@ -26,6 +28,12 @@ describe('AdminProjectService', () => {
                         $transaction: jest.fn(),
                     },
                 },
+                {
+                    provide: RedisUtilityService,
+                    useValue: {
+                        invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
+                    },
+                },
             ],
 
 
@@ -33,6 +41,7 @@ describe('AdminProjectService', () => {
 
         service = module.get<AdminProjectService>(AdminProjectService);
         prisma = module.get<PrismaService>(PrismaService);
+        redisUtilityService = module.get<RedisUtilityService>(RedisUtilityService);
 
         (prisma.$transaction as jest.Mock).mockImplementation((callback) => {
             if (typeof callback === 'function') {
@@ -146,7 +155,9 @@ describe('AdminProjectService', () => {
             });
 
             expect(result).toEqual({ message: 'Project archived successfully' });
-
+            expect(redisUtilityService.invalidateCacheByPattern).toHaveBeenCalledWith(
+                'cache:projects:*',
+            );
 
         });
 
@@ -216,7 +227,9 @@ describe('AdminProjectService', () => {
             });
 
             expect(result).toEqual({ message: 'Project unarchived successfully' });
-
+            expect(redisUtilityService.invalidateCacheByPattern).toHaveBeenCalledWith(
+                'cache:projects:*',
+            );
 
         });
 

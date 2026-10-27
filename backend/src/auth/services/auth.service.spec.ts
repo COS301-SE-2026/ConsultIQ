@@ -331,18 +331,18 @@ describe('AuthService', () => {
 
   // ---------------------------------------forgotPassword-------------------------------------------
   describe('forgotPassword', () =>{
-    const emailAdress= 'botho@consultiq.com';
+    const emailAdress= 'Botho@Consultiq.com';
 
     it('should send a reset email when the user exists', async() =>{
-      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(0);
-      prisma.token.create( MOCK_TOKEN_RECORD as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
       email.sendPasswordResetEmail.mockResolvedValue({} as any);
 
       const result= await service.forgotPassword(emailAdress);
       
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
-        where: { email: emailAdress },
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: { email: { equals: emailAdress, mode: 'insensitive' } },
       });
 
       expect(prisma.token.count).toHaveBeenCalledWith(
@@ -370,7 +370,7 @@ describe('AuthService', () => {
   })
 
   it('should return a generic success message even when the user does not exist', async() =>{
-    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.user.findFirst.mockResolvedValue(null);
     const result= await service.forgotPassword("unknown@consultiq.com");
 
       expect(result.message).toContain('If that account exists');
@@ -380,7 +380,7 @@ describe('AuthService', () => {
     });
 
     it('should throw 429 when too many reset emails were sent in the last hour', async() =>{
-      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(3);
 
       await expect(service.forgotPassword(emailAdress)).rejects.toThrow();
@@ -388,7 +388,7 @@ describe('AuthService', () => {
 
     it('should not throw if sending the reset email fails', async()=>{
        jest.spyOn(console, 'error').mockImplementation(() => {});
-       prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+       prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
        prisma.token.count.mockResolvedValue(0);
        prisma.token.create.mockResolvedValue( MOCK_TOKEN_RECORD as any);
        email.sendPasswordResetEmail.mockRejectedValue(new Error('Email provider down'));
@@ -400,7 +400,7 @@ describe('AuthService', () => {
   // ---------------------------------------resetPassword-------------------------------------------
   describe('resetPassword',() =>{
     const dto= {
-      email: 'botho@consultiq.com', 
+      email: 'BoThO@Consultiq.com',
       token: 'raw-token-abc234',
       password: 'LongWalk@2026',
     };
@@ -410,12 +410,16 @@ describe('AuthService', () => {
       type: 'PASSWORD_RESET',
     };
     it('it should reset the password successfully', async()=>{
-      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
       prisma.token.findFirst.mockResolvedValue(resetTokenRecord as any);
       token.isTokenExpired.mockReturnValue(false);
       prisma.$transaction.mockResolvedValue([{}, {}] as any);
 
       const result= await service.resetPassword(dto);
+
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: { email: { equals: dto.email, mode: 'insensitive' } },
+      });
 
       expect(prisma.token.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -432,13 +436,13 @@ describe('AuthService', () => {
     });
 
     it('should throw NotFoundException if a user does not exist', async() =>{
-      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.findFirst.mockResolvedValue(null);
 
       await expect(service.resetPassword(dto)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException if token is expired', async() =>{
-      prisma.user.findUnique.mockResolvedValue(MOCK_USER as any);
+      prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
       prisma.token.findFirst.mockResolvedValue(resetTokenRecord as any);
       token.isTokenExpired.mockReturnValue(true);
 

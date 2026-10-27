@@ -409,7 +409,9 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: email.trim(), mode: 'insensitive' } },
+    });
     if (!user) {
       return { message: 'If that account exists, a reset link has been sent.' };
     }
@@ -455,8 +457,10 @@ export class AuthService {
   }
 
   async resetPassword(dto: ActivateAccountDto): Promise<{ message: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: dto.email.trim(), mode: 'insensitive' },
+      },
     });
     if (!user) throw new NotFoundException('Account not found.');
 

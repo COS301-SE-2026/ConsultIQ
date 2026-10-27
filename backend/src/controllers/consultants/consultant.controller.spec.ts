@@ -72,14 +72,21 @@ describe('ConsultantController', () => {
       ];
       mockConsultantService.getPendingProfiles.mockResolvedValue(mockPending);
 
-      const result = await controller.getPendingProfiles();
+      const result = await controller.getPendingProfiles({
+        user: { userId: 'manager-123' },
+      } as any);
       expect(result).toHaveLength(1);
       expect(result[0].userId).toBe('user-1');
+      expect(mockConsultantService.getPendingProfiles).toHaveBeenCalledWith(
+        'manager-123',
+      );
     });
 
     it('should return empty array when no pending profiles', async () => {
       mockConsultantService.getPendingProfiles.mockResolvedValue([]);
-      const result = await controller.getPendingProfiles();
+      const result = await controller.getPendingProfiles({
+        user: { userId: 'manager-123' },
+      } as any);
       expect(result).toHaveLength(0);
     });
   });

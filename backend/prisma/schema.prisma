@@ -188,6 +188,9 @@ model User {
   role                  Role
   roleId                String?              @map("role_id")
   roleDefinition        RoleDefinition?      @relation(fields: [roleId], references: [id])
+  registeredByUserId    String?              @map("registered_by_user_id")
+  registeredBy          User?                @relation("ConsultantRegistrations", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  registeredConsultants User[]               @relation("ConsultantRegistrations")
   status                UserStatus           @default(PENDING)
   failedAttempts        Int                  @default(0)
   lockedUntil           DateTime?
@@ -211,6 +214,7 @@ model User {
   adminActionsReceived  AdminAuditLog[]      @relation("AdminTargets")
 
   @@index([status])
+  @@index([registeredByUserId])
   @@map("users")
 }
 

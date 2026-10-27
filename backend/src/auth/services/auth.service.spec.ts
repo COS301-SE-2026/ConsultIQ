@@ -83,6 +83,7 @@ describe('AuthService', () => {
             fullName: dto.fullName,
             email: dto.email,
             role: dto.role,
+            registeredByUserId: null,
             status: 'PENDING',
           }),
         }),
@@ -151,6 +152,14 @@ describe('AuthService', () => {
       prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
 
       await service.createUser(dto, 'manager-user-id-123');
+
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            registeredByUserId: 'manager-user-id-123',
+          }),
+        }),
+      );
 
       expect(prisma.user.findUnique).toHaveBeenNthCalledWith(2, {
         where: { id: 'manager-user-id-123' },

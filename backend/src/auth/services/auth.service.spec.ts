@@ -327,7 +327,7 @@ describe('AuthService', () => {
     it('should send a reset email when the user exists', async() =>{
       prisma.user.findFirst.mockResolvedValue(MOCK_USER as any);
       prisma.token.count.mockResolvedValue(0);
-      prisma.token.create( MOCK_TOKEN_RECORD as any);
+      prisma.token.create.mockResolvedValue(MOCK_TOKEN_RECORD as any);
       email.sendPasswordResetEmail.mockResolvedValue({} as any);
 
       const result= await service.forgotPassword(emailAdress);

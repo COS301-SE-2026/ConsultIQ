@@ -304,12 +304,15 @@ export class ConsultantService {
     }));
   }
 
-  async getPendingProfiles(): Promise<PendingProfileUserDto[]> {
-    // Find all CONSULTANT users who are ACTIVE but have no Consultant record
+  async getPendingProfiles(
+    managerUserId: string,
+  ): Promise<PendingProfileUserDto[]> {
+    // Find this manager's ACTIVE CONSULTANT users who do not yet have a profile.
     const users = await this.encryptionPrisma.user.findMany({
       where: {
         role: 'CONSULTANT',
         status: 'ACTIVE',
+        registeredByUserId: managerUserId,
         consultant: null,
       },
       select: {

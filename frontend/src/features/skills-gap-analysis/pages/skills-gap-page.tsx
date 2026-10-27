@@ -74,6 +74,8 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
     const skills = isProjectView ? projectData!.skills : portfolioData!.skills;
     const alerts = isPortfolioView ? portfolioData!.alerts : [];
     const projectName = isProjectView ? projectData!.projectName : undefined;
+    const showRadarChart = skills.length > 2 ;
+    const identifiedGaps = skills.filter((skill) => skill.severity !== "COVERED");
 
     return (
         <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
@@ -104,7 +106,7 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
 
                     <section className="mb-8">
                         <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl">Skill Analysis</h2>
-                        <div className="grid min-w-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+                        <div className={`grid min-w-0 grid-cols-1 gap-4 sm:gap-6 ${showRadarChart ? "lg:grid-cols-2" : ""}`}>
                             <div className = "min-w-0 overflow-hidden rounded-lg border bg-white p-4 sm:p-6" style={{ borderColor: "var(--color-border)" }} >
                                 <h3 className="text-lg font-semibold mb-1">
                                     Required vs Actual Skills
@@ -115,14 +117,16 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                                 <SkillGapBarChart  data={skills} height={320} />
                             </div>
 
-                            <div className = "min-w-0 overflow-hidden rounded-lg border bg-white p-4 sm:p-6" style={{ borderColor: "var(--color-border)" }} >
-                                <h3 className="text-lg font-semibold mb-1">
-                                    Skill Gap Report
-                                </h3>
-                                <p className="text-sm break-words text-gray-500 mb-4">
-                                    Shows coverage percentages for the top 10 skills, helping identify skills with the largest gaps across the project or portfolio.                                </p>
-                                <SkillGapRadarChart  data={skills} height={320} />
-                            </div>
+                            {showRadarChart && (
+                                <div className = "min-w-0 overflow-hidden rounded-lg border bg-white p-4 sm:p-6" style={{ borderColor: "var(--color-border)" }} >
+                                    <h3 className="text-lg font-semibold mb-1">
+                                        Skill Gap Report
+                                    </h3>
+                                    <p className="text-sm break-words text-gray-500 mb-4">
+                                        Shows coverage percentages for the top 10 skills, helping identify skills with the largest gaps across the project or portfolio.                                </p>
+                                    <SkillGapRadarChart  data={skills} height={320} />
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -147,14 +151,21 @@ export const SkillGapPage : React.FC<SkillGapProps> =({ projectData: propProject
                         <section>
                             <h2 className="mb-4 text-lg font-semibold text-gray-900 sm:text-xl"> Identified Skill Gaps</h2>
                             <div className="space-y-4">
-                                {skills.filter(s => s.severity !== "COVERED").map((skill) =>(
+
+                                {identifiedGaps.length > 0 ?  (
+                                    identifiedGaps.map((skill) => (
                                     <div key={skill.skillName} className="rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-4">
                                         <p className="text-lg font-semibold text-primary">{skill.skillName}</p>
                                         <p className="mt-1 break-words text-base text-primary/70 sm:text-lg">
                                             Need {skill.requiredCount - skill.availableCount} more consultant{skill.requiredCount - skill.availableCount !== 1 ? 's' : ''} with this skill to meet project requirements.
                                         </p>
                                     </div>
-                                ))}
+                                ))
+                            ) : (
+                                <div className = "rounded-lg border bg-white p-8 text-center sm:p-12" style={{ borderColor: "var(--color-border)" }} >
+                                        <p className="text-sm text-gray-500">No skill gaps detected for this project.</p>
+                                </div>
+                            )}
                             </div>
                         </section>
                     )

@@ -25,10 +25,10 @@ interface WeekNavigatorProps {
 function WeekNavigator({ weekStart, onPrevWeek, onNextWeek }: WeekNavigatorProps) {
     const arrowClass = "w-8 h-8 p-0 rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
     return (
-        <div className="flex items-center  gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-6">
             <div className="flex flex-col">
                 <h1 className="font-bold" style={{ color: "#002D62", fontSize: "1.125rem", lineHeight: 1.3 }}>My week</h1>
-                <span className="text-sm font-medium text-slate-700 whitespace-nowrap">{formatRange(weekStart)}</span>
+                <span className="whitespace-nowrap text-xs font-medium text-slate-700 sm:text-sm">{formatRange(weekStart)}</span>
             </div>
             <div className="flex gap-1">
                 <Button variant="ghost" className={arrowClass} aria-label="Previous week" disabled={!onPrevWeek} onClick={onPrevWeek} >
@@ -156,9 +156,9 @@ export default function SchedulerHeader({
     
 
     return (
-        <div className="w-full flex flex-wrap items-center justify-between gap-x-8 gap-y-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] p-3 sm:p-4">
+        <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2 p-3 sm:p-4 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
 
-            <div className="justify-self-start pl-14 lg:pl-0">
+            <div className="justify-self-start pl-14 sm:pl-0">
                 <WeekNavigator weekStart={weekStart} onPrevWeek={onPrevWeek} onNextWeek={onNextWeek} />
             </div>
 

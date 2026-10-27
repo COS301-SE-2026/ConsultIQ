@@ -38,6 +38,6 @@ export const placementService = {
     },
 
     createPlacement: async (projectId: string, payload: CreatePlacementPayload): Promise<CreatePlacementResponse> =>{
-        return apiClient.post<CreatePlacementResponse>(`/projects/${projectId}/placements/`, payload,);
+        return apiClient.post<CreatePlacementResponse>(`/projects/${projectId}/placements`, payload);
     },
 }

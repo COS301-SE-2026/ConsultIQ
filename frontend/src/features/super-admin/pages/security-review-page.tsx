@@ -137,21 +137,21 @@ function SecurityReviewPage() {
     };
 
     return (
-        <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={superAdminSidebarItems} />
 
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+            <div className="min-w-0 flex-1 flex flex-col min-h-screen overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                    style={{ borderColor: "var(--color-border)"}}
                 >
-                    <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                         Security Review
                     </h1>
                 </header>
 
-                <main className="flex-1 overflow-y-auto">
-                    <div className="max-w-[1200px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+                <main className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="mx-auto w-full max-w-[1200px] px-4 py-4 sm:px-6 md:px-10 lg:px-20 md:py-8">
 
                         <div className="flex items-center gap-2 mb-6">
                             <button
@@ -193,16 +193,16 @@ function SecurityReviewPage() {
                                         className="bg-white rounded-xl border-2 border-amber-200 overflow-hidden"
                                     >
                                         <button
-                                            className="w-full flex items-center justify-between p-6 text-left"
+                                            className="flex w-full items-center justify-between gap-3 p-4 text-left sm:p-6"
                                             onClick={() => setExpandedId(isExpanded ? null : item.cvFileId)}
                                         >
-                                            <div className="flex items-start gap-4">
+                                            <div className="flex min-w-0 items-start gap-3 sm:gap-4">
                                                 <ShieldAlert className="h-6 w-6 text-amber-600 shrink-0 mt-1" />
-                                                <div>
+                                                <div className="min-w-0">
                                                     <p className="font-semibold text-lg" style={{ color: "var(--color-primary)" }}>
                                                         {item.consultantName}
                                                     </p>
-                                                    <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+                                                    <p className="break-words text-sm" style={{ color: "var(--color-text-secondary)" }}>
                                                         {item.consultantEmail} · CV uploaded {new Date(item.uploadedAt).toLocaleDateString("en-ZA")}
                                                     </p>
                                                     <div className="flex flex-wrap gap-2 mt-2">
@@ -221,7 +221,7 @@ function SecurityReviewPage() {
                                         </button>
 
                                         {isExpanded && (
-                                            <div className="px-6 pb-6 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+                                            <div className="border-t px-4 pb-4 pt-4 sm:px-6 sm:pb-6" style={{ borderColor: "var(--color-border)" }}>
                                                 <p className="text-sm font-semibold mb-2" style={{ color: "var(--color-text-secondary)" }}>
                                                     Detected content:
                                                 </p>
@@ -238,18 +238,18 @@ function SecurityReviewPage() {
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <div className="flex justify-end gap-3">
+                                                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                                                     <button
                                                         onClick={() => requestDecision(item, "REJECTED")}
                                                         disabled={isResolving}
-                                                        className="px-6 py-2.5 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 transition disabled:opacity-50"
+                                                        className="w-full rounded-lg bg-red-600 px-6 py-2.5 font-semibold text-white transition hover:bg-red-700 disabled:opacity-50 sm:w-auto"
                                                     >
                                                         Reject
                                                     </button>
                                                     <button
                                                         onClick={() => requestDecision(item, "CLEARED")}
                                                         disabled={isResolving}
-                                                        className="px-6 py-2.5 rounded-lg font-semibold text-white bg-green-600 hover:bg-green-700 transition disabled:opacity-50"
+                                                        className="w-full rounded-lg bg-green-600 px-6 py-2.5 font-semibold text-white transition hover:bg-green-700 disabled:opacity-50 sm:w-auto"
                                                     >
                                                         Clear
                                                     </button>
@@ -282,7 +282,7 @@ function SecurityReviewPage() {
                                         </p>
                                     )}
                                     {history.map((h) => (
-                                        <div key={h.cvFileId} className="flex items-center justify-between p-4 px-5">
+                                        <div key={h.cvFileId} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
                                             <div>
                                                 <p className="text-sm font-medium">{h.consultantName}</p>
                                                 <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>

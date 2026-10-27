@@ -274,14 +274,27 @@ async function seedRoleDefinitions(): Promise<void> {
     }
 }
 
-async function seedUser(email: string, fullName: string, plainPassword: string, roleEnum: Role) {
+async function seedUser(
+    email: string,
+    fullName: string,
+    plainPassword: string,
+    roleEnum: Role,
+    registeredByUserId?: string,
+) {
     const roleId = roleIds.get(roleEnum);
     const passwordHash = await bcrypt.hash(plainPassword, 12);
     return prisma.user.upsert({
         where: { email },
-        update: { fullName, role: roleEnum, roleId, status: UserStatus.ACTIVE },
+        update: {
+            fullName,
+            role: roleEnum,
+            roleId,
+            status: UserStatus.ACTIVE,
+            ...(registeredByUserId ? { registeredByUserId } : {}),
+        },
         create: {
             email, fullName, passwordHash, role: roleEnum, roleId,
+            registeredByUserId: registeredByUserId ?? null,
             status: UserStatus.ACTIVE, failedAttempts: 0, isLocked: false,
         },
     });
@@ -772,7 +785,7 @@ async function seedProfileNotificationsForAll(): Promise<void> {
 
 // --- Consultants without profiles ---
 
-async function seedUnprofiledConsultants(): Promise<void> {
+async function seedUnprofiledConsultants(cmUserId: string): Promise<void> {
     console.log('Seeding consultants with user accounts only (no consultant profiles)...');
 
     const unprofiledConsultants = [
@@ -786,7 +799,13 @@ async function seedUnprofiledConsultants(): Promise<void> {
 
     await Promise.all(
         unprofiledConsultants.map((c) =>
-            seedUser(c.email, c.fullName, DEFAULT_CONSULTANT_PASSWORD, Role.CONSULTANT)
+            seedUser(
+                c.email,
+                c.fullName,
+                DEFAULT_CONSULTANT_PASSWORD,
+                Role.CONSULTANT,
+                cmUserId,
+            )
         )
     );
     console.log(`Seeded ${unprofiledConsultants.length} consultants with user accounts only.`);
@@ -835,7 +854,7 @@ async function main(): Promise<void> {
     await assignAllProjectsToCos301Pm(users.cos301PmUser.id);
 
     await seedPublicHolidays();
-    await seedUnprofiledConsultants();
+    await seedUnprofiledConsultants(users.cmUser.id);
     await seedProfileNotificationsForAll();
     await printSummary();
 }

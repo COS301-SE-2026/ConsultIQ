@@ -215,6 +215,8 @@ export class AuthService {
         fullName: dto.fullName,
         email: dto.email,
         role: dto.role,
+        registeredByUserId:
+          String(dto.role) === 'CONSULTANT' ? registeredByUserId ?? null : null,
         status: 'PENDING',
       },
     });

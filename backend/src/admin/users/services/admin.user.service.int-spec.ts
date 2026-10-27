@@ -5,6 +5,8 @@ import { AdminUserService } from './admin.user.service';
 import { cleanDatabase } from '../../../../prisma/prisma-test-utils';
 import { AdminModule } from '../../admin.module';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
+import { RedisUtilityService } from 'src/common/services/redis-utility.service';
 
 describe('AdminUserService - Integration Test', () => {
   let moduleRef: TestingModule;
@@ -13,8 +15,17 @@ describe('AdminUserService - Integration Test', () => {
 
   beforeAll(async () => {
     moduleRef = await Test.createTestingModule({
-      imports: [AdminModule, PrismaModule],
-    }).compile();
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        AdminModule,
+        PrismaModule,
+      ],
+    })
+      .overrideProvider(RedisUtilityService)
+      .useValue({
+        invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
+      })
+      .compile();
 
     service = moduleRef.get<AdminUserService>(AdminUserService);
     prisma = moduleRef.get<PrismaService>(PrismaService);

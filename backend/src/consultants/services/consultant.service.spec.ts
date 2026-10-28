@@ -389,15 +389,25 @@ describe('ConsultantService', () => {
       ];
       mockPrismaService.user.findMany.mockResolvedValue(mockUsers);
 
-      const result = await service.getPendingProfiles();
+      const result = await service.getPendingProfiles('manager-1');
       expect(result).toHaveLength(1);
       expect(result[0].userId).toBe('user-1');
       expect(result[0].fullName).toBe('Jane Doe');
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            role: 'CONSULTANT',
+            status: 'ACTIVE',
+            registeredByUserId: 'manager-1',
+            consultant: null,
+          },
+        }),
+      );
     });
 
     it('should return empty array when no pending profiles exist', async () => {
       mockPrismaService.user.findMany.mockResolvedValue([]);
-      const result = await service.getPendingProfiles();
+      const result = await service.getPendingProfiles('manager-1');
       expect(result).toHaveLength(0);
     });
   });
@@ -1665,4 +1675,3 @@ describe('ConsultantService', () => {
 
   });
 });
-

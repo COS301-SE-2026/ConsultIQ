@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./Documents/Images/consultIQ_banner_animated.svg" alt="ConsultIQ: the right consultant, the right project, explained" width="100%" />
+<img src="./Documents/Images/consultIQ_banner.svg" alt="ConsultIQ: the right consultant, the right project, explained" width="100%" />
 
 <br/>
 

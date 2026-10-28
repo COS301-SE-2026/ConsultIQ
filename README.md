@@ -1,13 +1,12 @@
 <div align="center">
 
-<img src="./Documents/Images/consultIQ_banner.jpg" alt="ConsultIQ: the right consultant, the right project, explained" width="100%" />
+<img src="./Documents/Images/consultIQ_banner_animated.svg" alt="ConsultIQ: the right consultant, the right project, explained" width="100%" />
 
 <br/>
 
-<img src="./Documents/Images/consultiq-animated-logo.svg" alt="ConsultIQ logo" width="260" />
 
 <p>
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1200&color=818CF8&center=true&vCenter=true&width=640&lines=Match+the+right+consultant+to+the+right+project;Every+score+comes+with+an+explanation;Built+by+TROOS+for+COS+301" alt="Typing animation" />
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=20&pause=1200&color=818CF8&center=true&vCenter=true&width=640&lines=Match+the+right+consultant+to+the+right+project;Every+score+comes+with+an+explanation;Built+by+TROOS+for+COS+301;In+Collaboration+with+BBD" alt="Typing animation" />
 </p>
 
 <p>
@@ -358,7 +357,9 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
 
 ## Meet the Team
 
-<img src="./Documents/Images/TROOS_svg.svg" alt="TROOS team logo" width="260" />
+<div align="center">
+  <img src="./Documents/Images/TROOS_svg.svg" alt="TROOS team logo" width="260" />
+</div>
 
 <table>
   <tr>
@@ -407,8 +408,14 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
   </tr>
 </table>
 
+### Contact Details
+
+| Detail | Information |
+| :--- | :--- |
+| **Email** | [teamtroos@gmail.com](mailto:teamtroos@gmail.com) |
+
 ---
 
 <div align="center">
-<sub>Built by team TROOS · University of Pretoria · COS 301 Software Engineering Capstone</sub>
+  <sub>Built by team TROOS for COS 301 · In Collaboration with BBD</sub>
 </div>

@@ -946,8 +946,10 @@ async function seedProfileNotificationsForAll(): Promise<void> {
 
 // --- Consultants without profiles ---
 
-async function seedUnprofiledConsultants(cmUserId: string): Promise<void> {
-    console.log('Seeding consultants with user accounts only (no consultant profiles)...');
+async function seedUnprofiledConsultants(
+    managers: { id: string; label: string; emailTag?: string }[],
+): Promise<void> {
+    console.log('Seeding unprofiled consultant accounts for consultant managers...');
 
     const unprofiledConsultants = [
         { fullName: 'Thabo Mokoena', email: 'thabo.mokoena84@gmail.com' },
@@ -956,20 +958,41 @@ async function seedUnprofiledConsultants(cmUserId: string): Promise<void> {
         { fullName: 'Sipho Dlamini', email: 'sipho.dlamini@consultiq.dev' },
         { fullName: 'Lerato Khumalo', email: 'lerato.khumalo@consultiq.dev' },
         { fullName: 'Francois van der Merwe', email: 'francois.vdm@consultiq.dev' },
+        { fullName: 'Naledi Molefe', email: 'naledi.molefe@consultiq.dev' },
+        { fullName: 'Kabelo Maseko', email: 'kabelo.maseko@consultiq.dev' },
+        { fullName: 'Amara Naidoo', email: 'amara.naidoo@consultiq.dev' },
+        { fullName: 'Bongani Zulu', email: 'bongani.zulu@consultiq.dev' },
+        { fullName: 'Zanele Ndlovu', email: 'zanele.ndlovu@consultiq.dev' },
+        { fullName: 'Musa Petersen', email: 'musa.petersen@consultiq.dev' },
+        { fullName: 'Ayesha Khan', email: 'ayesha.khan@consultiq.dev' },
+        { fullName: 'Themba Mthembu', email: 'themba.mthembu@consultiq.dev' },
+        { fullName: 'Refilwe Baloyi', email: 'refilwe.baloyi@consultiq.dev' },
+        { fullName: 'Daniel Botha', email: 'daniel.botha@consultiq.dev' },
+        { fullName: 'Palesa Radebe', email: 'palesa.radebe@consultiq.dev' },
+        { fullName: 'Sibusiso Cele', email: 'sibusiso.cele@consultiq.dev' },
+        { fullName: 'Nandi Jacobs', email: 'nandi.jacobs@consultiq.dev' },
+        { fullName: 'Keegan Adams', email: 'keegan.adams@consultiq.dev' },
     ];
 
-    await Promise.all(
-        unprofiledConsultants.map((c) =>
-            seedUser(
-                c.email,
-                c.fullName,
-                DEFAULT_CONSULTANT_PASSWORD,
-                Role.CONSULTANT,
-                cmUserId,
-            )
-        )
-    );
-    console.log(`Seeded ${unprofiledConsultants.length} consultants with user accounts only.`);
+    await Promise.all(managers.map(async (manager) => {
+        await Promise.all(
+            unprofiledConsultants.map((consultant) => {
+                const [localPart, domain] = consultant.email.split('@');
+                const email = manager.emailTag
+                    ? `${localPart}+${manager.emailTag}@${domain}`
+                    : consultant.email;
+
+                return seedUser(
+                    email,
+                    consultant.fullName,
+                    DEFAULT_CONSULTANT_PASSWORD,
+                    Role.CONSULTANT,
+                    manager.id,
+                );
+            })
+        );
+        console.log(`Seeded ${unprofiledConsultants.length} unprofiled consultants for ${manager.label}.`);
+    }));
 }
 
 // --- Summary ---
@@ -1030,7 +1053,11 @@ async function main(): Promise<void> {
     );
 
     await seedPublicHolidays();
-    await seedUnprofiledConsultants();
+    await seedUnprofiledConsultants([
+        { id: users.cmUser.id, label: 'Default CM' },
+        { id: users.carlosCmUser.id, label: 'Carlos CM', emailTag: 'carlos' },
+        { id: users.cos301CmUser.id, label: 'COS301 CM', emailTag: 'cos301' },
+    ]);
     await assignAllConsultantsToManagers([
         { id: users.cos301CmUser.id, label: 'COS301 CM' },
         { id: users.carlosCmUser.id, label: 'Carlos CM' },

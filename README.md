@@ -364,7 +364,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
 <table>
   <tr>
     <td align="center" width="33%" valign="top">
-      <img src="https://github.com/Ofentse360.png?size=120" width="96" alt="Ofentse Modika" /><br/>
+      <img src="./Documents/Images/ofentse.jpeg" width="96" alt="Ofentse Modika" /><br/>
       <b>Ofentse Modika</b><br/>
       <sub>Team Lead · Backend · DevOps</sub><br/><br/>
       <sub>Final-year BSc Computer Science student with a strong interest in cybersecurity, financial technology and system architecture.</sub><br/><br/>
@@ -372,7 +372,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <a href="https://www.linkedin.com/in/ofentse-modika-b09126248"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
     <td align="center" width="33%" valign="top">
-      <img src="https://github.com/SiyaSibiya.png?size=120" width="96" alt="Siyabonga Sibiya" /><br/>
+      <img src="./Documents/Images/siyabonga.jpeg" width="96" alt="Siyabonga Sibiya" /><br/>
       <b>Siyabonga Sibiya</b><br/>
       <sub>Business Analyst · Database · Backend</sub><br/><br/>
       <sub>Computer Science student who enjoys using technology to build smart, efficient solutions, with interests in fintech and IoT.</sub><br/><br/>
@@ -380,7 +380,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <a href="http://www.linkedin.com/in/siyabonga-sibiya-086543237"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
     <td align="center" width="33%" valign="top">
-      <img src="https://github.com/Onthatile-22659812.png?size=120" width="96" alt="Onthatile Molebaloa" /><br/>
+      <img src="./Documents/Images/onthatile.jpeg" width="96" alt="Onthatile Molebaloa" /><br/>
       <b>Onthatile Molebaloa</b><br/>
       <sub>Database · Frontend</sub><br/><br/>
       <sub>Third-year BSc Computer Science student building interfaces with React, HTML, CSS and JavaScript, and back ends with Node.js, Supabase, MySQL, MongoDB, Python, Java and C++.</sub><br/><br/>
@@ -390,7 +390,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
   </tr>
   <tr>
     <td align="center" width="33%" valign="top">
-      <img src="https://github.com/Ramatsobane29.png?size=120" width="96" alt="Tshireletso Sebake" /><br/>
+      <img src="./Documents/Images/tshireletso.jpeg" width="96" alt="Tshireletso Sebake" /><br/>
       <b>Tshireletso Sebake</b><br/>
       <sub>Frontend · DevOps</sub><br/><br/>
       <sub>Final-year Computer Science student working across the stack with C++, Java, JavaScript, React, Next.js, NestJS, Go and PostgreSQL.</sub><br/><br/>
@@ -398,7 +398,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <a href="https://www.linkedin.com/in/tshireletso-sebake-9b3397253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
     <td align="center" width="33%" valign="top">
-      <img src="https://github.com/RNkwana.png?size=120" width="96" alt="Retshepile Nkwana" /><br/>
+      <img src="./Documents/Images/retshepile.jpeg" width="96" alt="Retshepile Nkwana" /><br/>
       <b>Retshepile Nkwana</b><br/>
       <sub>Backend · DevOps · Data Analyst</sub><br/><br/>
       <sub>Full-stack developer focused on backend work, strongest in Java and also experienced in C#, .NET and Node.js, with React and Next.js on the frontend.</sub><br/><br/>

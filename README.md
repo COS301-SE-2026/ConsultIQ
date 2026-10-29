@@ -368,6 +368,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <b>Ofentse Modika</b><br/>
       <sub>Team Lead · Backend · DevOps</sub><br/><br/>
       <sub>Final-year BSc Computer Science student with a strong interest in cybersecurity, financial technology and system architecture.</sub><br/><br/>
+      <a href="mailto:u22640020@tuks.co.za"><img src="https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></a>
       <a href="https://github.com/Ofentse360"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
       <a href="https://www.linkedin.com/in/ofentse-modika-b09126248"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
@@ -376,6 +377,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <b>Siyabonga Sibiya</b><br/>
       <sub>Business Analyst · Database · Backend</sub><br/><br/>
       <sub>Computer Science student who enjoys using technology to build smart, efficient solutions, with interests in fintech and IoT.</sub><br/><br/>
+      <a href="mailto:u23976072@tuks.co.za"><img src="https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></a>
       <a href="https://github.com/SiyaSibiya"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
       <a href="http://www.linkedin.com/in/siyabonga-sibiya-086543237"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
@@ -384,6 +386,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <b>Onthatile Molebaloa</b><br/>
       <sub>Database · Frontend</sub><br/><br/>
       <sub>Third-year BSc Computer Science student building interfaces with React, HTML, CSS and JavaScript, and back ends with Node.js, Supabase, MySQL, MongoDB, Python, Java and C++.</sub><br/><br/>
+      <a href="mailto:u22659812@tuks.co.za"><img src="https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></a>
       <a href="https://github.com/Onthatile-22659812"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
       <a href="https://www.linkedin.com/in/onthatile-molebaloa-93a4642a8/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
@@ -394,6 +397,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <b>Tshireletso Sebake</b><br/>
       <sub>Frontend · DevOps</sub><br/><br/>
       <sub>Final-year Computer Science student working across the stack with C++, Java, JavaScript, React, Next.js, NestJS, Go and PostgreSQL.</sub><br/><br/>
+      <a href="mailto:u22636022@tuks.co.za"><img src="https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></a>
       <a href="https://github.com/Ramatsobane29"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
       <a href="https://www.linkedin.com/in/tshireletso-sebake-9b3397253/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>
@@ -402,6 +406,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
       <b>Retshepile Nkwana</b><br/>
       <sub>Backend · DevOps · Data Analyst</sub><br/><br/>
       <sub>Full-stack developer focused on backend work, strongest in Java and also experienced in C#, .NET and Node.js, with React and Next.js on the frontend.</sub><br/><br/>
+      <a href="mailto:u23580578@tuks.co.za"><img src="https://img.shields.io/badge/Gmail-D14836?style=flat-square&logo=gmail&logoColor=white" alt="Email" /></a>
       <a href="https://github.com/RNkwana"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub" /></a>
       <a href="https://www.linkedin.com/in/retshepile-nkwana-817297292/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=flat-square&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
     </td>

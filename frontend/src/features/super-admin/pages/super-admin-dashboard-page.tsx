@@ -35,25 +35,25 @@ function SuperAdminDashboardPage() {
     }, []);
 
     return (
-        <div className="flex h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div className="flex min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
             <Sidebar items={superAdminSidebarItems} />
 
-            <div className="flex-1 flex flex-col h-screen overflow-y-auto">
+            <div className="min-w-0 flex-1 flex flex-col min-h-screen overflow-hidden">
                 <header
-                    className="shrink-0 z-20 bg-white border-b h-[90px] flex items-center justify-between w-full"
-                    style={{ borderColor: "var(--color-border)", paddingLeft: "80px", paddingRight: "80px" }}
+                    className="flex min-h-[90px] shrink-0 flex-wrap items-center justify-between gap-4 border-b bg-white pl-16 pr-4 py-4 sm:px-6 lg:px-10"
+                    style={{ borderColor: "var(--color-border)"}}
                 >
-                    <h1 className="font-bold" style={{ color: "var(--color-primary)", fontSize: "32px" }}>
+                    <h1 className="text-2xl font-bold sm:text-3xl lg:text-4xl" style={{ color: "var(--color-primary)" }}>
                         Super Admin Dashboard
                     </h1>
                 </header>
 
-                <main className="flex-1 overflow-y-auto">
-                    <div className="max-w-[1600px] mx-auto py-8 w-full" style={{ paddingLeft: "80px", paddingRight: "80px" }}>
+                <main className="min-h-0 flex-1 overflow-y-auto">
+                    <div className="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 sm:py-8 lg:px-10" >
 
                         {/* Stats row */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                            <div className="bg-white rounded-xl border p-6" style={{ borderColor: "var(--color-border)" }}>
+                        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 sm:gap-6">
+                            <div className="rounded-xl border bg-white p-5 sm:p-6" style={{ borderColor: "var(--color-border)" }}>
                                 <div className="flex items-center gap-3 mb-2">
                                     <FileText size={20} color="#155AD5" />
                                     <span className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
@@ -65,7 +65,7 @@ function SuperAdminDashboardPage() {
                                 </p>
                             </div>
 
-                            <div className="bg-white rounded-xl border p-6" style={{ borderColor: "var(--color-border)" }}>
+                            <div className="rounded-xl border bg-white p-5 sm:p-6rounded-xl border bg-white p-5 sm:p-6" style={{ borderColor: "var(--color-border)" }}>
                                 <div className="flex items-center gap-3 mb-2">
                                     <Percent size={20} color="#F68F24" />
                                     <span className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
@@ -77,7 +77,7 @@ function SuperAdminDashboardPage() {
                                 </p>
                             </div>
 
-                            <div className="bg-white rounded-xl border p-6" style={{ borderColor: "var(--color-border)" }}>
+                            <div className="rounded-xl border bg-white p-5 sm:p-6" style={{ borderColor: "var(--color-border)" }}>
                                 <div className="flex items-center gap-3 mb-2">
                                     <Clock size={20} color="#4EAC64" />
                                     <span className="text-sm font-medium" style={{ color: "var(--color-text-secondary)" }}>
@@ -96,7 +96,7 @@ function SuperAdminDashboardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                             <button
                                 onClick={() => navigate("/super-admin/security-review")}
-                                className="bg-white rounded-xl border-2 p-8 text-left transition hover:shadow-md"
+                                className="rounded-xl border-2 bg-white p-5 text-left transition hover:shadow-md sm:p-8"
                                 style={{ borderColor: pendingCount > 0 ? "#f59e0b" : "var(--color-border)" }}
                             >
                                 <div className="flex items-center justify-between mb-4">

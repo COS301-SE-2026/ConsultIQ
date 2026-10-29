@@ -123,6 +123,10 @@ function ConsultantProfileViewPage() {
           style={{ borderColor: "var(--color-border)"}}
         >
           <div className="flex items-center gap-3 md:gap-6 w-full">
+            <h1 className={`font-bold text-2xl md:text-4xl ${fromDashboard ? "mx-auto" : ""}`   } style={{ color: "var(--color-primary)" }}>
+              {fromDashboard ? "Consultant Profile" : "My Profile"}
+            </h1>
+            {fromDashboard && <div className="hidden md:block" style={{ width: "70px" }}></div>}
             {fromDashboard && (
               <button
                 onClick={() => navigate(-1)}
@@ -139,10 +143,6 @@ function ConsultantProfileViewPage() {
                 <ArrowLeft size={20} /> Back
               </button>
             )}
-            <h1 className={`font-bold text-2xl md:text-4xl ${fromDashboard ? "mx-auto" : ""}`   } style={{ color: "var(--color-primary)" }}>
-              {fromDashboard ? "Consultant Profile" : "My Profile"}
-            </h1>
-            {fromDashboard && <div className="hidden md:block" style={{ width: "70px" }}></div>}
           </div>
         </header>
 

@@ -225,7 +225,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
               {/* End Date */}
               <div className="flex flex-col gap-2">
                 <label htmlFor="endDate" className="text-base font-semibold">
-                  End Date
+                  End Date <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="date"
@@ -242,7 +242,7 @@ export default function ProjectBasicInfoCard({ data, errors = {}, onChange }: Pr
             {/* Budget */}
             <div className="flex flex-col gap-2">
               <label htmlFor="budget" className="text-base font-semibold">
-                Billing Budget
+                Billing Budget <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

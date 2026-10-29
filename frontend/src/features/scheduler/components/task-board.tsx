@@ -98,7 +98,7 @@ export default function TaskBoard({ tasks, projects, now, expectedVersion, subta
             </div>
 
             {/* Column tabs: phones & tablets only */}
-            <div role="tablist" aria-label="Task columns" className="mb-3 flex flex-none gap-1 overflow-x-auto lg:hidden">
+            <div role="tablist" aria-label="Task columns" className="mb-3 flex w-full flex-none gap-1 overflow-x-auto overscroll-x-contain pb-1 xl:hidden">
                 {COLUMNS.map(({ key, label }) => {
                     const count = byColumn.get(key)?.length ?? 0;
                     const active = mobileColumn === key;
@@ -122,7 +122,7 @@ export default function TaskBoard({ tasks, projects, now, expectedVersion, subta
 
             {/* One column at a time below lg, all four side by side from lg up */}
             <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-                <div className="grid h-full min-h-0 grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-4">
+                <div className="grid h-full min-h-0 grid-cols-1 gap-3 xl:grid-cols-4 xl:gap-4">
                     {COLUMNS.map(({ key, label, dot }) => {
                         const columnTasks = byColumn.get(key) ?? [];
                         return (
@@ -134,7 +134,7 @@ export default function TaskBoard({ tasks, projects, now, expectedVersion, subta
                                 }}
                                 onDragLeave={() => setDragOverColumn((c) => (c === key ? null : c))}
                                 onDrop={(e) => handleDrop(key, e)}
-                                className={`${key === mobileColumn ? "flex" : "hidden"} h-full min-h-0 min-w-0 flex-col rounded-lg border bg-slate-50 lg:flex ${dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
+                                className={`${key === mobileColumn ? "flex" : "hidden"} h-full min-h-0 min-w-0 flex-col rounded-lg border bg-slate-50 xl:flex ${dragOverColumn === key ? "border-slate-400 bg-slate-100" : "border-slate-200"}`}
                             >
                                 <div className={`flex items-center justify-between border-t-2 px-3 py-2 ${dot}`}>
                                     <span className="text-sm font-semibold text-slate-700">{label}</span>

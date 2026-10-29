@@ -70,6 +70,7 @@ export function createMockPrismaService() {
   return {
     user: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       create: jest.fn(),
     },

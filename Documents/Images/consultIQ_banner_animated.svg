@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3584" height="1184" viewBox="0 0 3584 1184">
+  <image href="consultIQ_banner.jpg" width="3584" height="1184" />
+
+  <g fill="none" stroke="#31739a" stroke-width="8">
+    <circle cx="2640" cy="380" r="44" opacity="0">
+      <animate attributeName="r" values="44;92" dur="3.6s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.55;0" dur="3.6s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="2940" cy="585" r="44" opacity="0">
+      <animate attributeName="r" values="44;92" dur="3.6s" begin="1.2s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.55;0" dur="3.6s" begin="1.2s" repeatCount="indefinite" />
+    </circle>
+    <circle cx="3180" cy="835" r="44" opacity="0">
+      <animate attributeName="r" values="44;92" dur="3.6s" begin="2.4s" repeatCount="indefinite" />
+      <animate attributeName="opacity" values="0.55;0" dur="3.6s" begin="2.4s" repeatCount="indefinite" />
+    </circle>
+  </g>
+</svg>

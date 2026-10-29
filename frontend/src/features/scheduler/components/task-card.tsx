@@ -61,7 +61,7 @@ export default function TaskCard({ task, now, expectedVersion, subtaskProgress, 
                     )}
                 </div>
 
-                <button type="button" className="mt-2 block text-left font-semibold text-primary text-sm hover:text-indigo-700"
+                <button type="button" className="mt-2 block min-w-0 max-w-full break-words [overflow-wrap:anywhere] text-left text-sm font-semibold text-primary hover:text-indigo-700"
                     onClick={stopAndRun(() => onEdit(task))}
                 >
                     {task.title}

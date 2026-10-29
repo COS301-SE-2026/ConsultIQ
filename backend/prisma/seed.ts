@@ -28,6 +28,7 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
+import Redis from 'ioredis';
 
 const prisma = new PrismaClient();
 
@@ -36,10 +37,11 @@ const prisma = new PrismaClient();
 // =============================================================================
 
 const BATCH_SIZE = 10;
-const GENERATED_CONSULTANT_COUNT = 100;
+const GENERATED_CONSULTANT_BATCH_SIZE = 2;
+const GENERATED_CONSULTANT_COUNT = 150;
 const GENERATED_PROJECT_COUNT = 20;
 const DEFAULT_CONSULTANT_PASSWORD = 'SecureConsultantPass123!';
-const COS301_PASSWORD = process.env.COS301_SEED_PASSWORD || 'SecureSuperAdminPass123!';
+const COS301_PASSWORD = process.env.COS301_PASSWORD || 'SecureSuperAdminPass123!';
 const BASE_COS301_EMAIL = 'cos301queries@cs.up.ac.za';
 
 const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -66,7 +68,11 @@ const EXTENDED_SKILLS = [
     { name: 'Spring Boot', category: 'Backend Development' },
     { name: 'Azure', category: 'Cloud & DevOps' },
     { name: 'GraphQL', category: 'Backend Development' },
+    { name: 'C++', category: 'Programming Languages' },
 ];
+
+const ALICE_PROFILE_SKILLS = ['AWS', 'Node.js', 'Python', 'PostgreSQL', 'Docker', 'TypeScript', 'Java', 'C++'];
+const KARABO_PROFILE_SKILLS = [...ALICE_PROFILE_SKILLS];
 
 const MOCK_DATA = {
     firstNames: ["Liam", "Emma", "Noah", "Olivia", "William", "Ava", "James", "Isabella", "Oliver", "Sophia", "Benjamin", "Mia", "Elijah", "Charlotte", "Lucas", "Amelia", "Mason", "Harper", "Logan", "Evelyn", "Alexander", "Abigail", "Ethan", "Emily", "Jacob", "Elizabeth", "Michael", "Mila", "Daniel", "Ella"],
@@ -303,7 +309,16 @@ async function seedUser(
 async function seedReservedUsers() {
     console.log('Seeding reserved user accounts...');
 
-    const [adminUser, pmUser, cmUser, consultantUser] = await Promise.all([
+    const [
+        adminUser,
+        pmUser,
+        cmUser,
+        consultantUser,
+        ,
+        carlosCmUser,
+        preciousPmUser,
+        karaboUser,
+    ] = await Promise.all([
         seedUser(
             process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@consultiq.dev',
             process.env.BOOTSTRAP_ADMIN_FULL_NAME || 'System Administrator',
@@ -328,6 +343,31 @@ async function seedReservedUsers() {
             process.env.BOOTSTRAP_CONSULTANT_PASSWORD || 'SecureConsultantPass123!',
             Role.CONSULTANT
         ),
+        // Project Day Users
+        seedUser(
+            process.env.SARAH_ADMIN_EMAIL || 'admin.sarah@consultiq.dev',
+            process.env.SARAH_ADMIN_FULL_NAME || 'Sarah S.Admin',
+            process.env.SARAH_ADMIN_PASSWORD || 'SecureAdminPass123!',
+            Role.ADMIN
+        ),
+        seedUser(
+            process.env.CARLOS_CM_EMAIL || process.env.CARLOS_PM_EMAIL || 'cm.carlos@consultiq.dev',
+            process.env.CARLOS_CM_FULL_NAME || process.env.CARLOS_PM_FULL_NAME || 'Carlos Roberts',
+            process.env.CARLOS_CM_PASSWORD || process.env.CARLOS_PM_PASSWORD || 'SecureCMPass123!',
+            Role.CONSULTANT_MANAGER
+        ),
+        seedUser(
+            process.env.PRECIOUS_PM_EMAIL || process.env.PRECIOUS_CM_EMAIL || 'pm.precious@consultiq.dev',
+            process.env.PRECIOUS_PM_FULL_NAME || process.env.PRECIOUS_CM_FULL_NAME || 'Precious Mabena',
+            process.env.PRECIOUS_PM_PASSWORD || process.env.PRECIOUS_CM_PASSWORD || 'SecurePMPass123!',
+            Role.PROJECT_MANAGER
+        ),
+        seedUser(
+            process.env.KARABO_CONSULTANT_EMAIL || 'karabo.consultant@consultiq.dev',
+            process.env.KARABO_CONSULTANT_FULL_NAME || 'Karabo Mokoena',
+            process.env.KARABO_CONSULTANT_PASSWORD || 'SecureConsultantPass123!',
+            Role.CONSULTANT
+        ),
         seedUser(
             process.env.BOOSTRAP_SUPER_ADMIN_EMAIL || 'benjaminsuperadmin@consultiq.dev',
             process.env.BOOSTRAP_SUPER_ADMIN_FULL_NAME || 'Benjamin Supeman',
@@ -344,7 +384,18 @@ async function seedReservedUsers() {
         seedUser(`cn-${BASE_COS301_EMAIL}`, 'COS301 Consultant', COS301_PASSWORD, Role.CONSULTANT),
     ]);
 
-    return { adminUser, pmUser, cmUser, consultantUser, cos301PmUser, cos301CmUser, cos301CnUser };
+    return {
+        adminUser,
+        pmUser,
+        cmUser,
+        consultantUser,
+        carlosCmUser,
+        preciousPmUser,
+        karaboUser,
+        cos301PmUser,
+        cos301CmUser,
+        cos301CnUser,
+    };
 }
 
 async function seedSkills(): Promise<Skill[]> {
@@ -410,6 +461,13 @@ interface FixedConsultantInput {
     cvFileName: string;
     cvRawText: string;
     cvParsedData: Prisma.InputJsonValue;
+    skills?: Skill[];
+    education?: {
+        institution: string;
+        qualification: string;
+        startDate: Date;
+        endDate: Date;
+    };
 }
 
 async function seedFixedConsultant(input: FixedConsultantInput): Promise<void> {
@@ -428,6 +486,22 @@ async function seedFixedConsultant(input: FixedConsultantInput): Promise<void> {
     });
 
     await linkConsultantToManager(input.managerUserId, profile.id);
+    await Promise.all(
+        (input.skills ?? []).map((skill) => assignConsultantSkill(profile.id, skill.id))
+    );
+    if (input.education) {
+        const existingEducation = await prisma.consultantEducation.findFirst({
+            where: { consultantId: profile.id },
+        });
+        if (!existingEducation) {
+            await prisma.consultantEducation.create({
+                data: {
+                    consultantId: profile.id,
+                    ...input.education,
+                },
+            });
+        }
+    }
     await createCvFile({
         userId: input.userId,
         consultantId: profile.id,
@@ -441,6 +515,7 @@ async function seedFixedConsultant(input: FixedConsultantInput): Promise<void> {
 
 async function seedFixedConsultants(
     users: Awaited<ReturnType<typeof seedReservedUsers>>,
+    skillRecords: Skill[],
 ): Promise<void> {
     console.log('Seeding profiles for Alice and COS301 Consultant...');
 
@@ -453,11 +528,18 @@ async function seedFixedConsultants(
         phone: '082 123 4567',
         costToCompany: 8500,
         cvFileName: 'Alice_Consultant_CV_2026.pdf',
-        cvRawText: 'Senior Data Engineer and AWS Architect. Graduated from University of Pretoria.',
+        cvRawText: 'Senior Data Engineer and AWS Architect skilled in AWS, Node.js, Python, PostgreSQL, Docker, TypeScript, Java, and C++. Graduated from University of Pretoria with a BSc in Computer Science.',
         cvParsedData: {
-            skills: ["AWS", "Node.js", "Python"],
+            skills: ALICE_PROFILE_SKILLS,
             education: ["University of Pretoria"],
             experience: ["Senior Backend Developer"],
+        },
+        skills: skillRecords.filter((skill) => ALICE_PROFILE_SKILLS.includes(skill.name)),
+        education: {
+            institution: 'University of Pretoria',
+            qualification: 'BSc Computer Science',
+            startDate: new Date('2014-01-15'),
+            endDate: new Date('2018-11-30'),
         },
     });
 
@@ -585,9 +667,11 @@ async function seedGeneratedConsultant(
     identity: ConsultantIdentity,
     cmUserId: string,
     skillRecords: Skill[],
+    existingUser?: Awaited<ReturnType<typeof seedUser>>,
+    selectedSkills?: Skill[],
 ): Promise<void> {
     const fullName = `${identity.firstName} ${identity.lastName}`;
-    const cUser = await seedUser(identity.email, fullName, DEFAULT_CONSULTANT_PASSWORD, Role.CONSULTANT);
+    const cUser = existingUser ?? await seedUser(identity.email, fullName, DEFAULT_CONSULTANT_PASSWORD, Role.CONSULTANT);
 
     const cProfile = await prisma.consultant.upsert({
         where: { userId: cUser.id },
@@ -603,12 +687,23 @@ async function seedGeneratedConsultant(
         },
     });
 
-    const cSkills = randomSample(skillRecords, randomInt(2, 5));
+    const cSkills = selectedSkills ?? randomSample(skillRecords, randomInt(2, 5));
     const [education, experience] = await Promise.all([
         ensureEducation(cProfile.id),
         ensureExperience(cProfile.id),
+    ]);
+    await Promise.all([
         linkConsultantToManager(cmUserId, cProfile.id),
-        ...cSkills.map((skill) => assignConsultantSkill(cProfile.id, skill.id)),
+        prisma.consultantSkill.createMany({
+            data: cSkills.map((skill) => ({
+                consultantId: cProfile.id,
+                skillId: skill.id,
+                competencyLevel: randomItem(Object.values(CompetencyLevel)),
+                yearsExperience: randomInt(1, 10),
+                confidenceLevel: randomInt(5, 10),
+            })),
+            skipDuplicates: true,
+        }),
     ]);
 
     await ensureGeneratedCv(cUser.id, cProfile.id, identity, cSkills, education, experience);
@@ -617,7 +712,35 @@ async function seedGeneratedConsultant(
 async function seedGeneratedConsultants(cmUserId: string, skillRecords: Skill[]): Promise<void> {
     console.log(`Generating ${GENERATED_CONSULTANT_COUNT} additional consultants with matching daily rates...`);
     const identities = buildConsultantIdentities(GENERATED_CONSULTANT_COUNT);
-    await runInBatches(identities, (identity) => seedGeneratedConsultant(identity, cmUserId, skillRecords));
+    await runInBatches(
+        identities,
+        (identity) => seedGeneratedConsultant(identity, cmUserId, skillRecords),
+        GENERATED_CONSULTANT_BATCH_SIZE,
+    );
+}
+
+async function assignAllConsultantsToManagers(
+    managers: { id: string; label: string }[],
+): Promise<void> {
+    const consultants = await prisma.consultant.findMany({ select: { id: true } });
+    await runInBatches(consultants, (consultant) =>
+        Promise.all(
+            managers.map((manager) =>
+                linkConsultantToManager(manager.id, consultant.id)
+            )
+        )
+    );
+    await Promise.all(managers.map(async (manager) => {
+        const assignedCount = await prisma.consultantManager.count({
+            where: { userId: manager.id },
+        });
+        if (assignedCount < consultants.length) {
+            throw new Error(
+                `Expected ${consultants.length} consultant assignments for ${manager.label}, found ${assignedCount}.`,
+            );
+        }
+        console.log(`${manager.label}: linked to ${assignedCount} consultant profiles.`);
+    }));
 }
 
 // --- Projects ---
@@ -698,7 +821,7 @@ function assignProjectSkill(projectId: string, skillId: string) {
     });
 }
 
-async function seedGeneratedProject(index: number, pmUserId: string, skillRecords: Skill[]): Promise<void> {
+async function seedGeneratedProject(index: number, pmUserIds: string[], skillRecords: Skill[]): Promise<void> {
     const projectName = `${randomItem(MOCK_DATA.projectPrefixes)} ${randomItem(MOCK_DATA.projectSuffixes)} ${index}`;
 
     const existing = await prisma.project.findFirst({ where: { projectName } });
@@ -706,22 +829,60 @@ async function seedGeneratedProject(index: number, pmUserId: string, skillRecord
 
     const pSkills = randomSample(skillRecords, randomInt(1, 4));
     await Promise.all([
-        linkProjectToManager(pmUserId, project.id),
+        ...pmUserIds.map((pmUserId) => linkProjectToManager(pmUserId, project.id)),
         ...pSkills.map((skill) => assignProjectSkill(project.id, skill.id)),
     ]);
 }
 
-async function seedGeneratedProjects(pmUserId: string, skillRecords: Skill[]): Promise<void> {
+async function seedGeneratedProjects(pmUserIds: string[], skillRecords: Skill[]): Promise<void> {
     console.log(`Generating ${GENERATED_PROJECT_COUNT} additional OPEN projects with accurate geo-locations & budgets...`);
     const indexes = Array.from({ length: GENERATED_PROJECT_COUNT }, (_, i) => i + 1);
-    await runInBatches(indexes, (index) => seedGeneratedProject(index, pmUserId, skillRecords));
+    await runInBatches(indexes, (index) => seedGeneratedProject(index, pmUserIds, skillRecords));
 }
 
-async function assignAllProjectsToCos301Pm(cos301PmUserId: string): Promise<void> {
-    console.log(`\nLocating ${`pm-${BASE_COS301_EMAIL}`} to assign all generated projects...`);
+async function assignAllProjectsToManagers(
+    managers: { id: string; label: string }[],
+): Promise<void> {
     const allProjects = await prisma.project.findMany();
-    await runInBatches(allProjects, (project) => linkProjectToManager(cos301PmUserId, project.id));
-    console.log(`Successfully linked ${allProjects.length} projects to pm-${BASE_COS301_EMAIL}!`);
+    await runInBatches(allProjects, (project) =>
+        Promise.all(
+            managers.map((manager) =>
+                linkProjectToManager(manager.id, project.id)
+            )
+        )
+    );
+    await Promise.all(managers.map(async (manager) => {
+        const assignedCount = await prisma.projectManager.count({
+            where: { userId: manager.id },
+        });
+        if (assignedCount < allProjects.length) {
+            throw new Error(
+                `Expected ${allProjects.length} project assignments for ${manager.label}, found ${assignedCount}.`,
+            );
+        }
+        console.log(`${manager.label}: linked to ${assignedCount} projects.`);
+    }));
+}
+
+async function invalidateManagerListCaches(): Promise<void> {
+    const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
+    try {
+        for (const pattern of ['cache:consultants:*', 'cache:projects:*']) {
+            const keys: string[] = [];
+            await new Promise<void>((resolve, reject) => {
+                const stream = redis.scanStream({ match: pattern, count: 100 });
+                stream.on('data', (batch: string[]) => keys.push(...batch));
+                stream.on('error', reject);
+                stream.on('end', resolve);
+            });
+            if (keys.length > 0) {
+                await redis.del(...keys);
+            }
+            console.log(`Cleared ${keys.length} cached entries matching ${pattern}.`);
+        }
+    } finally {
+        await redis.quit();
+    }
 }
 
 // --- Public holidays ---
@@ -846,15 +1007,39 @@ async function main(): Promise<void> {
     const users = await seedReservedUsers();
     const skillRecords = await seedSkills();
 
-    await seedFixedConsultants(users);
+    await seedFixedConsultants(users, skillRecords);
+    const [karaboFirstName, ...karaboLastName] = users.karaboUser.fullName.trim().split(/\s+/);
+    const karaboSkills = skillRecords.filter((skill) => KARABO_PROFILE_SKILLS.includes(skill.name));
+    await seedGeneratedConsultant(
+        {
+            firstName: karaboFirstName,
+            lastName: karaboLastName.join(' ') || karaboFirstName,
+            email: users.karaboUser.email,
+        },
+        users.carlosCmUser.id,
+        skillRecords,
+        users.karaboUser,
+        karaboSkills,
+    );
     await seedGeneratedConsultants(users.cmUser.id, skillRecords);
 
     await seedBaseProject(users.pmUser.id);
-    await seedGeneratedProjects(users.pmUser.id, skillRecords);
-    await assignAllProjectsToCos301Pm(users.cos301PmUser.id);
+    await seedGeneratedProjects(
+        [users.pmUser.id, users.preciousPmUser.id],
+        skillRecords,
+    );
 
     await seedPublicHolidays();
-    await seedUnprofiledConsultants(users.cmUser.id);
+    await seedUnprofiledConsultants();
+    await assignAllConsultantsToManagers([
+        { id: users.cos301CmUser.id, label: 'COS301 CM' },
+        { id: users.carlosCmUser.id, label: 'Carlos CM' },
+    ]);
+    await assignAllProjectsToManagers([
+        { id: users.preciousPmUser.id, label: 'Precious PM' },
+        { id: users.cos301PmUser.id, label: 'COS301 PM' },
+    ]);
+    await invalidateManagerListCaches();
     await seedProfileNotificationsForAll();
     await printSummary();
 }

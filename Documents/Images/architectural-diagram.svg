@@ -1,0 +1,286 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1070" width="100%" height="100%" role="img" aria-label="ConsultIQ Layered Architecture with Data Flow">
+  <defs>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8Z" fill="#818CF8" />
+    </marker>
+  </defs>
+  <style>
+    .band{fill:#0F1428;stroke:#312E81;stroke-width:2}
+    .lay{font:800 13px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#FCD34D;letter-spacing:2px}
+    .box{fill:#151A33;stroke:#4F46E5;stroke-width:2}
+    .hot{fill:#1F1708;stroke:#F59E0B;stroke-width:2}
+    .chip{fill:#1E1B4B;stroke:#6366F1;stroke-width:1.5}
+    .chot{fill:#3A2A08;stroke:#F59E0B;stroke-width:1.5}
+    .h{font:800 15px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#F8FAFC}
+    .t{font:600 11.5px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#C7D2FE;text-anchor:middle}
+    .l{font:600 11px 'Segoe UI',Helvetica,Arial,sans-serif;fill:#94A3B8;text-anchor:middle}
+    .ln{fill:none;stroke:#818CF8;stroke-width:2;stroke-opacity:.8;marker-end:url(#ar)}
+    .ln-reverse{fill:none;stroke:#818CF8;stroke-width:2;stroke-opacity:.8}
+  </style>
+
+  <!-- Background -->
+  <rect width="1200" height="1070" rx="20" fill="#0B1020" />
+
+  <!-- ========================================== -->
+  <!-- 1. PRESENTATION LAYER                      -->
+  <!-- ========================================== -->
+  <rect class="band" x="20" y="20" width="1160" height="230" rx="16" />
+  <text class="lay" x="40" y="46">PRESENTATION LAYER</text>
+
+  <!-- App -->
+  <rect class="box" x="40" y="62" width="200" height="176" rx="12" />
+  <text class="h" x="140" y="86" text-anchor="middle">App</text>
+  <rect class="chip" x="52" y="92" width="176" height="22" rx="8" />
+  <text class="t" x="140" y="107">Providers</text>
+  <rect class="chip" x="52" y="120" width="176" height="22" rx="8" />
+  <text class="t" x="140" y="135">AppRoutes</text>
+
+  <!-- Pages -->
+  <rect class="box" x="268" y="62" width="200" height="176" rx="12" />
+  <text class="h" x="368" y="86" text-anchor="middle">Pages</text>
+  <rect class="chip" x="280" y="92" width="176" height="22" rx="8" />
+  <text class="t" x="368" y="107">ProfilePage</text>
+  <rect class="chip" x="280" y="120" width="176" height="22" rx="8" />
+  <text class="t" x="368" y="135">PlacementDashboardPage</text>
+  <rect class="chip" x="280" y="148" width="176" height="22" rx="8" />
+  <text class="t" x="368" y="163">ProjectsPage</text>
+
+  <!-- Widgets -->
+  <rect class="box" x="496" y="62" width="200" height="176" rx="12" />
+  <text class="h" x="596" y="86" text-anchor="middle">Widgets</text>
+  <rect class="chip" x="508" y="92" width="176" height="22" rx="8" />
+  <text class="t" x="596" y="107">userFeedWidget</text>
+  <rect class="chip" x="508" y="120" width="176" height="22" rx="8" />
+  <text class="t" x="596" y="135">ScoringTable</text>
+
+  <!-- Features -->
+  <rect class="hot" x="724" y="62" width="200" height="176" rx="12" />
+  <text class="h" x="824" y="86" text-anchor="middle">Features</text>
+  <rect class="chip" x="736" y="92" width="176" height="22" rx="8" />
+  <text class="t" x="824" y="107">feature/authentication</text>
+  <rect class="chip" x="736" y="120" width="176" height="22" rx="8" />
+  <text class="t" x="824" y="135">feature/consultants</text>
+  <rect class="chot" x="736" y="148" width="176" height="22" rx="8" />
+  <text class="t" x="824" y="163">feature/scoring</text>
+
+  <!-- Entities and Shared -->
+  <rect class="box" x="952" y="62" width="200" height="176" rx="12" />
+  <text class="h" x="1052" y="86" text-anchor="middle">Entities and Shared</text>
+  <rect class="chip" x="964" y="92" width="176" height="22" rx="8" />
+  <text class="t" x="1052" y="107">entities/user</text>
+  <rect class="chip" x="964" y="120" width="176" height="22" rx="8" />
+  <text class="t" x="1052" y="135">entities/consultant</text>
+  <rect class="chip" x="964" y="148" width="176" height="22" rx="8" />
+  <text class="t" x="1052" y="163">entities/scoring-config</text>
+  <rect class="chip" x="964" y="176" width="176" height="22" rx="8" />
+  <text class="t" x="1052" y="191">shared/api-client</text>
+  <rect class="chip" x="964" y="204" width="176" height="22" rx="8" />
+  <text class="t" x="1052" y="219">shared/ui-utils</text>
+
+  <!-- Presentation Layer Horizontal Data Flow -->
+  <path class="ln" d="M240 150 H266" />
+  <path class="ln" d="M468 150 H494" />
+  <path class="ln" d="M696 150 H722" />
+  <path class="ln" d="M924 150 H950" />
+
+
+  <!-- ========================================== -->
+  <!-- 2. BUSINESS LOGIC LAYER                    -->
+  <!-- ========================================== -->
+  <rect class="band" x="20" y="270" width="1160" height="370" rx="16" />
+  <text class="lay" x="40" y="296">BUSINESS LOGIC LAYER</text>
+
+  <!-- Auth Module -->
+  <rect class="box" x="40" y="306" width="1120" height="56" rx="12" />
+  <text class="h" x="600" y="330" text-anchor="middle">Auth Module</text>
+  <text class="l" x="600" y="350">Authentication Service  ·  Role Guards</text>
+
+  <!-- Consultant Module -->
+  <rect class="box" x="40" y="400" width="230" height="220" rx="12" />
+  <text class="h" x="155" y="424" text-anchor="middle">Consultant Module</text>
+  <rect class="chip" x="56" y="436" width="198" height="38" rx="8" />
+  <text class="t" x="155" y="452">Consultant</text>
+  <text class="t" x="155" y="466">Management Service</text>
+  <rect class="chip" x="56" y="486" width="198" height="38" rx="8" />
+  <text class="t" x="155" y="509">Profile Service</text>
+
+  <!-- Project Module -->
+  <rect class="box" x="290" y="400" width="260" height="220" rx="12" />
+  <text class="h" x="420" y="424" text-anchor="middle">Project Module</text>
+  <rect class="chip" x="306" y="436" width="228" height="34" rx="8" />
+  <text class="t" x="420" y="457">Project Management Service</text>
+  <rect class="chip" x="306" y="480" width="228" height="34" rx="8" />
+  <text class="t" x="420" y="501">Project-Level Weight Config</text>
+  <rect class="chip" x="306" y="524" width="228" height="34" rx="8" />
+  <text class="t" x="420" y="545">Project-Consultant Assignment</text>
+
+  <!-- Scoring Module -->
+  <rect class="hot" x="570" y="400" width="380" height="220" rx="12" />
+  <text class="h" x="760" y="424" text-anchor="middle">Scoring Module</text>
+  
+  <rect class="chip" x="586" y="566" width="100" height="34" rx="8" />
+  <text class="t" x="636" y="587">Weight input</text>
+  
+  <rect class="box" x="706" y="436" width="228" height="174" rx="10" />
+  <text class="l" x="820" y="452">Scoring Engine</text>
+  
+  <rect class="chip" x="722" y="464" width="196" height="30" rx="8" />
+  <text class="t" x="820" y="483">Data normalizer</text>
+  
+  <rect class="chot" x="722" y="508" width="196" height="30" rx="8" />
+  <text class="t" x="820" y="527">Five scoring factors</text>
+  
+  <rect class="chot" x="722" y="562" width="196" height="34" rx="8" />
+  <text class="t" x="820" y="583">Weight aggregator</text>
+
+  <!-- Admin Module -->
+  <rect class="box" x="970" y="400" width="190" height="220" rx="12" />
+  <text class="h" x="1065" y="424" text-anchor="middle">Admin Module</text>
+  <rect class="chip" x="982" y="452" width="166" height="60" rx="8" />
+  <text class="t" x="1065" y="479">Default Weight</text>
+  <text class="t" x="1065" y="493">Configuration Service</text>
+
+
+  <!-- ========================================== -->
+  <!-- 3. DATA ACCESS LAYER                       -->
+  <!-- ========================================== -->
+  <rect class="band" x="20" y="660" width="1160" height="160" rx="16" />
+  <text class="lay" x="40" y="686">DATA ACCESS LAYER</text>
+
+  <!-- ORM Middleware -->
+  <rect class="box" x="40" y="700" width="1120" height="56" rx="12" />
+  <text class="h" x="60" y="733">ORM Middleware</text>
+  
+  <rect class="chip" x="430" y="712" width="170" height="32" rx="8" />
+  <text class="t" x="515" y="732">Data Masking</text>
+  
+  <rect class="chip" x="640" y="712" width="170" height="32" rx="8" />
+  <text class="t" x="725" y="732">POPIA Auditing</text>
+
+  <!-- Data Access Nodes -->
+  <rect class="chip" x="430" y="768" width="170" height="34" rx="8" />
+  <text class="t" x="515" y="789">Connection Pool</text>
+  
+  <rect class="chip" x="700" y="768" width="170" height="34" rx="8" />
+  <text class="t" x="785" y="789">ORM Client</text>
+
+
+  <!-- ========================================== -->
+  <!-- 4. PERSISTENCE LAYER                       -->
+  <!-- ========================================== -->
+  <rect class="band" x="20" y="850" width="1160" height="200" rx="16" />
+  <text class="lay" x="40" y="876">PERSISTENCE LAYER</text>
+
+  <!-- Relational Database -->
+  <path d="M120 912 v88 a110 22 0 0 0 220 0 v-88" class="box" />
+  <ellipse cx="230" cy="912" rx="110" ry="22" class="chip" />
+  <text class="h" x="230" y="965" text-anchor="middle">Relational Database</text>
+
+  <!-- Cache Aside -->
+  <rect class="box" x="560" y="880" width="580" height="150" rx="12" />
+  <text class="h" x="850" y="904" text-anchor="middle">Cache Aside</text>
+  
+  <rect class="chip" x="590" y="930" width="130" height="40" rx="8" />
+  <text class="t" x="655" y="954">Controller</text>
+
+  <!-- Cache Database -->
+  <path d="M900 940 v50 a55 14 0 0 0 110 0 v-50" class="box" />
+  <ellipse cx="955" cy="940" rx="55" ry="14" class="chip" />
+  <text class="t" x="955" y="978">cache payload</text>
+
+
+  <!-- ========================================== -->
+  <!-- CROSS-LAYER ROUTING PATHS & ANIMATIONS     -->
+  <!-- ========================================== -->
+
+  <!-- Top-Level down to Auth -->
+  <path class="ln" d="M600 250 V304" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" repeatCount="indefinite" path="M600 250 V304" /></circle>
+
+  <path class="ln" d="M1065 400 V364" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" repeatCount="indefinite" path="M1065 400 V364" /></circle>
+
+  <!-- Auth into Modules -->
+  <path class="ln" d="M155 362 V398" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" repeatCount="indefinite" path="M155 362 V398" /></circle>
+  
+  <path class="ln" d="M420 362 V398" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.2s" repeatCount="indefinite" path="M420 362 V398" /></circle>
+
+  <path class="ln" d="M760 362 V398" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.4s" repeatCount="indefinite" path="M760 362 V398" /></circle>
+
+  <!-- Module to Module (Horizontal logic) -->
+  <path class="ln" d="M270 510 H288" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.8s" repeatCount="indefinite" path="M270 510 H288" /></circle>
+  
+  <path class="ln" d="M550 510 H568" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.8s" repeatCount="indefinite" path="M550 510 H568" /></circle>
+
+  <path class="ln" d="M970 510 H952" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.8s" repeatCount="indefinite" path="M970 510 H952" /></circle>
+
+  <!-- Scoring Module Internal Logic -->
+  <path class="ln" d="M820 494 V506" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.6s" repeatCount="indefinite" path="M820 494 V506" /></circle>
+  
+  <path class="ln" d="M820 538 V560" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.6s" repeatCount="indefinite" path="M820 538 V560" /></circle>
+
+  <path class="ln" d="M686 583 H720" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.8s" repeatCount="indefinite" path="M686 583 H720" /></circle>
+
+  <!-- Business Logic down to ORM Middleware -->
+  <path class="ln" d="M155 620 V698" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.2s" begin="0.1s" repeatCount="indefinite" path="M155 620 V698" /></circle>
+
+  <path class="ln" d="M420 620 V698" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.2s" begin="0.3s" repeatCount="indefinite" path="M420 620 V698" /></circle>
+
+  <path class="ln" d="M760 620 V698" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.2s" begin="0.5s" repeatCount="indefinite" path="M760 620 V698" /></circle>
+
+  <path class="ln" d="M1065 620 V698" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.2s" begin="0.7s" repeatCount="indefinite" path="M1065 620 V698" /></circle>
+
+  <!-- ORM Middleware Internal Routing -->
+  <path class="ln" d="M515 756 V766" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.6s" repeatCount="indefinite" path="M515 756 V766" /></circle>
+
+  <path class="ln" d="M785 756 V766" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.6s" repeatCount="indefinite" path="M785 756 V766" /></circle>
+
+  <path class="ln" d="M600 785 H698" />
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.9s" repeatCount="indefinite" path="M600 785 H698" /></circle>
+
+  <!-- Database Output Lines -->
+  <!-- Write to DB -->
+  <path class="ln" d="M720 802 V836 H230 V888" />
+  <text class="l" x="480" y="830">write data</text>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="2.2s" repeatCount="indefinite" path="M720 802 V836 H230 V888" /></circle>
+
+  <!-- Read/Check Cache -->
+  <path class="ln" d="M850 802 V836 H655 V928" />
+  <text class="l" x="750" y="830">read / cache check</text>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.8s" begin="0.4s" repeatCount="indefinite" path="M850 802 V836 H655 V928" /></circle>
+
+  <!-- Cache Controller Internals -->
+  <path class="ln" d="M720 940 H898" />
+  <text class="l" x="810" y="934">read data</text>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.9s" repeatCount="indefinite" path="M720 940 H898" /></circle>
+
+  <path class="ln" d="M898 962 H720" />
+  <text class="l" x="810" y="978">cache hit</text>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="0.9s" begin="0.5s" repeatCount="indefinite" path="M898 962 H720" /></circle>
+
+  <!-- Cache Miss Fallback -->
+  <path class="ln" d="M590 950 H342" />
+  <text class="l" x="465" y="944">cache miss</text>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1.5s" begin="0.2s" repeatCount="indefinite" path="M590 950 H342" /></circle>
+
+  <!-- App Horizontal Animations -->
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.0s" repeatCount="indefinite" path="M240 150 H266" /></circle>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.2s" repeatCount="indefinite" path="M468 150 H494" /></circle>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.4s" repeatCount="indefinite" path="M696 150 H722" /></circle>
+  <circle r="3.5" fill="#FDE68A"><animateMotion dur="1s" begin="0.6s" repeatCount="indefinite" path="M924 150 H950" /></circle>
+</svg>

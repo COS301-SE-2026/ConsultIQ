@@ -358,7 +358,7 @@ To roll back **staging**, repeat the same steps with `docker-compose.staging.yml
 ## Meet the Team
 
 <div align="center">
-  <img src="./Documents/Images/TROOS_svg.svg" alt="TROOS team logo" width="260" />
+  <img src="./Documents/Images/TROOS.LOGO.svg" alt="TROOS team logo" width="400" />
 </div>
 
 <table>
